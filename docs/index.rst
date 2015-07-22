@@ -1,3 +1,25 @@
+.. minHashNearestNeighbors documentation master file, created by
+   sphinx-quickstart on Wed Jul 22 13:43:03 2015.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+Welcome to minHashNearestNeighbors's documentation!
+===================================================
+
+Contents:
+
+.. toctree::
+   :maxdepth: 2
+
+
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+
 # minHashNearestNeighbors
 ========
 With minHashNearestNeighbors it is possible to search the k-nearest neighbors 
@@ -37,4 +59,3 @@ Support
 
 If you are having issues, please let us know.
 Mail adress: wolffj@informatik.uni-freiburg.de
-
