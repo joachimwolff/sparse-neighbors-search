@@ -11,13 +11,20 @@
 # Albert-Ludwig-University Freiburg im Breisgau
 
 from distutils.core import setup, Extension
-from os import environ
 import platform
-if platform.system() == 'Darwin':
-    module1 = Extension('_hashUtility', sources = ['lib/src_c/hashUtility.cpp'], extra_compile_args=["-O3"]) #extra_link_args = ["-lm", "-lrt","-lgomp"], extra_compile_args=["-fopenmp", "-g"])
-else:
-    module1 = Extension('_hashUtility', sources = ['lib/src_c/hashUtility.cpp'], extra_link_args = ["-lm", "-lrt","-lgomp"], extra_compile_args=["-fopenmp", "-O3"])
+import sys
 
+if "--openmp" in sys.argv:
+    module1 = Extension('_hashUtility', sources = ['lib/src_c/hashUtility.cpp'], define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], extra_compile_args=["-fopenmp", "-O3"])
+elif platform.system() == 'Darwin' or "--noopenmp" in sys.argv:
+    module1 = Extension('_hashUtility', sources = ['lib/src_c/hashUtility.cpp'], extra_compile_args=["-O3"])
+else:
+    module1 = Extension('_hashUtility', sources = ['lib/src_c/hashUtility.cpp'],  define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], extra_compile_args=["-fopenmp", "-O3"])
+
+if "--openmp" in sys.argv:
+    sys.argv.remove("--openmp")
+if "--noopenmp" in sys.argv:
+    sys.argv.remove("--noopenmp")
 
 
 setup (name = 'neighborsMinHash',

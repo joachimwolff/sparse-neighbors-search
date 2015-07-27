@@ -27,6 +27,16 @@ In a user only context:
 
 	python setup.py install --user
 
+On MAC OS X the default compiler doesn't support openmp, it is deactivated by default. If you want to compile with openmp support, add the flag "--openmp":
+	
+	python setup.py install --user --openmp
+
+On a Linux system openmp is default. If you don't want to use it set:
+	
+	python setup.py install --user --noopenmp
+
+
+
 Contribute
 ----------
 

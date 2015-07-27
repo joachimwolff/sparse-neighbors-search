@@ -11,8 +11,10 @@
 **/
 #include <Python.h>
 #include <math.h>
-//#include <omp.h>
 
+#ifdef OPENMP
+#include <omp.h>
+#endif
 #include <vector>
 #include <map>
 #include <string>
@@ -68,13 +70,20 @@ std::vector<int> _computeSignature(const int numberOfHashFunctions, const std::v
 // compute the complete inverse index for all given instances and theire non null features
 std::vector<std::map<int, std::vector<int> > >  _computeInverseIndex(const int numberOfHashFunctions,
                                                                 std::map<int, std::vector<int> >& instance_featureVector,
-                                                                const int blockSize, const int maxBinSize) {
+                                                                const int blockSize, const int maxBinSize, const int numberOfCores, int chunkSize) {
 
     std::vector<std::map<int, std::vector<int> > > inverseIndex;
     int inverseIndexSize = ceil(((float) numberOfHashFunctions / (float) blockSize)+1);
     inverseIndex.resize(inverseIndexSize);
-
-#pragma omp parallel for
+    if (chunkSize == -1) {
+        int chunkSize = ceil(instance_featureVector.size() / numberOfCores);
+    } else if(chunkSize == 0) {
+        chunkSize = numberOfCores;
+    }
+#ifdef OPENMP
+    omp_set_dynamic(0);
+#endif
+#pragma omp parallel for schedule(static, chunkSize) num_threads(numberOfCores)
     for(int index = 0; index < instance_featureVector.size(); ++index){
 
         std::map<int, std::vector<int> >::iterator instanceId = instance_featureVector.begin();
@@ -151,16 +160,17 @@ static PyObject* computeIntHash(PyObject* self, PyObject* args)
 // parse python call to c++; execute c++ and parse it back to python
 static PyObject* computeInverseIndex(PyObject* self, PyObject* args)
 {
-    int numberOfHashFunctions, blockSize, maxBinSize;
+    int numberOfHashFunctions, blockSize, maxBinSize, numberOfCores, chunkSize;
     std::map<int, std::vector<int> > instance_featureVector;
     PyObject * instancesListObj;
     PyObject * featuresListObj;
     PyObject * instanceIntObj;
     PyObject * featureIntObj;
 
-    if (!PyArg_ParseTuple(args, "iO!O!ii", &numberOfHashFunctions, &PyList_Type, &instancesListObj, &PyList_Type,
-                            &featuresListObj, &blockSize, &maxBinSize))
+    if (!PyArg_ParseTuple(args, "iO!O!iiii", &numberOfHashFunctions, &PyList_Type, &instancesListObj, &PyList_Type,
+                            &featuresListObj, &blockSize, &maxBinSize, &numberOfCores, &chunkSize))
         return NULL;
+    std::cout << "Number of cors: " << numberOfCores;
     int sizeOfFeatureVector = PyList_Size(instancesListObj);
     if (sizeOfFeatureVector < 0)	return NULL;
     int instanceOld = -1;
@@ -193,7 +203,8 @@ static PyObject* computeInverseIndex(PyObject* self, PyObject* args)
         }
     }
     // compute inverse index in c++
-    std::vector<std::map<int, std::vector<int> > > inverseIndex = _computeInverseIndex(numberOfHashFunctions, instance_featureVector, blockSize, maxBinSize);
+    std::vector<std::map<int, std::vector<int> > > inverseIndex = _computeInverseIndex(numberOfHashFunctions, instance_featureVector,
+                                     blockSize, maxBinSize, numberOfCores, chunkSize);
 
     int sizeOfInverseIndex = inverseIndex.size();
     PyObject * outListObj = PyList_New(sizeOfInverseIndex);
