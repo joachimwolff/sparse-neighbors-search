@@ -35,37 +35,50 @@ const double A = sqrt(2) - 1;
     return key % aModulo;
 }
 // compute the signature for one instance given the number of hash functions, the feature ids and a block size
-std::vector<int> _computeSignature(const int numberOfHashFunctions, const std::vector<int>& featureVector, const int blockSize) {
+std::vector< std::vector<int> > _computeSignature(const int numberOfHashFunctions,
+                            const std::vector< std::vector<int> >& instanceFeatureVector, const int blockSize,
+                            const int numberOfCores, int chunkSize) {
 
-    const int sizeOfFeatureVector = featureVector.size();
-    std::vector<int> signatureHash(numberOfHashFunctions);
-    for(int i = 0; i < numberOfHashFunctions; ++i) {
-        int minHashValue = MAX_VALUE;
-        for(int j = 0; j < sizeOfFeatureVector; ++j) {
-            int hashValue = _intHashSimple((featureVector[j]+1) * (i+1) * A, MAX_VALUE);
-            if (hashValue == 0 || hashValue == MAX_VALUE) {
-                continue;
+    const int sizeOfInstances = instanceFeatureVector.size();
+    std::vector< std::vector<int> > instanceSignature;
+    instanceSignature.resize(sizeOfInstances);
+#ifdef OPENMP
+    omp_set_dynamic(0);
+#endif
+#pragma omp parallel for schedule(static, chunkSize) num_threads(numberOfCores)
+    for (int k = 0; k < sizeOfInstances; ++k) {
+        const int sizeOfFeatureVector = instanceFeatureVector[k].size();
+        std::vector<int> signatureHash(numberOfHashFunctions);
+        for(int i = 0; i < numberOfHashFunctions; ++i) {
+            int minHashValue = MAX_VALUE;
+            for(int j = 0; j < sizeOfFeatureVector; ++j) {
+                int hashValue = _intHashSimple((instanceFeatureVector[k][j]+1) * (i+1) * A, MAX_VALUE);
+                if (hashValue == 0 || hashValue == MAX_VALUE) {
+                    continue;
+                }
+                if (hashValue < minHashValue) {
+                    minHashValue = hashValue;
+                }
             }
-            if (hashValue < minHashValue) {
-                minHashValue = hashValue;
+            signatureHash[i] = minHashValue;
+        }
+        // reduce number of hash values by a factor of blockSize
+        std::vector<int> signature;
+        signature.reserve((numberOfHashFunctions / blockSize) + 1);
+        int i = 0;
+        while (i < (numberOfHashFunctions - blockSize)) {
+            // use computed hash value as a seed for the next computation
+            int signatureBlockValue = signatureHash[i];
+            for (int j = 0; j < blockSize; ++j){
+                signatureBlockValue = _intHashSimple((signatureHash[i+j]) * signatureBlockValue * A, MAX_VALUE);
             }
+            signature.push_back(signatureBlockValue);
+            i += blockSize;
         }
-        signatureHash[i] = minHashValue;
+#pragma omp critical
+        instanceSignature[k] = signature;
     }
-    // reduce number of hash values by a factor of blockSize
-    std::vector<int> signature;
-    signature.reserve((numberOfHashFunctions / blockSize) + 1);
-    int i = 0;
-    while (i < (numberOfHashFunctions - blockSize)) {
-        // use computed hash value as a seed for the next computation
-        int signatureBlockValue = signatureHash[i];
-        for (int j = 0; j < blockSize; ++j){
-            signatureBlockValue = _intHashSimple((signatureHash[i+j]) * signatureBlockValue * A, MAX_VALUE);
-        }
-        signature.push_back(signatureBlockValue);
-        i += blockSize;
-    }
-    return signature; 
+    return instanceSignature;
 }
 // compute the complete inverse index for all given instances and theire non null features
 std::vector<std::map<int, std::vector<int> > >  _computeInverseIndex(const int numberOfHashFunctions,
@@ -170,7 +183,7 @@ static PyObject* computeInverseIndex(PyObject* self, PyObject* args)
     if (!PyArg_ParseTuple(args, "iO!O!iiii", &numberOfHashFunctions, &PyList_Type, &instancesListObj, &PyList_Type,
                             &featuresListObj, &blockSize, &maxBinSize, &numberOfCores, &chunkSize))
         return NULL;
-    std::cout << "Number of cors: " << numberOfCores;
+    //std::cout << "Number of cors: " << numberOfCores;
     int sizeOfFeatureVector = PyList_Size(instancesListObj);
     if (sizeOfFeatureVector < 0)	return NULL;
     int instanceOld = -1;
@@ -238,35 +251,86 @@ static PyObject* computeInverseIndex(PyObject* self, PyObject* args)
 // parse python call to c++; execute c++ and parse it back to python
 static PyObject* computeSignature(PyObject* self, PyObject* args)
 {
-    int numberOfHashFunctions, blockSize;
-    std::vector<int> featureID;
-    PyObject * listObj;
-    PyObject * intObj;
+    int numberOfHashFunctions, blockSize, numberOfCores, chunkSize;
+    std::vector< std::vector<int> > instanceFeatureVector;
+
+
+    PyObject * listInstancesObj;
+    PyObject * listFeaturesObj;
+    PyObject * listObjFeature;
+    PyObject * intInstancesObj;
+    PyObject * intFeaturesObj;
+    int instanceOld = -1;
   
-    if (!PyArg_ParseTuple(args, "iO!i", &numberOfHashFunctions, &PyList_Type, &listObj, &blockSize))
+    if (!PyArg_ParseTuple(args, "iO!O!iii", &numberOfHashFunctions,
+                        &PyList_Type, &listInstancesObj,
+                        &PyList_Type, &listFeaturesObj, &blockSize, &numberOfCores, &chunkSize))
         return NULL;
 
-    int numLines = PyList_Size(listObj);
-    if (numLines < 0)	return NULL;
+    int numLinesInstances = PyList_Size(listInstancesObj);
+    if (numLinesInstances < 0)	return NULL;
 
-    featureID.reserve(numLines);
+    int numLinesFeatures = PyList_Size(listFeaturesObj);
+    if (numLinesFeatures < 0)	return NULL;
+
+
+    int insert = 0;
+    std::vector<int> featureIds;
+   // std::cout << "BEvor trans" << std::endl << std::flush;
     // parse from python list to c++ vector
-    for (int i = 0; i < numLines; ++i) {
-        intObj = PyList_GetItem(listObj, i);
-        int value;
-        PyArg_Parse(intObj, "i", &value);
-        featureID.push_back(value);
+    for (int i = 0; i < numLinesInstances; ++i) {
+        intInstancesObj = PyList_GetItem(listInstancesObj, i);
+        intFeaturesObj = PyList_GetItem(listFeaturesObj, i);
+        int featureValue;
+        int instanceValue;
+
+        PyArg_Parse(intInstancesObj, "i", &instanceValue);
+        PyArg_Parse(intFeaturesObj, "i", &featureValue);
+
+        if (instanceOld == instanceValue) {
+            featureIds.push_back(featureValue);
+            instanceOld = instanceValue;
+            if (i == numLinesInstances-1) {
+                instanceFeatureVector.push_back(featureIds);
+            }
+        } else {
+            if (instanceOld != -1 ) {
+                instanceFeatureVector.push_back(featureIds);
+            }
+            featureIds.clear();
+//            instanceFeatureVector.push_back(featureIds);
+            instanceOld = instanceValue;
+        }
     }
+  //  std::cout << "After trans" << std::endl << std::flush;
+    std::cout << "InstanceFeaturVector: " << std::endl << std::flush;
+//    for (int i = 0; i <5; i++) {
+//        for (int j = 0; j < instanceFeatureVector[i].size(); j++) {
+//            std::cout << instanceFeatureVector[i][j] << " "<< std::flush;
+//        }
+//         std::cout << "\nNewLine: " << std::endl << std::flush;
+//
+//    }
     // compute in c++
-    std::vector<int> signature = _computeSignature(numberOfHashFunctions, featureID, blockSize);
+    std::vector< std::vector<int> >signatures = _computeSignature(numberOfHashFunctions, instanceFeatureVector,
+                                                                                    blockSize,numberOfCores, chunkSize);
+   // std::cout << "After comput" << std::endl << std::flush;
+
     // parse from c++ vector to python list
-    int sizeOfSignature = signature.size();
-    PyObject * outListObj = PyList_New(sizeOfSignature);
+
+    int sizeOfSignature = signatures.size();
+    PyObject * outListInstancesObj = PyList_New(sizeOfSignature);
     for (int i = 0; i < sizeOfSignature; ++i) {
-    PyObject* value = Py_BuildValue("i", signature[i]);
-    PyList_SetItem(outListObj, i, value);
+    int sizeOfFeature = signatures[i].size();
+        PyObject * outListFeaturesObj = PyList_New(sizeOfFeature);
+        for (int j = 0; j < sizeOfFeature; ++j) {
+            PyObject* value = Py_BuildValue("i", signatures[i][j]);
+            PyList_SetItem(outListFeaturesObj, j, value);
+        }
+        PyList_SetItem(outListInstancesObj, i, outListFeaturesObj);
     }
-    return outListObj;
+
+    return outListInstancesObj;
 }
 // definition of avaible functions for python and which function parsing fucntion in c++ should be called.
 static PyMethodDef IntHashMethods[] = {

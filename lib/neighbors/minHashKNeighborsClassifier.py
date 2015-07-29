@@ -46,6 +46,15 @@ class MinHashKNeighborsClassifier():
             precision of the :meth:`algorithm=exact` version of the implementation.
             E.g.: n_neighbors = 5, excess_factor = 5. Internally n_neighbors*excess_factor = 25 neighbors will be returned.
             Now the reduced data set for sklearn.NearestNeighbors is of size 25 and not 5.
+        number_of_cores : int, optional
+            Number of cores that should be used for openmp. If your system doesn't support openmp, this value
+            will have no effect. If it supports openmp and it is not defined, the maximum number of cores is used.
+        chunk_size : int, optional
+            Number of elements one cpu core should work on. If it is set to "0" the default behaviour of openmp is used;
+            e.g. for an 8-core cpu,  the chunk_size is set to 8. Every core will get 8 elements, process these and get
+            another 8 elements until everything is done. If you set chunk_size to "-1" all cores
+            are getting the same amount of data at once; e.g. 8-core cpu and 128 elements to process, every core will
+            get 16 elements at once.
         
         Notes
         -----
@@ -71,7 +80,8 @@ class MinHashKNeighborsClassifier():
         http://bioinformatics.oxfordjournals.org/content/28/12/i224.full.pdf+html"""
 
     def __init__(self, n_neighbors=5, algorithm="approximate", number_of_hash_functions=400,
-                 max_bin_size = 50, minimal_blocks_in_common = 1, block_size = 4, excess_factor = 5):
+                 max_bin_size = 50, minimal_blocks_in_common = 1, block_size = 4, excess_factor = 5, number_of_cores=None,
+                 chunk_size=None):
         self.n_neighbors = n_neighbors
         self.algorithm = algorithm
         self.nearestNeighbors = MinHashNearestNeighbors(n_neighbors=n_neighbors, algorithm = algorithm,
@@ -79,7 +89,9 @@ class MinHashKNeighborsClassifier():
                                                         max_bin_size =max_bin_size,
                                                         minimal_blocks_in_common=minimal_blocks_in_common,
                                                         block_size=block_size,
-                                                        excess_factor=excess_factor)
+                                                        excess_factor=excess_factor,
+                                                        number_of_cores=number_of_cores,
+                                                        chunk_size=chunk_size)
     def fit(self, X, y):
         """Fit the model using X as training data.
 

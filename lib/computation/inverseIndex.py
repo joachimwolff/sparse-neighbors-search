@@ -41,7 +41,9 @@ class InverseIndex():
                  number_of_nearest_neighbors = 5,
                  minimal_blocks_in_common = 1,
                  block_size = 4,
-                 excess_factor = 5):
+                 excess_factor = 5, 
+                 number_of_cores = -1,
+                 chunk_size = 0):
         self._number_of_hash_functions = number_of_hash_functions
         self._max_bin_size = max_bin_size
         self._number_of_nearest_neighbors = number_of_nearest_neighbors
@@ -57,6 +59,8 @@ class InverseIndex():
         self._excess_factor = excess_factor
         self._signature_storage = {}
         self.MAX_VALUE = 2147483647
+        self._number_of_cores = number_of_cores
+        self._chunk_size = chunk_size
 
     def fit(self, X):
         """Fits the given dataset to the minHash model.
@@ -69,7 +73,8 @@ class InverseIndex():
         # get all ids of non-null features per instance and compute the inverse index in c++.
         instances, features = X.nonzero()
         self._inverse_index = computeInverseIndex(self._number_of_hash_functions,
-                                instances.tolist(), features.tolist(), self._block_size, self._max_bin_size)
+                                instances.tolist(), features.tolist(), self._block_size, self._max_bin_size,
+                                                  self._number_of_cores, self._chunk_size)
 
     def partial_fit(self, X):
         """Extends the inverse index build in 'fit'.
@@ -86,7 +91,7 @@ class InverseIndex():
             self._update_inverse_index(signature, index)
             index += 1
 
-    def signature(self, instance):
+    def signature(self, instance_feature_list):
         """Computes the signature based on the minHash model for one instaces.
 
         Parameters
@@ -94,8 +99,13 @@ class InverseIndex():
         instance : csr_matrix
             The input row to compute the signature.
         """
+
+
+        instances, features = instance_feature_list.nonzero()
         # compute the siganture in c++
-        return computeSignature(self._number_of_hash_functions, instance.nonzero()[1].tolist(), self._block_size)
+        a = computeSignature(self._number_of_hash_functions,instances.tolist(), features.tolist() ,
+                                                self._block_size, self._number_of_cores, self._chunk_size)
+        return a
 
 
     def _update_inverse_index(self, signature, index):

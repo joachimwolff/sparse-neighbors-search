@@ -56,6 +56,15 @@ class MinHashNearestNeighbors():
             precision of the :meth:`algorithm=exact` version of the implementation.
             E.g.: n_neighbors = 5, excess_factor = 5. Internally n_neighbors*excess_factor = 25 neighbors will be returned.
             Now the reduced data set for sklearn.NearestNeighbors is of size 25 and not 5.
+        number_of_cores : int, optional
+            Number of cores that should be used for openmp. If your system doesn't support openmp, this value
+            will have no effect. If it supports openmp and it is not defined, the maximum number of cores is used.
+        chunk_size : int, optional
+            Number of elements one cpu core should work on. If it is set to "0" the default behaviour of openmp is used;
+            e.g. for an 8-core cpu,  the chunk_size is set to 8. Every core will get 8 elements, process these and get
+            another 8 elements until everything is done. If you set chunk_size to "-1" all cores
+            are getting the same amount of data at once; e.g. 8-core cpu and 128 elements to process, every core will
+            get 16 elements at once.
         
         Notes
         -----
@@ -80,13 +89,8 @@ class MinHashNearestNeighbors():
         Bioinformatics, 28(12), i224-i232.
         http://bioinformatics.oxfordjournals.org/content/28/12/i224.full.pdf+html"""
     def __init__(self, n_neighbors=5, radius=1.0, algorithm="approximate", number_of_hash_functions=400,
-                 max_bin_size = 50, minimal_blocks_in_common = 1, block_size = 4, excess_factor = 5):
-        self._inverseIndex = InverseIndex(number_of_hash_functions=number_of_hash_functions,
-                                          max_bin_size =max_bin_size,
-                                          number_of_nearest_neighbors=n_neighbors,
-                                          minimal_blocks_in_common=minimal_blocks_in_common,
-                                          block_size=block_size,
-                                          excess_factor=excess_factor)
+                 max_bin_size = 50, minimal_blocks_in_common = 1, block_size = 4, excess_factor = 5,
+                 number_of_cores=None, chunk_size=None):
         self.n_neighbors = n_neighbors
         self.radius = radius
         self.algorithm = algorithm
@@ -94,6 +98,20 @@ class MinHashNearestNeighbors():
         self._y = None
         self._sizeOfX = None
         self._shape_of_X = None
+        self._number_of_cores = number_of_cores
+        if number_of_cores is None:
+            self._number_of_cores = mp.cpu_count()
+        self._chunk_size = chunk_size
+        if chunk_size is None:
+            self._chunk_size = 0
+        self._inverseIndex = InverseIndex(number_of_hash_functions=number_of_hash_functions,
+                                          max_bin_size =max_bin_size,
+                                          number_of_nearest_neighbors=n_neighbors,
+                                          minimal_blocks_in_common=minimal_blocks_in_common,
+                                          block_size=block_size,
+                                          excess_factor=excess_factor,
+                                          number_of_cores = self._number_of_cores,
+                                          chunk_size = self._chunk_size)
 
     def fit(self, X, y=None):
         """Fit the model using X as training data.
@@ -300,52 +318,37 @@ class MinHashNearestNeighbors():
         kneighbors_matrix = [[]] * number_of_instances
         neighborhood_size = neighborhood_measure + start_value if computing_function == "kneighbors" else sizeOfX
         radius = neighborhood_measure
-        # print "number_of_instances: ", number_of_instances
-        # print "CPU count: ", mp.cpu_count()
-        # intervalSize = int(ceil(number_of_instances / float(mp.cpu_count())))
-        # j = 0
-        # interval = []
-        # while j < number_of_instances:
-        #     interval.append(j)
-        #     j += intervalSize
-        # i = None
-        # print "interval: ", interval
-        # print "Type of slicing: ", type(X[0:5])
-        # print "Size of interval: ", len(interval)
-        # pool = mp.Pool(processes=len(interval))
-        # results = [apply_async(pool, self._computeNeighborhood, args=(X[i:i+intervalSize], neighborhood_size, computing_function, neighborhood_measure, start_value)) for i in interval]
-        # print "Result size: ", len(results)
-        # print "Result: ", results
-        # output = [p.get() for p in results]
-        # print output
+        signatures = inverseIndex.signature(X)
 
-        # self, instance, neighborhood_size, computing_function, neighborhood_measure, index
+        distances = []
+        neighbors = []
+        if self.algorithm == "approximate":
+            for i in xrange(number_of_instances):
+                distance, neighbor = inverseIndex.neighbors(signatures[i], neighborhood_size)
+                distances.append(distance[0])
+                neighbors.append(neighbor[0])
+        else:
+            distances, neighbors = build_reduced_neighborhood(X=X, computing_function=computing_function,
+                                                             neighborhood_measure=neighborhood_size,
+                                                             signatures=signatures, return_distance = True)
         for i in xrange(number_of_instances):
-            signature = inverseIndex.signature(X[i])
-            if self.algorithm == "approximate":
-                distances, neighbors = inverseIndex.neighbors(signature, neighborhood_size)
-            else:
-                distances, neighbors = build_reduced_neighborhood(X=X, computing_function=computing_function,
-                                                             neighborhood_measure=neighborhood_measure,
-                                                             signature=signature, return_distance = True,
-                                                             index=i)
             if len(neighbors) == 0:
                     logger.warning("No matches in inverse index!")
             if computing_function == "radius_neighbors":
-                for j in xrange(len(distances[0])):
-                    if not distances[0][j] <= radius:
+                for j in xrange(len(distances[i][0])):
+                    if not distances[i][0][j] <= radius:
                         neighborhood_size = j
                         break
             else:
-                appendSize = neighborhood_size - len(neighbors[0])
+                appendSize = neighborhood_size - len(neighbors[i])
                 if appendSize > 0:
                     valueNeighbors = [-1] * appendSize
                     valueDistances = [0] * appendSize
-                    neighbors[0] = append(neighbors[0], valueNeighbors)
-                    distances[0] = append(distances[0], valueDistances)
+                    neighbors[i] = append(neighbors[i], valueNeighbors)
+                    distances[i] = append(distances[i], valueDistances)
 
-            kneighbors_matrix[i] = neighbors[0][start_value:neighborhood_size]
-            distance_matrix[i] = distances[0][start_value:neighborhood_size]
+            kneighbors_matrix[i] = neighbors[i][start_value:neighborhood_size]
+            distance_matrix[i] = distances[i][start_value:neighborhood_size]
 
         if return_distance:
             return asarray(distance_matrix), asarray(kneighbors_matrix)
@@ -353,35 +356,37 @@ class MinHashNearestNeighbors():
             return asarray(kneighbors_matrix)
 
     def _build_reduced_neighborhood(self, X=None, computing_function=None,
-                                    neighborhood_measure=None, signature = None,
-                                    return_distance=None, index = None):
+                                    neighborhood_measure=None, signatures = None,
+                                    return_distance=None):
         # define non local variables and functions as locals to increase performance
         _X = self._X
-        # if X is None, the element itself should not be returned. Otherwise it is considered with a distance = 0.
-        start_value = 1 if X is None else 0
+        inverseIndex = self._inverseIndex
+
         # compute neighbors via inverse index
-        distances, candidate_list = self._inverseIndex.neighbors(signature, neighborhood_measure)
-        if len(candidate_list[0]) == 0:
-            return distances, candidate_list
+        neighbors_indices = []
+        candidate_list = []
+        for i in xrange(len(signatures)):
+            distance, neighbor = inverseIndex.neighbors(signatures[i], neighborhood_measure)
+            candidate_list.extend(neighbor[0])
+        candidate_set = set(candidate_list)
+        candidate_list = list(candidate_set)
+        real_index__candidate_list_index = {}
+        for i in xrange(len(candidate_list)):
+            real_index__candidate_list_index[candidate_list[i]] = i
+
         # use sklearns implementation of NearestNeighbors to compute the neighbors
         # use only the elements of the candidate list and not the whole dataset
         nearest_neighbors = NearestNeighbors()
-        nearest_neighbors.fit(_X[candidate_list[0]])
-
-        if computing_function == "kneighbors":
-            if len(candidate_list) < neighborhood_measure + start_value:
-                neighborhood_measure = len(candidate_list[0]) - start_value
-        if X is None:
-            X = _X
-            neighborhood_measure + start_value
+        nearest_neighbors.fit(_X[candidate_list])
         # compute kneighbors or the neighbors inside a given radius
         if computing_function == "kneighbors":
-            distances, neighbors = nearest_neighbors.kneighbors(X[index], neighborhood_measure, return_distance)
+            distances, neighbors = nearest_neighbors.kneighbors(X, neighborhood_measure, return_distance)
         else:
-            distances, neighbors = nearest_neighbors.radius_neighbors(X[index], neighborhood_measure, return_distance)
+            distances, neighbors = nearest_neighbors.radius_neighbors(X, neighborhood_measure, return_distance)
         # replace indices to the indicies of the orginal dataset
-        for i in xrange(len(neighbors[0])):
-            neighbors[0][i] = candidate_list[0][neighbors[0][i]]
+        for i in xrange(len(neighbors_indices)):
+            for j in xrange(len(neighbors_indices[i])):
+                neighbors[i][j] = real_index__candidate_list_index[neighbors[i][j]]
         return distances.tolist(),  neighbors.tolist()
 
     def _neighborhood_graph(self, X=None, neighborhood_measure=None, return_distance=None,
