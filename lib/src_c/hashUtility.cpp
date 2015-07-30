@@ -45,7 +45,7 @@ std::vector< std::vector<int> > _computeSignature(const int numberOfHashFunction
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
-#pragma omp parallel for schedule(static, chunkSize) num_threads(numberOfCores)
+#pragma omp parallel for //schedule(static, chunkSize) num_threads(numberOfCores)
     for (int k = 0; k < sizeOfInstances; ++k) {
         const int sizeOfFeatureVector = instanceFeatureVector[k].size();
         std::vector<int> signatureHash(numberOfHashFunctions);
@@ -75,7 +75,7 @@ std::vector< std::vector<int> > _computeSignature(const int numberOfHashFunction
             signature.push_back(signatureBlockValue);
             i += blockSize;
         }
-#pragma omp critical
+//#pragma omp critical
         instanceSignature[k] = signature;
     }
     return instanceSignature;
@@ -96,7 +96,7 @@ std::vector<std::map<int, std::vector<int> > >  _computeInverseIndex(const int n
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
-#pragma omp parallel for schedule(static, chunkSize) num_threads(numberOfCores)
+#pragma omp parallel for //schedule(static, chunkSize) num_threads(numberOfCores)
     for(int index = 0; index < instance_featureVector.size(); ++index){
 
         std::map<int, std::vector<int> >::iterator instanceId = instance_featureVector.begin();

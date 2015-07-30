@@ -374,6 +374,8 @@ class MinHashNearestNeighbors():
         for i in xrange(len(candidate_list)):
             real_index__candidate_list_index[candidate_list[i]] = i
 
+        if len(candidate_list) < neighborhood_measure:
+            neighborhood_measure = len(candidate_list)
         # use sklearns implementation of NearestNeighbors to compute the neighbors
         # use only the elements of the candidate list and not the whole dataset
         nearest_neighbors = NearestNeighbors()
