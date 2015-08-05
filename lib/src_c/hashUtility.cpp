@@ -42,10 +42,13 @@ std::vector< std::vector<int> > _computeSignature(const int numberOfHashFunction
     const int sizeOfInstances = instanceFeatureVector.size();
     std::vector< std::vector<int> > instanceSignature;
     instanceSignature.resize(sizeOfInstances);
+    if (chunkSize <= 0) {
+        chunkSize = ceil(instanceFeatureVector.size() / static_cast<float>(numberOfCores));
+    }
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
-#pragma omp parallel for //schedule(static, chunkSize) num_threads(numberOfCores)
+#pragma omp parallel for schedule(static, chunkSize) num_threads(numberOfCores)
     for (int k = 0; k < sizeOfInstances; ++k) {
         const int sizeOfFeatureVector = instanceFeatureVector[k].size();
         std::vector<int> signatureHash(numberOfHashFunctions);
@@ -88,15 +91,13 @@ std::vector<std::map<int, std::vector<int> > >  _computeInverseIndex(const int n
     std::vector<std::map<int, std::vector<int> > > inverseIndex;
     int inverseIndexSize = ceil(((float) numberOfHashFunctions / (float) blockSize)+1);
     inverseIndex.resize(inverseIndexSize);
-    if (chunkSize == -1) {
-        int chunkSize = ceil(instance_featureVector.size() / numberOfCores);
-    } else if(chunkSize == 0) {
-        chunkSize = numberOfCores;
+    if (chunkSize <= 0) {
+        chunkSize = ceil(instance_featureVector.size() / static_cast<float>(numberOfCores));
     }
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
-#pragma omp parallel for //schedule(static, chunkSize) num_threads(numberOfCores)
+#pragma omp parallel for schedule(static, chunkSize) num_threads(numberOfCores)
     for(int index = 0; index < instance_featureVector.size(); ++index){
 
         std::map<int, std::vector<int> >::iterator instanceId = instance_featureVector.begin();
