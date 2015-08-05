@@ -9,6 +9,13 @@
 # Department of Computer Science
 # Faculty of Engineering
 # Albert-Ludwig-University Freiburg im Breisgau
+__author__ = "Joachim Wolff"
+__contact__ = "wolffj@informatik.uni-freiburg.de"
+__copyright__ = "Copyright 2015, Joachim Wolff"
+__credits__ = ["Milad Miladi", "Fabrizio Costa"]
+__license__ = "No License"
+__date__ = "05.08.2015"
+__version_ = "0.1"
 
 from distutils.core import setup, Extension
 import platform
@@ -28,8 +35,15 @@ if "--noopenmp" in sys.argv:
 
 
 setup (name = 'neighborsMinHash',
-        version = '0.1',
-        description = 'Builds inverse index for minHash algorithm.',
+        author = 'Joachim Wolff',
+        author_email = 'wolffj@informatik.uni-freiburg.de',
+        url='https://github.com/joachimwolff/minHashNearestNeighbors',
+        license='LICENSE',
+        description='An approximate computation of nearest neighbors based on locality sensitive hash functions.',
+        long_description=open('README.md').read(),
         ext_modules = [module1],
         packages = ['neighbors', 'computation'],
-        package_dir = {'': 'lib'})
+        package_dir = {'': 'lib'},
+        platforms = "Linux, Mac OS X",
+        version = '0.1'
+        )
