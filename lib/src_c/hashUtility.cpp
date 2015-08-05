@@ -303,22 +303,9 @@ static PyObject* computeSignature(PyObject* self, PyObject* args)
             instanceOld = instanceValue;
         }
     }
-  //  std::cout << "After trans" << std::endl << std::flush;
-    std::cout << "InstanceFeaturVector: " << std::endl << std::flush;
-//    for (int i = 0; i <5; i++) {
-//        for (int j = 0; j < instanceFeatureVector[i].size(); j++) {
-//            std::cout << instanceFeatureVector[i][j] << " "<< std::flush;
-//        }
-//         std::cout << "\nNewLine: " << std::endl << std::flush;
-//
-//    }
     // compute in c++
     std::vector< std::vector<int> >signatures = _computeSignature(numberOfHashFunctions, instanceFeatureVector,
                                                                                     blockSize,numberOfCores, chunkSize);
-   // std::cout << "After comput" << std::endl << std::flush;
-
-    // parse from c++ vector to python list
-
     int sizeOfSignature = signatures.size();
     PyObject * outListInstancesObj = PyList_New(sizeOfSignature);
     for (int i = 0; i < sizeOfSignature; ++i) {
