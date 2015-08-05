@@ -11,6 +11,7 @@ __author__ = 'joachimwolff'
 
 import math
 import logging
+from multiprocessing import Manager
 from _hashUtility import computeInverseIndex
 from _hashUtility import computeSignature
 
@@ -99,13 +100,10 @@ class InverseIndex():
         instance : csr_matrix
             The input row to compute the signature.
         """
-
-
         instances, features = instance_feature_list.nonzero()
         # compute the siganture in c++
-        a = computeSignature(self._number_of_hash_functions,instances.tolist(), features.tolist() ,
+        return computeSignature(self._number_of_hash_functions,instances.tolist(), features.tolist() ,
                                                 self._block_size, self._number_of_cores, self._chunk_size)
-        return a
 
 
     def _update_inverse_index(self, signature, index):

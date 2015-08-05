@@ -91,10 +91,10 @@ class MinHashNearestNeighbors():
                  number_of_cores=None, chunk_size=None):
         self.n_neighbors = n_neighbors
         self.radius = radius
-        if fast:
-            self.algorithm = "approximate"
+        if fast is not None:
+            self.fast = fast
         else:
-            self.algorithm = "exact"
+            self.fast = False
         self._X = None
         self._y = None
         self._sizeOfX = None
@@ -145,7 +145,7 @@ class MinHashNearestNeighbors():
         """Get parameters for this estimator."""
         pass
 
-    def kneighbors(self,X=None, n_neighbors=None, return_distance=True, algorithm=None):
+    def kneighbors(self,X=None, n_neighbors=None, return_distance=True, fast=None):
         """Finds the n_neighbors of a point X or of all points of X.
 
             Parameters
@@ -172,18 +172,14 @@ class MinHashNearestNeighbors():
                 return_distance=True
             ind : array
                 Indices of the nearest points in the population matrix."""
-        if algorithm is not None:
-            if algorithm in ['approximate', 'exact']:
-                self.algorithm = algorithm
-            else:
-                print "Algorithm not known. Choose between: 'approximate' or 'exact'."
-                return
+        if fast is not None:
+            self.fast = fast
         if n_neighbors == None:
             n_neighbors = self.n_neighbors
         return self._neighborhood(X=X, neighborhood_measure=n_neighbors,
                                   return_distance=return_distance, computing_function="kneighbors")
 
-    def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', algorithm=None):
+    def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', fast=None):
         """Computes the (weighted) graph of k-Neighbors for points in X
             Parameters
             ----------
@@ -210,12 +206,8 @@ class MinHashNearestNeighbors():
                 n_samples_fit is the number of samples in the fitted data
                 A[i, j] is assigned the weight of edge that connects i to j.
             """
-        if algorithm is not None:
-            if algorithm in ['approximate', 'exact']:
-                self.algorithm = algorithm
-            else:
-                print "Algorithm not know. Choose between: 'approximate' or 'exact'."
-                return
+        if fast is not None:
+            self.fast = fast
         if n_neighbors == None:
             n_neighbors = self.n_neighbors
             return_distance = True if mode == "connectivity" else False
@@ -263,7 +255,7 @@ class MinHashNearestNeighbors():
         return self._neighborhood(X=X, neighborhood_measure=radius,
                                   return_distance=return_distance, computing_function="radius_neighbors")
 
-    def radius_neighbors_graph(self, X=None, radius=None, mode='connectivity', algorithm=None):
+    def radius_neighbors_graph(self, X=None, radius=None, mode='connectivity', fast=None):
         """Computes the (weighted) graph of Neighbors for points in X
         Neighborhoods are restricted the points at a distance lower than
         radius.
@@ -291,8 +283,8 @@ class MinHashNearestNeighbors():
         -------
         A : sparse matrix in CSR format, shape = [n_samples, n_samples]
         A[i, j] is assigned the weight of edge that connects i to j."""
-        if algorithm is not None:
-            self.algorithm = algorithm
+        if fast is not None:
+            self.fast = fast
         if radius == None:
             radius = self.radius
         return_distance = True if mode == "connectivity" else False
@@ -326,7 +318,7 @@ class MinHashNearestNeighbors():
 
         distances = []
         neighbors = []
-        if self.algorithm == "approximate":
+        if self.fast:
             for i in xrange(number_of_instances):
                 distance, neighbor = inverseIndex.neighbors(signatures[i], neighborhood_size)
                 distances.append(distance[0])

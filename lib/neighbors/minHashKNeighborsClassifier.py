@@ -83,10 +83,10 @@ class MinHashKNeighborsClassifier():
                  max_bin_size = 50, minimal_blocks_in_common = 1, block_size = 4, excess_factor = 5, number_of_cores=None,
                  chunk_size=None):
         self.n_neighbors = n_neighbors
-        if fast:
-            self.algorithm = "approximate"
+        if fast is not None:
+            self.fast = fast
         else:
-            self.algorithm = "exact"
+            self.algorithm = False
         self.nearestNeighbors = MinHashNearestNeighbors(n_neighbors=n_neighbors, fast = fast,
                                                         number_of_hash_functions=number_of_hash_functions,
                                                         max_bin_size =max_bin_size,
@@ -120,7 +120,7 @@ class MinHashKNeighborsClassifier():
         print "n_neighbors: ", self.n_neighbors
         print "algorithm: ", self.algorithm
 
-    def kneighbors(self, X = None, n_neighbors = None, return_distance = True, algorithm=None):
+    def kneighbors(self, X = None, n_neighbors = None, return_distance = True, fast=None):
         """Finds the K-neighbors of a point.
 
             Returns distance
@@ -136,11 +136,11 @@ class MinHashKNeighborsClassifier():
                 passed to the constructor).
             return_distance : boolean, optional. Defaults to True.
                 If False, distances will not be returned
-            algorithm : {'exact', 'approximate'}
-                - 'approximate':    will only use an inverse index to compute a k_neighbor query.
-                - 'exact':          an inverse index is used to preselect instances, and these are used to get
-                                    the original data from the data set to answer a k_neighbor query. The
-                                    original data is stored in the memory.
+            fast : {True, False}, optional (default = False)
+                - True:     will only use an inverse index to compute a k_neighbor query.
+                - False:    an inverse index is used to preselect instances, and these are used to get
+                            the original data from the data set to answer a k_neighbor query. The
+                            original data is stored in the memory.
                 If not defined, default value given by constructor is used.
             Returns
             -------
@@ -149,12 +149,14 @@ class MinHashKNeighborsClassifier():
                 return_distance=True
             ind : array
                 Indices of the nearest points in the population matrix."""
-        if algorithm is not None:
-            self.algorithm = algorithm
-        return self.nearestNeighbors.kneighbors(X=X, n_neighbors=n_neighbors, return_distance=return_distance, algorithm=self.algorithm)
+        
+        if fast is not None:
+            self.fast = fast
+
+        return self.nearestNeighbors.kneighbors(X=X, n_neighbors=n_neighbors, return_distance=return_distance, fast=fast)
 
 
-    def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', algorithm=None):
+    def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', fast=None):
         """Computes the (weighted) graph of k-Neighbors for points in X
             Parameters
             ----------
@@ -169,20 +171,20 @@ class MinHashKNeighborsClassifier():
                 Type of returned matrix: 'connectivity' will return the
                 connectivity matrix with ones and zeros, in 'distance' the
                 edges are Euclidean distance between points.
-            algorithm : {'exact', 'approximate'}
-                - 'approximate':    will only use an inverse index to compute a k_neighbor query.
-                - 'exact':          an inverse index is used to preselect instances, and these are used to get
-                                    the original data from the data set to answer a k_neighbor query. The
-                                    original data is stored in the memory.
+            fast : {True, False}, optional (default = False)
+                - True:     will only use an inverse index to compute a k_neighbor query.
+                - False:    an inverse index is used to preselect instances, and these are used to get
+                            the original data from the data set to answer a k_neighbor query. The
+                            original data is stored in the memory.
                 If not defined, default value given by constructor is used.
             Returns
             -------
             A : sparse matrix in CSR format, shape = [n_samples, n_samples_fit]
                 n_samples_fit is the number of samples in the fitted data
                 A[i, j] is assigned the weight of edge that connects i to j."""
-        if algorithm is not None:
-            self.algorithm = algorithm
-        return self.nearestNeighbors.kneighbors_graph(X=X, n_neighbors=n_neighbors, mode=mode, algorithm=self.algorithm)
+        if fast is not None:
+            self.fast = fast
+        return self.nearestNeighbors.kneighbors_graph(X=X, n_neighbors=n_neighbors, mode=mode, fast=fast)
 
 
     def predict(self, X):
@@ -210,7 +212,7 @@ class MinHashKNeighborsClassifier():
             n_neighbors = self.n_neighbors
             if len(candidate_list[0]) < self.n_neighbors:
                 n_neighbors = len(candidate_list[0])
-            if self.algorithm == "exact":
+            if not self.fast:
                 nearest_neighbors = KNeighborsClassifier(n_neighbors=n_neighbors)
                 label_list = []
                 for j in candidate_list[0]:
@@ -256,7 +258,7 @@ class MinHashKNeighborsClassifier():
             n_neighbors = self.n_neighbors
             if len(candidate_list[0]) < self.n_neighbors:
                 n_neighbors = len(candidate_list[0])
-            if self.algorithm == "exact":
+            if not self.fast:
                 nearest_neighbors = KNeighborsClassifier(n_neighbors=n_neighbors)
                 label_list = []
                 for j in candidate_list[0]:
@@ -305,7 +307,7 @@ class MinHashKNeighborsClassifier():
             n_neighbors = self.n_neighbors
             if len(candidate_list[0]) < self.n_neighbors:
                 n_neighbors = len(candidate_list[0])
-            if self.algorithm == "exact":
+            if not self.fast:
                 nearest_neighbors = KNeighborsClassifier(n_neighbors=n_neighbors)
                 label_list = []
                 for j in candidate_list[0]:
