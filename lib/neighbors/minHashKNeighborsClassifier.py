@@ -25,11 +25,11 @@ class MinHashKNeighborsClassifier():
         ----------
         n_neighbors : int, optional (default = 5)
             Number of neighbors to use by default for :meth:`k_neighbors` queries.
-        algorithm : {'approximate', 'exact'}, optional (default = 'approximate')
-            - 'approximate':    will only use an inverse index to compute a k_neighbor query.
-            - 'exact':          an inverse index is used to preselect instances, and these are used to get
-                                the original data from the data set to answer a k_neighbor query. The
-                                original data is stored in the memory.
+        fast : {True, False}, optional (default = False)
+            - True:     will only use an inverse index to compute a k_neighbor query.
+            - False:    an inverse index is used to preselect instances, and these are used to get
+                        the original data from the data set to answer a k_neighbor query. The
+                        original data is stored in the memory.
         number_of_hash_functions : int, optional (default = '400')
             Number of hash functions to use for computing the inverse index.
         max_bin_size : int, optional (default = 50)
@@ -79,12 +79,15 @@ class MinHashKNeighborsClassifier():
         Bioinformatics, 28(12), i224-i232.
         http://bioinformatics.oxfordjournals.org/content/28/12/i224.full.pdf+html"""
 
-    def __init__(self, n_neighbors=5, algorithm="approximate", number_of_hash_functions=400,
+    def __init__(self, n_neighbors=5, fast=False, number_of_hash_functions=400,
                  max_bin_size = 50, minimal_blocks_in_common = 1, block_size = 4, excess_factor = 5, number_of_cores=None,
                  chunk_size=None):
         self.n_neighbors = n_neighbors
-        self.algorithm = algorithm
-        self.nearestNeighbors = MinHashNearestNeighbors(n_neighbors=n_neighbors, algorithm = algorithm,
+        if fast:
+            self.algorithm = "approximate"
+        else:
+            self.algorithm = "exact"
+        self.nearestNeighbors = MinHashNearestNeighbors(n_neighbors=n_neighbors, fast = fast,
                                                         number_of_hash_functions=number_of_hash_functions,
                                                         max_bin_size =max_bin_size,
                                                         minimal_blocks_in_common=minimal_blocks_in_common,

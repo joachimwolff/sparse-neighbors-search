@@ -35,11 +35,11 @@ class MinHashNearestNeighbors():
             Range of parameter space to use by default for :meth`radius_neighbors`
             queries.
 
-        algorithm : {'approximate', 'exact'}, optional (default = 'approximate')
-            - 'approximate':    will only use an inverse index to compute a k_neighbor query.
-            - 'exact':          an inverse index is used to preselect instances, and these are used to get
-                                the original data from the data set to answer a k_neighbor query. The
-                                original data is stored in the memory.
+        fast : {True, False}, optional (default = False)
+            - True:     will only use an inverse index to compute a k_neighbor query.
+            - False:    an inverse index is used to preselect instances, and these are used to get
+                        the original data from the data set to answer a k_neighbor query. The
+                        original data is stored in the memory.
         number_of_hash_functions : int, optional (default = '400')
             Number of hash functions to use for computing the inverse index.
         max_bin_size : int, optional (default = 50)
@@ -61,9 +61,7 @@ class MinHashNearestNeighbors():
             will have no effect. If it supports openmp and it is not defined, the maximum number of cores is used.
         chunk_size : int, optional
             Number of elements one cpu core should work on. If it is set to "0" the default behaviour of openmp is used;
-            e.g. for an 8-core cpu,  the chunk_size is set to 8. Every core will get 8 elements, process these and get
-            another 8 elements until everything is done. If you set chunk_size to "-1" all cores
-            are getting the same amount of data at once; e.g. 8-core cpu and 128 elements to process, every core will
+            all cores are getting the same amount of data at once; e.g. 8-core cpu and 128 elements to process, every core will
             get 16 elements at once.
         
         Notes
@@ -88,12 +86,15 @@ class MinHashNearestNeighbors():
         GraphClust: alignment-free structural clustering of local RNA secondary structures.
         Bioinformatics, 28(12), i224-i232.
         http://bioinformatics.oxfordjournals.org/content/28/12/i224.full.pdf+html"""
-    def __init__(self, n_neighbors=5, radius=1.0, algorithm="approximate", number_of_hash_functions=400,
+    def __init__(self, n_neighbors=5, radius=1.0, fast=False, number_of_hash_functions=400,
                  max_bin_size = 50, minimal_blocks_in_common = 1, block_size = 4, excess_factor = 5,
                  number_of_cores=None, chunk_size=None):
         self.n_neighbors = n_neighbors
         self.radius = radius
-        self.algorithm = algorithm
+        if fast:
+            self.algorithm = "approximate"
+        else:
+            self.algorithm = "exact"
         self._X = None
         self._y = None
         self._sizeOfX = None
@@ -299,7 +300,10 @@ class MinHashNearestNeighbors():
                             computing_function="radius_neighbors")
 
     def _neighborhood(self, X=None, neighborhood_measure=None, return_distance=None, computing_function=None):
-        """Finds the K-neighbors of a point."""
+        """Controlls the search of the nearest neighbors. It depends on the the choosen algorithm if the
+            approximate or exact version is running and on the parameter \"computing_function\" if K-nearest_neighbor_algorithm
+            or the radius_neighbors_algorithm is executed.
+            """
         # define non local variables and functions as locals to increase performance
         inverseIndex = self._inverseIndex
         sizeOfX = self._sizeOfX
@@ -358,6 +362,10 @@ class MinHashNearestNeighbors():
     def _build_reduced_neighborhood(self, X=None, computing_function=None,
                                     neighborhood_measure=None, signatures = None,
                                     return_distance=None):
+        """This function is computing the \"exact\"-version of the algorithm.
+            It takes all possible candidates for the neighbor search out of the
+            inverse index, takes the orginal data for these instances and is putting
+            this reduced dataset into the the sklearn implementation."""
         # define non local variables and functions as locals to increase performance
         _X = self._X
         inverseIndex = self._inverseIndex
@@ -393,6 +401,8 @@ class MinHashNearestNeighbors():
 
     def _neighborhood_graph(self, X=None, neighborhood_measure=None, return_distance=None,
                             computing_function=None):
+        """This function calls kneighbors respectively radius_neighbors and creates 
+            out of the returned data a graph."""
         # choose if kneighbors or the neighbors in a given radius should be computed
         if computing_function == "kneighbors":
             distances, neighborhood = self.kneighbors(X, neighborhood_measure, True)
@@ -418,52 +428,6 @@ class MinHashNearestNeighbors():
         if return_distance:
             data = [1] * len(row)
         return csr_matrix((data, (row, col)))
-
-    def _computeNeighborhood(self, X, neighborhood_size, computing_function, neighborhood_measure, start_value):
-
-        # define non-local variables as local ones to increase performance
-        inverseIndex = self._inverseIndex
-        sizeOfX = self._sizeOfX
-        build_reduced_neighborhood = self._build_reduced_neighborhood
-        append = np.append
-        asarray = np.asarray
-        number_of_instances = X.shape[0]
-        print "Length of data: ", number_of_instances
-        distance_matrix = [[]] * number_of_instances
-        kneighbors_matrix = [[]] * number_of_instances
-        for i in xrange(number_of_instances):
-            # compute the signature and get the nearest neighbors from the inverse index.
-            signature = inverseIndex.signature(X[i])
-            if self.algorithm == "approximate":
-                distances, neighbors = inverseIndex.neighbors(signature, neighborhood_size)
-            else:
-                distances, neighbors = build_reduced_neighborhood(X=X[i], computing_function=computing_function,
-                                                             neighborhood_measure=neighborhood_measure,
-                                                             signature=signature, return_distance = True,
-                                                             index=i)
-            if len(neighbors) == 0:
-                    logger.warning("No matches in inverse index!")
-            if computing_function == "radius_neighbors":
-                for j in xrange(len(distances[0])):
-                    if not distances[0][j] <= radius:
-                        neighborhood_size = j
-                        break
-            else:
-                # if the number of neighbors avaible is less then the defined number of neighbors
-                # that should be returned, add for the indices "-1"'s and for the distance 0's
-                appendSize = neighborhood_size - len(neighbors[0])
-                if appendSize > 0:
-                    valueNeighbors = [-1] * appendSize
-                    valueDistances = [0] * appendSize
-                    neighbors[0] = append(neighbors[0], valueNeighbors)
-                    distances[0] = append(distances[0], valueDistances)
-
-        # neighbors[0][start_value:neighborhood_size], distances[0][start_value:neighborhood_size]
-        # cut the neighborhood [1:neighbors+1]  or [0:n_neigbors] 
-        # depends on if X == None or not
-        kneighbors_matrix[i] = neighbors[0][start_value:neighborhood_size]
-        distance_matrix[i] = distances[0][start_value:neighborhood_size]
-        return distance_matrix, kneighbors_matrix
-        # return distance_matrix
+        
     def set_params(**params):
         pass
