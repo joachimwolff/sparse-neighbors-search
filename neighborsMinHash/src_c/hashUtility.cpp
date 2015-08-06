@@ -22,7 +22,7 @@
 #include <iterator>
 const int MAX_VALUE = 2147483647;
 const double A = sqrt(2) - 1;
-
+  
 
 // Return an hash value for a given key in defined range aModulo
  int _intHashSimple(int key, int aModulo) {

@@ -86,7 +86,7 @@ class MinHashKNeighborsClassifier():
         if fast is not None:
             self.fast = fast
         else:
-            self.algorithm = False
+            self.fast = False
         self.nearestNeighbors = MinHashNearestNeighbors(n_neighbors=n_neighbors, fast = fast,
                                                         number_of_hash_functions=number_of_hash_functions,
                                                         max_bin_size =max_bin_size,
@@ -202,34 +202,32 @@ class MinHashKNeighborsClassifier():
         X = check_array(X, accept_sparse='csr')
         number_of_instances = X.shape[0]
         n_neighbors = self.n_neighbors
+        signatures = inverseIndex.signature(X)
+        neighbors = []
         for i in xrange(number_of_instances):
-            # compute signature for one instance
-            signature = self.nearestNeighbors._inverseIndex.signature(X[i])
-            # get candidates from inverse index
-            distance, candidate_list = self.nearestNeighbors._inverseIndex.neighbors(signature, self.n_neighbors)
-            # compute the prediction with the KNeighborsClassifier from sklearn
-            # use original data in case of "exact" otherwise use signatures.
-            n_neighbors = self.n_neighbors
-            if len(candidate_list[0]) < self.n_neighbors:
-                n_neighbors = len(candidate_list[0])
-            if not self.fast:
-                nearest_neighbors = KNeighborsClassifier(n_neighbors=n_neighbors)
-                label_list = []
-                for j in candidate_list[0]:
-                    label_list.append(self.nearestNeighbors._y[j])
-                nearest_neighbors.fit(
-                    self.nearestNeighbors._X[[candidate_list[0]]], label_list)
-                predicted_class_list.extend(nearest_neighbors.predict(X[i]))
-            else:
-                nearest_neighbors = KNeighborsClassifier(n_neighbors=n_neighbors)
-                label_list = []
-                for j in candidate_list[0]:
-                    label_list.append(self.nearestNeighbors._y[j])
-                nearest_neighbors.fit(
-                    self.nearestNeighbors._inverseIndex.get_signature_list(self.nearestNeighbors._X[[candidate_list[0]]]),
-                    label_list)
-                predicted_class_list.extend(nearest_neighbors.predict(signature))
-        return predicted_class_list
+                _, neighbor = inverseIndex.neighbors(signatures[i], neighborhood_size)
+                neighbors.extend(neighbor[0])
+        real_index__candidate_list_index = {}
+        for i in xrange(len(candidate_list)):
+            real_index__candidate_list_index[neighbors[i]] = i
+        nearest_neighborsSK = KNeighborsClassifier(n_neighbors=n_neighbors)
+
+        if self.fast:
+            nearest_neighborsSK.fit(
+                self.nearestNeighbors._inverseIndex.get_signature_list(self.nearestNeighbors._X[neighbors]),
+                self.nearestNeighbors._y[neighbors])
+            nearest_neighborsSK.predict(signature)
+        else:
+            nearest_neighborsSK.fit(
+                self.nearestNeighbors._X[neighbors], self.nearestNeighbors._y[neighbors])
+            nearest_neighborsSK.predict(X)
+
+        # replace indices to the indicies of the orginal dataset
+        for i in xrange(len(neighbors_indices)):
+            for j in xrange(len(neighbors_indices[i])):
+                neighbors[i][j] = real_index__candidate_list_index[neighbors[i][j]]
+        return distances.tolist(),  neighbors.tolist()
+
 
     def predict_proba(self, X):
         """Return probability estimates for the test data X.

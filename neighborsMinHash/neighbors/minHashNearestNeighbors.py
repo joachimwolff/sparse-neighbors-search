@@ -123,11 +123,10 @@ class MinHashNearestNeighbors():
                 Training data. If array or matrix, shape = [n_samples, n_features]
             y : list, optional (default = None)
                 List of classes for the given input of X. Size have to be n_samples."""
-        X_csr = csr_matrix(X)
-        self._X = X_csr
-        self._sizeOfX = X_csr.shape[0]
-        self._shape_of_X = X_csr.shape[1]
-        self._y = y
+        self._X = csr_matrix(X)
+        self._sizeOfX = self._X.shape[0]
+        self._shape_of_X = self._X.shape[1]
+        self._y = csr_matrix(y)
         self._inverseIndex.fit(X_csr)
 
     def partial_fit(self, X, y=None):

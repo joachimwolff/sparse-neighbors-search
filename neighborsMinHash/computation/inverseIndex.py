@@ -209,7 +209,7 @@ class InverseIndex():
 
     def get_signature_list(self, instances):
         """Returns all signatures for the given sequences."""
-        siganture_list = [[]] * instances.shape[0]
-        for i in xrange(instances.shape[0]):
-            siganture_list[i] = self.signature(instances[i])
-        return siganture_list
+        # siganture_list = [[]] * instances.shape[0]
+        # for i in xrange(instances.shape[0]):
+        #     siganture_list[i] = self.signature(instances[i])
+        return self.signature(instances)
