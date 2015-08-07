@@ -36,16 +36,15 @@ On a Linux system openmp is default. If you don't want to use it set:
 	python setup.py install --user --noopenmp
 
 Instead of cloning the repository via git clone and than running the installation, you can do it in one step with pip:
+	
 	pip install git+https://github.com/joachimwolff/minHashNearestNeighbors.git
 
 Uninstall
 ---------
-To uninstall delete the following in your python installation.
-	computation
-	hashUtility-0.1.egg-info 
-	_hashUtility.so
-	neighbors
-	neighborsMinHash-0.1.egg-info
+To delete neighborsMinHash run the following command:
+
+	pip uninstall neighborsMinHash
+
 The version number can differ.
 
 The path of the packages if you used the --user flag is in Ubuntu:
