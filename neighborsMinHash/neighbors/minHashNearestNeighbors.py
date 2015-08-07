@@ -16,8 +16,8 @@ import multiprocessing as mp
 from math import ceil
 from sklearn.neighbors import NearestNeighbors
 from scipy.sparse import csr_matrix
-
-from computation import InverseIndex
+from sklearn.utils import check_X_y
+from ..computation import InverseIndex
 # from . import apply_async
 
 
@@ -123,11 +123,14 @@ class MinHashNearestNeighbors():
                 Training data. If array or matrix, shape = [n_samples, n_features]
             y : list, optional (default = None)
                 List of classes for the given input of X. Size have to be n_samples."""
+        self._y_is_csr = True
+        self._X, self._y = check_X_y(X, y, "csr", multi_output=True)
+        if self._y.ndim == 1 or self._y.shape[1] == 1:
+            self._y_is_csr = False
         self._X = csr_matrix(X)
         self._sizeOfX = self._X.shape[0]
         self._shape_of_X = self._X.shape[1]
-        self._y = csr_matrix(y)
-        self._inverseIndex.fit(X_csr)
+        self._inverseIndex.fit(self._X)
 
     def partial_fit(self, X, y=None):
         """Extend the model by X as additional training data.
@@ -139,7 +142,8 @@ class MinHashNearestNeighbors():
             y : list, optional (default = None)
                 List of classes for the given input of X. Size have to be n_samples."""
         self._inverseIndex.partial_fit(X)
-        # self._y
+        if y is not None:
+            self._y
     def get_params(self,deep=None):
         """Get parameters for this estimator."""
         pass
