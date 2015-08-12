@@ -12,7 +12,7 @@ __author__ = 'joachimwolff'
 
 from scipy.sparse import csr_matrix
 from scipy.sparse import coo_matrix
-import neighbors as kneighbors
+#import neighbors as kneighbors
 import random
 
 from scipy.sparse import dok_matrix
@@ -92,7 +92,7 @@ def create_dataset(seed=None,
     for i in range(0, size_of_noise):
         y.append(random_value_generator(0, number_of_centroids))
 
-    return dataset, y
+    return csr_matrix(dataset), y
 
 
 def create_dataset_fixed_nonzero(seed=None,

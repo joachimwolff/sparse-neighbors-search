@@ -50,6 +50,7 @@ setup (name = 'neighborsMinHash',
         packages=['neighborsMinHash',
                     'neighborsMinHash.neighbors',
                     'neighborsMinHash.computation',
+		    'neighborsMinHash.util',
                 ],
         platforms = "Linux, Mac OS X",
         version = '0.1.dev'
