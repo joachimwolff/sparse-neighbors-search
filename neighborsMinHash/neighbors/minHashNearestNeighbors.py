@@ -123,11 +123,14 @@ class MinHashNearestNeighbors():
                 Training data. If array or matrix, shape = [n_samples, n_features]
             y : list, optional (default = None)
                 List of classes for the given input of X. Size have to be n_samples."""
-        self._y_is_csr = True
-        self._X, self._y = check_X_y(X, y, "csr", multi_output=True)
-        if self._y.ndim == 1 or self._y.shape[1] == 1:
-            self._y_is_csr = False
-        self._X = csr_matrix(X)
+	if y is not None:
+		self._y_is_csr = True
+        	self._X, self._y = check_X_y(X, y, "csr", multi_output=True)
+        	if self._y.ndim == 1 or self._y.shape[1] == 1:
+            		self._y_is_csr = False
+	else:
+        	self._X = csr_matrix(X)
+		self._y_is_csr = False
         self._sizeOfX = self._X.shape[0]
         self._shape_of_X = self._X.shape[1]
         self._inverseIndex.fit(self._X)
@@ -143,7 +146,10 @@ class MinHashNearestNeighbors():
                 List of classes for the given input of X. Size have to be n_samples."""
         self._inverseIndex.partial_fit(X)
         if y is not None:
-            self._y
+		if self._y_is_csr:
+			self._y
+            	else:
+			self._y.extend(y)
     def get_params(self,deep=None):
         """Get parameters for this estimator."""
         pass
@@ -366,17 +372,16 @@ class MinHashNearestNeighbors():
         inverseIndex = self._inverseIndex
 
         # compute neighbors via inverse index
-        neighbors_indices = []
         candidate_list = []
         for i in xrange(len(signatures)):
             distance, neighbor = inverseIndex.neighbors(signatures[i], neighborhood_measure)
             candidate_list.extend(neighbor[0])
+
         candidate_set = set(candidate_list)
         candidate_list = list(candidate_set)
         real_index__candidate_list_index = {}
         for i in xrange(len(candidate_list)):
-            real_index__candidate_list_index[candidate_list[i]] = i
-
+            real_index__candidate_list_index[i] = candidate_list[i]
         if len(candidate_list) < neighborhood_measure:
             neighborhood_measure = len(candidate_list)
         # use sklearns implementation of NearestNeighbors to compute the neighbors
@@ -389,8 +394,8 @@ class MinHashNearestNeighbors():
         else:
             distances, neighbors = nearest_neighbors.radius_neighbors(X, neighborhood_measure, return_distance)
         # replace indices to the indicies of the orginal dataset
-        for i in xrange(len(neighbors_indices)):
-            for j in xrange(len(neighbors_indices[i])):
+        for i in xrange(len(neighbors)):
+            for j in xrange(len(neighbors[i])):
                 neighbors[i][j] = real_index__candidate_list_index[neighbors[i][j]]
         return distances.tolist(),  neighbors.tolist()
 
