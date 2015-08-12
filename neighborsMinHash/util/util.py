@@ -20,6 +20,23 @@ from scipy.sparse import rand
 from scipy.sparse import vstack
 
 def accuracy(neighbors_exact, neighbors_approx, neighbors_sklearn):
+    """Computes the accuracy for the exact and approximate version of the minHashNearestNeighbors algorithm.
+
+    Parameters
+    ----------
+    neighbors_exact : array[[neighbors]]
+    neighbors_approx : array[[neighbors]]
+    neighbors_sklearn : array[[neighbors]]
+
+    Returns
+    -------
+    exact_accuracy : float
+        The accuracy between the exact version of the algorithm and the nearestNeighbors implementation of sklearn.
+    approximate_accuracy : float
+        The accuracy between the approximate version of the algorithm and the nearestNeighbors implementation of sklearn.
+    approx_exact : float
+        The accuracy between the approximate and the exact version of the algorithm.
+    """
     matches = 0
     all_elements = 0
     for i in range(len(neighbors_exact)):
@@ -59,6 +76,33 @@ def create_dataset(seed=None,
                    density=None,
                    fraction_of_density=None
                    ):
+    """Create an artificial sparse dataset
+    Prameters
+    ---------
+    seed : int
+        Random seed
+    number_of_centroids : int
+        How many centroids the created dataset should have. 
+    number_of_instances : int
+        How many instances the whole dataset, noise included, should have. 
+        It should hold: number_of_centroids * size_of_dataset <= number_of_instances. The difference between 
+        number_of_centroids * size_of_dataset and number_of_instances is filled up with noise.
+    number_of_features : int
+        How many features each instance should have.
+    size_of_dataset : int
+        How many instances each cluster defined by a centroid should have.
+    density : float 
+        The sparsity of the dataset
+    fraction_of_density : float
+        How much noise each cluster should have inside.
+
+     Returns
+    -------
+
+    X : sparse csr_matrix [instances, features]
+    y : array with classes [classes]
+
+    """
     dataset_neighborhood_list = []
     number_of_swapping_elements = int(number_of_features * density * fraction_of_density)
     y = []
@@ -102,7 +146,31 @@ def create_dataset_fixed_nonzero(seed=None,
                    size_of_dataset=None,
                    non_zero_elements=None,
                    fraction_of_density=None):
-    
+    """Create an artificial sparse dataset with a fixed number of nonzero elements.
+
+    Prameters
+    ---------
+    seed : int
+        Random seed
+    number_of_centroids : int
+        How many centroids the created dataset should have. 
+    number_of_instances : int
+        How many instances the whole dataset, noise included, should have. 
+        It should hold: number_of_centroids * size_of_dataset <= number_of_instances. The difference between 
+        number_of_centroids * size_of_dataset and number_of_instances is filled up with noise.
+    number_of_features : int
+        How many features each instance should have.
+    size_of_dataset : int
+        How many instances each cluster defined by a centroid should have.
+    fraction_of_density : float
+        How much noise each cluster should have inside.
+
+    Returns
+    -------
+
+    X : sparse csr_matrix [instances, features]
+    y : array with classes [classes]
+    """
     if (non_zero_elements > number_of_features):
         print "More non-zero elements than features!"
         return
