@@ -144,10 +144,10 @@ class MinHashKNeighborsClassifier():
                 If not defined, default value given by constructor is used.
             Returns
             -------
-            dist : array
+            dist : array, shape = [n_samples, distance]
                 Array representing the lengths to points, only present if
                 return_distance=True
-            ind : array
+            ind : array, shape = [n_samples, neighbors]
                 Indices of the nearest points in the population matrix."""
         
         if fast is not None:

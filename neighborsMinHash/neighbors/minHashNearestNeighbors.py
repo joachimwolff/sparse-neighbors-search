@@ -176,10 +176,10 @@ class MinHashNearestNeighbors():
 
             Returns
             -------
-            dist : array
+            dist : array, shape = [n_samples, distances]
                 Array representing the lengths to points, only present if
                 return_distance=True
-            ind : array
+            ind : array, shape = [n_samples, neighbors]
                 Indices of the nearest points in the population matrix."""
         if fast is not None:
             self.fast = fast
@@ -249,7 +249,7 @@ class MinHashNearestNeighbors():
                                 If not passed, default value is what was passed to the constructor.
         Returns
         -------
-        dist : array, shape (n_samples,) of arrays
+        dist : array, shape (n_samples,) of arrays 
             Array representing the distances to each point, only present if
             return_distance=True. The distance values are computed according
             to the ``metric`` constructor parameter.
