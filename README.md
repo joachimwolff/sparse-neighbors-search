@@ -5,7 +5,7 @@ inside a sparse data structure.
 
 To use it:
 
-    from neighbors import MinHashNearestNeighbors
+    from neighborsMinHash import MinHashNearestNeighbors
     minHash = MinHashNearestNeighbors()
     minHash.fit(X)
     minHash.kneighbors(return_distance=False)
