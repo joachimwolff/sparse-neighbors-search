@@ -51,6 +51,7 @@ setup (name = 'neighborsMinHash',
                     'neighborsMinHash.neighbors',
                     'neighborsMinHash.computation',
 		    'neighborsMinHash.util',
+            'neighborsMinHash.clustering',
                 ],
         platforms = "Linux, Mac OS X",
         version = '0.1.dev'

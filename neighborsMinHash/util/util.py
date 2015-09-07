@@ -14,10 +14,19 @@ from scipy.sparse import csr_matrix
 from scipy.sparse import coo_matrix
 #import neighbors as kneighbors
 import random
-
+import time
+import numpy as np
 from scipy.sparse import dok_matrix
 from scipy.sparse import rand
 from scipy.sparse import vstack
+
+from sklearn.neighbors import NearestNeighbors
+from sklearn.neighbors import LSHForest
+import sklearn
+
+from ..neighbors import MinHashNearestNeighbors
+import pyflann
+import annoy
 
 def accuracy(neighbors_exact, neighbors_approx, neighbors_sklearn):
     """Computes the accuracy for the exact and approximate version of the minHashNearestNeighbors algorithm.
@@ -210,3 +219,183 @@ def create_dataset_fixed_nonzero(seed=None,
         y.append(random_value_generator(0, number_of_centroids))
 
     return csr_matrix(dataset), y
+
+def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 5, size_of_query = 50, number_of_hashfunctions=400):
+    """Function to measure and plot the performance for the given input data.
+        For the query times two methods are measured:
+            - All queries at once
+            - One query after another
+        For example:
+            - For 50 queries kneighbors is called once with 50 instances to get all neighbors of these instances
+            - For 50 queries kneighbors is called 50 times with only one instance."""
+    time_fit_sklearn = []
+    time_fit_minHash = []
+    time_fit_lshf = []
+    time_fit_annoy = []
+    time_fit_flann = []
+
+    time_query_time_50_1_sklearn = []
+    time_query_time_50_1_minHash_exact = []
+    time_query_time_50_1_minHash_approx = []
+    time_query_time_50_1_lshf = []
+    time_query_time_50_1_annoy = []
+    time_query_time_50_1_flann = []
+
+    time_query_time_1_50_sklearn = []
+    time_query_time_1_50_minHash_exact = []
+    time_query_time_1_50_minHash_approx = []
+    time_query_time_1_50_lshf = []
+    time_query_time_1_50_annoy = []
+    time_query_time_1_50_flann = []
+
+    accuracy_1_50_lshf = []
+    accuracy_1_50_minHash_exact = []
+    accuracy_1_50_minHash_aprox = []
+    accuracy_1_50_annoy = []
+    accuracy_1_50_flann = []
+
+    centroids = 8
+    size_of_datasets = 7
+
+    for dataset_ in dataset:
+
+        nearest_neighbor_sklearn = NearestNeighbors(n_neighbors = n_neighbors_sklearn)
+        nearest_neighbor_minHash = MinHashNearestNeighbors(n_neighbors = n_neighbors_minHash, number_of_hash_functions=number_of_hashfunctions)
+        nearest_neighbor_lshf = LSHForest(n_estimators=20, n_candidates=200, n_neighbors=n_neighbors_minHash)
+        time_start = time.time()
+        nearest_neighbor_sklearn.fit(dataset_)
+        time_end = time.time()
+        time_fit_sklearn.append(time_end - time_start)
+
+        time_start = time.time()
+        nearest_neighbor_minHash.fit(dataset_)
+        time_end = time.time()
+        time_fit_minHash.append(time_end - time_start)
+
+        time_start = time.time()
+        nearest_neighbor_lshf.fit(dataset_)
+        time_end = time.time()
+        time_fit_lshf.append(time_end - time_start)
+
+        time_start = time.time()
+        annoy_ = annoy.AnnoyIndex(f=dataset_.shape[1])
+        for i, x in enumerate(dataset_):
+            annoy_.add_item(i, x.toarray()[0])
+        annoy_.build(100) # ntrees = 100
+        time_end = time.time()
+        time_fit_annoy.append(time_end - time_start)
+
+        time_start = time.time()
+        flann_ = pyflann.FLANN(target_precision=0.95, algorithm='autotuned', log_level='info')
+        X = sklearn.preprocessing.normalize(dataset_, axis=1, norm='l2')
+        flann_.build_index(dataset_[0])
+        time_end = time.time()
+        time_fit_flann.append(time_end - time_start)
+
+
+        if size_of_query < dataset_.shape[0]:
+            query_ids = []
+            for i in range(size_of_query):
+                query_ids.append(random.randint(0, centroids * size_of_datasets))
+            query = dataset_[query_ids]
+        else:
+            query = dataset_
+
+        time_start = time.time()
+        n_neighbors_sklearn_1_50 = nearest_neighbor_sklearn.kneighbors(query, return_distance=False)
+        time_end = time.time()
+        time_query_time_1_50_sklearn.append(time_end - time_start)
+
+        time_start = time.time()
+        n_neighbors_minHash_exact_1_50 = nearest_neighbor_minHash.kneighbors(query, return_distance=False)
+        time_end = time.time()
+        time_query_time_1_50_minHash_exact.append(time_end - time_start)
+
+        time_start = time.time()
+        n_neighbors_minHash_approx_1_50 = nearest_neighbor_minHash.kneighbors(query, fast=True, return_distance=False)
+        time_end = time.time()
+        time_query_time_1_50_minHash_approx.append(time_end - time_start)
+
+        time_start = time.time()
+        n_neighbors_lshf_1_50 = nearest_neighbor_lshf.kneighbors(query,return_distance=False)
+        time_end = time.time()
+        time_query_time_1_50_lshf.append(time_end - time_start)
+
+
+        time_start = time.time()
+        n_neighbors_annoy_1_50 = annoy_.get_nns_by_vector(query.toarray()[0], None, 100)
+        time_end = time.time()
+        time_query_time_1_50_annoy.append(time_end - time_start)
+
+
+        time_start = time.time()
+        v = sklearn.preprocessing.normalize(queries, axis=1, norm='l2')[0]
+        n_neighbors_flann_1_50 = flann_.nn_index(v, None)[0][0]
+        time_end = time.time()
+        time_query_time_1_50_flann.append(time_end - time_start)
+
+
+        accuracy_1_50_lshf.append(np.in1d(n_neighbors_lshf_1_50, n_neighbors_sklearn_1_50).mean())
+        accuracy_1_50_minHash_exact.append(np.in1d(n_neighbors_minHash_exact_1_50, n_neighbors_sklearn_1_50).mean())
+        accuracy_1_50_minHash_aprox.append(np.in1d(n_neighbors_minHash_approx_1_50, n_neighbors_sklearn_1_50).mean())
+        accuracy_1_50_annoy.append(np.in1d(n_neighbors_annoy_1_50, n_neighbors_annoy_1_50).mean())
+        accuracy_1_50_flann.append(np.in1d(n_neighbors_flann_1_50, n_neighbors_flann_1_50).mean())
+
+        time_query_time_50_1_sklearn_loc = []
+        time_query_time_50_1_sklearn_loc = []
+        for i in range(size_of_query):
+            time_start = time.time()
+            nearest_neighbor_sklearn.kneighbors(query[i],return_distance=False)
+            time_end = time.time()
+            time_query_time_50_1_sklearn_loc.append(time_end - time_start)
+        time_query_time_50_1_sklearn.append(np.sum(time_query_time_50_1_sklearn_loc))
+        time_query_time_50_1_minHash_exact_loc = []
+        for i in range(size_of_query):
+            time_start = time.time()
+            nearest_neighbor_minHash.kneighbors(query[i], return_distance=False)
+            time_end = time.time()
+            time_query_time_50_1_minHash_exact_loc.append(time_end - time_start)
+        time_query_time_50_1_minHash_exact.append(np.sum(time_query_time_50_1_minHash_exact_loc))
+        time_query_time_50_1_minHash_approx_loc = []
+        for i in range(size_of_query):
+            time_start = time.time()
+            nearest_neighbor_minHash.kneighbors(query[i], fast=True,return_distance=False)
+            time_end = time.time()
+            time_query_time_50_1_minHash_approx_loc.append(time_end - time_start)
+        time_query_time_50_1_minHash_approx.append(np.sum(time_query_time_50_1_minHash_approx_loc))
+        time_query_time_50_1_lshf_loc = []
+        for i in range(size_of_query):
+            time_start = time.time()
+            nearest_neighbor_lshf.kneighbors(query[i], return_distance=False)
+            time_end = time.time()
+            time_query_time_50_1_lshf_loc.append(time_end - time_start)
+        time_query_time_50_1_lshf.append(np.sum(time_query_time_50_1_lshf_loc))
+
+        time_query_time_50_1_annoy_loc = []
+        for i in range(size_of_query):
+            time_start = time.time()
+            nearest_neighbor_annoy = annoy_.get_nns_by_vector(query[i].toarray(), None, 100)
+            time_end = time.time()
+            time_query_time_50_1_annoy_loc.append(time_end - time_start)
+        time_query_time_50_1_annoy.append(np.sum(time_query_time_50_1_annoy_loc))
+
+        time_query_time_50_1_flann_loc = []
+
+        for i in range(size_of_query):
+            time_start = time.time()
+            #v = sklearn.preprocessing.normalize(query[i], axis=1, norm='l2')[0]
+            #nearest_neighbor_flann = flann_.nn_index(v, None)[0][0]
+
+            time_end = time.time()
+            time_query_time_50_1_flann_loc.append(time_end - time_start)
+        time_query_time_50_1_flann.append(np.sum(time_query_time_50_1_flann_loc))
+
+
+    return  (time_fit_sklearn, time_fit_minHash, time_fit_lshf, time_fit_annoy, time_fit_flann, time_query_time_50_1_sklearn,
+            time_query_time_50_1_minHash_exact, time_query_time_50_1_minHash_approx, 
+            time_query_time_50_1_lshf, time_query_time_50_1_annoy,time_query_time_50_1_flann,
+            time_query_time_1_50_sklearn,
+            time_query_time_1_50_minHash_exact, time_query_time_1_50_minHash_approx,
+            time_query_time_1_50_lshf, time_query_time_1_50_annoy,time_query_time_1_50_flann,
+            accuracy_1_50_lshf,
+            accuracy_1_50_minHash_exact, accuracy_1_50_minHash_aprox, accuracy_1_50_annoy, accuracy_1_50_flann)
