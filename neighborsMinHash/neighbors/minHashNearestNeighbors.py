@@ -16,6 +16,7 @@ import multiprocessing as mp
 from math import ceil
 from sklearn.neighbors import NearestNeighbors
 from scipy.sparse import csr_matrix
+from scipy.sparse import vstack
 from sklearn.utils import check_X_y
 from ..computation import InverseIndex
 # from . import apply_async
@@ -92,9 +93,10 @@ class MinHashNearestNeighbors():
         self.n_neighbors = n_neighbors
         self.radius = radius
         if fast is not None:
-            self.fast = fast
+            self._fast = fast
         else:
-            self.fast = False
+            self._fast = False
+        self.fastComputation = self._fast
         self._X = None
         self._y = None
         self._sizeOfX = None
@@ -123,14 +125,14 @@ class MinHashNearestNeighbors():
                 Training data. If array or matrix, shape = [n_samples, n_features]
             y : list, optional (default = None)
                 List of classes for the given input of X. Size have to be n_samples."""
-	if y is not None:
-		self._y_is_csr = True
-        	self._X, self._y = check_X_y(X, y, "csr", multi_output=True)
-        	if self._y.ndim == 1 or self._y.shape[1] == 1:
-            		self._y_is_csr = False
-	else:
-        	self._X = csr_matrix(X)
-		self._y_is_csr = False
+        if y is not None:
+            self._y_is_csr = True
+            self._X, self._y = check_X_y(X, y, "csr", multi_output=True)
+            if self._y.ndim == 1 or self._y.shape[1] == 1:
+                self._y_is_csr = False
+        else:
+            self._X = csr_matrix(X)
+            self._y_is_csr = False
         self._sizeOfX = self._X.shape[0]
         self._shape_of_X = self._X.shape[1]
         self._inverseIndex.fit(self._X)
@@ -146,10 +148,10 @@ class MinHashNearestNeighbors():
                 List of classes for the given input of X. Size have to be n_samples."""
         self._inverseIndex.partial_fit(X)
         if y is not None:
-		if self._y_is_csr:
-			self._y
-            	else:
-			self._y.extend(y)
+            if self._y_is_csr:
+                self._y = vstack([self._y, y])
+            else:
+                self._y = np.concatenate((self._y, y), axis=0)
     def get_params(self,deep=None):
         """Get parameters for this estimator."""
         pass
@@ -182,7 +184,9 @@ class MinHashNearestNeighbors():
             ind : array, shape = [n_samples, neighbors]
                 Indices of the nearest points in the population matrix."""
         if fast is not None:
-            self.fast = fast
+            self.fastComputation = fast
+        else:
+            self.fastComputation = self._fast
         if n_neighbors == None:
             n_neighbors = self.n_neighbors
         return self._neighborhood(X=X, neighborhood_measure=n_neighbors,
@@ -217,13 +221,15 @@ class MinHashNearestNeighbors():
             """
         if fast is not None:
             self.fast = fast
+        else:
+            self.fastComputation = self._fast
         if n_neighbors == None:
             n_neighbors = self.n_neighbors
-            return_distance = True if mode == "connectivity" else False
+        return_distance = True if mode == "connectivity" else False
         return self._neighborhood_graph(X=X, neighborhood_measure=n_neighbors, return_distance=return_distance,
                         computing_function="kneighbors")
 
-    def radius_neighbors(self, X=None, radius=None, return_distance=None, algorithm=None):
+    def radius_neighbors(self, X=None, radius=None, return_distance=None, fast=None):
         """Finds the neighbors within a given radius of a point or points.
         Return the indices and distances of each point from the dataset
         lying in a ball with size ``radius`` around the points of the query
@@ -257,8 +263,10 @@ class MinHashNearestNeighbors():
             An array of arrays of indices of the approximate nearest points
             from the population matrix that lie within a ball of size
             ``radius`` around the query points."""
-        if algorithm is not None:
-            self.algorithm = algorithm
+        if fast is not None:
+            self.fast = fast
+        else:
+            self.fastComputation = self._fast
         if radius == None:
             radius = self.radius
         return self._neighborhood(X=X, neighborhood_measure=radius,
@@ -294,6 +302,8 @@ class MinHashNearestNeighbors():
         A[i, j] is assigned the weight of edge that connects i to j."""
         if fast is not None:
             self.fast = fast
+        else:
+            self.fastComputation = self._fast
         if radius == None:
             radius = self.radius
         return_distance = True if mode == "connectivity" else False
@@ -323,19 +333,21 @@ class MinHashNearestNeighbors():
         kneighbors_matrix = [[]] * number_of_instances
         neighborhood_size = neighborhood_measure + start_value if computing_function == "kneighbors" else sizeOfX
         radius = neighborhood_measure
-        signatures = inverseIndex.signature(X)
 
-        distances = []
-        neighbors = []
-        if self.fast:
-            for i in xrange(number_of_instances):
-                distance, neighbor = inverseIndex.neighbors(signatures[i], neighborhood_size)
-                distances.append(distance[0])
-                neighbors.append(neighbor[0])
+        if self.fastComputation:
+            # for i in xrange(number_of_instances):
+            # print "Compute neighbothood!\n"
+            distances, neighbors = inverseIndex.neighbors(X, neighborhood_size)
+          
+            # print neighbors
+            # print "Compute neighbothood!.... SUCCESS!!!!ELF\n"
+
+            # distances.append(distance[0])
+            # neighbors.append(neighbor[0])
         else:
             distances, neighbors = build_reduced_neighborhood(X=X, computing_function=computing_function,
                                                              neighborhood_measure=neighborhood_size,
-                                                             signatures=signatures, return_distance = True)
+                                                             return_distance = True)
         for i in xrange(number_of_instances):
             if len(neighbors) == 0:
                     logger.warning("No matches in inverse index!")
@@ -361,7 +373,7 @@ class MinHashNearestNeighbors():
             return asarray(kneighbors_matrix)
 
     def _build_reduced_neighborhood(self, X=None, computing_function=None,
-                                    neighborhood_measure=None, signatures = None,
+                                    neighborhood_measure=None,
                                     return_distance=None):
         """This function is computing the \"exact\"-version of the algorithm.
             It takes all possible candidates for the neighbor search out of the
@@ -373,10 +385,10 @@ class MinHashNearestNeighbors():
 
         # compute neighbors via inverse index
         candidate_list = []
-        for i in xrange(len(signatures)):
-            distance, neighbor = inverseIndex.neighbors(signatures[i], neighborhood_measure)
-            candidate_list.extend(neighbor[0])
-
+        # for i in xrange(len(signatures)):
+        distances, neighbors = inverseIndex.neighbors(X, neighborhood_measure)
+        # print neighbors
+        candidate_list = [item for sublist in neighbors for item in sublist]
         candidate_set = set(candidate_list)
         candidate_list = list(candidate_set)
         real_index__candidate_list_index = {}
@@ -388,12 +400,40 @@ class MinHashNearestNeighbors():
         # use only the elements of the candidate list and not the whole dataset
         nearest_neighbors = NearestNeighbors()
         nearest_neighbors.fit(_X[candidate_list])
+
+        # distances = []
+        # neighbors = []
+        # innerproduct_results = []
+        # _X_transpose = _X[candidate_list].transpose()
+        # dtype = [('value', float), ('index', int)]
+        # for i in xrange(X.shape[0]):
+        #     innerproduct = X[[i]] *_X_transpose
+        #     _, ids = innerproduct.nonzero()
+        #     tuple_list = []
+        #     for j in ids:
+        #         tuple_list.append((innerproduct[0, j], j))
+        #     neighbors_to_be_sorted = np.array(tuple_list, dtype=dtype)
+
+        #     # sorted = np.partition(neighbors_to_be_sorted, (0, neighborhood_measure), order='value')
+        #     sorted = np.sort(neighbors_to_be_sorted, order='value')[::-1]
+        #     distance = []
+        #     neighborhood = []
+        #     for j in sorted:
+        #         distance.append(j[0])
+        #         neighborhood.append(real_index__candidate_list_index[j[1]])
+        #     distances.append(distance)
+        #     neighbors.append(neighborhood)
+        # return distances, neighbors
+
+        
+        # print innerproduct_results
         # compute kneighbors or the neighbors inside a given radius
         if computing_function == "kneighbors":
-            distances, neighbors = nearest_neighbors.kneighbors(X, neighborhood_measure, return_distance)
+            distances, neighbors = nearest_neighbors.kneighbors(X, neighborhood_measure, return_distance=True)
+        #     # print distances, neighbors
         else:
             distances, neighbors = nearest_neighbors.radius_neighbors(X, neighborhood_measure, return_distance)
-        # replace indices to the indicies of the orginal dataset
+        # # replace indices to the indicies of the orginal dataset
         for i in xrange(len(neighbors)):
             for j in xrange(len(neighbors[i])):
                 neighbors[i][j] = real_index__candidate_list_index[neighbors[i][j]]
@@ -418,12 +458,24 @@ class MinHashNearestNeighbors():
         col = []
         data = []
         start_value = 0 if X is None else 1
+        end_value = -1
         for i in xrange(len(neighborhood)):
+            if distances[i][0] == -1:
+                continue
             root = i if X is None else neighborhood[i][0]
+            j = 0
             for node in neighborhood[i][start_value:]:
+                if distances[i][node] == -1:
+                    end_value = j
+                    break
+                if root < 0 or node < 0:
+                    end_value = j
+                    break;
                 row.append(root)
                 col.append(node)
-            data.extend(distances[i][start_value:])
+                j += 1
+
+            data.extend(distances[i][start_value:end_value])
         # if the distances do not matter overrite them with 1's.
         if return_distance:
             data = [1] * len(row)

@@ -10,6 +10,7 @@
 
 __author__ = 'joachimwolff'
 
+import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.utils import check_array
 import logging
@@ -198,20 +199,18 @@ class MinHashKNeighborsClassifier():
             y : array of shape [n_samples] or [n_samples, n_outputs]
                 Class labels for each data sample.
         """
-        predicted_class_list = []
         X = check_array(X, accept_sparse='csr')
-        number_of_instances = X.shape[0]
         n_neighbors = self.n_neighbors
         inverseIndex = self.nearestNeighbors._inverseIndex
-        signatures = inverseIndex.signature(X)
+
         if fast is None:
             fast = self.fast
-        # print signatures
-        candidate_list = []
-        for i in xrange(number_of_instances):
-            _, neighbor = inverseIndex.neighbors(signatures[i], n_neighbors)
-            candidate_list.extend(neighbor[0])
 
+        # compute neighbors in inverse index
+        _, neighbors = inverseIndex.neighbors(X, n_neighbors)
+        candidate_list = []
+        for i in xrange(len(neighbors)):
+           candidate_list.extend(neighbors[i])
         candidate_set = set(candidate_list)
         candidate_list = list(candidate_set)
 
@@ -221,6 +220,7 @@ class MinHashKNeighborsClassifier():
         nearest_neighborsSK = KNeighborsClassifier(n_neighbors=n_neighbors)
 
         if fast:
+            signatures = inverseIndex.signature(X)
             nearest_neighborsSK.fit(
                 inverseIndex.get_signature_list(self.nearestNeighbors._X[candidate_list]),
                 self._getYValues(candidate_list))
@@ -245,19 +245,17 @@ class MinHashKNeighborsClassifier():
                 The class probabilities of the input samples. Classes are ordered
                 by lexicographic order.
         """
-        predicted_class_list = []
         X = check_array(X, accept_sparse='csr')
-        number_of_instances = X.shape[0]
         n_neighbors = self.n_neighbors
         inverseIndex = self.nearestNeighbors._inverseIndex
-        signatures = inverseIndex.signature(X)
         if fast is None:
             fast = self.fast
-        candidate_list = []
-        for i in xrange(number_of_instances):
-            _, neighbor = inverseIndex.neighbors(signatures[i], n_neighbors)
-            candidate_list.extend(neighbor[0])
 
+        # compute neighbors in inverse index
+        _, neighbors = inverseIndex.neighbors(X, n_neighbors)
+        candidate_list = []
+        for i in xrange(len(neighbors)):
+           candidate_list.extend(neighbors[i])
         candidate_set = set(candidate_list)
         candidate_list = list(candidate_set)
 
@@ -267,6 +265,7 @@ class MinHashKNeighborsClassifier():
         nearest_neighborsSK = KNeighborsClassifier(n_neighbors=n_neighbors)
 
         if fast:
+            signatures = inverseIndex.signature(X)
             nearest_neighborsSK.fit(
                 inverseIndex.get_signature_list(self.nearestNeighbors._X[candidate_list]),
                 self._getYValues(candidate_list))
@@ -295,17 +294,16 @@ class MinHashKNeighborsClassifier():
             Mean accuracy of self.predict(X) wrt. y.
         """
         X = check_array(X, accept_sparse='csr')
-        number_of_instances = X.shape[0]
         n_neighbors = self.n_neighbors
         inverseIndex = self.nearestNeighbors._inverseIndex
-        signatures = inverseIndex.signature(X)
         if fast is None:
             fast = self.fast
-        candidate_list = []
-        for i in xrange(number_of_instances):
-            _, neighbor = inverseIndex.neighbors(signatures[i], n_neighbors)
-            candidate_list.extend(neighbor[0])
 
+         # compute neighbors in inverse index
+        _, neighbors = inverseIndex.neighbors(X, n_neighbors)
+        candidate_list = []
+        for i in xrange(len(neighbors)):
+           candidate_list.extend(neighbors[i])
         candidate_set = set(candidate_list)
         candidate_list = list(candidate_set)
 
@@ -315,6 +313,7 @@ class MinHashKNeighborsClassifier():
         nearest_neighborsSK = KNeighborsClassifier(n_neighbors=n_neighbors)
 
         if fast:
+            signatures = inverseIndex.signature(X)
             nearest_neighborsSK.fit(
                 inverseIndex.get_signature_list(self.nearestNeighbors._X[candidate_list]),
                 self._getYValues(candidate_list))

@@ -17,12 +17,29 @@
 #endif
 #include <vector>
 #include <map>
+#include <unordered_map>
+
 #include <string>
 #include <iostream>
 #include <iterator>
+#include <algorithm>
 const int MAX_VALUE = 2147483647;
 const double A = sqrt(2) - 1;
   
+
+class sort_map {
+  public:
+	int key;
+	int val;
+};
+
+bool mapSortDescByValue(const sort_map& a, const sort_map& b) {
+    return a.val > b.val;
+}
+// template<typename K, typename V>
+// bool mapSortDescByValueI(const std::pair<K, V> a, const std::pair<K, V> b) {
+//     return a.second > b.second;
+// }
 
 // Return an hash value for a given key in defined range aModulo
  int _intHashSimple(int key, int aModulo) {
@@ -78,19 +95,24 @@ std::vector< std::vector<int> > _computeSignature(const int numberOfHashFunction
             signature.push_back(signatureBlockValue);
             i += blockSize;
         }
-//#pragma omp critical
+#pragma omp critical
         instanceSignature[k] = signature;
     }
     return instanceSignature;
 }
 // compute the complete inverse index for all given instances and theire non null features
-std::vector<std::map<int, std::vector<int> > >  _computeInverseIndex(const int numberOfHashFunctions,
+std::vector<std::map<int, std::vector<int> > >*  _computeInverseIndex(const int numberOfHashFunctions,
                                                                 std::map<int, std::vector<int> >& instance_featureVector,
-                                                                const int blockSize, const int maxBinSize, const int numberOfCores, int chunkSize) {
+                                                                const int blockSize, const int maxBinSize, const int numberOfCores, int chunkSize,
+                                                                std::vector<std::map<int, std::vector<int> > >* inverseIndex ) {
 
-    std::vector<std::map<int, std::vector<int> > > inverseIndex;
+    // if NULL than the inverse index is new created. Otherwise it is extended.
+    if (inverseIndex == NULL) {
+        inverseIndex = new std::vector<std::map<int, std::vector<int> > >();
+    }
+
     int inverseIndexSize = ceil(((float) numberOfHashFunctions / (float) blockSize)+1);
-    inverseIndex.resize(inverseIndexSize);
+    inverseIndex->resize(inverseIndexSize);
     if (chunkSize <= 0) {
         chunkSize = ceil(instance_featureVector.size() / static_cast<float>(numberOfCores));
     }
@@ -135,9 +157,9 @@ std::vector<std::map<int, std::vector<int> > >  _computeInverseIndex(const int n
         // insert in inverse index
 #pragma omp critical
         for (int j = 0; j < signature.size(); ++j) {
-            itHashValue_InstanceVector = inverseIndex[j].find(signature[j]);
+            itHashValue_InstanceVector = inverseIndex->operator[](j).find(signature[j]);
             // if for hash function h_i() the given hash values is already stored
-            if (itHashValue_InstanceVector != inverseIndex[j].end()) {
+            if (itHashValue_InstanceVector != inverseIndex->operator[](j).end()) {
                 // insert the instance id if not too many collisions (maxBinSize)
                 if (itHashValue_InstanceVector->second.size() < maxBinSize) {
                     // insert only if there wasn't too any collisions in the past
@@ -153,11 +175,85 @@ std::vector<std::map<int, std::vector<int> > >  _computeInverseIndex(const int n
                 // given hash value for the specific hash function was not avaible: insert new hash value
                 std::vector<int> instanceIdVector;
                 instanceIdVector.push_back(instanceId->first);
-                inverseIndex[j][signature[j]] = instanceIdVector;
+                inverseIndex->operator[](j)[signature[j]] = instanceIdVector;
             }
         }
     }
     return inverseIndex;
+}
+
+std::pair<std::vector< std::vector<int> > , std::vector< std::vector<float> > > _computeNeighbors(
+                                const std::vector< std::vector<int> > signatures,
+                                const int sizeOfNeighborhood, const int MAX_VALUE,
+                                const int minimalBlocksInCommon, const int maxBinSize,
+                                const int numberOfCores, const float maximalNumberOfHashCollisions,
+                                int chunkSize, const int excessFactor,
+                                const std::vector<std::map<int, std::vector<int> > >& inverseIndex) {
+#ifdef OPENMP
+    omp_set_dynamic(0);
+#endif
+
+    std::pair<std::vector< std::vector<int> > , std::vector< std::vector<float> > > returnVector;
+
+    std::vector< std::vector<int> > neighbors;
+    std::vector< std::vector<float> > distances;
+
+    neighbors.resize(signatures.size());
+    distances.resize(signatures.size());
+    if (chunkSize <= 0) {
+        chunkSize = ceil(inverseIndex.size() / static_cast<float>(numberOfCores));
+    }
+#pragma omp parallel for schedule(static, chunkSize) num_threads(numberOfCores)
+    for (int i = 0; i < signatures.size(); ++i) {
+        std::unordered_map<int, int> neighborhood;
+        for (int j = 0; j < signatures[i].size(); ++j) {
+            int hashID = signatures[i][j];
+            if (hashID != 0 && hashID != MAX_VALUE) {
+                int collisionSize = 0;
+                std::map<int, std::vector<int> >::const_iterator instances = inverseIndex.at(j).find(hashID);
+                if (instances != inverseIndex.at(j).end()) {
+                    collisionSize = instances->second.size();
+                } else {
+                    continue;
+                }
+                if (collisionSize < maxBinSize && collisionSize > 0) {
+                    for (int k = 0; k < instances->second.size(); ++k) {
+                        neighborhood[instances->second.at(k)] += 1;
+                    }
+                }
+            }
+        }
+        std::vector< sort_map > neighborhoodVectorForSorting;
+
+        sort_map mapForSorting;
+        for (std::unordered_map<int, int>::iterator it = neighborhood.begin(); it != neighborhood.end(); ++it) {
+            mapForSorting.key = (*it).first;
+            mapForSorting.val = (*it).second;
+            neighborhoodVectorForSorting.push_back(mapForSorting);
+        }
+        std::sort(neighborhoodVectorForSorting.begin(), neighborhoodVectorForSorting.end(), mapSortDescByValue);
+        std::vector<int> neighborhoodVector;
+        std::vector<float> distanceVector;
+
+        int sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(sizeOfNeighborhood * excessFactor), neighborhoodVectorForSorting.size());
+        int count = 0;
+
+        for (std::vector<sort_map>::iterator it = neighborhoodVectorForSorting.begin();
+                                                    it != neighborhoodVectorForSorting.end(); ++it) {
+            neighborhoodVector.push_back((*it).key);
+            distanceVector.push_back(1 - ((*it).val / maximalNumberOfHashCollisions));
+            ++count;
+            if (count == sizeOfNeighborhoodAdjusted) {
+                break;
+            }
+        }
+        neighbors[i] = neighborhoodVector;
+        distances[i] = distanceVector;
+    }
+
+    returnVector.first = neighbors;
+    returnVector.second = distances;
+    return returnVector;
 }
 
 // parse python call to c++; execute c++ and parse it back to python
@@ -217,37 +313,16 @@ static PyObject* computeInverseIndex(PyObject* self, PyObject* args)
         }
     }
     // compute inverse index in c++
-    std::vector<std::map<int, std::vector<int> > > inverseIndex = _computeInverseIndex(numberOfHashFunctions, instance_featureVector,
-                                     blockSize, maxBinSize, numberOfCores, chunkSize);
+    std::vector<std::map<int, std::vector<int> > >* inverseIndex = _computeInverseIndex(numberOfHashFunctions, instance_featureVector,
+                                     blockSize, maxBinSize, numberOfCores, chunkSize, NULL);
 
-    int sizeOfInverseIndex = inverseIndex.size();
-    PyObject * outListObj = PyList_New(sizeOfInverseIndex);
-    // parse c++ map<int, vector<int> > to python list[dict{hash_value: [featureIds]}]
-    // Iterate over every hash function
-    for (int i = 0; i < sizeOfInverseIndex; ++i) {
-        PyObject* dictionary = PyDict_New();
-        // iterate over every hash value
-        for (std::map<int, std::vector<int> >::iterator it = inverseIndex[i].begin(); it != inverseIndex[i].end(); ++it) {
-            PyObject* list = PyList_New(it->second.size());
-            // get all indicies for this hash value
-            for (int j = 0; j < it->second.size(); ++j) {
-                PyObject* value = Py_BuildValue("i", it->second[j]);
-                PyObject* PyListIndexLocal = Py_BuildValue("i", j);
-                Py_ssize_t listIndexLocal = PyInt_AsSsize_t(PyListIndexLocal);
+    size_t adressOfInverseIndex = reinterpret_cast<size_t>(inverseIndex);
 
-                PyList_SetItem(list, listIndexLocal, value);
-            }
-            PyObject* key = Py_BuildValue("i", it->first);
-            PyDict_SetItem(dictionary, key, list);
-        }
-        PyObject* PyListIndex = Py_BuildValue("i", i);
-        Py_ssize_t listIndex = PyInt_AsSsize_t(PyListIndex);
+   // std::cout << "InverseIndexPointer_Build: "  << adressOfInverseIndex << std::endl << std::flush;
+    //std::cout << "First element in first map BEVOR restore: " << inverseIndex->at(50).begin()->second.size() << std::endl << std::flush;
 
-        if (PyList_SetItem(outListObj, listIndex, dictionary) == -1) {
-            std::cout << "Failure!" << std::flush;
-        }
-    }
-    return outListObj;
+    PyObject * pointerToInverseIndex = Py_BuildValue("k", adressOfInverseIndex);
+    return pointerToInverseIndex;
 }
 // parse python call to c++; execute c++ and parse it back to python
 static PyObject* computeSignature(PyObject* self, PyObject* args)
@@ -320,12 +395,189 @@ static PyObject* computeSignature(PyObject* self, PyObject* args)
 
     return outListInstancesObj;
 }
+
+
+// parse python call to c++; execute c++ and parse it back to python
+static PyObject* computeNeighborhood(PyObject* self, PyObject* args)
+{ // numberOfHashFunktions, instances_list, features_list, block_size,
+    // number_of_cores, chunk_size, size_of_neighborhood, MAX_VALUE, minimalBlocksInCommon,
+    // excessFactor, maxBinSize, inverseIndex
+
+    size_t addressInverseIndex;
+    int numberOfHashFunctions, blockSize, numberOfCores, chunkSize,
+    sizeOfNeighborhood, MAX_VALUE, minimalBlocksInCommon, maxBinSize,
+    maximalNumberOfHashCollisions, excessFactor;
+    std::vector< std::vector<int> > instanceFeatureVector;
+
+    PyObject * listInstancesObj;
+    PyObject * listFeaturesObj;
+    PyObject * listObjFeature;
+    PyObject * intInstancesObj;
+    PyObject * intFeaturesObj;
+    int instanceOld = -1;
+  
+    if (!PyArg_ParseTuple(args, "iO!O!iiiiiiiiik", &numberOfHashFunctions,
+                        &PyList_Type, &listInstancesObj,
+                        &PyList_Type, &listFeaturesObj, &blockSize, 
+                        &numberOfCores, &chunkSize, &sizeOfNeighborhood, 
+                        &MAX_VALUE, &minimalBlocksInCommon, &maxBinSize,
+                        &maximalNumberOfHashCollisions, &excessFactor, 
+                        &addressInverseIndex))
+        return NULL;
+
+    int numLinesInstances = PyList_Size(listInstancesObj);
+    if (numLinesInstances < 0)  return NULL;
+
+    int numLinesFeatures = PyList_Size(listFeaturesObj);
+    if (numLinesFeatures < 0)   return NULL;
+
+
+    int insert = 0;
+    std::vector<int> featureIds;
+   // std::cout << "BEvor trans" << std::endl << std::flush;
+    // parse from python list to c++ vector
+    for (int i = 0; i < numLinesInstances; ++i) {
+        intInstancesObj = PyList_GetItem(listInstancesObj, i);
+        intFeaturesObj = PyList_GetItem(listFeaturesObj, i);
+        int featureValue;
+        int instanceValue;
+
+        PyArg_Parse(intInstancesObj, "i", &instanceValue);
+        PyArg_Parse(intFeaturesObj, "i", &featureValue);
+
+        if (instanceOld == instanceValue) {
+            featureIds.push_back(featureValue);
+            instanceOld = instanceValue;
+            if (i == numLinesInstances-1) {
+                instanceFeatureVector.push_back(featureIds);
+            }
+        } else {
+            if (instanceOld != -1 ) {
+                instanceFeatureVector.push_back(featureIds);
+            }
+            featureIds.clear();
+//            instanceFeatureVector.push_back(featureIds);
+            instanceOld = instanceValue;
+        }
+    }
+
+    // get pointer to inverse index
+    std::vector<std::map<int, std::vector<int> > >* inverseIndex =
+            reinterpret_cast<std::vector<std::map<int, std::vector<int> > >* >(addressInverseIndex);
+
+    // compute signatures of the instances
+    std::vector< std::vector<int> >signatures = _computeSignature(numberOfHashFunctions, instanceFeatureVector,
+                                                                                    blockSize,numberOfCores, chunkSize);
+
+    // compute the k-nearest neighbors
+    std::pair<std::vector< std::vector<int> > , std::vector< std::vector<float> > > neighborsDistances = 
+        _computeNeighbors(signatures, sizeOfNeighborhood, MAX_VALUE, minimalBlocksInCommon, maxBinSize,
+                            numberOfCores, maximalNumberOfHashCollisions, chunkSize, excessFactor, *inverseIndex);
+    
+
+                             
+    size_t sizeOfNeighorList = neighborsDistances.first.size();
+
+    PyObject * outerListNeighbors = PyList_New(sizeOfNeighorList);
+    PyObject * outerListDistances = PyList_New(sizeOfNeighorList);
+
+    for (size_t i = 0; i < sizeOfNeighorList; ++i) {
+        size_t sizeOfInnerNeighborList = neighborsDistances.first[i].size();
+        PyObject * innerListNeighbors = PyList_New(sizeOfInnerNeighborList);
+        PyObject * innerListDistances = PyList_New(sizeOfInnerNeighborList);
+
+        for (size_t j = 0; j < sizeOfInnerNeighborList; ++j) {
+            PyObject* valueNeighbor = Py_BuildValue("i", neighborsDistances.first[i][j]);
+            PyList_SetItem(innerListNeighbors, j, valueNeighbor);
+            // std::cout << neighborsDistances.first[i][j] << std::endl <<  std::flush;
+            PyObject* valueDistance = Py_BuildValue("f", neighborsDistances.second[i][j]);
+            PyList_SetItem(innerListDistances, j, valueDistance);
+        }
+        PyList_SetItem(outerListNeighbors, i, innerListNeighbors);
+        PyList_SetItem(outerListDistances, i, innerListDistances);
+
+    }
+    PyObject * returnList = PyList_New(2);
+    PyList_SetItem(returnList, 0, outerListDistances);
+    PyList_SetItem(returnList, 1, outerListNeighbors);
+
+
+    return returnList;
+
+}
+// parse python call to c++; execute c++ and parse it back to python
+static PyObject* computePartialFit(PyObject* self, PyObject* args)
+{
+    size_t addressInverseIndex;
+    int numberOfHashFunctions, blockSize, maxBinSize, numberOfCores, chunkSize;
+    std::map<int, std::vector<int> > instance_featureVector;
+    PyObject * instancesListObj;
+    PyObject * featuresListObj;
+    PyObject * instanceIntObj;
+    PyObject * featureIntObj;
+
+    if (!PyArg_ParseTuple(args, "iO!O!iiiik", &numberOfHashFunctions, &PyList_Type, &instancesListObj, &PyList_Type,
+                            &featuresListObj, &blockSize, &maxBinSize, &numberOfCores, &chunkSize, &addressInverseIndex))
+        return NULL;
+    //std::cout << "Number of cors: " << numberOfCores;
+    int sizeOfFeatureVector = PyList_Size(instancesListObj);
+    if (sizeOfFeatureVector < 0)	return NULL;
+    int instanceOld = -1;
+    int insert = 0;
+    std::vector<int> featureIds;
+    // parse from python list to a c++ map<int, vector<int> >
+    // where key == instance id and vector<int> == non null feature ids
+    for (int i = 0; i < sizeOfFeatureVector; ++i) {
+        instanceIntObj = PyList_GetItem(instancesListObj, i);
+        featureIntObj = PyList_GetItem(featuresListObj, i);
+        int featureValue;
+        int instanceValue;
+
+        PyArg_Parse(instanceIntObj, "i", &instanceValue);
+        PyArg_Parse(featureIntObj, "i", &featureValue);
+
+        if (instanceOld == instanceValue) {
+            featureIds.push_back(featureValue);
+            instanceOld = instanceValue;
+            if (i == sizeOfFeatureVector-1) {
+                instance_featureVector[instanceValue] = featureIds;
+            }
+        } else {
+            if (instanceOld != -1 ) {
+                instance_featureVector[instanceOld] = featureIds;
+            }
+            featureIds.clear();
+            featureIds.push_back(featureValue);
+            instanceOld = instanceValue;
+        }
+    }
+
+    // get pointer to inverse index
+    std::vector<std::map<int, std::vector<int> > >* inverseIndex =
+            reinterpret_cast<std::vector<std::map<int, std::vector<int> > >* >(addressInverseIndex);
+
+    // compute inverse index in c++
+    inverseIndex = _computeInverseIndex(numberOfHashFunctions, instance_featureVector,
+                                     blockSize, maxBinSize, numberOfCores, chunkSize, inverseIndex);
+
+    size_t adressOfInverseIndex = reinterpret_cast<size_t>(inverseIndex);
+
+    //std::cout << "InverseIndexPointer_Build: "  << adressOfInverseIndex << std::endl << std::flush;
+    //std::cout << "First element in first map BEVOR restore: " << inverseIndex->at(50).begin()->second.size() << std::endl << std::flush;
+
+    PyObject * pointerToInverseIndex = Py_BuildValue("k", adressOfInverseIndex);
+    return pointerToInverseIndex;
+}
+
+
+
 // definition of avaible functions for python and which function parsing fucntion in c++ should be called.
 static PyMethodDef IntHashMethods[] = {
     {"computeIntHash", computeIntHash, METH_VARARGS, "Calculate a hash for given key, modulo and seed."},
     {"computeSignature", computeSignature, METH_VARARGS, "Calculate a signature for a given instance."},
     {"computeInverseIndex", computeInverseIndex, METH_VARARGS, "Calculate the inverse index for the given instances."},
-
+    {"computeNeighborhood", computeNeighborhood, METH_VARARGS, "Calculate the candidate list for the given instances."},
+    {"computePartialFit", computePartialFit, METH_VARARGS, "Extend the inverse index with the given instances."},
     {NULL, NULL, 0, NULL}
 };
 

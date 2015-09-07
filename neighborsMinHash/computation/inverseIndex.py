@@ -14,6 +14,9 @@ import logging
 from multiprocessing import Manager
 from _hashUtility import computeInverseIndex
 from _hashUtility import computeSignature
+from _hashUtility import computeNeighborhood
+from _hashUtility import computePartialFit
+
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +65,7 @@ class InverseIndex():
         self.MAX_VALUE = 2147483647
         self._number_of_cores = number_of_cores
         self._chunk_size = chunk_size
+        self._index_elements = 0
 
     def fit(self, X):
         """Fits the given dataset to the minHash model.
@@ -72,7 +76,9 @@ class InverseIndex():
             The input matrix to compute the inverse index. If empty, no index will be created.
         """
         # get all ids of non-null features per instance and compute the inverse index in c++.
+        self._index_elements = X.shape[0]
         instances, features = X.nonzero()
+        # returns a pointer to the inverse index stored in c++
         self._inverse_index = computeInverseIndex(self._number_of_hash_functions,
                                 instances.tolist(), features.tolist(), self._block_size, self._max_bin_size,
                                                   self._number_of_cores, self._chunk_size)
@@ -86,11 +92,18 @@ class InverseIndex():
             The input matrix to compute the inverse index. If empty, no index will not be extended.
         """
         # extend the inverse index with the given data
-        index = len(self._signature_storage)
-        for i in xrange(0, X.get_shape()[0]):
-            signature = self.signature(X[[i]])
-            self._update_inverse_index(signature, index)
-            index += 1
+        instances, features = X.nonzero()
+        for i in xrange(len(instances)):
+            instances[i] += self._index_elements
+        self._index_elements += X.shape[0]
+        self._inverse_index = computePartialFit(self._number_of_hash_functions,
+                                instances.tolist(), features.tolist(), self._block_size, self._max_bin_size,
+                                self._number_of_cores, self._chunk_size, self._inverse_index)
+        # index = len(self._signature_storage)
+        # for i in xrange(0, X.get_shape()[0]):
+        #     signature = self.signature(X[[i]])
+        #     self._update_inverse_index(signature, index)
+        #     index += 1
 
     def signature(self, instance_feature_list):
         """Computes the signature based on the minHash model for one instaces.
@@ -141,7 +154,7 @@ class InverseIndex():
                 logger.error("Inverse index can not be updated!")
 
 
-    def neighbors(self, signature, size_of_neighborhood):
+    def neighbors(self, instance_feature_list, size_of_neighborhood):
         """This function computes the neighborhood for a given instance.
 
         Parameters
@@ -152,60 +165,19 @@ class InverseIndex():
             Size of neighborhood. If less neighbors are av
         """
 
+        # numberOfHashFunktions, instances_list, features_list, block_size,
+        # number_of_cores, chunk_size, size_of_neighborhood, MAX_VALUE, minimalBlocksInCommon,
+        # excessFactor, maxBinSize, inverseIndex
         # define non local variables and functions as locals to increase performance
-        inverse_index = self._inverse_index
-        max_bin_size = self._max_bin_size
-        minimal_blocks_in_common = self._minimal_blocks_in_common
-        MAX_VALUE = self.MAX_VALUE
-        neighborhood = {}
-        for i in xrange (0, len(signature)):
-            hash_id = signature[i]
-            if hash_id != 0 and hash_id != MAX_VALUE:
-                # check the inverse index if for the given hash function 
-                # the specific hash value is avaible.
-                if hash_id in inverse_index[i]:
-                    collision_size = len(inverse_index[i][hash_id])
-                else:
-                    continue
-                if collision_size < max_bin_size:
-                    for instance_id in inverse_index[i][hash_id]:
-                        if instance_id in neighborhood:
-                            neighborhood[instance_id] += 1
-                        else:
-                            neighborhood[instance_id] = 1
-        # sort the instances by hits
-        neighborhood_inverse = {}
-        for i in neighborhood:
-            if neighborhood[i] >= minimal_blocks_in_common:
-                neighborhood_inverse[-neighborhood[i]] = i
-        neighborhood_sorted = sorted(neighborhood_inverse.iteritems(), key=lambda key_value: key_value[0])
-        neighborhood_list = []
-        distance_list = []
-        # compute distance with collisions: 1 - (collisions/max_number_of_collsions)
-        for i in xrange(len(neighborhood_sorted)):
-            neighborhood_list.append(neighborhood_sorted[i][1])
-            distance = 1 - (abs(neighborhood_sorted[i][0]) / float(self._maximal_number_of_hash_collisions))
-            distance_list.append(distance)
-        return self._trim_neighborhood(neighborhood=neighborhood_list, distances=distance_list,
-                                    size_of_neighborhood=size_of_neighborhood)
+        instances, features = instance_feature_list.nonzero()
+        # compute the siganture in c++
+        return computeNeighborhood(self._number_of_hash_functions,instances.tolist(), features.tolist() ,
+                                                self._block_size, self._number_of_cores, self._chunk_size,
+                                                self._number_of_nearest_neighbors, self.MAX_VALUE, 
+                                                self._minimal_blocks_in_common, self._excess_factor,
+                                                self._max_bin_size, self._maximal_number_of_hash_collisions,
+                                                self._inverse_index)
 
-    def _trim_neighborhood(self, neighborhood=None, size_of_neighborhood=None, distances=None):
-        """
-        Trims the neighborhood to which is smaller: The number of found 
-        neighbors or the desirable size of the neighborhood * the excess factor.
-    
-        Parameters
-        ----------
-        neighborhood : list
-            The list of found neighbors.
-        size_of_neighborhood : int
-            Desirable size of the neighborhood.
-        distances : list
-            The distances from the target to the found neighbors.
-
-        """
-        size_of_neighborhood_adjusted = min((size_of_neighborhood*self._excess_factor) , len(neighborhood))
-        return [distances[0:size_of_neighborhood_adjusted]], [neighborhood[0:size_of_neighborhood_adjusted]]
 
     def get_signature_list(self, instances):
         """Returns all signatures for the given sequences."""
