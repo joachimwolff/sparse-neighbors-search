@@ -152,6 +152,7 @@ class MinHashNearestNeighbors():
                 self._y = vstack([self._y, y])
             else:
                 self._y = np.concatenate((self._y, y), axis=0)
+        self._X = vstack(csr_matrix(self._X), csr_matrix(X))
     def get_params(self,deep=None):
         """Get parameters for this estimator."""
         pass
@@ -384,60 +385,72 @@ class MinHashNearestNeighbors():
         inverseIndex = self._inverseIndex
 
         # compute neighbors via inverse index
-        candidate_list = []
+        # candidate_list = []
         # for i in xrange(len(signatures)):
         distances, neighbors = inverseIndex.neighbors(X, neighborhood_measure)
         # print neighbors
-        candidate_list = [item for sublist in neighbors for item in sublist]
-        candidate_set = set(candidate_list)
-        candidate_list = list(candidate_set)
-        real_index__candidate_list_index = {}
-        for i in xrange(len(candidate_list)):
-            real_index__candidate_list_index[i] = candidate_list[i]
-        if len(candidate_list) < neighborhood_measure:
-            neighborhood_measure = len(candidate_list)
+        # candidate_list = [item for sublist in neighbors for item in sublist]
+        # candidate_set = set(candidate_list)
+        # candidate_list = list(candidate_set)
+        # real_index__candidate_list_index = {}
+        # for i in xrange(len(candidate_list)):
+        #     real_index__candidate_list_index[i] = candidate_list[i]
+        # if len(candidate_list) < neighborhood_measure:
+        #     neighborhood_measure = len(candidate_list)
         # use sklearns implementation of NearestNeighbors to compute the neighbors
         # use only the elements of the candidate list and not the whole dataset
-        nearest_neighbors = NearestNeighbors()
-        nearest_neighbors.fit(_X[candidate_list])
+        # nearest_neighbors = NearestNeighbors()
+        # nearest_neighbors.fit(_X[candidate_list])
 
-        # distances = []
-        # neighbors = []
+
+        real_index__candidate_list_index = [{}] * len(neighbors)
+        for i in xrange(len(neighbors)):
+            if len(neighbors[i]) > 1:
+                dict_ = {}
+
+                for j in xrange(len(neighbors[i])):
+                    #print "neighbors: ", neighbors[i][j]
+                    dict_[j] = neighbors[i][j]
+                real_index__candidate_list_index[i] = dict_
+        # print real_index__candidate_list_index
+        # if len(candidate_list) < neighborhood_measure:
+        #     neighborhood_measure = len(candidate_list)
+        #distances = []
+        #neighbors = []
         # innerproduct_results = []
         # _X_transpose = _X[candidate_list].transpose()
         # dtype = [('value', float), ('index', int)]
-        # for i in xrange(X.shape[0]):
-        #     innerproduct = X[[i]] *_X_transpose
-        #     _, ids = innerproduct.nonzero()
-        #     tuple_list = []
-        #     for j in ids:
-        #         tuple_list.append((innerproduct[0, j], j))
-        #     neighbors_to_be_sorted = np.array(tuple_list, dtype=dtype)
-
-        #     # sorted = np.partition(neighbors_to_be_sorted, (0, neighborhood_measure), order='value')
-        #     sorted = np.sort(neighbors_to_be_sorted, order='value')[::-1]
-        #     distance = []
-        #     neighborhood = []
-        #     for j in sorted:
-        #         distance.append(j[0])
-        #         neighborhood.append(real_index__candidate_list_index[j[1]])
-        #     distances.append(distance)
-        #     neighbors.append(neighborhood)
-        # return distances, neighbors
+        for i in xrange(X.shape[0]):
+            if len(neighbors[i]) > 1:
+                innerproduct = X[[i]] * _X[neighbors[i]].transpose()
+                # print "innerproduct: ", innerproduct
+                # print "innerproduct&sort: ", innerproduct.toarray()
+                neighbor_list = np.argsort(innerproduct.toarray())[0][::-1] 
+                for j in xrange(len(neighbor_list)):
+                    distances[i][j] = innerproduct[0,neighbor_list[j]]
+                    neighbors[i][j] = real_index__candidate_list_index[i][neighbor_list[j]]
+                    # neighbor_ = neighbors[i][:]
+                    # neighbors[i][j] = neighbor_[neighbor_list[j]]
+            # for j in sorted:
+            #     distance.append(j[0])
+            #     neighborhood.append(real_index__candidate_list_index[j[1]])
+            # distances.append(distance)
+            # neighbors.append(neighborhood)
+        return distances, neighbors
 
         
-        # print innerproduct_results
-        # compute kneighbors or the neighbors inside a given radius
-        if computing_function == "kneighbors":
-            distances, neighbors = nearest_neighbors.kneighbors(X, neighborhood_measure, return_distance=True)
-        #     # print distances, neighbors
-        else:
-            distances, neighbors = nearest_neighbors.radius_neighbors(X, neighborhood_measure, return_distance)
-        # # replace indices to the indicies of the orginal dataset
-        for i in xrange(len(neighbors)):
-            for j in xrange(len(neighbors[i])):
-                neighbors[i][j] = real_index__candidate_list_index[neighbors[i][j]]
-        return distances.tolist(),  neighbors.tolist()
+        # # print innerproduct_results
+        # # compute kneighbors or the neighbors inside a given radius
+        # if computing_function == "kneighbors":
+        #     distances, neighbors = nearest_neighbors.kneighbors(X, neighborhood_measure, return_distance=True)
+        # #     # print distances, neighbors
+        # else:
+        #     distances, neighbors = nearest_neighbors.radius_neighbors(X, neighborhood_measure, return_distance)
+        # # # replace indices to the indicies of the orginal dataset
+        # for i in xrange(len(neighbors)):
+        #     for j in xrange(len(neighbors[i])):
+        #         neighbors[i][j] = real_index__candidate_list_index[neighbors[i][j]]
+        # return distances.tolist(),  neighbors.tolist()
 
     def _neighborhood_graph(self, X=None, neighborhood_measure=None, return_distance=None,
                             computing_function=None):
@@ -452,30 +465,30 @@ class MinHashNearestNeighbors():
             logger.error("Computing function is not known!")
             return
         if len(neighborhood) == 0:
-         pass
+            pass
         # build the neighborhood graph
         row = []
         col = []
         data = []
         start_value = 0 if X is None else 1
-        end_value = -1
+        #end_value = -1
         for i in xrange(len(neighborhood)):
-            if distances[i][0] == -1:
-                continue
+            #if distances[i][0] == -1:
+            #    continue
             root = i if X is None else neighborhood[i][0]
-            j = 0
+            #j = 0
             for node in neighborhood[i][start_value:]:
-                if distances[i][node] == -1:
-                    end_value = j
-                    break
-                if root < 0 or node < 0:
-                    end_value = j
-                    break;
+            #    if distances[i][node] == -1:
+            #        end_value = j
+            #        break
+            #    if root < 0 or node < 0:
+            #       end_value = j
+            #        break;
                 row.append(root)
                 col.append(node)
-                j += 1
+            #    j += 1
 
-            data.extend(distances[i][start_value:end_value])
+            data.extend(distances[i][start_value:])
         # if the distances do not matter overrite them with 1's.
         if return_distance:
             data = [1] * len(row)

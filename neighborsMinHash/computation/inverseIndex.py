@@ -60,8 +60,8 @@ class InverseIndex():
                          "or decrease the block_size.")
         self._maximal_number_of_hash_collisions = int(math.ceil(self._number_of_hash_functions / float(self._block_size)))
         self._inverse_index = None
+        self._signature_storage = None
         self._excess_factor = excess_factor
-        self._signature_storage = {}
         self.MAX_VALUE = 2147483647
         self._number_of_cores = number_of_cores
         self._chunk_size = chunk_size
@@ -79,9 +79,11 @@ class InverseIndex():
         self._index_elements = X.shape[0]
         instances, features = X.nonzero()
         # returns a pointer to the inverse index stored in c++
-        self._inverse_index = computeInverseIndex(self._number_of_hash_functions,
+        index_storage= computeInverseIndex(self._number_of_hash_functions,
                                 instances.tolist(), features.tolist(), self._block_size, self._max_bin_size,
                                                   self._number_of_cores, self._chunk_size)
+        self._inverse_index = index_storage[0]
+        self._signature_storage = index_storage[1]
 
     def partial_fit(self, X):
         """Extends the inverse index build in 'fit'.
@@ -96,9 +98,11 @@ class InverseIndex():
         for i in xrange(len(instances)):
             instances[i] += self._index_elements
         self._index_elements += X.shape[0]
-        self._inverse_index = computePartialFit(self._number_of_hash_functions,
+        index_storage = computePartialFit(self._number_of_hash_functions,
                                 instances.tolist(), features.tolist(), self._block_size, self._max_bin_size,
-                                self._number_of_cores, self._chunk_size, self._inverse_index)
+                                self._number_of_cores, self._chunk_size, self._inverse_index, self._signature_storage)
+        self._inverse_index = index_storage[0]
+        self._signature_storage = index_storage[1]
         # index = len(self._signature_storage)
         # for i in xrange(0, X.get_shape()[0]):
         #     signature = self.signature(X[[i]])
@@ -116,42 +120,9 @@ class InverseIndex():
         instances, features = instance_feature_list.nonzero()
         # compute the siganture in c++
         return computeSignature(self._number_of_hash_functions,instances.tolist(), features.tolist() ,
-                                                self._block_size, self._number_of_cores, self._chunk_size)
+                                                self._block_size, self._number_of_cores, self._chunk_size, 
+                                                self._signature_storage)
 
-
-    def _update_inverse_index(self, signature, index):
-        """This function extends the inverse index given a specific signature and the id.
-            If an instance is already available, the inverse index is extended. The old values of
-            this instance are not deleted.
-
-        Parameters
-        ----------
-        signature : list
-            List of hash values. Index of a value corresponds to a hash function.
-        index : int
-            ID of the instance for the given signature.
-        """
-        inverse_index = self._inverse_index
-        max_bin_size = self._max_bin_size
-        for i in xrange(0, len(signature)):
-            try:
-                # add the instance for the given hash value of a hash function
-                # only if for this hash value not more than max_bin_size-instances
-                # are stored.
-                if signature[i] in inverse_index[i]:
-                    if len(inverse_index[i][signature[i]]) < max_bin_size:
-                        if inverse_index[i][signature[i]] != [-1]:
-                            inverse_index[i][signature[i]].append(index)
-                    else:
-                        inverse_index[i][signature[i]] = [-1]
-                        logging_string = "Too much hash collisions. Hashfunction: ",i," value: ", signature[i], " is not considered."
-                        logger.info(logging_string)
-                else:
-                    # for the given hash value of the given hash function no 
-                    # instance is stored
-                    inverse_index[i][signature[i]] = [index]
-            except:
-                logger.error("Inverse index can not be updated!")
 
 
     def neighbors(self, instance_feature_list, size_of_neighborhood):
@@ -176,7 +147,7 @@ class InverseIndex():
                                                 self._number_of_nearest_neighbors, self.MAX_VALUE, 
                                                 self._minimal_blocks_in_common, self._excess_factor,
                                                 self._max_bin_size, self._maximal_number_of_hash_collisions,
-                                                self._inverse_index)
+                                                self._inverse_index, self._signature_storage)
 
 
     def get_signature_list(self, instances):

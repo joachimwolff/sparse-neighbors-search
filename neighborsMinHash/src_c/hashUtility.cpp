@@ -23,6 +23,8 @@
 #include <iostream>
 #include <iterator>
 #include <algorithm>
+#include <utility>
+
 const int MAX_VALUE = 2147483647;
 const double A = sqrt(2) - 1;
   
@@ -53,8 +55,9 @@ bool mapSortDescByValue(const sort_map& a, const sort_map& b) {
 }
 // compute the signature for one instance given the number of hash functions, the feature ids and a block size
 std::vector< std::vector<int> > _computeSignature(const int numberOfHashFunctions,
-                            const std::vector< std::vector<int> >& instanceFeatureVector, const int blockSize,
-                            const int numberOfCores, int chunkSize) {
+                            const std::map< int, std::vector<int> > &instanceFeatureVector, const int blockSize,
+                            const int numberOfCores, int chunkSize,
+                            const std::map<int, std::vector<int> >& signatureStorage) {
 
     const int sizeOfInstances = instanceFeatureVector.size();
     std::vector< std::vector<int> > instanceSignature;
@@ -66,51 +69,65 @@ std::vector< std::vector<int> > _computeSignature(const int numberOfHashFunction
     omp_set_dynamic(0);
 #endif
 #pragma omp parallel for schedule(static, chunkSize) num_threads(numberOfCores)
-    for (int k = 0; k < sizeOfInstances; ++k) {
-        const int sizeOfFeatureVector = instanceFeatureVector[k].size();
+    for(int index = 0; index < instanceFeatureVector.size(); ++index) {
+
+        std::map<int, std::vector<int> >::const_iterator instanceId = instanceFeatureVector.begin();
+        std::advance(instanceId, index);
+        std::map<int, std::vector<int> >::const_iterator signatureIt = signatureStorage.find(instanceId->first);
+        if (signatureIt != signatureStorage.end()) {
+#pragma critical
+            instanceSignature[index] = signatureIt->second;
+            continue;
+        } 
+        std::map<int, std::vector<int> >::iterator itHashValue_InstanceVector;
+        std::vector<std::map<int, int> > hashStorage;
         std::vector<int> signatureHash(numberOfHashFunctions);
-        for(int i = 0; i < numberOfHashFunctions; ++i) {
+        // for every hash function: compute the hash values of all features and take the minimum of these
+        // as the hash value for one hash function --> h_j(x) = argmin (x_i of x) f_j(x_i)
+        for(int j = 0; j < numberOfHashFunctions; ++j) {
             int minHashValue = MAX_VALUE;
-            for(int j = 0; j < sizeOfFeatureVector; ++j) {
-                int hashValue = _intHashSimple((instanceFeatureVector[k][j]+1) * (i+1) * A, MAX_VALUE);
-                if (hashValue == 0 || hashValue == MAX_VALUE) {
-                    continue;
-                }
+            for (std::vector<int>::const_iterator itFeatures = instanceId->second.begin(); itFeatures != instanceId->second.end(); ++itFeatures) {
+                int hashValue = _intHashSimple((*itFeatures +1) * (j+1) * A, MAX_VALUE);
                 if (hashValue < minHashValue) {
                     minHashValue = hashValue;
                 }
             }
-            signatureHash[i] = minHashValue;
+            signatureHash[j] = minHashValue;
         }
         // reduce number of hash values by a factor of blockSize
+        int k = 0;
         std::vector<int> signature;
         signature.reserve((numberOfHashFunctions / blockSize) + 1);
-        int i = 0;
-        while (i < (numberOfHashFunctions - blockSize)) {
+        while (k < (numberOfHashFunctions)) {
             // use computed hash value as a seed for the next computation
-            int signatureBlockValue = signatureHash[i];
-            for (int j = 0; j < blockSize; ++j){
-                signatureBlockValue = _intHashSimple((signatureHash[i+j]) * signatureBlockValue * A, MAX_VALUE);
+            int signatureBlockValue = signatureHash[k];
+            for (int j = 0; j < blockSize; ++j) {
+                signatureBlockValue = _intHashSimple((signatureHash[k+j]) * signatureBlockValue * A, MAX_VALUE);
             }
             signature.push_back(signatureBlockValue);
-            i += blockSize;
+            k += blockSize; 
         }
-#pragma omp critical
-        instanceSignature[k] = signature;
+#pragma critical
+        instanceSignature[index] = signature;
+
     }
     return instanceSignature;
 }
 // compute the complete inverse index for all given instances and theire non null features
-std::vector<std::map<int, std::vector<int> > >*  _computeInverseIndex(const int numberOfHashFunctions,
-                                                                std::map<int, std::vector<int> >& instance_featureVector,
-                                                                const int blockSize, const int maxBinSize, const int numberOfCores, int chunkSize,
-                                                                std::vector<std::map<int, std::vector<int> > >* inverseIndex ) {
+std::pair< std::vector<std::map<int, std::vector<int> > >*, std::map<int, std::vector<int> >* >
+    _computeInverseIndex(const int numberOfHashFunctions,
+        std::map<int, std::vector<int> >& instance_featureVector,
+        const int blockSize, const int maxBinSize, const int numberOfCores, int chunkSize,
+        std::vector<std::map<int, std::vector<int> > >* inverseIndex,
+        std::map<int, std::vector<int> >* signatureStorage ) {
 
     // if NULL than the inverse index is new created. Otherwise it is extended.
     if (inverseIndex == NULL) {
         inverseIndex = new std::vector<std::map<int, std::vector<int> > >();
     }
-
+    if (signatureStorage == NULL) {
+        signatureStorage = new std::map<int, std::vector<int> >();
+    }
     int inverseIndexSize = ceil(((float) numberOfHashFunctions / (float) blockSize)+1);
     inverseIndex->resize(inverseIndexSize);
     if (chunkSize <= 0) {
@@ -156,6 +173,7 @@ std::vector<std::map<int, std::vector<int> > >*  _computeInverseIndex(const int 
 
         // insert in inverse index
 #pragma omp critical
+        signatureStorage->operator[](instanceId->first) = signature;
         for (int j = 0; j < signature.size(); ++j) {
             itHashValue_InstanceVector = inverseIndex->operator[](j).find(signature[j]);
             // if for hash function h_i() the given hash values is already stored
@@ -179,7 +197,8 @@ std::vector<std::map<int, std::vector<int> > >*  _computeInverseIndex(const int 
             }
         }
     }
-    return inverseIndex;
+    std::pair< std::vector<std::map<int, std::vector<int> > >*, std::map<int, std::vector<int> >* > returnValue (inverseIndex, signatureStorage);
+    return returnValue;
 }
 
 std::pair<std::vector< std::vector<int> > , std::vector< std::vector<float> > > _computeNeighbors(
@@ -313,23 +332,30 @@ static PyObject* computeInverseIndex(PyObject* self, PyObject* args)
         }
     }
     // compute inverse index in c++
-    std::vector<std::map<int, std::vector<int> > >* inverseIndex = _computeInverseIndex(numberOfHashFunctions, instance_featureVector,
-                                     blockSize, maxBinSize, numberOfCores, chunkSize, NULL);
-
+    std::pair<std::vector<std::map<int, std::vector<int> > >*, std::map<int, std::vector<int> >* > index_signatureStorage =
+                     _computeInverseIndex(numberOfHashFunctions, instance_featureVector,
+                                     blockSize, maxBinSize, numberOfCores, chunkSize, NULL, NULL);
+    std::vector<std::map<int, std::vector<int> > >* inverseIndex = index_signatureStorage.first;
+    std::map<int, std::vector<int> >* signatureStorage = index_signatureStorage.second;
     size_t adressOfInverseIndex = reinterpret_cast<size_t>(inverseIndex);
+    size_t adressOfSignatureStorage= reinterpret_cast<size_t>(signatureStorage);
 
    // std::cout << "InverseIndexPointer_Build: "  << adressOfInverseIndex << std::endl << std::flush;
     //std::cout << "First element in first map BEVOR restore: " << inverseIndex->at(50).begin()->second.size() << std::endl << std::flush;
 
     PyObject * pointerToInverseIndex = Py_BuildValue("k", adressOfInverseIndex);
-    return pointerToInverseIndex;
+    PyObject * pointerToSignatureStorage = Py_BuildValue("k", adressOfSignatureStorage);
+    PyObject * outList = PyList_New(2);
+    PyList_SetItem(outList, 0, pointerToInverseIndex);
+    PyList_SetItem(outList, 1, pointerToSignatureStorage);
+    return outList;
 }
 // parse python call to c++; execute c++ and parse it back to python
 static PyObject* computeSignature(PyObject* self, PyObject* args)
 {
     int numberOfHashFunctions, blockSize, numberOfCores, chunkSize;
-    std::vector< std::vector<int> > instanceFeatureVector;
-
+    std::map< int, std::vector<int> > instanceFeatureVector;
+    size_t addressSignatureStorage;
 
     PyObject * listInstancesObj;
     PyObject * listFeaturesObj;
@@ -338,9 +364,10 @@ static PyObject* computeSignature(PyObject* self, PyObject* args)
     PyObject * intFeaturesObj;
     int instanceOld = -1;
   
-    if (!PyArg_ParseTuple(args, "iO!O!iii", &numberOfHashFunctions,
+    if (!PyArg_ParseTuple(args, "iO!O!iiik", &numberOfHashFunctions,
                         &PyList_Type, &listInstancesObj,
-                        &PyList_Type, &listFeaturesObj, &blockSize, &numberOfCores, &chunkSize))
+                        &PyList_Type, &listFeaturesObj, &blockSize, &numberOfCores, &chunkSize,
+                        &addressSignatureStorage))
         return NULL;
 
     int numLinesInstances = PyList_Size(listInstancesObj);
@@ -367,20 +394,24 @@ static PyObject* computeSignature(PyObject* self, PyObject* args)
             featureIds.push_back(featureValue);
             instanceOld = instanceValue;
             if (i == numLinesInstances-1) {
-                instanceFeatureVector.push_back(featureIds);
+                instanceFeatureVector[instanceOld] = featureIds;
             }
         } else {
             if (instanceOld != -1 ) {
-                instanceFeatureVector.push_back(featureIds);
+                instanceFeatureVector[instanceOld] = featureIds;
             }
             featureIds.clear();
 //            instanceFeatureVector.push_back(featureIds);
             instanceOld = instanceValue;
         }
     }
+    // get pointer to signature storage
+    std::map<int, std::vector<int> >* signatureStorage =
+            reinterpret_cast<std::map<int, std::vector<int> >* >(addressSignatureStorage);
     // compute in c++
     std::vector< std::vector<int> >signatures = _computeSignature(numberOfHashFunctions, instanceFeatureVector,
-                                                                                    blockSize,numberOfCores, chunkSize);
+                                                                                    blockSize,numberOfCores, chunkSize,
+                                                                                    *signatureStorage);
     int sizeOfSignature = signatures.size();
     PyObject * outListInstancesObj = PyList_New(sizeOfSignature);
     for (int i = 0; i < sizeOfSignature; ++i) {
@@ -404,10 +435,12 @@ static PyObject* computeNeighborhood(PyObject* self, PyObject* args)
     // excessFactor, maxBinSize, inverseIndex
 
     size_t addressInverseIndex;
+    size_t addressSignatureStorage;
+
     int numberOfHashFunctions, blockSize, numberOfCores, chunkSize,
     sizeOfNeighborhood, MAX_VALUE, minimalBlocksInCommon, maxBinSize,
     maximalNumberOfHashCollisions, excessFactor;
-    std::vector< std::vector<int> > instanceFeatureVector;
+    std::map< int, std::vector<int> > instanceFeatureVector;
 
     PyObject * listInstancesObj;
     PyObject * listFeaturesObj;
@@ -416,13 +449,13 @@ static PyObject* computeNeighborhood(PyObject* self, PyObject* args)
     PyObject * intFeaturesObj;
     int instanceOld = -1;
   
-    if (!PyArg_ParseTuple(args, "iO!O!iiiiiiiiik", &numberOfHashFunctions,
+    if (!PyArg_ParseTuple(args, "iO!O!iiiiiiiiikk", &numberOfHashFunctions,
                         &PyList_Type, &listInstancesObj,
                         &PyList_Type, &listFeaturesObj, &blockSize, 
                         &numberOfCores, &chunkSize, &sizeOfNeighborhood, 
                         &MAX_VALUE, &minimalBlocksInCommon, &maxBinSize,
                         &maximalNumberOfHashCollisions, &excessFactor, 
-                        &addressInverseIndex))
+                        &addressInverseIndex, &addressSignatureStorage))
         return NULL;
 
     int numLinesInstances = PyList_Size(listInstancesObj);
@@ -449,11 +482,11 @@ static PyObject* computeNeighborhood(PyObject* self, PyObject* args)
             featureIds.push_back(featureValue);
             instanceOld = instanceValue;
             if (i == numLinesInstances-1) {
-                instanceFeatureVector.push_back(featureIds);
+                instanceFeatureVector[instanceOld] = featureIds;
             }
         } else {
             if (instanceOld != -1 ) {
-                instanceFeatureVector.push_back(featureIds);
+                instanceFeatureVector[instanceOld] = featureIds;
             }
             featureIds.clear();
 //            instanceFeatureVector.push_back(featureIds);
@@ -464,10 +497,12 @@ static PyObject* computeNeighborhood(PyObject* self, PyObject* args)
     // get pointer to inverse index
     std::vector<std::map<int, std::vector<int> > >* inverseIndex =
             reinterpret_cast<std::vector<std::map<int, std::vector<int> > >* >(addressInverseIndex);
-
+    // get pointer to signature storage
+    std::map<int, std::vector<int> >* signatureStorage =
+            reinterpret_cast<std::map<int, std::vector<int> >* >(addressSignatureStorage);
     // compute signatures of the instances
     std::vector< std::vector<int> >signatures = _computeSignature(numberOfHashFunctions, instanceFeatureVector,
-                                                                                    blockSize,numberOfCores, chunkSize);
+                                                                blockSize,numberOfCores, chunkSize, *signatureStorage);
 
     // compute the k-nearest neighbors
     std::pair<std::vector< std::vector<int> > , std::vector< std::vector<float> > > neighborsDistances = 
@@ -509,6 +544,8 @@ static PyObject* computeNeighborhood(PyObject* self, PyObject* args)
 static PyObject* computePartialFit(PyObject* self, PyObject* args)
 {
     size_t addressInverseIndex;
+    size_t addressSignatureStorage;
+
     int numberOfHashFunctions, blockSize, maxBinSize, numberOfCores, chunkSize;
     std::map<int, std::vector<int> > instance_featureVector;
     PyObject * instancesListObj;
@@ -516,8 +553,9 @@ static PyObject* computePartialFit(PyObject* self, PyObject* args)
     PyObject * instanceIntObj;
     PyObject * featureIntObj;
 
-    if (!PyArg_ParseTuple(args, "iO!O!iiiik", &numberOfHashFunctions, &PyList_Type, &instancesListObj, &PyList_Type,
-                            &featuresListObj, &blockSize, &maxBinSize, &numberOfCores, &chunkSize, &addressInverseIndex))
+    if (!PyArg_ParseTuple(args, "iO!O!iiiikk", &numberOfHashFunctions, &PyList_Type, &instancesListObj, &PyList_Type,
+                            &featuresListObj, &blockSize, &maxBinSize, &numberOfCores, &chunkSize, &addressInverseIndex,
+                            &addressSignatureStorage))
         return NULL;
     //std::cout << "Number of cors: " << numberOfCores;
     int sizeOfFeatureVector = PyList_Size(instancesListObj);
@@ -555,18 +593,27 @@ static PyObject* computePartialFit(PyObject* self, PyObject* args)
     // get pointer to inverse index
     std::vector<std::map<int, std::vector<int> > >* inverseIndex =
             reinterpret_cast<std::vector<std::map<int, std::vector<int> > >* >(addressInverseIndex);
-
+    // get pointer to inverse index
+    std::map<int, std::vector<int> >* signatureStorage =
+            reinterpret_cast<std::map<int, std::vector<int> >* >(addressSignatureStorage);
     // compute inverse index in c++
-    inverseIndex = _computeInverseIndex(numberOfHashFunctions, instance_featureVector,
-                                     blockSize, maxBinSize, numberOfCores, chunkSize, inverseIndex);
-
+    std::pair<std::vector<std::map<int, std::vector<int> > >*, std::map<int, std::vector<int> >* > index_signatureStorage =
+                     _computeInverseIndex(numberOfHashFunctions, instance_featureVector,
+                                     blockSize, maxBinSize, numberOfCores, chunkSize, inverseIndex, signatureStorage);
+    inverseIndex = index_signatureStorage.first;
+    signatureStorage = index_signatureStorage.second;
     size_t adressOfInverseIndex = reinterpret_cast<size_t>(inverseIndex);
+    size_t adressOfSignatureStorage= reinterpret_cast<size_t>(signatureStorage);
 
-    //std::cout << "InverseIndexPointer_Build: "  << adressOfInverseIndex << std::endl << std::flush;
+   // std::cout << "InverseIndexPointer_Build: "  << adressOfInverseIndex << std::endl << std::flush;
     //std::cout << "First element in first map BEVOR restore: " << inverseIndex->at(50).begin()->second.size() << std::endl << std::flush;
 
     PyObject * pointerToInverseIndex = Py_BuildValue("k", adressOfInverseIndex);
-    return pointerToInverseIndex;
+    PyObject * pointerToSignatureStorage = Py_BuildValue("k", adressOfSignatureStorage);
+    PyObject * outList = PyList_New(2);
+    PyList_SetItem(outList, 0, pointerToInverseIndex);
+    PyList_SetItem(outList, 1, pointerToSignatureStorage);
+    return outList;
 }
 
 
