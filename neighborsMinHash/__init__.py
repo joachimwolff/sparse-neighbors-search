@@ -14,3 +14,4 @@ from neighbors.minHashKNeighborsClassifier import MinHashKNeighborsClassifier
 from neighbors.minHashNearestNeighbors import MinHashNearestNeighbors
 from computation.inverseIndex import InverseIndex
 import util
+import clustering
