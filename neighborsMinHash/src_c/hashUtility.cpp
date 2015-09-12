@@ -57,7 +57,7 @@ bool mapSortDescByValue(const sort_map& a, const sort_map& b) {
 std::vector< std::vector<int> > _computeSignature(const int numberOfHashFunctions,
                             const std::map< int, std::vector<int> > &instanceFeatureVector, const int blockSize,
                             const int numberOfCores, int chunkSize,
-                            const std::map<int, std::vector<int> >& signatureStorage) {
+                            std::map<int, std::vector<int> >* signatureStorage) {
 
     const int sizeOfInstances = instanceFeatureVector.size();
     std::vector< std::vector<int> > instanceSignature;
@@ -65,6 +65,7 @@ std::vector< std::vector<int> > _computeSignature(const int numberOfHashFunction
     if (chunkSize <= 0) {
         chunkSize = ceil(instanceFeatureVector.size() / static_cast<float>(numberOfCores));
     }
+    // std::cout << "computeSignature: size of signatureStorage: " << (*signatureStorage).size() << std::endl;
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
@@ -73,8 +74,16 @@ std::vector< std::vector<int> > _computeSignature(const int numberOfHashFunction
 
         std::map<int, std::vector<int> >::const_iterator instanceId = instanceFeatureVector.begin();
         std::advance(instanceId, index);
-        std::map<int, std::vector<int> >::const_iterator signatureIt = signatureStorage.find(instanceId->first);
-        if (signatureIt != signatureStorage.end()) {
+        // compute unique id
+        int signatureId = 0;
+        for (std::vector<int>::const_iterator itFeatures = instanceId->second.begin(); itFeatures != instanceId->second.end(); ++itFeatures) {
+                signatureId = _intHashSimple((*itFeatures +1) * (signatureId+1) * A, MAX_VALUE);
+                // std::cout << "Feature id: " << *itFeatures << std::endl;
+
+        }
+        // std::cout << "SignatuteID: " << signatureId << std::endl;
+        std::map<int, std::vector<int> >::const_iterator signatureIt = (*signatureStorage).find(signatureId);
+        if (signatureIt != (*signatureStorage).end()) {
 #pragma critical
             instanceSignature[index] = signatureIt->second;
             continue;
@@ -108,8 +117,9 @@ std::vector< std::vector<int> > _computeSignature(const int numberOfHashFunction
             k += blockSize; 
         }
 #pragma critical
-        instanceSignature[index] = signature;
 
+        instanceSignature[index] = signature;
+        signatureStorage->operator[](signatureId) = signature;
     }
     return instanceSignature;
 }
@@ -147,6 +157,7 @@ std::pair< std::vector<std::map<int, std::vector<int> > >*, std::map<int, std::v
         std::vector<int> signatureHash(numberOfHashFunctions);
         // for every hash function: compute the hash values of all features and take the minimum of these
         // as the hash value for one hash function --> h_j(x) = argmin (x_i of x) f_j(x_i)
+        int signatureId = 0;
         for(int j = 0; j < numberOfHashFunctions; ++j) {
             int minHashValue = MAX_VALUE;
             for (std::vector<int>::iterator itFeatures = instanceId->second.begin(); itFeatures != instanceId->second.end(); ++itFeatures) {
@@ -154,9 +165,15 @@ std::pair< std::vector<std::map<int, std::vector<int> > >*, std::map<int, std::v
                 if (hashValue < minHashValue) {
                     minHashValue = hashValue;
                 }
+                if (j == 0) {
+                    signatureId = _intHashSimple((*itFeatures +1) * (signatureId+1) * A, MAX_VALUE);
+                    // std::cout << "Feature id: " << *itFeatures << std::endl;
+                }
             }
             signatureHash[j] = minHashValue;
         }
+        
+
         // reduce number of hash values by a factor of blockSize
         int k = 0;
         std::vector<int> signature;
@@ -170,10 +187,11 @@ std::pair< std::vector<std::map<int, std::vector<int> > >*, std::map<int, std::v
             signature.push_back(signatureBlockValue);
             k += blockSize; 
         }
+        // std::cout << "SignatuteID: " << signatureId << std::endl;
 
+        signatureStorage->operator[](signatureId) = signature;
         // insert in inverse index
 #pragma omp critical
-        signatureStorage->operator[](instanceId->first) = signature;
         for (int j = 0; j < signature.size(); ++j) {
             itHashValue_InstanceVector = inverseIndex->operator[](j).find(signature[j]);
             // if for hash function h_i() the given hash values is already stored
@@ -337,6 +355,7 @@ static PyObject* computeInverseIndex(PyObject* self, PyObject* args)
                                      blockSize, maxBinSize, numberOfCores, chunkSize, NULL, NULL);
     std::vector<std::map<int, std::vector<int> > >* inverseIndex = index_signatureStorage.first;
     std::map<int, std::vector<int> >* signatureStorage = index_signatureStorage.second;
+    std::cout << "Size of signatureStorage: " << (*signatureStorage).size();
     size_t adressOfInverseIndex = reinterpret_cast<size_t>(inverseIndex);
     size_t adressOfSignatureStorage= reinterpret_cast<size_t>(signatureStorage);
 
@@ -411,7 +430,7 @@ static PyObject* computeSignature(PyObject* self, PyObject* args)
     // compute in c++
     std::vector< std::vector<int> >signatures = _computeSignature(numberOfHashFunctions, instanceFeatureVector,
                                                                                     blockSize,numberOfCores, chunkSize,
-                                                                                    *signatureStorage);
+                                                                                    signatureStorage);
     int sizeOfSignature = signatures.size();
     PyObject * outListInstancesObj = PyList_New(sizeOfSignature);
     for (int i = 0; i < sizeOfSignature; ++i) {
@@ -489,7 +508,7 @@ static PyObject* computeNeighborhood(PyObject* self, PyObject* args)
                 instanceFeatureVector[instanceOld] = featureIds;
             }
             featureIds.clear();
-//            instanceFeatureVector.push_back(featureIds);
+            featureIds.push_back(featureValue);
             instanceOld = instanceValue;
         }
     }
@@ -502,7 +521,7 @@ static PyObject* computeNeighborhood(PyObject* self, PyObject* args)
             reinterpret_cast<std::map<int, std::vector<int> >* >(addressSignatureStorage);
     // compute signatures of the instances
     std::vector< std::vector<int> >signatures = _computeSignature(numberOfHashFunctions, instanceFeatureVector,
-                                                                blockSize,numberOfCores, chunkSize, *signatureStorage);
+                                                                blockSize,numberOfCores, chunkSize, signatureStorage);
 
     // compute the k-nearest neighbors
     std::pair<std::vector< std::vector<int> > , std::vector< std::vector<float> > > neighborsDistances = 
