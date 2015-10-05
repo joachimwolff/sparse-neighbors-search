@@ -44,7 +44,20 @@ class MinHashSpectralClustering():
         self.excess_factor = excess_factor
         self.number_of_cores = number_of_cores
         self.chunk_size = chunk_size
-
+        self._spectralClustering = SpectralClustering(n_clusters = self.n_clusters, 
+                                                eigen_solver = self.eigen_solver,
+                                                random_state = self.random_state,
+                                                n_init = self.n_init,
+                                                gamma =  self.gamma,
+                                                affinity = self.affinity,
+                                                n_neighbors = self.n_neighbors,
+                                                eigen_tol = self.eigen_tol,
+                                                assign_labels = self.assign_labels,
+                                                degree = self.degree,
+                                                coef0 = self.coef0 ,
+                                                kernel_params = self.kernel_params)
+        # only for comptible issues
+        self.labels_ = None
     def fit(self, X, y=None):
         minHashNeighbors = MinHashNearestNeighbors(n_neighbors = self.n_neighbors, 
         radius = self.radius, fast = self.fast,
@@ -57,19 +70,8 @@ class MinHashSpectralClustering():
         chunk_size = self.chunk_size)
         minHashNeighbors.fit(X, y)
         graph_result = minHashNeighbors.kneighbors_graph()
-        spectralClustering = SpectralClustering(n_clusters = self.n_clusters, 
-                                                eigen_solver = self.eigen_solver,
-                                                random_state = self.random_state,
-                                                n_init = self.n_init,
-                                                gamma =  self.gamma,
-                                                affinity = self.affinity,
-                                                n_neighbors = self.n_neighbors,
-                                                eigen_tol = self.eigen_tol,
-                                                assign_labels = self.assign_labels,
-                                                degree = self.degree,
-                                                coef0 = self.coef0 ,
-                                                kernel_params = self.kernel_params)
-        spectralClustering.fit(graph_result)
-    def fit_predict(X, y=None):
-        pass 
-
+        self._spectralClustering.fit(graph_result)
+        self.labels_ = self._spectralClustering.labels_
+    def fit_predict(self, X, y=None):
+        self.fit(X, y)
+        return self._spectralClustering.labels_

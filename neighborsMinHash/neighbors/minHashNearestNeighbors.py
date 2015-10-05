@@ -479,15 +479,17 @@ class MinHashNearestNeighbors():
                continue
             root = i if X is None else neighborhood[i][0]
             j = 0
-            for node in neighborhood[i][start_value:]:
+            for node in xrange(len(neighborhood[i][start_value:])):
+                #print "node", node
+                #print "length of distances[i]: ", len(distances[i])
                 if distances[i][node] == -1:
                     end_value = j
                     break
-                if root < 0 or node < 0:
+                if root < 0 or neighborhood[i][node] < 0:
                     end_value = j
                     break;
                 row.append(root)
-                col.append(node)
+                col.append(neighborhood[i][node])
                 j += 1
             if j > 0 and  j < len(neighborhood[i][start_value:]):
                 data.extend(distances[i][start_value:end_value])
@@ -497,9 +499,9 @@ class MinHashNearestNeighbors():
         if return_distance:
             data = [1] * len(row)
 
-        print "Row: ", row
-        print "Col: ", col
-        print "data: ", data
+        #print "Row: ", row
+        #print "Col: ", col
+        #print "data: ", data
         return csr_matrix((data, (row, col)))
         
     def set_params(**params):
