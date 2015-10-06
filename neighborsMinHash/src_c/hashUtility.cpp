@@ -25,14 +25,20 @@
 #include <algorithm>
 #include <utility>
 
-const int MAX_VALUE = 2147483647;
+typedef std::vector<size_t> vsize_t;
+typedef std::map< size_t, vsize_t > umapVector;
+typedef std::vector<vsize_t > vvsize_t;
+typedef std::vector< std::vector<float> > vvfloat;
+typedef std::vector<std::map<size_t, size_t> > vmSize_tSize_t;
+
+const size_t MAX_VALUE = 2147483647;
 const double A = sqrt(2) - 1;
   
 
 class sort_map {
   public:
-	int key;
-	int val;
+	size_t key;
+	size_t val;
 };
 
 bool mapSortDescByValue(const sort_map& a, const sort_map& b) {
@@ -40,7 +46,7 @@ bool mapSortDescByValue(const sort_map& a, const sort_map& b) {
 }
 
 // Return an hash value for a given key in defined range aModulo
- int _intHashSimple(int key, int aModulo) {
+ size_t _size_tHashSimple(size_t key, size_t aModulo) {
     key = ~key + (key << 15);
     key = key ^ (key >> 12);
     key = key + (key << 2);
@@ -50,13 +56,13 @@ bool mapSortDescByValue(const sort_map& a, const sort_map& b) {
     return key % aModulo;
 }
 // compute the signature for one instance given the number of hash functions, the feature ids and a block size
-std::vector< std::vector<int> > _computeSignature(const int numberOfHashFunctions,
-                            const std::map< int, std::vector<int> > &instanceFeatureVector, const int blockSize,
-                            const int numberOfCores, int chunkSize,
-                            std::map<int, std::vector<int> >* signatureStorage) {
+vvsize_t _computeSignature(const size_t numberOfHashFunctions,
+                            const umapVector &instanceFeatureVector, const size_t blockSize,
+                            const size_t numberOfCores, size_t chunkSize,
+                            umapVector* signatureStorage) {
 
-    const int sizeOfInstances = instanceFeatureVector.size();
-    std::vector< std::vector<int> > instanceSignature;
+    const size_t sizeOfInstances = instanceFeatureVector.size();
+    vvsize_t instanceSignature;
     instanceSignature.resize(sizeOfInstances);
     if (chunkSize <= 0) {
         chunkSize = ceil(instanceFeatureVector.size() / static_cast<float>(numberOfCores));
@@ -65,30 +71,30 @@ std::vector< std::vector<int> > _computeSignature(const int numberOfHashFunction
     omp_set_dynamic(0);
 #endif
 #pragma omp parallel for schedule(static, chunkSize) num_threads(numberOfCores)
-    for(int index = 0; index < instanceFeatureVector.size(); ++index) {
+    for(size_t index = 0; index < instanceFeatureVector.size(); ++index) {
 
-        std::map<int, std::vector<int> >::const_iterator instanceId = instanceFeatureVector.begin();
+        auto instanceId = instanceFeatureVector.begin();
         std::advance(instanceId, index);
         // compute unique id
-        int signatureId = 0;
-        for (std::vector<int>::const_iterator itFeatures = instanceId->second.begin(); itFeatures != instanceId->second.end(); ++itFeatures) {
-                signatureId = _intHashSimple((*itFeatures +1) * (signatureId+1) * A, MAX_VALUE);
+        size_t signatureId = 0;
+        for (auto itFeatures = instanceId->second.begin(); itFeatures != instanceId->second.end(); ++itFeatures) {
+                signatureId = _size_tHashSimple((*itFeatures +1) * (signatureId+1) * A, MAX_VALUE);
         }
-        std::map<int, std::vector<int> >::const_iterator signatureIt = (*signatureStorage).find(signatureId);
+        auto signatureIt = (*signatureStorage).find(signatureId);
         if (signatureIt != (*signatureStorage).end()) {
 #pragma critical
             instanceSignature[index] = signatureIt->second;
             continue;
         }
-        std::map<int, std::vector<int> >::iterator itHashValue_InstanceVector;
-        std::vector<std::map<int, int> > hashStorage;
-        std::vector<int> signatureHash(numberOfHashFunctions);
+        // auto itHashValue_InstanceVector;
+        vmSize_tSize_t hashStorage;
+        vsize_t signatureHash(numberOfHashFunctions);
         // for every hash function: compute the hash values of all features and take the minimum of these
         // as the hash value for one hash function --> h_j(x) = argmin (x_i of x) f_j(x_i)
-        for(int j = 0; j < numberOfHashFunctions; ++j) {
-            int minHashValue = MAX_VALUE;
-            for (std::vector<int>::const_iterator itFeatures = instanceId->second.begin(); itFeatures != instanceId->second.end(); ++itFeatures) {
-                int hashValue = _intHashSimple((*itFeatures +1) * (j+1) * A, MAX_VALUE);
+        for(size_t j = 0; j < numberOfHashFunctions; ++j) {
+            size_t minHashValue = MAX_VALUE;
+            for (auto itFeatures = instanceId->second.begin(); itFeatures != instanceId->second.end(); ++itFeatures) {
+                size_t hashValue = _size_tHashSimple((*itFeatures +1) * (j+1) * A, MAX_VALUE);
                 if (hashValue < minHashValue) {
                     minHashValue = hashValue;
                 }
@@ -96,14 +102,14 @@ std::vector< std::vector<int> > _computeSignature(const int numberOfHashFunction
             signatureHash[j] = minHashValue;
         }
         // reduce number of hash values by a factor of blockSize
-        int k = 0;
-        std::vector<int> signature;
+        size_t k = 0;
+        vsize_t signature;
         signature.reserve((numberOfHashFunctions / blockSize) + 1);
         while (k < (numberOfHashFunctions)) {
             // use computed hash value as a seed for the next computation
-            int signatureBlockValue = signatureHash[k];
-            for (int j = 0; j < blockSize; ++j) {
-                signatureBlockValue = _intHashSimple((signatureHash[k+j]) * signatureBlockValue * A, MAX_VALUE);
+            size_t signatureBlockValue = signatureHash[k];
+            for (size_t j = 0; j < blockSize; ++j) {
+                signatureBlockValue = _size_tHashSimple((signatureHash[k+j]) * signatureBlockValue * A, MAX_VALUE);
             }
             signature.push_back(signatureBlockValue);
             k += blockSize; 
@@ -116,21 +122,21 @@ std::vector< std::vector<int> > _computeSignature(const int numberOfHashFunction
     return instanceSignature;
 }
 // compute the complete inverse index for all given instances and theire non null features
-std::pair< std::vector<std::map<int, std::vector<int> > >*, std::map<int, std::vector<int> >* >
-    _computeInverseIndex(const int numberOfHashFunctions,
-        std::map<int, std::vector<int> >& instance_featureVector,
-        const int blockSize, const int maxBinSize, const int numberOfCores, int chunkSize,
-        std::vector<std::map<int, std::vector<int> > >* inverseIndex,
-        std::map<int, std::vector<int> >* signatureStorage, const int lazyFitting) {
+std::pair< std::vector<umapVector >*, umapVector* >
+    _computeInverseIndex(const size_t numberOfHashFunctions,
+        umapVector& instance_featureVector,
+        const size_t blockSize, const size_t maxBinSize, const size_t numberOfCores, size_t chunkSize,
+        std::vector<umapVector >* inverseIndex,
+        umapVector* signatureStorage, const size_t lazyFitting) {
 
     // if NULL than the inverse index is new created. Otherwise it is extended.
     if (inverseIndex == NULL) {
-        inverseIndex = new std::vector<std::map<int, std::vector<int> > >();
+        inverseIndex = new std::vector<umapVector >();
     }
     if (signatureStorage == NULL) {
-        signatureStorage = new std::map<int, std::vector<int> >();
+        signatureStorage = new umapVector();
     }
-    int inverseIndexSize = ceil(((float) numberOfHashFunctions / (float) blockSize)+1);
+    size_t inverseIndexSize = ceil(((float) numberOfHashFunctions / (float) blockSize)+1);
     inverseIndex->resize(inverseIndexSize);
     if (chunkSize <= 0) {
         chunkSize = ceil(instance_featureVector.size() / static_cast<float>(numberOfCores));
@@ -139,41 +145,40 @@ std::pair< std::vector<std::map<int, std::vector<int> > >*, std::map<int, std::v
     omp_set_dynamic(0);
 #endif
 #pragma omp parallel for schedule(static, chunkSize) num_threads(numberOfCores)
-    for(int index = 0; index < instance_featureVector.size(); ++index){
+    for(size_t index = 0; index < instance_featureVector.size(); ++index){
 
-        std::map<int, std::vector<int> >::iterator instanceId = instance_featureVector.begin();
+        auto instanceId = instance_featureVector.begin();
         std::advance(instanceId, index);
 
-        std::map<int, std::vector<int> >::iterator itHashValue_InstanceVector;
-        std::vector<std::map<int, int> > hashStorage;
-        std::vector<int> signatureHash(numberOfHashFunctions);
+        vmSize_tSize_t hashStorage;
+        vsize_t signatureHash(numberOfHashFunctions);
         // for every hash function: compute the hash values of all features and take the minimum of these
         // as the hash value for one hash function --> h_j(x) = argmin (x_i of x) f_j(x_i)
-        int signatureId = 0;
-        for(int j = 0; j < numberOfHashFunctions; ++j) {
-            int minHashValue = MAX_VALUE;
-            for (std::vector<int>::iterator itFeatures = instanceId->second.begin(); itFeatures != instanceId->second.end(); ++itFeatures) {
-                int hashValue = _intHashSimple((*itFeatures +1) * (j+1) * A, MAX_VALUE);
+        size_t signatureId = 0;
+        for(size_t j = 0; j < numberOfHashFunctions; ++j) {
+            size_t minHashValue = MAX_VALUE;
+            for (auto itFeatures = instanceId->second.begin(); itFeatures != instanceId->second.end(); ++itFeatures) {
+                size_t hashValue = _size_tHashSimple((*itFeatures +1) * (j+1) * A, MAX_VALUE);
                 if (hashValue < minHashValue) {
                     minHashValue = hashValue;
                 }
                 if (!lazyFitting) {
                     if (j == 0) {
-                        signatureId = _intHashSimple((*itFeatures +1) * (signatureId+1) * A, MAX_VALUE);
+                        signatureId = _size_tHashSimple((*itFeatures +1) * (signatureId+1) * A, MAX_VALUE);
                     }
                 }
             }
             signatureHash[j] = minHashValue;
         }
         // reduce number of hash values by a factor of blockSize
-        int k = 0;
-        std::vector<int> signature;
+        size_t k = 0;
+        vsize_t signature;
         signature.reserve((numberOfHashFunctions / blockSize) + 1);
         while (k < (numberOfHashFunctions)) {
             // use computed hash value as a seed for the next computation
-            int signatureBlockValue = signatureHash[k];
-            for (int j = 0; j < blockSize; ++j) {
-                signatureBlockValue = _intHashSimple((signatureHash[k+j]) * signatureBlockValue * A, MAX_VALUE);
+            size_t signatureBlockValue = signatureHash[k];
+            for (size_t j = 0; j < blockSize; ++j) {
+                signatureBlockValue = _size_tHashSimple((signatureHash[k+j]) * signatureBlockValue * A, MAX_VALUE);
             }
             signature.push_back(signatureBlockValue);
             k += blockSize; 
@@ -185,48 +190,48 @@ std::pair< std::vector<std::map<int, std::vector<int> > >*, std::map<int, std::v
         }
         // insert in inverse index
 #pragma omp critical
-        for (int j = 0; j < signature.size(); ++j) {
-            itHashValue_InstanceVector = inverseIndex->operator[](j).find(signature[j]);
+        for (size_t j = 0; j < signature.size(); ++j) {
+            auto itHashValue_InstanceVector = inverseIndex->operator[](j).find(signature[j]);
             // if for hash function h_i() the given hash values is already stored
             if (itHashValue_InstanceVector != inverseIndex->operator[](j).end()) {
                 // insert the instance id if not too many collisions (maxBinSize)
                 if (itHashValue_InstanceVector->second.size() < maxBinSize) {
-                    // insert only if there wasn't too any collisions in the past
-                    if (itHashValue_InstanceVector->second.size() > 0 && itHashValue_InstanceVector->second[0] != -1) {
+                    // insert only if there wasn't any collisions in the past
+                    if (itHashValue_InstanceVector->second.size() > 0 && itHashValue_InstanceVector->second[0] != MAX_VALUE) {
                         itHashValue_InstanceVector->second.push_back(instanceId->first);
                     }
                 } else {
                     // too many collisions: delete stored ids and set it to error value -1
                     itHashValue_InstanceVector->second.clear();
-                    itHashValue_InstanceVector->second.push_back(-1);
+                    itHashValue_InstanceVector->second.push_back(MAX_VALUE);
                 }
             } else {
                 // given hash value for the specific hash function was not avaible: insert new hash value
-                std::vector<int> instanceIdVector;
+                vsize_t instanceIdVector;
                 instanceIdVector.push_back(instanceId->first);
                 inverseIndex->operator[](j)[signature[j]] = instanceIdVector;
             }
         }
     }
-    std::pair< std::vector<std::map<int, std::vector<int> > >*, std::map<int, std::vector<int> >* > returnValue (inverseIndex, signatureStorage);
+    std::pair< std::vector<umapVector >*, umapVector* > returnValue (inverseIndex, signatureStorage);
     return returnValue;
 }
 
-std::pair<std::vector< std::vector<int> > , std::vector< std::vector<float> > > _computeNeighbors(
-                                const std::vector< std::vector<int> > signatures,
-                                const int sizeOfNeighborhood, const int MAX_VALUE,
-                                const int minimalBlocksInCommon, const int maxBinSize,
-                                const int numberOfCores, const float maximalNumberOfHashCollisions,
-                                int chunkSize, const int excessFactor,
-                                const std::vector<std::map<int, std::vector<int> > >& inverseIndex) {
+std::pair<vvsize_t , vvfloat > _computeNeighbors(
+                                const vvsize_t signatures,
+                                const size_t sizeOfNeighborhood, const size_t MAX_VALUE,
+                                const size_t minimalBlocksInCommon, const size_t maxBinSize,
+                                const size_t numberOfCores, const float maximalNumberOfHashCollisions,
+                                size_t chunkSize, const size_t excessFactor,
+                                const std::vector<umapVector >& inverseIndex) {
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
 
-    std::pair<std::vector< std::vector<int> > , std::vector< std::vector<float> > > returnVector;
+    std::pair<vvsize_t , vvfloat > returnVector;
 
-    std::vector< std::vector<int> > neighbors;
-    std::vector< std::vector<float> > distances;
+    vvsize_t neighbors;
+    vvfloat distances;
 
     neighbors.resize(signatures.size());
     distances.resize(signatures.size());
@@ -234,20 +239,20 @@ std::pair<std::vector< std::vector<int> > , std::vector< std::vector<float> > > 
         chunkSize = ceil(inverseIndex.size() / static_cast<float>(numberOfCores));
     }
 #pragma omp parallel for schedule(static, chunkSize) num_threads(numberOfCores)
-    for (int i = 0; i < signatures.size(); ++i) {
-        std::unordered_map<int, int> neighborhood;
-        for (int j = 0; j < signatures[i].size(); ++j) {
-            int hashID = signatures[i][j];
+    for (size_t i = 0; i < signatures.size(); ++i) {
+        std::map<size_t, size_t> neighborhood;
+        for (size_t j = 0; j < signatures[i].size(); ++j) {
+            size_t hashID = signatures[i][j];
             if (hashID != 0 && hashID != MAX_VALUE) {
-                int collisionSize = 0;
-                std::map<int, std::vector<int> >::const_iterator instances = inverseIndex.at(j).find(hashID);
+                size_t collisionSize = 0;
+                auto instances = inverseIndex.at(j).find(hashID);
                 if (instances != inverseIndex.at(j).end()) {
                     collisionSize = instances->second.size();
                 } else {
                     continue;
                 }
                 if (collisionSize < maxBinSize && collisionSize > 0) {
-                    for (int k = 0; k < instances->second.size(); ++k) {
+                    for (size_t k = 0; k < instances->second.size(); ++k) {
                         neighborhood[instances->second.at(k)] += 1;
                     }
                 }
@@ -256,20 +261,20 @@ std::pair<std::vector< std::vector<int> > , std::vector< std::vector<float> > > 
         std::vector< sort_map > neighborhoodVectorForSorting;
 
         sort_map mapForSorting;
-        for (std::unordered_map<int, int>::iterator it = neighborhood.begin(); it != neighborhood.end(); ++it) {
+        for (auto it = neighborhood.begin(); it != neighborhood.end(); ++it) {
             mapForSorting.key = (*it).first;
             mapForSorting.val = (*it).second;
             neighborhoodVectorForSorting.push_back(mapForSorting);
         }
         std::sort(neighborhoodVectorForSorting.begin(), neighborhoodVectorForSorting.end(), mapSortDescByValue);
-        std::vector<int> neighborhoodVector;
+        vsize_t neighborhoodVector;
         std::vector<float> distanceVector;
 
-        int sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(sizeOfNeighborhood * excessFactor), neighborhoodVectorForSorting.size());
-        int count = 0;
+        size_t sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(sizeOfNeighborhood * excessFactor), neighborhoodVectorForSorting.size());
+        size_t count = 0;
 
-        for (std::vector<sort_map>::iterator it = neighborhoodVectorForSorting.begin();
-                                                    it != neighborhoodVectorForSorting.end(); ++it) {
+        for (auto it = neighborhoodVectorForSorting.begin();
+                it != neighborhoodVectorForSorting.end(); ++it) {
             neighborhoodVector.push_back((*it).key);
             distanceVector.push_back(1 - ((*it).val / maximalNumberOfHashCollisions));
             ++count;
@@ -286,44 +291,23 @@ std::pair<std::vector< std::vector<int> > , std::vector< std::vector<float> > > 
     return returnVector;
 }
 
-// parse python call to c++; execute c++ and parse it back to python
-static PyObject* computeIntHash(PyObject* self, PyObject* args) {
-    int key, modulo, seed;
 
-    if (!PyArg_ParseTuple(args, "iii", &key, &modulo, &seed))
-        return NULL;
+umapVector _parseInstancesFeatures(PyObject * instancesListObj, PyObject * featuresListObj) {
+    PyObject * instanceSize_tObj;
+    PyObject * featureSize_tObj;
+    umapVector instance_featureVector;
+    vsize_t featureIds;
+    size_t instanceOld = 0;
+    size_t sizeOfFeatureVector = PyList_Size(instancesListObj);
 
-    return Py_BuildValue("i",   _intHashSimple(key * (seed + 1) * A, modulo));
-}
+    for (size_t i = 0; i < sizeOfFeatureVector; ++i) {
+        instanceSize_tObj = PyList_GetItem(instancesListObj, i);
+        featureSize_tObj = PyList_GetItem(featuresListObj, i);
+        size_t featureValue;
+        size_t instanceValue;
 
-// parse python call to c++; execute c++ and parse it back to python
-static PyObject* computeInverseIndex(PyObject* self, PyObject* args) {
-
-    int numberOfHashFunctions, blockSize, maxBinSize, numberOfCores, chunkSize, lazyFitting;
-    std::map<int, std::vector<int> > instance_featureVector;
-    PyObject * instancesListObj;
-    PyObject * featuresListObj;
-    PyObject * instanceIntObj;
-    PyObject * featureIntObj;
-
-    if (!PyArg_ParseTuple(args, "iO!O!iiiii", &numberOfHashFunctions, &PyList_Type, &instancesListObj, &PyList_Type,
-                            &featuresListObj, &blockSize, &maxBinSize, &numberOfCores, &chunkSize, &lazyFitting))
-        return NULL;
-    int sizeOfFeatureVector = PyList_Size(instancesListObj);
-    if (sizeOfFeatureVector < 0)	return NULL;
-    int instanceOld = -1;
-    int insert = 0;
-    std::vector<int> featureIds;
-    // parse from python list to a c++ map<int, vector<int> >
-    // where key == instance id and vector<int> == non null feature ids
-    for (int i = 0; i < sizeOfFeatureVector; ++i) {
-        instanceIntObj = PyList_GetItem(instancesListObj, i);
-        featureIntObj = PyList_GetItem(featuresListObj, i);
-        int featureValue;
-        int instanceValue;
-
-        PyArg_Parse(instanceIntObj, "i", &instanceValue);
-        PyArg_Parse(featureIntObj, "i", &featureValue);
+        PyArg_Parse(instanceSize_tObj, "k", &instanceValue);
+        PyArg_Parse(featureSize_tObj, "k", &featureValue);
 
         if (instanceOld == instanceValue) {
             featureIds.push_back(featureValue);
@@ -332,7 +316,7 @@ static PyObject* computeInverseIndex(PyObject* self, PyObject* args) {
                 instance_featureVector[instanceValue] = featureIds;
             }
         } else {
-            if (instanceOld != -1 ) {
+            if (instanceOld != MAX_VALUE) {
                 instance_featureVector[instanceOld] = featureIds;
             }
             featureIds.clear();
@@ -340,89 +324,83 @@ static PyObject* computeInverseIndex(PyObject* self, PyObject* args) {
             instanceOld = instanceValue;
         }
     }
+    return instance_featureVector;
+}
+
+// parse python call to c++; execute c++ and parse it back to python
+static PyObject* computeSize_tHash(PyObject* self, PyObject* args) {
+    size_t key, modulo, seed;
+
+    if (!PyArg_ParseTuple(args, "kkk", &key, &modulo, &seed))
+        return NULL;
+
+    return Py_BuildValue("k",   _size_tHashSimple(key * (seed + 1) * A, modulo));
+}
+
+// parse python call to c++; execute c++ and parse it back to python
+static PyObject* computeInverseIndex(PyObject* self, PyObject* args) {
+
+    size_t numberOfHashFunctions, blockSize, maxBinSize, numberOfCores, chunkSize, lazyFitting;
+    PyObject * instancesListObj;
+    PyObject * featuresListObj;
+   
+
+    if (!PyArg_ParseTuple(args, "kO!O!kkkkk", &numberOfHashFunctions, &PyList_Type, &instancesListObj, &PyList_Type,
+                            &featuresListObj, &blockSize, &maxBinSize, &numberOfCores, &chunkSize, &lazyFitting))
+        return NULL;
+
+    // parse from python list to a c++ map<size_t, vector<size_t> >
+    // where key == instance id and vector<size_t> == non null feature ids
+    umapVector instanceFeatureVector = _parseInstancesFeatures(instancesListObj, featuresListObj);
+
     // compute inverse index in c++
-    std::pair<std::vector<std::map<int, std::vector<int> > >*, std::map<int, std::vector<int> >* > index_signatureStorage =
-                     _computeInverseIndex(numberOfHashFunctions, instance_featureVector,
+    std::pair<std::vector<umapVector >*, umapVector* > index_signatureStorage =
+                     _computeInverseIndex(numberOfHashFunctions, instanceFeatureVector,
                                      blockSize, maxBinSize, numberOfCores, chunkSize, NULL, NULL, lazyFitting);
-    std::vector<std::map<int, std::vector<int> > >* inverseIndex = index_signatureStorage.first;
-    std::map<int, std::vector<int> >* signatureStorage = index_signatureStorage.second;
+    std::vector<umapVector >* inverseIndex = index_signatureStorage.first;
+    umapVector* signatureStorage = index_signatureStorage.second;
     size_t adressOfInverseIndex = reinterpret_cast<size_t>(inverseIndex);
     size_t adressOfSignatureStorage= reinterpret_cast<size_t>(signatureStorage);
 
-    PyObject * pointerToInverseIndex = Py_BuildValue("k", adressOfInverseIndex);
-    PyObject * pointerToSignatureStorage = Py_BuildValue("k", adressOfSignatureStorage);
+    PyObject * posize_terToInverseIndex = Py_BuildValue("k", adressOfInverseIndex);
+    PyObject * posize_terToSignatureStorage = Py_BuildValue("k", adressOfSignatureStorage);
     PyObject * outList = PyList_New(2);
-    PyList_SetItem(outList, 0, pointerToInverseIndex);
-    PyList_SetItem(outList, 1, pointerToSignatureStorage);
+    PyList_SetItem(outList, 0, posize_terToInverseIndex);
+    PyList_SetItem(outList, 1, posize_terToSignatureStorage);
     return outList;
 }
 // parse python call to c++; execute c++ and parse it back to python
 static PyObject* computeSignature(PyObject* self, PyObject* args) {
 
-    int numberOfHashFunctions, blockSize, numberOfCores, chunkSize;
-    std::map< int, std::vector<int> > instanceFeatureVector;
+    size_t numberOfHashFunctions, blockSize, numberOfCores, chunkSize;
     size_t addressSignatureStorage;
 
     PyObject * listInstancesObj;
     PyObject * listFeaturesObj;
-    PyObject * listObjFeature;
-    PyObject * intInstancesObj;
-    PyObject * intFeaturesObj;
-    int instanceOld = -1;
-  
-    if (!PyArg_ParseTuple(args, "iO!O!iiiki", &numberOfHashFunctions,
+    
+    if (!PyArg_ParseTuple(args, "kO!O!kkkk", &numberOfHashFunctions,
                         &PyList_Type, &listInstancesObj,
                         &PyList_Type, &listFeaturesObj, &blockSize, &numberOfCores, &chunkSize,
                         &addressSignatureStorage))
         return NULL;
 
-    int numLinesInstances = PyList_Size(listInstancesObj);
-    if (numLinesInstances < 0)	return NULL;
-
-    int numLinesFeatures = PyList_Size(listFeaturesObj);
-    if (numLinesFeatures < 0)	return NULL;
+    umapVector instanceFeatureVector = _parseInstancesFeatures(listInstancesObj, listFeaturesObj);
 
 
-    int insert = 0;
-    std::vector<int> featureIds;
-    // parse from python list to c++ vector
-    for (int i = 0; i < numLinesInstances; ++i) {
-        intInstancesObj = PyList_GetItem(listInstancesObj, i);
-        intFeaturesObj = PyList_GetItem(listFeaturesObj, i);
-        int featureValue;
-        int instanceValue;
-
-        PyArg_Parse(intInstancesObj, "i", &instanceValue);
-        PyArg_Parse(intFeaturesObj, "i", &featureValue);
-
-        if (instanceOld == instanceValue) {
-            featureIds.push_back(featureValue);
-            instanceOld = instanceValue;
-            if (i == numLinesInstances-1) {
-                instanceFeatureVector[instanceOld] = featureIds;
-            }
-        } else {
-            if (instanceOld != -1 ) {
-                instanceFeatureVector[instanceOld] = featureIds;
-            }
-            featureIds.clear();
-            instanceOld = instanceValue;
-        }
-    }
     // get pointer to signature storage
-    std::map<int, std::vector<int> >* signatureStorage =
-            reinterpret_cast<std::map<int, std::vector<int> >* >(addressSignatureStorage);
+    umapVector* signatureStorage =
+            reinterpret_cast<umapVector* >(addressSignatureStorage);
     // compute in c++
-    std::vector< std::vector<int> >signatures = _computeSignature(numberOfHashFunctions, instanceFeatureVector,
+    vvsize_t signatures = _computeSignature(numberOfHashFunctions, instanceFeatureVector,
                                                                                     blockSize,numberOfCores, chunkSize,
                                                                                     signatureStorage);
-    int sizeOfSignature = signatures.size();
+    size_t sizeOfSignature = signatures.size();
     PyObject * outListInstancesObj = PyList_New(sizeOfSignature);
-    for (int i = 0; i < sizeOfSignature; ++i) {
-    int sizeOfFeature = signatures[i].size();
+    for (size_t i = 0; i < sizeOfSignature; ++i) {
+    size_t sizeOfFeature = signatures[i].size();
         PyObject * outListFeaturesObj = PyList_New(sizeOfFeature);
-        for (int j = 0; j < sizeOfFeature; ++j) {
-            PyObject* value = Py_BuildValue("i", signatures[i][j]);
+        for (size_t j = 0; j < sizeOfFeature; ++j) {
+            PyObject* value = Py_BuildValue("k", signatures[i][j]);
             PyList_SetItem(outListFeaturesObj, j, value);
         }
         PyList_SetItem(outListInstancesObj, i, outListFeaturesObj);
@@ -431,26 +409,20 @@ static PyObject* computeSignature(PyObject* self, PyObject* args) {
     return outListInstancesObj;
 }
 
-
 // parse python call to c++; execute c++ and parse it back to python
 static PyObject* computeNeighborhood(PyObject* self, PyObject* args) {
 
     size_t addressInverseIndex;
     size_t addressSignatureStorage;
 
-    int numberOfHashFunctions, blockSize, numberOfCores, chunkSize,
+    size_t numberOfHashFunctions, blockSize, numberOfCores, chunkSize,
     sizeOfNeighborhood, MAX_VALUE, minimalBlocksInCommon, maxBinSize,
     maximalNumberOfHashCollisions, excessFactor, lazyFitting;
-    std::map< int, std::vector<int> > instanceFeatureVector;
 
     PyObject * listInstancesObj;
     PyObject * listFeaturesObj;
-    PyObject * listObjFeature;
-    PyObject * intInstancesObj;
-    PyObject * intFeaturesObj;
-    int instanceOld = -1;
-  
-    if (!PyArg_ParseTuple(args, "iO!O!iiiiiiiiikki", &numberOfHashFunctions,
+     
+    if (!PyArg_ParseTuple(args, "kO!O!kkkkkkkkkkkk", &numberOfHashFunctions,
                         &PyList_Type, &listInstancesObj,
                         &PyList_Type, &listFeaturesObj, &blockSize, 
                         &numberOfCores, &chunkSize, &sizeOfNeighborhood, 
@@ -459,61 +431,28 @@ static PyObject* computeNeighborhood(PyObject* self, PyObject* args) {
                         &addressInverseIndex, &addressSignatureStorage, &lazyFitting))
         return NULL;
 
-    int numLinesInstances = PyList_Size(listInstancesObj);
-    if (numLinesInstances < 0)  return NULL;
-
-    int numLinesFeatures = PyList_Size(listFeaturesObj);
-    if (numLinesFeatures < 0)   return NULL;
-
-
-    int insert = 0;
-    std::vector<int> featureIds;
-    // parse from python list to c++ vector
-    for (int i = 0; i < numLinesInstances; ++i) {
-        intInstancesObj = PyList_GetItem(listInstancesObj, i);
-        intFeaturesObj = PyList_GetItem(listFeaturesObj, i);
-        int featureValue;
-        int instanceValue;
-
-        PyArg_Parse(intInstancesObj, "i", &instanceValue);
-        PyArg_Parse(intFeaturesObj, "i", &featureValue);
-
-        if (instanceOld == instanceValue) {
-            featureIds.push_back(featureValue);
-            instanceOld = instanceValue;
-            if (i == numLinesInstances-1) {
-                instanceFeatureVector[instanceOld] = featureIds;
-            }
-        } else {
-            if (instanceOld != -1 ) {
-                instanceFeatureVector[instanceOld] = featureIds;
-            }
-            featureIds.clear();
-            featureIds.push_back(featureValue);
-            instanceOld = instanceValue;
-        }
-    }
+    umapVector instanceFeatureVector = _parseInstancesFeatures(listInstancesObj, listFeaturesObj);
 
     // get pointer to inverse index
-    std::vector<std::map<int, std::vector<int> > >* inverseIndex =
-            reinterpret_cast<std::vector<std::map<int, std::vector<int> > >* >(addressInverseIndex);
+    std::vector<umapVector >* inverseIndex =
+            reinterpret_cast<std::vector<umapVector >* >(addressInverseIndex);
     // get pointer to signature storage
-    std::map<int, std::vector<int> >* signatureStorage =
-            reinterpret_cast<std::map<int, std::vector<int> >* >(addressSignatureStorage);
+    umapVector* signatureStorage =
+            reinterpret_cast<umapVector* >(addressSignatureStorage);
 
-    std::vector< std::vector<int> >signatures;
+    vvsize_t signatures;
     if (!lazyFitting) {
         // compute signatures of the instances
         signatures = _computeSignature(numberOfHashFunctions, instanceFeatureVector,
                                                                 blockSize,numberOfCores, chunkSize, signatureStorage);
     } else {
         // move the instances from map to vector without recomputing it.
-        for (std::map< int, std::vector<int> >::iterator it = (*signatureStorage).begin(); it != (*signatureStorage).end(); ++it) {
+        for (umapVector::iterator it = (*signatureStorage).begin(); it != (*signatureStorage).end(); ++it) {
             signatures.push_back(it->second);
         }
     }
     // compute the k-nearest neighbors
-    std::pair<std::vector< std::vector<int> > , std::vector< std::vector<float> > > neighborsDistances = 
+    std::pair<vvsize_t , vvfloat > neighborsDistances = 
         _computeNeighbors(signatures, sizeOfNeighborhood, MAX_VALUE, minimalBlocksInCommon, maxBinSize,
                             numberOfCores, maximalNumberOfHashCollisions, chunkSize, excessFactor, *inverseIndex);
     size_t sizeOfNeighorList = neighborsDistances.first.size();
@@ -527,9 +466,8 @@ static PyObject* computeNeighborhood(PyObject* self, PyObject* args) {
         PyObject * innerListDistances = PyList_New(sizeOfInnerNeighborList);
 
         for (size_t j = 0; j < sizeOfInnerNeighborList; ++j) {
-            PyObject* valueNeighbor = Py_BuildValue("i", neighborsDistances.first[i][j]);
+            PyObject* valueNeighbor = Py_BuildValue("k", neighborsDistances.first[i][j]);
             PyList_SetItem(innerListNeighbors, j, valueNeighbor);
-            // std::cout << neighborsDistances.first[i][j] << std::endl <<  std::flush;
             PyObject* valueDistance = Py_BuildValue("f", neighborsDistances.second[i][j]);
             PyList_SetItem(innerListDistances, j, valueDistance);
         }
@@ -543,65 +481,31 @@ static PyObject* computeNeighborhood(PyObject* self, PyObject* args) {
 
     return returnList;
 }
-// parse python call to c++; execute c++ and parse it back to python
+// parse python call to c++; execute c++ and parse it back to python 
 static PyObject* computePartialFit(PyObject* self, PyObject* args)
 {
     size_t addressInverseIndex;
     size_t addressSignatureStorage;
 
-    int numberOfHashFunctions, blockSize, maxBinSize, numberOfCores, chunkSize;
-    std::map<int, std::vector<int> > instance_featureVector;
+    size_t numberOfHashFunctions, blockSize, maxBinSize, numberOfCores, chunkSize;
     PyObject * instancesListObj;
     PyObject * featuresListObj;
-    PyObject * instanceIntObj;
-    PyObject * featureIntObj;
 
-    if (!PyArg_ParseTuple(args, "iO!O!iiiikk", &numberOfHashFunctions, &PyList_Type, &instancesListObj, &PyList_Type,
+    if (!PyArg_ParseTuple(args, "kO!O!kkkkkk", &numberOfHashFunctions, &PyList_Type, &instancesListObj, &PyList_Type,
                             &featuresListObj, &blockSize, &maxBinSize, &numberOfCores, &chunkSize, &addressInverseIndex,
                             &addressSignatureStorage))
         return NULL;
-    //std::cout << "Number of cors: " << numberOfCores;
-    int sizeOfFeatureVector = PyList_Size(instancesListObj);
-    if (sizeOfFeatureVector < 0)	return NULL;
-    int instanceOld = -1;
-    int insert = 0;
-    std::vector<int> featureIds;
-    // parse from python list to a c++ map<int, vector<int> >
-    // where key == instance id and vector<int> == non null feature ids
-    for (int i = 0; i < sizeOfFeatureVector; ++i) {
-        instanceIntObj = PyList_GetItem(instancesListObj, i);
-        featureIntObj = PyList_GetItem(featuresListObj, i);
-        int featureValue;
-        int instanceValue;
-
-        PyArg_Parse(instanceIntObj, "i", &instanceValue);
-        PyArg_Parse(featureIntObj, "i", &featureValue);
-
-        if (instanceOld == instanceValue) {
-            featureIds.push_back(featureValue);
-            instanceOld = instanceValue;
-            if (i == sizeOfFeatureVector-1) {
-                instance_featureVector[instanceValue] = featureIds;
-            }
-        } else {
-            if (instanceOld != -1 ) {
-                instance_featureVector[instanceOld] = featureIds;
-            }
-            featureIds.clear();
-            featureIds.push_back(featureValue);
-            instanceOld = instanceValue;
-        }
-    }
+    umapVector instanceFeatureVector = _parseInstancesFeatures(instancesListObj, featuresListObj);
 
     // get pointer to inverse index
-    std::vector<std::map<int, std::vector<int> > >* inverseIndex =
-            reinterpret_cast<std::vector<std::map<int, std::vector<int> > >* >(addressInverseIndex);
+    std::vector<umapVector >* inverseIndex =
+            reinterpret_cast<std::vector<umapVector >* >(addressInverseIndex);
     // get pointer to inverse index
-    std::map<int, std::vector<int> >* signatureStorage =
-            reinterpret_cast<std::map<int, std::vector<int> >* >(addressSignatureStorage);
+    umapVector* signatureStorage =
+            reinterpret_cast<umapVector* >(addressSignatureStorage);
     // compute inverse index in c++
-    std::pair<std::vector<std::map<int, std::vector<int> > >*, std::map<int, std::vector<int> >* > index_signatureStorage =
-                     _computeInverseIndex(numberOfHashFunctions, instance_featureVector,
+    std::pair<std::vector<umapVector >*, umapVector* > index_signatureStorage =
+                     _computeInverseIndex(numberOfHashFunctions, instanceFeatureVector,
                                      blockSize, maxBinSize, numberOfCores, chunkSize, inverseIndex, signatureStorage, false);
     inverseIndex = index_signatureStorage.first;
     signatureStorage = index_signatureStorage.second;
@@ -617,8 +521,8 @@ static PyObject* computePartialFit(PyObject* self, PyObject* args)
 }
 
 // definition of avaible functions for python and which function parsing fucntion in c++ should be called.
-static PyMethodDef IntHashMethods[] = {
-    {"computeIntHash", computeIntHash, METH_VARARGS, "Calculate a hash for given key, modulo and seed."},
+static PyMethodDef size_tHashMethods[] = {
+    {"computesize_tHash", computeSize_tHash, METH_VARARGS, "Calculate a hash for given key, modulo and seed."},
     {"computeSignature", computeSignature, METH_VARARGS, "Calculate a signature for a given instance."},
     {"computeInverseIndex", computeInverseIndex, METH_VARARGS, "Calculate the inverse index for the given instances."},
     {"computeNeighborhood", computeNeighborhood, METH_VARARGS, "Calculate the candidate list for the given instances."},
@@ -630,5 +534,5 @@ static PyMethodDef IntHashMethods[] = {
 PyMODINIT_FUNC
 init_hashUtility(void)
 {
-    (void) Py_InitModule("_hashUtility", IntHashMethods);
+    (void) Py_InitModule("_hashUtility", size_tHashMethods);
 }
