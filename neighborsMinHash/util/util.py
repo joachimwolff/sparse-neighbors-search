@@ -28,6 +28,9 @@ from ..neighbors import MinHashNearestNeighbors
 import pyflann
 import annoy
 
+import matplotlib.pyplot as plt
+
+
 def accuracy(neighbors_exact, neighbors_approx, neighbors_sklearn):
     """Computes the accuracy for the exact and approximate version of the minHashNearestNeighbors algorithm.
 
@@ -268,18 +271,18 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
         nearest_neighbor_sklearn.fit(dataset_)
         time_end = time.time()
         time_fit_sklearn.append(time_end - time_start)
-        print "Fitting of sklearn_nneighbors done!"
+        # print "Fitting of sklearn_nneighbors done!"
         time_start = time.time()
         nearest_neighbor_minHash.fit(dataset_)
         time_end = time.time()
         time_fit_minHash.append(time_end - time_start)
-        print "Fitting of minHash_nneighbors done!"
+        # print "Fitting of minHash_nneighbors done!"
 
         time_start = time.time()
         nearest_neighbor_lshf.fit(dataset_)
         time_end = time.time()
         time_fit_lshf.append(time_end - time_start)
-        print "Fitting of LSHF done!"
+        # print "Fitting of LSHF done!"
 
         time_start = time.time()
         annoy_ = annoy.AnnoyIndex(f=dataset_.shape[1])
@@ -288,7 +291,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
         annoy_.build(100) # ntrees = 100
         time_end = time.time()
         time_fit_annoy.append(time_end - time_start)
-        print "Fitting of annoy done!"
+        # print "Fitting of annoy done!"
 
         # time_start = time.time()
         # flann_ = pyflann.FLANN(target_precision=0.95, algorithm='autotuned', log_level='info')
@@ -313,25 +316,25 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
         n_neighbors_sklearn_1_50 = nearest_neighbor_sklearn.kneighbors(query, return_distance=False)
         time_end = time.time()
         time_query_time_1_50_sklearn.append(time_end - time_start)
-        print "Computation of sklearn_nneighbors done!"
+        # print "Computation of sklearn_nneighbors done!"
 
         time_start = time.time()
         n_neighbors_minHash_exact_1_50 = nearest_neighbor_minHash.kneighbors(query, return_distance=False)
         time_end = time.time()
         time_query_time_1_50_minHash_exact.append(time_end - time_start)
-        print "Computation of minHash_slow done!"
+        # print "Computation of minHash_slow done!"
 
         time_start = time.time()
         n_neighbors_minHash_approx_1_50 = nearest_neighbor_minHash.kneighbors(query, fast=True, return_distance=False)
         time_end = time.time()
         time_query_time_1_50_minHash_approx.append(time_end - time_start)
-        print "Computation of minHash_fast done!"
+        # print "Computation of minHash_fast done!"
 
         time_start = time.time()
         n_neighbors_lshf_1_50 = nearest_neighbor_lshf.kneighbors(query,return_distance=False)
         time_end = time.time()
         time_query_time_1_50_lshf.append(time_end - time_start)
-        print "Computation of lshf done!"
+        # print "Computation of lshf done!"
 
 
         # time_start = time.time()
@@ -366,7 +369,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
             time_end = time.time()
             time_query_time_50_1_sklearn_loc.append(time_end - time_start)
         time_query_time_50_1_sklearn.append(np.sum(time_query_time_50_1_sklearn_loc))
-        print "Computation_2 of sklearn_nneighbors done!"
+        # print "Computation_2 of sklearn_nneighbors done!"
 
         time_query_time_50_1_minHash_exact_loc = []
         for i in range(size_of_query):
@@ -375,7 +378,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
             time_end = time.time()
             time_query_time_50_1_minHash_exact_loc.append(time_end - time_start)
         time_query_time_50_1_minHash_exact.append(np.sum(time_query_time_50_1_minHash_exact_loc))
-        print "Computation_2 of minHash_slow done!"
+        # print "Computation_2 of minHash_slow done!"
 
         time_query_time_50_1_minHash_approx_loc = []
         for i in range(size_of_query):
@@ -384,7 +387,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
             time_end = time.time()
             time_query_time_50_1_minHash_approx_loc.append(time_end - time_start)
         time_query_time_50_1_minHash_approx.append(np.sum(time_query_time_50_1_minHash_approx_loc))
-        print "Computation_2 of minHash_fast done!"
+        # print "Computation_2 of minHash_fast done!"
 
         time_query_time_50_1_lshf_loc = []
         for i in range(size_of_query):
@@ -393,7 +396,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
             time_end = time.time()
             time_query_time_50_1_lshf_loc.append(time_end - time_start)
         time_query_time_50_1_lshf.append(np.sum(time_query_time_50_1_lshf_loc))
-        print "Computation_2 of lshf done!"
+        # print "Computation_2 of lshf done!"
 
         time_query_time_50_1_annoy_loc = []
         n_neighbors_annoy_1_50 = []
@@ -407,7 +410,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
         time_query_time_50_1_annoy.append(np.sum(time_query_time_50_1_annoy_loc))
         accuracy_1_50_annoy.append(np.in1d(n_neighbors_annoy_1_50, n_neighbors_sklearn_1_50).mean())
 
-        print "Computation_2 of annoy done!"
+        # print "Computation_2 of annoy done!"
 
         # time_query_time_50_1_flann_loc = []
         # n_neighbors_flann_1_50 = []
@@ -430,3 +433,25 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
             time_query_time_1_50_sklearn,time_query_time_1_50_minHash_exact, time_query_time_1_50_minHash_approx,
             time_query_time_1_50_lshf, time_query_time_1_50_annoy,
             accuracy_1_50_lshf,accuracy_1_50_minHash_exact, accuracy_1_50_minHash_aprox, accuracy_1_50_annoy)
+
+def plotData(data, color, label, title, xticks, ylabel,
+         number_of_instances, number_of_features,
+         figure_size=(10,5),  bar_width=0.1,log=True):
+    plt.figure(figsize=figure_size)
+    N = number_of_instances * number_of_features
+
+    ind = np.arange(N)    # the x locations for the groups
+    
+    #"r", "b", "g", "c", "m", "y", "k", "w"
+    count = 0
+    for d, c, l in zip(data, color, label):
+        plt.bar(ind + count * bar_width , d,   bar_width, color=c, label=l)
+        count += 1
+    if log:
+        plt.yscale('log')
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.xticks(ind+3*bar_width, (xticks))
+    plt.legend(loc='upper left', fontsize='small')
+    plt.grid(True)
+    plt.show()
