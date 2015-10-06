@@ -136,7 +136,6 @@ class InverseIndex():
         # excessFactor, maxBinSize, inverseIndex
         # define non local variables and functions as locals to increase performance
         instances, features = instance_feature_list.nonzero()
-        print "lazy_fitting: ", lazy_fitting
         # compute the siganture in c++
         return computeNeighborhood(self._number_of_hash_functions,instances.tolist(), features.tolist() ,
                                                 self._block_size, self._number_of_cores, self._chunk_size,
