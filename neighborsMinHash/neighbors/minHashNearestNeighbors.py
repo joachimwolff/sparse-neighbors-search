@@ -116,13 +116,16 @@ class MinHashNearestNeighbors():
                                           number_of_cores = self._number_of_cores,
                                           chunk_size = self._chunk_size)
 
-    def fit(self, X, y=None):
+    def fit(self, X=None, y=None):
         """Fit the model using X as training data.
 
             Parameters
             ----------
-            X : {array-like, sparse matrix}
+            X : {array-like, sparse matrix}, optional
                 Training data. If array or matrix, shape = [n_samples, n_features]
+                If X is None, a "lazy fitting" is performed. If kneighbors is called, the fitting
+                with with the data there is done. Also the caching of computed hash values is deactivated in
+                this case.
             y : list, optional (default = None)
                 List of classes for the given input of X. Size have to be n_samples."""
         if y is not None:
@@ -133,9 +136,13 @@ class MinHashNearestNeighbors():
         else:
             self._X = csr_matrix(X)
             self._y_is_csr = False
-        self._sizeOfX = self._X.shape[0]
-        self._shape_of_X = self._X.shape[1]
-        self._inverseIndex.fit(self._X)
+        if X is None:
+            self._sizeOfX = -1
+            self._shape_of_X = -1
+        else:
+            self._sizeOfX = self._X.shape[0]
+            self._shape_of_X = self._X.shape[1]
+            self._inverseIndex.fit(self._X)
 
     def partial_fit(self, X, y=None):
         """Extend the model by X as additional training data.
@@ -156,7 +163,7 @@ class MinHashNearestNeighbors():
     def get_params(self,deep=None):
         """Get parameters for this estimator."""
         pass
-
+    
     def kneighbors(self,X=None, n_neighbors=None, return_distance=True, fast=None):
         """Finds the n_neighbors of a point X or of all points of X.
 
@@ -311,11 +318,150 @@ class MinHashNearestNeighbors():
         return self._neighborhood_graph(X=X, neighborhood_measure=radius, return_distance=return_distance,
                             computing_function="radius_neighbors")
 
+
+    def fit_kneighbors(self, X, y=None, n_neighbors=None, return_distance=True, fast=None):
+        """"Fits and returns the n_neighbors of X.
+
+        Parameters
+            ----------
+            X : {array-like, sparse matrix}
+                Data point(s) to be fitted and searched for n_neighbors. Shape = [n_samples, n_features]
+            y : list, optional (default = None)
+                List of classes for the given input of X. Size have to be n_samples.
+            n_neighbors : int, optional
+                Number of neighbors to get (default is the value passed to the constructor).
+            return_distance : boolean, optional. Defaults to True.
+                If False, distances will not be returned
+            algorithm : {'approximate', 'exact'}, optional (default = 'approximate')
+            - 'approximate':    will only use an inverse index to compute a k_neighbor query.
+            - 'exact':          an inverse index is used to preselect instances, and these are used to get
+                                the original data from the data set to answer a k_neighbor query. The
+                                original data is stored in the memory.
+                                If not passed, default value is what was passed to the constructor.
+
+            Returns
+            -------
+            dist : array, shape = [n_samples, distances]
+                Array representing the lengths to points, only present if
+                return_distance=True
+            ind : array, shape = [n_samples, neighbors]
+                Indices of the nearest points in the population matrix."""
+        self.fit(X, y)
+        return self.kneighbors(X, n_neighbors=n_neighbors, return_distance=return_distance, fast=fast)
+
+    def fit_kneighbor_graph(self, X, y=None, n_neighbors=None, mode='connectivity', fast=None):
+        """Fits and computes the (weighted) graph of k-Neighbors for points in X
+            Parameters
+            ----------
+            X : array-like, last dimension same as that of fit data
+                The query point or points.
+            y : list, optional (default = None)
+                List of classes for the given input of X. Size have to be n_samples.   
+            n_neighbors : int
+                Number of neighbors for each sample.
+                (default is value passed to the constructor).
+            mode : {'connectivity', 'distance'}, optional
+                Type of returned matrix: 'connectivity' will return the
+                connectivity matrix with ones and zeros, in 'distance' the
+                edges are Euclidean distance between points.
+            algorithm : {'approximate', 'exact'}, optional (default = 'approximate')
+            - 'approximate':    will only use an inverse index to compute a k_neighbor query.
+            - 'exact':          an inverse index is used to preselect instances, and these are used to get
+                                the original data from the data set to answer a k_neighbor query. The
+                                original data is stored in the memory.
+                                If not passed, default value is what was passed to the constructor.
+            Returns
+            -------
+            A : sparse matrix in CSR format, shape = [n_samples, n_samples_fit]
+                n_samples_fit is the number of samples in the fitted data
+                A[i, j] is assigned the weight of edge that connects i to j.
+            """
+        self.fit(X, y)
+        return self.kneighbors_graph(X, n_neighbors=n_neighbors, mode=mode, fast=fast)
+
+    def fit_radius_neighbors(self, X, y=None, radius=None, return_distance=None, fast=None):
+        """Finds the neighbors within a given radius of a point or points.
+        Return the indices and distances of each point from the dataset
+        lying in a ball with size ``radius`` around the points of the query
+        array. Points lying on the boundary are included in the results.
+        The result points are *not* necessarily sorted by distance to their
+        query point.
+        Parameters
+        ----------
+        X : array-like, (n_samples, n_features)
+            The to be fitted data and query point or points.
+        y : list, optional (default = None)
+                List of classes for the given input of X. Size have to be n_samples.   
+        radius : float
+            Limiting distance of neighbors to return.
+            (default is the value passed to the constructor).
+        return_distance : boolean, optional. Defaults to True.
+            If False, distances will not be returned
+        algorithm : {'approximate', 'exact'}, optional (default = 'approximate')
+            - 'approximate':    will only use an inverse index to compute a k_neighbor query.
+            - 'exact':          an inverse index is used to preselect instances, and these are used to get
+                                the original data from the data set to answer a k_neighbor query. The
+                                original data is stored in the memory.
+                                If not passed, default value is what was passed to the constructor.
+        Returns
+        -------
+        dist : array, shape (n_samples,) of arrays 
+            Array representing the distances to each point, only present if
+            return_distance=True. The distance values are computed according
+            to the ``metric`` constructor parameter.
+        ind : array, shape (n_samples,) of arrays
+            An array of arrays of indices of the approximate nearest points
+            from the population matrix that lie within a ball of size
+            ``radius`` around the query points."""
+        self.fit(X, y)
+        return self.radius_neighbors(X, radius=radius, return_distance=return_distance, fast=fast)
+        
+    def fit_radius_neighbors_graph(self, X, y=None, radius=None, mode='connectivity', fast=None):
+        """Fits and computes the (weighted) graph of Neighbors for points in X
+        Neighborhoods are restricted the points at a distance lower than
+        radius.
+
+        Parameters
+        ----------
+        X : array-like, (n_samples, n_features)
+            The to be fitted data and query point or points.
+        y : list, optional (default = None)
+            List of classes for the given input of X. Size have to be n_samples.      
+        radius : float
+            Radius of neighborhoods.
+            (default is the value passed to the constructor).
+        mode : {'connectivity', 'distance'}, optional
+            Type of returned matrix: 'connectivity' will return the
+            connectivity matrix with ones and zeros, in 'distance' the
+            edges are Euclidean distance between points.
+        algorithm : {'approximate', 'exact'}, optional (default = 'approximate')
+        - 'approximate':    will only use an inverse index to compute a k_neighbor query.
+        - 'exact':          an inverse index is used to preselect instances, and these are used to get
+                            the original data from the data set to answer a k_neighbor query. The
+                            original data is stored in the memory.
+                            If not passed, default value is what was passed to the constructor.
+        Returns
+        -------
+        A : sparse matrix in CSR format, shape = [n_samples, n_samples]
+        A[i, j] is assigned the weight of edge that connects i to j."""
+        self.fit(X, y)
+        return self.radius_neighbors_graph(X, radius=radius, mode=mode, fast=fast)
+
     def _neighborhood(self, X=None, neighborhood_measure=None, return_distance=None, computing_function=None):
         """Controlls the search of the nearest neighbors. It depends on the the choosen algorithm if the
             approximate or exact version is running and on the parameter \"computing_function\" if K-nearest_neighbor_algorithm
             or the radius_neighbors_algorithm is executed.
             """
+        lazy_fitting = False
+        if X is None and self._sizeOfX == -1 and self._shape_of_X == -1:
+            return
+        elif X is not None and self._sizeOfX == -1 and self._shape_of_X == -1:
+            self._sizeOfX = X.shape[0]
+            self._shape_of_X = X.shape[1]
+            self._inverseIndex.fit(X, True)
+            self._X = csr_matrix(X)
+            self._y_is_csr = False
+            lazy_fitting = True
         # define non local variables and functions as locals to increase performance
         inverseIndex = self._inverseIndex
         sizeOfX = self._sizeOfX
@@ -330,25 +476,19 @@ class MinHashNearestNeighbors():
             X = csr_matrix(X)
             start_value = 0
             number_of_instances = X.shape[0]
+        if lazy_fitting:
+            start_value = 1
         distance_matrix = [[]] * number_of_instances
         kneighbors_matrix = [[]] * number_of_instances
         neighborhood_size = neighborhood_measure + start_value if computing_function == "kneighbors" else sizeOfX
         radius = neighborhood_measure
 
         if self.fastComputation:
-            # for i in xrange(number_of_instances):
-            # print "Compute neighbothood!\n"
-            distances, neighbors = inverseIndex.neighbors(X, neighborhood_size)
-          
-            # print neighbors
-            # print "Compute neighbothood!.... SUCCESS!!!!ELF\n"
-
-            # distances.append(distance[0])
-            # neighbors.append(neighbor[0])
+            distances, neighbors = inverseIndex.neighbors(X, neighborhood_size, lazy_fitting)
         else:
             distances, neighbors = build_reduced_neighborhood(X=X, computing_function=computing_function,
                                                              neighborhood_measure=neighborhood_size,
-                                                             return_distance = True)
+                                                             return_distance = True, lazy_fitting=lazy_fitting)
         for i in xrange(number_of_instances):
             if len(neighbors) == 0:
                     logger.warning("No matches in inverse index!")
@@ -358,6 +498,9 @@ class MinHashNearestNeighbors():
                         neighborhood_size = j
                         break
             else:
+                #print "Index if list: ", i
+                if len(neighbors) == 0:
+                    logger.warning("No matches in inverse index!")
                 appendSize = neighborhood_size - len(neighbors[i])
                 if appendSize > 0:
                     valueNeighbors = [-1] * appendSize
@@ -375,7 +518,7 @@ class MinHashNearestNeighbors():
 
     def _build_reduced_neighborhood(self, X=None, computing_function=None,
                                     neighborhood_measure=None,
-                                    return_distance=None):
+                                    return_distance=None, lazy_fitting=None):
         """This function is computing the \"exact\"-version of the algorithm.
             It takes all possible candidates for the neighbor search out of the
             inverse index, takes the orginal data for these instances and is putting
@@ -384,73 +527,24 @@ class MinHashNearestNeighbors():
         _X = self._X
         inverseIndex = self._inverseIndex
 
-        # compute neighbors via inverse index
-        # candidate_list = []
-        # for i in xrange(len(signatures)):
-        distances, neighbors = inverseIndex.neighbors(X, neighborhood_measure)
-        # print neighbors
-        # candidate_list = [item for sublist in neighbors for item in sublist]
-        # candidate_set = set(candidate_list)
-        # candidate_list = list(candidate_set)
-        # real_index__candidate_list_index = {}
-        # for i in xrange(len(candidate_list)):
-        #     real_index__candidate_list_index[i] = candidate_list[i]
-        # if len(candidate_list) < neighborhood_measure:
-        #     neighborhood_measure = len(candidate_list)
-        # use sklearns implementation of NearestNeighbors to compute the neighbors
-        # use only the elements of the candidate list and not the whole dataset
-        # nearest_neighbors = NearestNeighbors()
-        # nearest_neighbors.fit(_X[candidate_list])
-
+        distances, neighbors = inverseIndex.neighbors(X, neighborhood_measure, lazy_fitting)
 
         real_index__candidate_list_index = [{}] * len(neighbors)
         for i in xrange(len(neighbors)):
             if len(neighbors[i]) > 1:
                 dict_ = {}
-
                 for j in xrange(len(neighbors[i])):
-                    #print "neighbors: ", neighbors[i][j]
                     dict_[j] = neighbors[i][j]
                 real_index__candidate_list_index[i] = dict_
-        # print real_index__candidate_list_index
-        # if len(candidate_list) < neighborhood_measure:
-        #     neighborhood_measure = len(candidate_list)
-        #distances = []
-        #neighbors = []
-        # innerproduct_results = []
-        # _X_transpose = _X[candidate_list].transpose()
-        # dtype = [('value', float), ('index', int)]
+       
         for i in xrange(X.shape[0]):
             if len(neighbors[i]) > 1:
                 innerproduct = X[[i]] * _X[neighbors[i]].transpose()
-                # print "innerproduct: ", innerproduct
-                # print "innerproduct&sort: ", innerproduct.toarray()
                 neighbor_list = np.argsort(innerproduct.toarray())[0][::-1] 
                 for j in xrange(len(neighbor_list)):
                     distances[i][j] = innerproduct[0,neighbor_list[j]]
                     neighbors[i][j] = real_index__candidate_list_index[i][neighbor_list[j]]
-                    # neighbor_ = neighbors[i][:]
-                    # neighbors[i][j] = neighbor_[neighbor_list[j]]
-            # for j in sorted:
-            #     distance.append(j[0])
-            #     neighborhood.append(real_index__candidate_list_index[j[1]])
-            # distances.append(distance)
-            # neighbors.append(neighborhood)
         return distances, neighbors
-
-        
-        # # print innerproduct_results
-        # # compute kneighbors or the neighbors inside a given radius
-        # if computing_function == "kneighbors":
-        #     distances, neighbors = nearest_neighbors.kneighbors(X, neighborhood_measure, return_distance=True)
-        # #     # print distances, neighbors
-        # else:
-        #     distances, neighbors = nearest_neighbors.radius_neighbors(X, neighborhood_measure, return_distance)
-        # # # replace indices to the indicies of the orginal dataset
-        # for i in xrange(len(neighbors)):
-        #     for j in xrange(len(neighbors[i])):
-        #         neighbors[i][j] = real_index__candidate_list_index[neighbors[i][j]]
-        # return distances.tolist(),  neighbors.tolist()
 
     def _neighborhood_graph(self, X=None, neighborhood_measure=None, return_distance=None,
                             computing_function=None):
@@ -471,17 +565,13 @@ class MinHashNearestNeighbors():
         col = []
         data = []
         start_value = 0 if X is None else 1
-        #end_value = -1
-        # print "distancees: ", distances
-        # print "neighbors: ", neighborhood
+
         for i in xrange(len(neighborhood)):
             if distances[i][0] == -1:
                continue
             root = i if X is None else neighborhood[i][0]
             j = 0
             for node in xrange(len(neighborhood[i][start_value:])):
-                #print "node", node
-                #print "length of distances[i]: ", len(distances[i])
                 if distances[i][node] == -1:
                     end_value = j
                     break
@@ -499,9 +589,6 @@ class MinHashNearestNeighbors():
         if return_distance:
             data = [1] * len(row)
 
-        #print "Row: ", row
-        #print "Col: ", col
-        #print "data: ", data
         return csr_matrix((data, (row, col)))
         
     def set_params(**params):

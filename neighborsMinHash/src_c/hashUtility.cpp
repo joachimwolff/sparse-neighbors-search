@@ -38,10 +38,6 @@ class sort_map {
 bool mapSortDescByValue(const sort_map& a, const sort_map& b) {
     return a.val > b.val;
 }
-// template<typename K, typename V>
-// bool mapSortDescByValueI(const std::pair<K, V> a, const std::pair<K, V> b) {
-//     return a.second > b.second;
-// }
 
 // Return an hash value for a given key in defined range aModulo
  int _intHashSimple(int key, int aModulo) {
@@ -65,7 +61,6 @@ std::vector< std::vector<int> > _computeSignature(const int numberOfHashFunction
     if (chunkSize <= 0) {
         chunkSize = ceil(instanceFeatureVector.size() / static_cast<float>(numberOfCores));
     }
-    // std::cout << "computeSignature: size of signatureStorage: " << (*signatureStorage).size() << std::endl;
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
@@ -78,16 +73,13 @@ std::vector< std::vector<int> > _computeSignature(const int numberOfHashFunction
         int signatureId = 0;
         for (std::vector<int>::const_iterator itFeatures = instanceId->second.begin(); itFeatures != instanceId->second.end(); ++itFeatures) {
                 signatureId = _intHashSimple((*itFeatures +1) * (signatureId+1) * A, MAX_VALUE);
-                // std::cout << "Feature id: " << *itFeatures << std::endl;
-
         }
-        // std::cout << "SignatuteID: " << signatureId << std::endl;
         std::map<int, std::vector<int> >::const_iterator signatureIt = (*signatureStorage).find(signatureId);
         if (signatureIt != (*signatureStorage).end()) {
 #pragma critical
             instanceSignature[index] = signatureIt->second;
             continue;
-        } 
+        }
         std::map<int, std::vector<int> >::iterator itHashValue_InstanceVector;
         std::vector<std::map<int, int> > hashStorage;
         std::vector<int> signatureHash(numberOfHashFunctions);
@@ -129,7 +121,7 @@ std::pair< std::vector<std::map<int, std::vector<int> > >*, std::map<int, std::v
         std::map<int, std::vector<int> >& instance_featureVector,
         const int blockSize, const int maxBinSize, const int numberOfCores, int chunkSize,
         std::vector<std::map<int, std::vector<int> > >* inverseIndex,
-        std::map<int, std::vector<int> >* signatureStorage ) {
+        std::map<int, std::vector<int> >* signatureStorage, const int lazyFitting) {
 
     // if NULL than the inverse index is new created. Otherwise it is extended.
     if (inverseIndex == NULL) {
@@ -165,15 +157,14 @@ std::pair< std::vector<std::map<int, std::vector<int> > >*, std::map<int, std::v
                 if (hashValue < minHashValue) {
                     minHashValue = hashValue;
                 }
-                if (j == 0) {
-                    signatureId = _intHashSimple((*itFeatures +1) * (signatureId+1) * A, MAX_VALUE);
-                    // std::cout << "Feature id: " << *itFeatures << std::endl;
+                if (!lazyFitting) {
+                    if (j == 0) {
+                        signatureId = _intHashSimple((*itFeatures +1) * (signatureId+1) * A, MAX_VALUE);
+                    }
                 }
             }
             signatureHash[j] = minHashValue;
         }
-        
-
         // reduce number of hash values by a factor of blockSize
         int k = 0;
         std::vector<int> signature;
@@ -187,9 +178,11 @@ std::pair< std::vector<std::map<int, std::vector<int> > >*, std::map<int, std::v
             signature.push_back(signatureBlockValue);
             k += blockSize; 
         }
-        // std::cout << "SignatuteID: " << signatureId << std::endl;
-
-        signatureStorage->operator[](signatureId) = signature;
+        if (!lazyFitting) {
+            signatureStorage->operator[](signatureId) = signature;
+        } else {
+            signatureStorage->operator[](index) = signature;
+        }
         // insert in inverse index
 #pragma omp critical
         for (int j = 0; j < signature.size(); ++j) {
@@ -294,8 +287,7 @@ std::pair<std::vector< std::vector<int> > , std::vector< std::vector<float> > > 
 }
 
 // parse python call to c++; execute c++ and parse it back to python
-static PyObject* computeIntHash(PyObject* self, PyObject* args)
-{
+static PyObject* computeIntHash(PyObject* self, PyObject* args) {
     int key, modulo, seed;
 
     if (!PyArg_ParseTuple(args, "iii", &key, &modulo, &seed))
@@ -305,19 +297,18 @@ static PyObject* computeIntHash(PyObject* self, PyObject* args)
 }
 
 // parse python call to c++; execute c++ and parse it back to python
-static PyObject* computeInverseIndex(PyObject* self, PyObject* args)
-{
-    int numberOfHashFunctions, blockSize, maxBinSize, numberOfCores, chunkSize;
+static PyObject* computeInverseIndex(PyObject* self, PyObject* args) {
+
+    int numberOfHashFunctions, blockSize, maxBinSize, numberOfCores, chunkSize, lazyFitting;
     std::map<int, std::vector<int> > instance_featureVector;
     PyObject * instancesListObj;
     PyObject * featuresListObj;
     PyObject * instanceIntObj;
     PyObject * featureIntObj;
 
-    if (!PyArg_ParseTuple(args, "iO!O!iiii", &numberOfHashFunctions, &PyList_Type, &instancesListObj, &PyList_Type,
-                            &featuresListObj, &blockSize, &maxBinSize, &numberOfCores, &chunkSize))
+    if (!PyArg_ParseTuple(args, "iO!O!iiiii", &numberOfHashFunctions, &PyList_Type, &instancesListObj, &PyList_Type,
+                            &featuresListObj, &blockSize, &maxBinSize, &numberOfCores, &chunkSize, &lazyFitting))
         return NULL;
-    //std::cout << "Number of cors: " << numberOfCores;
     int sizeOfFeatureVector = PyList_Size(instancesListObj);
     if (sizeOfFeatureVector < 0)	return NULL;
     int instanceOld = -1;
@@ -352,15 +343,11 @@ static PyObject* computeInverseIndex(PyObject* self, PyObject* args)
     // compute inverse index in c++
     std::pair<std::vector<std::map<int, std::vector<int> > >*, std::map<int, std::vector<int> >* > index_signatureStorage =
                      _computeInverseIndex(numberOfHashFunctions, instance_featureVector,
-                                     blockSize, maxBinSize, numberOfCores, chunkSize, NULL, NULL);
+                                     blockSize, maxBinSize, numberOfCores, chunkSize, NULL, NULL, lazyFitting);
     std::vector<std::map<int, std::vector<int> > >* inverseIndex = index_signatureStorage.first;
     std::map<int, std::vector<int> >* signatureStorage = index_signatureStorage.second;
-    std::cout << "Size of signatureStorage: " << (*signatureStorage).size();
     size_t adressOfInverseIndex = reinterpret_cast<size_t>(inverseIndex);
     size_t adressOfSignatureStorage= reinterpret_cast<size_t>(signatureStorage);
-
-   // std::cout << "InverseIndexPointer_Build: "  << adressOfInverseIndex << std::endl << std::flush;
-    //std::cout << "First element in first map BEVOR restore: " << inverseIndex->at(50).begin()->second.size() << std::endl << std::flush;
 
     PyObject * pointerToInverseIndex = Py_BuildValue("k", adressOfInverseIndex);
     PyObject * pointerToSignatureStorage = Py_BuildValue("k", adressOfSignatureStorage);
@@ -370,8 +357,8 @@ static PyObject* computeInverseIndex(PyObject* self, PyObject* args)
     return outList;
 }
 // parse python call to c++; execute c++ and parse it back to python
-static PyObject* computeSignature(PyObject* self, PyObject* args)
-{
+static PyObject* computeSignature(PyObject* self, PyObject* args) {
+
     int numberOfHashFunctions, blockSize, numberOfCores, chunkSize;
     std::map< int, std::vector<int> > instanceFeatureVector;
     size_t addressSignatureStorage;
@@ -383,7 +370,7 @@ static PyObject* computeSignature(PyObject* self, PyObject* args)
     PyObject * intFeaturesObj;
     int instanceOld = -1;
   
-    if (!PyArg_ParseTuple(args, "iO!O!iiik", &numberOfHashFunctions,
+    if (!PyArg_ParseTuple(args, "iO!O!iiiki", &numberOfHashFunctions,
                         &PyList_Type, &listInstancesObj,
                         &PyList_Type, &listFeaturesObj, &blockSize, &numberOfCores, &chunkSize,
                         &addressSignatureStorage))
@@ -398,7 +385,6 @@ static PyObject* computeSignature(PyObject* self, PyObject* args)
 
     int insert = 0;
     std::vector<int> featureIds;
-   // std::cout << "BEvor trans" << std::endl << std::flush;
     // parse from python list to c++ vector
     for (int i = 0; i < numLinesInstances; ++i) {
         intInstancesObj = PyList_GetItem(listInstancesObj, i);
@@ -420,7 +406,6 @@ static PyObject* computeSignature(PyObject* self, PyObject* args)
                 instanceFeatureVector[instanceOld] = featureIds;
             }
             featureIds.clear();
-//            instanceFeatureVector.push_back(featureIds);
             instanceOld = instanceValue;
         }
     }
@@ -448,17 +433,14 @@ static PyObject* computeSignature(PyObject* self, PyObject* args)
 
 
 // parse python call to c++; execute c++ and parse it back to python
-static PyObject* computeNeighborhood(PyObject* self, PyObject* args)
-{ // numberOfHashFunktions, instances_list, features_list, block_size,
-    // number_of_cores, chunk_size, size_of_neighborhood, MAX_VALUE, minimalBlocksInCommon,
-    // excessFactor, maxBinSize, inverseIndex
+static PyObject* computeNeighborhood(PyObject* self, PyObject* args) {
 
     size_t addressInverseIndex;
     size_t addressSignatureStorage;
 
     int numberOfHashFunctions, blockSize, numberOfCores, chunkSize,
     sizeOfNeighborhood, MAX_VALUE, minimalBlocksInCommon, maxBinSize,
-    maximalNumberOfHashCollisions, excessFactor;
+    maximalNumberOfHashCollisions, excessFactor, lazyFitting;
     std::map< int, std::vector<int> > instanceFeatureVector;
 
     PyObject * listInstancesObj;
@@ -468,13 +450,13 @@ static PyObject* computeNeighborhood(PyObject* self, PyObject* args)
     PyObject * intFeaturesObj;
     int instanceOld = -1;
   
-    if (!PyArg_ParseTuple(args, "iO!O!iiiiiiiiikk", &numberOfHashFunctions,
+    if (!PyArg_ParseTuple(args, "iO!O!iiiiiiiiikki", &numberOfHashFunctions,
                         &PyList_Type, &listInstancesObj,
                         &PyList_Type, &listFeaturesObj, &blockSize, 
                         &numberOfCores, &chunkSize, &sizeOfNeighborhood, 
                         &MAX_VALUE, &minimalBlocksInCommon, &maxBinSize,
                         &maximalNumberOfHashCollisions, &excessFactor, 
-                        &addressInverseIndex, &addressSignatureStorage))
+                        &addressInverseIndex, &addressSignatureStorage, &lazyFitting))
         return NULL;
 
     int numLinesInstances = PyList_Size(listInstancesObj);
@@ -486,7 +468,6 @@ static PyObject* computeNeighborhood(PyObject* self, PyObject* args)
 
     int insert = 0;
     std::vector<int> featureIds;
-   // std::cout << "BEvor trans" << std::endl << std::flush;
     // parse from python list to c++ vector
     for (int i = 0; i < numLinesInstances; ++i) {
         intInstancesObj = PyList_GetItem(listInstancesObj, i);
@@ -519,17 +500,22 @@ static PyObject* computeNeighborhood(PyObject* self, PyObject* args)
     // get pointer to signature storage
     std::map<int, std::vector<int> >* signatureStorage =
             reinterpret_cast<std::map<int, std::vector<int> >* >(addressSignatureStorage);
-    // compute signatures of the instances
-    std::vector< std::vector<int> >signatures = _computeSignature(numberOfHashFunctions, instanceFeatureVector,
-                                                                blockSize,numberOfCores, chunkSize, signatureStorage);
 
+    std::vector< std::vector<int> >signatures;
+    if (!lazyFitting) {
+        // compute signatures of the instances
+        signatures = _computeSignature(numberOfHashFunctions, instanceFeatureVector,
+                                                                blockSize,numberOfCores, chunkSize, signatureStorage);
+    } else {
+        // move the instances from map to vector without recomputing it.
+        for (std::map< int, std::vector<int> >::iterator it = (*signatureStorage).begin(); it != (*signatureStorage).end(); ++it) {
+            signatures.push_back(it->second);
+        }
+    }
     // compute the k-nearest neighbors
     std::pair<std::vector< std::vector<int> > , std::vector< std::vector<float> > > neighborsDistances = 
         _computeNeighbors(signatures, sizeOfNeighborhood, MAX_VALUE, minimalBlocksInCommon, maxBinSize,
                             numberOfCores, maximalNumberOfHashCollisions, chunkSize, excessFactor, *inverseIndex);
-    
-
-                             
     size_t sizeOfNeighorList = neighborsDistances.first.size();
 
     PyObject * outerListNeighbors = PyList_New(sizeOfNeighorList);
@@ -555,9 +541,7 @@ static PyObject* computeNeighborhood(PyObject* self, PyObject* args)
     PyList_SetItem(returnList, 0, outerListDistances);
     PyList_SetItem(returnList, 1, outerListNeighbors);
 
-
     return returnList;
-
 }
 // parse python call to c++; execute c++ and parse it back to python
 static PyObject* computePartialFit(PyObject* self, PyObject* args)
@@ -618,14 +602,11 @@ static PyObject* computePartialFit(PyObject* self, PyObject* args)
     // compute inverse index in c++
     std::pair<std::vector<std::map<int, std::vector<int> > >*, std::map<int, std::vector<int> >* > index_signatureStorage =
                      _computeInverseIndex(numberOfHashFunctions, instance_featureVector,
-                                     blockSize, maxBinSize, numberOfCores, chunkSize, inverseIndex, signatureStorage);
+                                     blockSize, maxBinSize, numberOfCores, chunkSize, inverseIndex, signatureStorage, false);
     inverseIndex = index_signatureStorage.first;
     signatureStorage = index_signatureStorage.second;
     size_t adressOfInverseIndex = reinterpret_cast<size_t>(inverseIndex);
     size_t adressOfSignatureStorage= reinterpret_cast<size_t>(signatureStorage);
-
-   // std::cout << "InverseIndexPointer_Build: "  << adressOfInverseIndex << std::endl << std::flush;
-    //std::cout << "First element in first map BEVOR restore: " << inverseIndex->at(50).begin()->second.size() << std::endl << std::flush;
 
     PyObject * pointerToInverseIndex = Py_BuildValue("k", adressOfInverseIndex);
     PyObject * pointerToSignatureStorage = Py_BuildValue("k", adressOfSignatureStorage);
@@ -634,8 +615,6 @@ static PyObject* computePartialFit(PyObject* self, PyObject* args)
     PyList_SetItem(outList, 1, pointerToSignatureStorage);
     return outList;
 }
-
-
 
 // definition of avaible functions for python and which function parsing fucntion in c++ should be called.
 static PyMethodDef IntHashMethods[] = {
