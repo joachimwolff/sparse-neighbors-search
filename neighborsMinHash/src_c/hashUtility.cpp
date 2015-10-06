@@ -251,6 +251,9 @@ std::pair<vvsize_t , vvfloat > _computeNeighbors(
                 } else {
                     continue;
                 }
+                if (collisionSize == 1 && instances->second.at(0) == MAX_VALUE) {
+                    continue;
+                }
                 if (collisionSize < maxBinSize && collisionSize > 0) {
                     for (size_t k = 0; k < instances->second.size(); ++k) {
                         neighborhood[instances->second.at(k)] += 1;
