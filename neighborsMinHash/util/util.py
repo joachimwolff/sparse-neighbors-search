@@ -223,7 +223,7 @@ def create_dataset_fixed_nonzero(seed=None,
 
     return csr_matrix(dataset), y
 
-def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 5, size_of_query = 50, number_of_hashfunctions=400):
+def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 5, size_of_query = 50, number_of_hashfunctions=400, dataset_dense=None):
     """Function to measure and plot the performance for the given input data.
         For the query times two methods are measured:
             - All queries at once
@@ -231,6 +231,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
         For example:
             - For 50 queries kneighbors is called once with 50 instances to get all neighbors of these instances
             - For 50 queries kneighbors is called 50 times with only one instance."""
+
     time_fit_sklearn = []
     time_fit_minHash = []
     time_fit_lshf = []
@@ -261,7 +262,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
     size_of_datasets = 7
     length_of_dataset = len(dataset)
     iteration_of_dataset = 0
-    for dataset_ in dataset:
+    for dataset_, dataset_dense in zip(dataset, dataset_dense):
         iteration_of_dataset += 1
         print "Dataset processing: ", iteration_of_dataset, "/", length_of_dataset
         nearest_neighbor_sklearn = NearestNeighbors(n_neighbors = n_neighbors_sklearn)
@@ -278,39 +279,44 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
         time_fit_minHash.append(time_end - time_start)
         # print "Fitting of minHash_nneighbors done!"
 
-        time_start = time.time()
-        nearest_neighbor_lshf.fit(dataset_)
-        time_end = time.time()
-        time_fit_lshf.append(time_end - time_start)
-        # print "Fitting of LSHF done!"
+        if dataset_dense is not None:
+            time_start = time.time()
+            nearest_neighbor_lshf.fit(dataset_dense)
+            time_end = time.time()
+            time_fit_lshf.append(time_end - time_start)
+            # print "Fitting of LSHF done!"
 
-        time_start = time.time()
-        annoy_ = annoy.AnnoyIndex(f=dataset_.shape[1])
-        for i, x in enumerate(dataset_):
-            annoy_.add_item(i, x.toarray()[0])
-        annoy_.build(100) # ntrees = 100
-        time_end = time.time()
-        time_fit_annoy.append(time_end - time_start)
-        # print "Fitting of annoy done!"
+            time_start = time.time()
+            annoy_ = annoy.AnnoyIndex(f=dataset_dense.shape[1])
+            for i, x in enumerate(dataset_dense):
+                annoy_.add_item(i, x.toarray()[0])
+            annoy_.build(100) # ntrees = 100
+            time_end = time.time()
+            time_fit_annoy.append(time_end - time_start)
+            # print "Fitting of annoy done!"
 
-        # time_start = time.time()
-        # flann_ = pyflann.FLANN(target_precision=0.95, algorithm='autotuned', log_level='info')
-        # X = sklearn.preprocessing.normalize(dataset_, axis=1, norm='l2')
-        # # print "X.shape: ", X.shape
-        # # print "dataset_.shape: ", dataset_.shape
-        # flann_.build_index(X.todense())
-        # time_end = time.time()
-        # time_fit_flann.append(time_end - time_start)
-        # print "Fitting of flann done!"
+            # time_start = time.time()
+            # flann_ = pyflann.FLANN(target_precision=0.8, algorithm='autotuned', log_level='info')
+            # # X = sklearn.preprocessing.normalize(dataset_dense, axis=1, norm='l2')
+            # # print "X.shape: ", X.shape
+            # print "dataset_dense.shape: ", dataset_dense.shape
+            # flann_.build_index(dataset_dense.toarray())
+            # time_end = time.time()
+            # time_fit_flann.append(time_end - time_start)
+            # print "Fitting of flann done!"
 
 
         if size_of_query < dataset_.shape[0]:
             query_ids = []
             for i in range(size_of_query):
                 query_ids.append(random.randint(0, centroids * size_of_datasets))
+            if dataset_dense is not None:
+                query_dense = dataset_dense[query_ids]    
             query = dataset_[query_ids]
         else:
             query = dataset_
+            if dataset_dense is not None:
+                query_dense = dataset_dense
 
         time_start = time.time()
         n_neighbors_sklearn_1_50 = nearest_neighbor_sklearn.kneighbors(query, return_distance=False)
@@ -329,31 +335,31 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
         time_end = time.time()
         time_query_time_1_50_minHash_approx.append(time_end - time_start)
         # print "Computation of minHash_fast done!"
+        if dataset_dense is not None:
+            time_start = time.time()
+            n_neighbors_lshf_1_50 = nearest_neighbor_lshf.kneighbors(query_dense,return_distance=False)
+            time_end = time.time()
+            time_query_time_1_50_lshf.append(time_end - time_start)
+            # print "Computation of lshf done!"
 
-        time_start = time.time()
-        n_neighbors_lshf_1_50 = nearest_neighbor_lshf.kneighbors(query,return_distance=False)
-        time_end = time.time()
-        time_query_time_1_50_lshf.append(time_end - time_start)
-        # print "Computation of lshf done!"
 
+            # time_start = time.time()
+            # n_neighbors_annoy_1_50 = annoy_.get_nns_by_vector(query_dense.toarray()[0], n_neighbors_sklearn, 100)
+            # print "n_neighbors_annoy_1_50: ", n_neighbors_annoy_1_50
+            # time_end = time.time()
+            # time_query_time_1_50_annoy.append(time_end - time_start)
 
-        # time_start = time.time()
-        # n_neighbors_annoy_1_50 = annoy_.get_nns_by_vector(query.toarray()[0], n_neighbors_sklearn, 100)
-        # print "n_neighbors_annoy_1_50: ", n_neighbors_annoy_1_50
-        # time_end = time.time()
-        # time_query_time_1_50_annoy.append(time_end - time_start)
+            # print "Computation of annoy done!"
 
-        # print "Computation of annoy done!"
+            # time_start = time.time()
+            # v = sklearn.preprocessing.normalize(query_dense, axis=1, norm='l2')[0]
+            # n_neighbors_flann_1_50 = flann_.nn_index(v, None)[0][0]
+            # print "n_neighbors_flann_1_50: ", n_neighbors_flann_1_50
+            # print "n_neighbors_sklearn_1_50: ", n_neighbors_sklearn_1_50
+            # time_end = time.time()
+            # time_query_time_1_50_flann.append(time_end - time_start)
 
-        # time_start = time.time()
-        # v = sklearn.preprocessing.normalize(query, axis=1, norm='l2')[0]
-        # n_neighbors_flann_1_50 = flann_.nn_index(v, None)[0][0]
-        # print "n_neighbors_flann_1_50: ", n_neighbors_flann_1_50
-        # print "n_neighbors_sklearn_1_50: ", n_neighbors_sklearn_1_50
-        # time_end = time.time()
-        # time_query_time_1_50_flann.append(time_end - time_start)
-
-        # print "Computation of flann done!"
+            # print "Computation of flann done!"
 
         accuracy_1_50_lshf.append(np.in1d(n_neighbors_lshf_1_50, n_neighbors_sklearn_1_50).mean())
         accuracy_1_50_minHash_exact.append(np.in1d(n_neighbors_minHash_exact_1_50, n_neighbors_sklearn_1_50).mean())
@@ -389,45 +395,46 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
         time_query_time_50_1_minHash_approx.append(np.sum(time_query_time_50_1_minHash_approx_loc))
         # print "Computation_2 of minHash_fast done!"
 
-        time_query_time_50_1_lshf_loc = []
-        for i in range(size_of_query):
-            time_start = time.time()
-            nearest_neighbor_lshf.kneighbors(query[i], return_distance=False)
-            time_end = time.time()
-            time_query_time_50_1_lshf_loc.append(time_end - time_start)
-        time_query_time_50_1_lshf.append(np.sum(time_query_time_50_1_lshf_loc))
-        # print "Computation_2 of lshf done!"
+        if dataset_dense is not None:
+            time_query_time_50_1_lshf_loc = []
+            for i in range(size_of_query):
+                time_start = time.time()
+                nearest_neighbor_lshf.kneighbors(query_dense[i], return_distance=False)
+                time_end = time.time()
+                time_query_time_50_1_lshf_loc.append(time_end - time_start)
+            time_query_time_50_1_lshf.append(np.sum(time_query_time_50_1_lshf_loc))
+            # print "Computation_2 of lshf done!"
 
-        time_query_time_50_1_annoy_loc = []
-        n_neighbors_annoy_1_50 = []
-        for i in range(size_of_query):
-            time_start = time.time()
-            # print "query[i].toarray(): ", query[i].toarray()
-            nearest_neighbor_annoy = annoy_.get_nns_by_vector(query[i].toarray()[0], n_neighbors_sklearn, 100)
-            time_end = time.time()
-            time_query_time_50_1_annoy_loc.append(time_end - time_start)
-            n_neighbors_annoy_1_50.append(nearest_neighbor_annoy)
-        time_query_time_50_1_annoy.append(np.sum(time_query_time_50_1_annoy_loc))
-        accuracy_1_50_annoy.append(np.in1d(n_neighbors_annoy_1_50, n_neighbors_sklearn_1_50).mean())
+            time_query_time_50_1_annoy_loc = []
+            n_neighbors_annoy_1_50 = []
+            for i in range(size_of_query):
+                time_start = time.time()
+                # print "query[i].toarray(): ", query[i].toarray()
+                nearest_neighbor_annoy = annoy_.get_nns_by_vector(query_dense[i].toarray()[0], n_neighbors_sklearn, 100)
+                time_end = time.time()
+                time_query_time_50_1_annoy_loc.append(time_end - time_start)
+                n_neighbors_annoy_1_50.append(nearest_neighbor_annoy)
+            time_query_time_50_1_annoy.append(np.sum(time_query_time_50_1_annoy_loc))
+            accuracy_1_50_annoy.append(np.in1d(n_neighbors_annoy_1_50, n_neighbors_sklearn_1_50).mean())
 
-        # print "Computation_2 of annoy done!"
+            # print "Computation_2 of annoy done!"
 
-        # time_query_time_50_1_flann_loc = []
-        # n_neighbors_flann_1_50 = []
-        # for i in range(size_of_query):
-        #     time_start = time.time()
-        #     v = sklearn.preprocessing.normalize(query[i].toarray()[0], axis=1, norm='l2')[0]
-        #     nearest_neighbor_flann = flann_.nn_index(v, n_neighbors_sklearn)[0][0]
-        #     n_neighbors_flann_1_50.append(nearest_neighbor_flann)
-        #     time_end = time.time()
-        #     time_query_time_50_1_flann_loc.append(time_end - time_start)
-        # time_query_time_50_1_flann.append(np.sum(time_query_time_50_1_flann_loc))
-        # accuracy_1_50_flann.append(np.in1d(n_neighbors_flann_1_50, n_neighbors_sklearn_1_50).mean())
+            # time_query_time_50_1_flann_loc = []
+            # n_neighbors_flann_1_50 = []
+            # for i in range(size_of_query):
+            #     time_start = time.time()
+            #     v = sklearn.preprocessing.normalize(query_dense[i].toarray()[0], axis=1, norm='l2')[0]
+            #     nearest_neighbor_flann = flann_.nn_index(v, n_neighbors_sklearn)[0][0]
+            #     n_neighbors_flann_1_50.append(nearest_neighbor_flann)
+            #     time_end = time.time()
+            #     time_query_time_50_1_flann_loc.append(time_end - time_start)
+            # time_query_time_50_1_flann.append(np.sum(time_query_time_50_1_flann_loc))
+            # accuracy_1_50_flann.append(np.in1d(n_neighbors_flann_1_50, n_neighbors_sklearn_1_50).mean())
 
-        # print "Computation_2 of flann done!"
+            # print "Computation_2 of flann done!"
 
 
-    return  (time_fit_sklearn, time_fit_minHash, time_fit_lshf, time_fit_annoy,  
+    return  (time_fit_sklearn, time_fit_minHash, time_fit_lshf, time_fit_annoy,
             time_query_time_50_1_sklearn,time_query_time_50_1_minHash_exact, time_query_time_50_1_minHash_approx, 
             time_query_time_50_1_lshf,
             time_query_time_1_50_sklearn,time_query_time_1_50_minHash_exact, time_query_time_1_50_minHash_approx,
