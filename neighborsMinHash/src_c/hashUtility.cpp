@@ -197,13 +197,13 @@ std::pair< std::vector<umapVector >*, umapVector* >
                 // insert the instance id if not too many collisions (maxBinSize)
                 if (itHashValue_InstanceVector->second.size() < maxBinSize) {
                     // insert only if there wasn't any collisions in the past
-                    if (itHashValue_InstanceVector->second.size() > 0 && itHashValue_InstanceVector->second[0] != MAX_VALUE) {
+                    if (itHashValue_InstanceVector->second.size() > 0) {
                         itHashValue_InstanceVector->second.push_back(instanceId->first);
                     }
                 } else {
-                    // too many collisions: delete stored ids and set it to error value -1
+                    // too many collisions: delete stored ids. empty vector is interpreted as an error code 
+                    // for too many collisions
                     itHashValue_InstanceVector->second.clear();
-                    itHashValue_InstanceVector->second.push_back(MAX_VALUE);
                 }
             } else {
                 // given hash value for the specific hash function was not avaible: insert new hash value
@@ -249,9 +249,6 @@ std::pair<vvsize_t , vvfloat > _computeNeighbors(
                 if (instances != inverseIndex.at(j).end()) {
                     collisionSize = instances->second.size();
                 } else {
-                    continue;
-                }
-                if (collisionSize == 1 && instances->second.at(0) == MAX_VALUE) {
                     continue;
                 }
                 if (collisionSize < maxBinSize && collisionSize > 0) {
