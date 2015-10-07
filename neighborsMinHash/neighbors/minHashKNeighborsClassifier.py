@@ -10,6 +10,8 @@
 
 __author__ = 'joachimwolff'
 
+from collections import Counter
+
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.utils import check_array
@@ -217,18 +219,24 @@ class MinHashKNeighborsClassifier():
         if len(candidate_list) < n_neighbors:
             n_neighbors = len(candidate_list)
 
-        nearest_neighborsSK = KNeighborsClassifier(n_neighbors=n_neighbors)
+        # signatures = inverseIndex.signature(X)
+        distance, neighbors = self.kneighbors(X)
+        y_values = self._getYValues(candidate_list)
 
-        if fast:
-            signatures = inverseIndex.signature(X)
-            nearest_neighborsSK.fit(
-                inverseIndex.get_signature_list(self.nearestNeighbors._X[candidate_list]),
-                self._getYValues(candidate_list))
-            return nearest_neighborsSK.predict(signatures)
-        else:
-            nearest_neighborsSK.fit(
-                self.nearestNeighbors._X[candidate_list], self._getYValues(candidate_list))
-            return nearest_neighborsSK.predict(X)
+        # print neighbors
+        result_classification = []
+        for instance in neighbors:
+            y_value = []
+            for instance_ in instance:
+                if instance_ != -1:
+                # get all class labels
+                    y_value.append(y_values[instance_])
+            if len(y_value) > 0:
+                # sort class labels by frequency and take the highest one
+                result_classification.append(Counter(y_value).keys()[0])
+            else:
+                result_classification.append(-1)
+        return result_classification
 
 
 
@@ -248,6 +256,7 @@ class MinHashKNeighborsClassifier():
         X = check_array(X, accept_sparse='csr')
         n_neighbors = self.n_neighbors
         inverseIndex = self.nearestNeighbors._inverseIndex
+        number_of_classes = len(set(self.nearestNeighbors._y))
         if fast is None:
             fast = self.fast
 
@@ -262,18 +271,30 @@ class MinHashKNeighborsClassifier():
         if len(candidate_list) < n_neighbors:
             n_neighbors = len(candidate_list)
 
-        nearest_neighborsSK = KNeighborsClassifier(n_neighbors=n_neighbors)
+        distance, neighbors = self.kneighbors(X)
+        y_values = self._getYValues(candidate_list)
 
-        if fast:
-            signatures = inverseIndex.signature(X)
-            nearest_neighborsSK.fit(
-                inverseIndex.get_signature_list(self.nearestNeighbors._X[candidate_list]),
-                self._getYValues(candidate_list))
-            return nearest_neighborsSK.predict_proba(signatures)
-        else:
-            nearest_neighborsSK.fit(
-                self.nearestNeighbors._X[candidate_list], self._getYValues(candidate_list))
-            return nearest_neighborsSK.predict_proba(X)
+        result_classification = []
+        for instance in neighbors:
+            y_value = []
+            for instance_ in instance:
+                if instance_ != -1:
+                # get all class labels
+                    y_value.append(y_values[instance_])
+            if len(y_value) > 0:
+                # sort class labels by frequency
+                y_proba = [0.0] * number_of_classes
+                sorted_classes = Counter(y_value)
+                # count frequency of all clases
+                total_class_count = 0
+                for value in sorted_classes.itervalues():
+                    total_class_count += value
+                # compute probability by frequency / all_frequencies
+                for key, value in sorted_classes.iteritems():
+                    y_proba[key] = value / float(total_class_count)
+                result_classification.append(y_proba[:])
+        return result_classification
+        
     def score(self, X, y , sample_weight=None, fast=None):
         """Returns the mean accuracy on the given test data and labels.
         In multi-label classification, this is the subset accuracy
