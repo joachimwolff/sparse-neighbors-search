@@ -223,6 +223,19 @@ def create_dataset_fixed_nonzero(seed=None,
 
     return csr_matrix(dataset), y
 
+def mesure_performance(algorithm, X_training, X_queries, n_neighbors=5):
+
+    time_start = time.time()
+    algorithm.fit(X_training)
+    time_fit = time.time() - time_start
+    time_start_query = time.time()
+    algorithm.kneighbors(X_queries)
+    time_end = time.time()
+    time_query = time_end - time_start_query
+    time_fit_query = time_end - time_start
+
+    return time_fit, time_query, time_fit_query
+
 def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 5, size_of_query = 50, number_of_hashfunctions=400, dataset_dense=None):
     """Function to measure and plot the performance for the given input data.
         For the query times two methods are measured:
@@ -262,6 +275,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
     size_of_datasets = 7
     length_of_dataset = len(dataset)
     iteration_of_dataset = 0
+    if 
     for dataset_, dataset_dense in zip(dataset, dataset_dense):
         iteration_of_dataset += 1
         print "Dataset processing: ", iteration_of_dataset, "/", length_of_dataset
@@ -369,7 +383,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
 
         time_query_time_50_1_sklearn_loc = []
         time_query_time_50_1_sklearn_loc = []
-        for i in range(size_of_query):
+        for i in xrange(size_of_query-1):
             time_start = time.time()
             nearest_neighbor_sklearn.kneighbors(query[i],return_distance=False)
             time_end = time.time()
@@ -378,7 +392,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
         # print "Computation_2 of sklearn_nneighbors done!"
 
         time_query_time_50_1_minHash_exact_loc = []
-        for i in range(size_of_query):
+        for i in xrange(size_of_query-1):
             time_start = time.time()
             nearest_neighbor_minHash.kneighbors(query[i], return_distance=False)
             time_end = time.time()
@@ -387,7 +401,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
         # print "Computation_2 of minHash_slow done!"
 
         time_query_time_50_1_minHash_approx_loc = []
-        for i in range(size_of_query):
+        for i in xrange(size_of_query-1):
             time_start = time.time()
             nearest_neighbor_minHash.kneighbors(query[i], fast=True,return_distance=False)
             time_end = time.time()
@@ -397,7 +411,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
 
         if dataset_dense is not None:
             time_query_time_50_1_lshf_loc = []
-            for i in range(size_of_query):
+            for i in xrange(size_of_query-1):
                 time_start = time.time()
                 nearest_neighbor_lshf.kneighbors(query_dense[i], return_distance=False)
                 time_end = time.time()
@@ -407,7 +421,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
 
             time_query_time_50_1_annoy_loc = []
             n_neighbors_annoy_1_50 = []
-            for i in range(size_of_query):
+            for i in xrange(size_of_query-1):
                 time_start = time.time()
                 # print "query[i].toarray(): ", query[i].toarray()
                 nearest_neighbor_annoy = annoy_.get_nns_by_vector(query_dense[i].toarray()[0], n_neighbors_sklearn, 100)
@@ -432,18 +446,29 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
             # accuracy_1_50_flann.append(np.in1d(n_neighbors_flann_1_50, n_neighbors_sklearn_1_50).mean())
 
             # print "Computation_2 of flann done!"
+    print "1+50 lhsf: ", time_query_time_1_50_lshf
 
-
-    return  (time_fit_sklearn, time_fit_minHash, time_fit_lshf, time_fit_annoy,
-            time_query_time_50_1_sklearn,time_query_time_50_1_minHash_exact, time_query_time_50_1_minHash_approx, 
-            time_query_time_50_1_lshf,
-            time_query_time_1_50_sklearn,time_query_time_1_50_minHash_exact, time_query_time_1_50_minHash_approx,
-            time_query_time_1_50_lshf, time_query_time_1_50_annoy,
-            accuracy_1_50_lshf,accuracy_1_50_minHash_exact, accuracy_1_50_minHash_aprox, accuracy_1_50_annoy)
+    return  (time_fit_sklearn, 
+                time_fit_minHash, 
+                time_fit_lshf,
+                time_fit_annoy,
+            time_query_time_50_1_sklearn,
+            time_query_time_50_1_minHash_exact, 
+            time_query_time_50_1_minHash_approx, 
+            time_query_time_50_1_lshf, 
+            time_query_time_50_1_annoy,
+            time_query_time_1_50_sklearn,
+            time_query_time_1_50_minHash_exact, 
+            time_query_time_1_50_minHash_approx,
+            time_query_time_1_50_lshf, 
+            accuracy_1_50_lshf,
+            accuracy_1_50_minHash_exact, 
+            accuracy_1_50_minHash_aprox, 
+            accuracy_1_50_annoy)
 
 def plotData(data, color, label, title, xticks, ylabel,
          number_of_instances, number_of_features,
-         figure_size=(10,5),  bar_width=0.1,log=True):
+         figure_size=(10,5),  bar_width=0.1,log=True, xlabel=None):
     plt.figure(figsize=figure_size)
     N = number_of_instances * number_of_features
 
@@ -457,6 +482,7 @@ def plotData(data, color, label, title, xticks, ylabel,
     if log:
         plt.yscale('log')
     plt.ylabel(ylabel)
+    plt.xlabel(xlabel)
     plt.title(title)
     plt.xticks(ind+3*bar_width, (xticks))
     plt.legend(loc='upper left', fontsize='small')
