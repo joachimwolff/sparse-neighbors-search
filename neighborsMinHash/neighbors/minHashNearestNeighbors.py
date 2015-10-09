@@ -346,7 +346,7 @@ class MinHashNearestNeighbors():
                 return_distance=True
             ind : array, shape = [n_samples, neighbors]
                 Indices of the nearest points in the population matrix."""
-        self.fit(X, y)
+        self.fit(X=None, y=None)
         return self.kneighbors(X, n_neighbors=n_neighbors, return_distance=return_distance, fast=fast)
 
     def fit_kneighbor_graph(self, X, y=None, n_neighbors=None, mode='connectivity', fast=None):
