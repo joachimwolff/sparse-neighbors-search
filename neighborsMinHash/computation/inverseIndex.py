@@ -42,7 +42,6 @@ class InverseIndex():
     """
     def __init__(self, number_of_hash_functions=400,
                  max_bin_size = 50,
-                 number_of_nearest_neighbors = 5,
                  minimal_blocks_in_common = 1,
                  block_size = 4,
                  excess_factor = 5, 
@@ -79,9 +78,7 @@ class InverseIndex():
         self._index_elements = X.shape[0]
         instances, features = X.nonzero()
         # returns a pointer to the inverse index stored in c++
-        index_storage= computeInverseIndex(self._number_of_hash_functions,
-                                instances.tolist(), features.tolist(), self._block_size, self._max_bin_size,
-                                                  self._number_of_cores, self._chunk_size, 1 if lazy_fitting else 0)
+        index_storage= computeInverseIndex(instances.tolist(), features.tolist() 1 if lazy_fitting else 0)
         self._inverse_index = index_storage[0]
         self._signature_storage = index_storage[1]
 
@@ -98,9 +95,7 @@ class InverseIndex():
         for i in xrange(len(instances)):
             instances[i] += self._index_elements
         self._index_elements += X.shape[0]
-        index_storage = computePartialFit(self._number_of_hash_functions,
-                                instances.tolist(), features.tolist(), self._block_size, self._max_bin_size,
-                                self._number_of_cores, self._chunk_size, self._inverse_index, self._signature_storage)
+        index_storage = computePartialFit(instances.tolist(), features.tolist())
         self._inverse_index = index_storage[0]
         self._signature_storage = index_storage[1]
 
@@ -114,9 +109,7 @@ class InverseIndex():
         """
         instances, features = instance_feature_list.nonzero()
         # compute the siganture in c++
-        return computeSignature(self._number_of_hash_functions,instances.tolist(), features.tolist() ,
-                                                self._block_size, self._number_of_cores, self._chunk_size, 
-                                                self._signature_storage)
+        return computeSignature(instances.tolist(), features.tolist())
 
 
 
@@ -137,12 +130,8 @@ class InverseIndex():
         # define non local variables and functions as locals to increase performance
         instances, features = instance_feature_list.nonzero()
         # compute the siganture in c++
-        return computeNeighborhood(self._number_of_hash_functions,instances.tolist(), features.tolist() ,
-                                                self._block_size, self._number_of_cores, self._chunk_size,
-                                                self._number_of_nearest_neighbors, self.MAX_VALUE, 
-                                                self._minimal_blocks_in_common, self._excess_factor,
-                                                self._max_bin_size, self._maximal_number_of_hash_collisions,
-                                                self._inverse_index, self._signature_storage, 1 if lazy_fitting else 0)
+        return computeNeighborhood(instances.tolist(), features.tolist(),
+                                    size_of_neighborhood, 1 if lazy_fitting else 0)
 
 
     def get_signature_list(self, instances):
