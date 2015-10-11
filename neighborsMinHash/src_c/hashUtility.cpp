@@ -10,29 +10,10 @@
  Albert-Ludwig-University Freiburg im Breisgau
 **/
 #include <Python.h>
-// #include <math.h>
 
-// #ifdef OPENMP
-// #include <omp.h>
-// #endif
-// #include <vector>
-// #include <map>
-// #include <unordered_map>
+#include <iostream>
 
-// #include <string>
-// #include <iostream>
-// #include <iterator>
-// #include <algorithm>
-// #include <utility>
-
-#include <minHash.h>
-
-typedef std::vector<size_t> vsize_t;
-typedef std::map< size_t, vsize_t > umapVector;
-typedef std::vector<vsize_t > vvsize_t;
-typedef std::vector< std::vector<float> > vvfloat;
-typedef std::vector<std::map<size_t, size_t> > vmSize_tSize_t;
-
+#include "minHash.h"
 
 umapVector _parseInstancesFeatures(PyObject * instancesListObj, PyObject * featuresListObj) {
     PyObject * instanceSize_tObj;
@@ -72,14 +53,14 @@ umapVector _parseInstancesFeatures(PyObject * instancesListObj, PyObject * featu
 // parse python call to c++; execute c++ and parse it back to python
 static PyObject* computeInverseIndex(PyObject* self, PyObject* args) {
 
-    size_t addressMinHashObject, lazyFitting;
+    size_t addressMinHashObject;
     PyObject * instancesListObj;
     PyObject * featuresListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!kk", 
+    if (!PyArg_ParseTuple(args, "O!O!k", 
                             &PyList_Type, &instancesListObj, 
                             &PyList_Type, &featuresListObj,
-                            &lazyFitting, &addressMinHashObject))
+                            &addressMinHashObject))
         return NULL;
 
     // parse from python list to a c++ map<size_t, vector<size_t> >
@@ -88,46 +69,13 @@ static PyObject* computeInverseIndex(PyObject* self, PyObject* args) {
 
     // get pointer to the minhash object
     MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
+
     (*minHash).computeInverseIndex(instanceFeatureVector);
-    
-    adressMinHashObject = reinterpret_cast<size_t>(minHash);
-    PyObject * pointerToInverseIndex = Py_BuildValue("k", adressMinHashObject);
+
+    addressMinHashObject = reinterpret_cast<size_t>(minHash);
+    PyObject * pointerToInverseIndex = Py_BuildValue("k", addressMinHashObject);
     
     return pointerToInverseIndex;
-}
-// parse python call to c++; execute c++ and parse it back to python
-static PyObject* computeSignature(PyObject* self, PyObject* args) {
-
-    size_t addressMinHashObject;
-
-    PyObject * listInstancesObj;
-    PyObject * listFeaturesObj;
-    
-    if (!PyArg_ParseTuple(args, "O!O!k", 
-                        &PyList_Type, &listInstancesObj,
-                        &PyList_Type, &listFeaturesObj,
-                        &addressMinHashObject))
-        return NULL;
-
-    umapVector instanceFeatureVector = _parseInstancesFeatures(listInstancesObj, listFeaturesObj);
-    // get pointer to the minhash object
-    MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
-    // compute in c++
-    vvsize_t signatures = (*minHash).computeSignature(instanceFeatureVector);
-  
-    size_t sizeOfSignature = signatures.size();
-    PyObject * outListInstancesObj = PyList_New(sizeOfSignature);
-    for (size_t i = 0; i < sizeOfSignature; ++i) {
-    size_t sizeOfFeature = signatures[i].size();
-        PyObject * outListFeaturesObj = PyList_New(sizeOfFeature);
-        for (size_t j = 0; j < sizeOfFeature; ++j) {
-            PyObject* value = Py_BuildValue("k", signatures[i][j]);
-            PyList_SetItem(outListFeaturesObj, j, value);
-        }
-        PyList_SetItem(outListInstancesObj, i, outListFeaturesObj);
-    }
-
-    return outListInstancesObj;
 }
 
 // parse python call to c++; execute c++ and parse it back to python
@@ -146,20 +94,20 @@ static PyObject* computeNeighborhood(PyObject* self, PyObject* args) {
         return NULL;
 
     umapVector instanceFeatureVector = _parseInstancesFeatures(listInstancesObj, listFeaturesObj);
+
     MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
-    vvsize_t signatures;
+
+    umap_pair_vector* signatures;
+    std::pair<vvsize_t , vvfloat > neighborsDistances;
     if (!lazyFitting) {
         // compute signatures of the instances
-        signatures = (*minHash).computeSignature(instanceFeatureVector);
+        signatures = (*minHash).computeSignatureMap(instanceFeatureVector);
     } else {
-        // move the instances from map to vector without recomputing it.
-        for (umapVector::iterator it = (*signatureStorage).begin(); it != (*signatureStorage).end(); ++it) {
-            signatures.push_back(it->second);
-        }
+        signatures = (*minHash).getSignatureStorage();
     }
     // compute the k-nearest neighbors
-    std::pair<vvsize_t , vvfloat > neighborsDistances = (*minHash).computeNeighborhood(instanceFeatureVector);
-        
+    neighborsDistances = (*minHash).computeNeighbors(signatures);
+       
     size_t sizeOfNeighorList = neighborsDistances.first.size();
 
     PyObject * outerListNeighbors = PyList_New(sizeOfNeighorList);
@@ -188,33 +136,42 @@ static PyObject* computeNeighborhood(PyObject* self, PyObject* args) {
 }
 
 static PyObject* createObject(PyObject* self, PyObject* args) {
-    size_t adressMinHashObject;
 
     size_t numberOfHashFunctions, blockSize, numberOfCores, chunkSize,
-    sizeOfNeighborhood, MAX_VALUE, minimalBlocksInCommon, maxBinSize,
-    maximalNumberOfHashCollisions, excessFactor, lazyFitting;
+    sizeOfNeighborhood, minimalBlocksInCommon, maxBinSize,
+    maximalNumberOfHashCollisions, excessFactor;
 
-    if (!PyArg_ParseTuple(args, "kkkkkkkkkk", &numberOfHashFunctions,
-                        &blockSize, &numberOfCores, &chunkSize, &sizeOfNeighborhood, 
+    if (!PyArg_ParseTuple(args, "kkkkkkkkk", &numberOfHashFunctions,
+                        &blockSize, &numberOfCores, &chunkSize, &sizeOfNeighborhood,
                         &minimalBlocksInCommon, &maxBinSize,
-                        &maximalNumberOfHashCollisions, &excessFactor, 
-                        &lazyFitting))
+                        &maximalNumberOfHashCollisions, &excessFactor))
         return NULL;
-
-    MinHash* minHash(numberOfHashFunctions, blockSize, numberOfCores, chunkSize,
-                    maxBinSize, lazyFitting, sizeOfNeighborhood, minimalBlocksInCommon, 
+    MinHash* minHash = new MinHash (numberOfHashFunctions, blockSize, numberOfCores, chunkSize,
+                    maxBinSize, sizeOfNeighborhood, minimalBlocksInCommon, 
                     excessFactor, maximalNumberOfHashCollisions);
+    
     size_t adressMinHashObject = reinterpret_cast<size_t>(minHash);
-    PyObject * pointerToInverseIndex = Py_BuildValue("k", adressMinHashObject);
+    PyObject* pointerToInverseIndex = Py_BuildValue("k", adressMinHashObject);
     
     return pointerToInverseIndex;
 }
+static PyObject* deleteObject(PyObject* self, PyObject* args) {
+
+    size_t addressMinHashObject;
+
+    if (!PyArg_ParseTuple(args, "k", &addressMinHashObject))
+        return NULL;
+
+    MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
+    delete minHash;
+    return NULL;
+}
 // definition of avaible functions for python and which function parsing fucntion in c++ should be called.
 static PyMethodDef size_tHashMethods[] = {
-    {"computeSignature", computeSignature, METH_VARARGS, "Calculate a signature for a given instance."},
     {"computeInverseIndex", computeInverseIndex, METH_VARARGS, "Calculate the inverse index for the given instances."},
     {"computeNeighborhood", computeNeighborhood, METH_VARARGS, "Calculate the candidate list for the given instances."},
     {"createObject", createObject, METH_VARARGS, "Create the c++ object."},
+    {"deleteObject", deleteObject, METH_VARARGS, "Delete the c++ object by calling the destructor."},
     {NULL, NULL, 0, NULL}
 };
 

@@ -116,7 +116,7 @@ class MinHashNearestNeighbors():
                                           number_of_cores = self._number_of_cores,
                                           chunk_size = self._chunk_size)
 
-    def fit(self, X=None, y=None):
+    def fit(self, X, y=None):
         """Fit the model using X as training data.
 
             Parameters
@@ -136,13 +136,10 @@ class MinHashNearestNeighbors():
         else:
             self._X = csr_matrix(X)
             self._y_is_csr = False
-        if X is None:
-            self._sizeOfX = -1
-            self._shape_of_X = -1
-        else:
-            self._sizeOfX = self._X.shape[0]
-            self._shape_of_X = self._X.shape[1]
-            self._inverseIndex.fit(self._X)
+        
+        self._sizeOfX = self._X.shape[0]
+        self._shape_of_X = self._X.shape[1]
+        self._inverseIndex.fit(self._X)
 
     def partial_fit(self, X, y=None):
         """Extend the model by X as additional training data.
@@ -319,7 +316,7 @@ class MinHashNearestNeighbors():
                             computing_function="radius_neighbors")
 
 
-    def fit_kneighbors(self, X, y=None, n_neighbors=None, return_distance=True, fast=None):
+    def fit_kneighbors(self, X, n_neighbors=None, return_distance=True, fast=None):
         """"Fits and returns the n_neighbors of X.
 
         Parameters
@@ -346,10 +343,18 @@ class MinHashNearestNeighbors():
                 return_distance=True
             ind : array, shape = [n_samples, neighbors]
                 Indices of the nearest points in the population matrix."""
-        self.fit(X=None, y=None)
-        return self.kneighbors(X, n_neighbors=n_neighbors, return_distance=return_distance, fast=fast)
+        self.fit(X)
+        if fast is not None:
+            self.fastComputation = fast
+        else:
+            self.fastComputation = self._fast
+        if n_neighbors == None:
+            n_neighbors = self.n_neighbors
+        return self._neighborhood(X=X, neighborhood_measure=n_neighbors,
+                                  return_distance=return_distance, computing_function="kneighbors",  lazy_fitting=True)
+        
 
-    def fit_kneighbor_graph(self, X, y=None, n_neighbors=None, mode='connectivity', fast=None):
+    def fit_kneighbor_graph(self, X, n_neighbors=None, mode='connectivity', fast=None):
         """Fits and computes the (weighted) graph of k-Neighbors for points in X
             Parameters
             ----------
@@ -376,7 +381,7 @@ class MinHashNearestNeighbors():
                 n_samples_fit is the number of samples in the fitted data
                 A[i, j] is assigned the weight of edge that connects i to j.
             """
-        self.fit(X, y)
+        self.fit(X)
         return self.kneighbors_graph(X, n_neighbors=n_neighbors, mode=mode, fast=fast)
 
     def fit_radius_neighbors(self, X, y=None, radius=None, return_distance=None, fast=None):
@@ -447,21 +452,11 @@ class MinHashNearestNeighbors():
         self.fit(X, y)
         return self.radius_neighbors_graph(X, radius=radius, mode=mode, fast=fast)
 
-    def _neighborhood(self, X=None, neighborhood_measure=None, return_distance=None, computing_function=None):
+    def _neighborhood(self, X=None, neighborhood_measure=None, return_distance=None, computing_function=None, lazy_fitting=False):
         """Controlls the search of the nearest neighbors. It depends on the the choosen algorithm if the
             approximate or exact version is running and on the parameter \"computing_function\" if K-nearest_neighbor_algorithm
             or the radius_neighbors_algorithm is executed.
             """
-        lazy_fitting = False
-        if X is None and self._sizeOfX == -1 and self._shape_of_X == -1:
-            return
-        elif X is not None and self._sizeOfX == -1 and self._shape_of_X == -1:
-            self._sizeOfX = X.shape[0]
-            self._shape_of_X = X.shape[1]
-            self._inverseIndex.fit(X, True)
-            self._X = csr_matrix(X)
-            self._y_is_csr = False
-            lazy_fitting = True
         # define non local variables and functions as locals to increase performance
         inverseIndex = self._inverseIndex
         sizeOfX = self._sizeOfX

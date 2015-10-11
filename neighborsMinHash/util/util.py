@@ -25,7 +25,7 @@ from sklearn.neighbors import LSHForest
 import sklearn
 
 from ..neighbors import MinHashNearestNeighbors
-import pyflann
+# import pyflann
 import annoy
 
 import matplotlib.pyplot as plt
@@ -275,7 +275,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
     size_of_datasets = 7
     length_of_dataset = len(dataset)
     iteration_of_dataset = 0
-    if 
+    # if 
     for dataset_, dataset_dense in zip(dataset, dataset_dense):
         iteration_of_dataset += 1
         print "Dataset processing: ", iteration_of_dataset, "/", length_of_dataset

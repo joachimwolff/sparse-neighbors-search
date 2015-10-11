@@ -10,26 +10,47 @@
  Albert-Ludwig-University Freiburg im Breisgau
 **/
 
-#include <minHash.h>
+#include <iostream>
+#include <iterator>
+#include <algorithm>
+#include <utility>
 
-MinHash::MinHash(size_t numberOfHashFunctions, size_t blockSize,
-                    size_t numberOfCores, size_t chunkSize,
-                    size_t maxBinSize, size_t lazyFitting,
-                    size_t sizeOfNeighborhood, size_t minimalBlocksInCommon,
-                    size_t excessFactor, float maximalNumberOfHashCollisions) {
+#ifdef OPENMP
+#include <omp.h>
+#endif
+
+#include "minHash.h"
+
+
+class sort_map {
+  public:
+    size_t key;
+    size_t val;
+};
+
+bool mapSortDescByValue(const sort_map& a, const sort_map& b) {
+        return a.val > b.val;
+};
+
+MinHash::MinHash(size_t pNumberOfHashFunctions, size_t pBlockSize,
+                    size_t pNumberOfCores, size_t pChunkSize,
+                    size_t pMaxBinSize,
+                    size_t pSizeOfNeighborhood, size_t pMinimalBlocksInCommon,
+                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions) {
     
-    numberOfHashFunctions = numberOfHashFunctions;
-    blockSize = blockSize;
-    numberOfCores = numberOfCores;
-    chunkSize = chunkSize;
-    maxBinSize = maxBinSize;
-    lazyFitting = lazyFitting;
-    sizeOfNeighborhood = sizeOfNeighborhood;
-    minimalBlocksInCommon = minimalBlocksInCommon;
-    excessFactor = excessFactor;
-    maximalNumberOfHashCollisions = maximalNumberOfHashCollisions;
-    signatureStorage = NULL;
-    inverseIndex = NULL;
+    numberOfHashFunctions = pNumberOfHashFunctions;
+    blockSize = pBlockSize;
+    numberOfCores = pNumberOfCores;
+    chunkSize = pChunkSize;
+    maxBinSize = pMaxBinSize;
+    sizeOfNeighborhood = pSizeOfNeighborhood;
+    minimalBlocksInCommon = pMinimalBlocksInCommon;
+    excessFactor = pExcessFactor;
+    maximalNumberOfHashCollisions = pMaximalNumberOfHashCollisions;
+    inverseIndex = new std::vector<umapVector >();
+    signatureStorage = new umap_pair_vector();
+    size_t inverseIndexSize = ceil(((float) numberOfHashFunctions / (float) blockSize)+1);
+    inverseIndex->resize(inverseIndexSize);
 }
 
 MinHash::~MinHash() {
@@ -37,23 +58,21 @@ MinHash::~MinHash() {
     delete inverseIndex;
 }
  // compute the signature for one instance
-vsize_t MinHash::computeSignature(const vsize_t& instanceFeatureVector) {
-#ifdef OPENMP
-    omp_set_dynamic(0);
-#endif
-#pragma omp parallel for schedule(static, chunkSize) num_threads(numberOfCores)
-    {
-        for(size_t j = 0; j < numberOfHashFunctions; ++j) {
-            size_t minHashValue = MAX_VALUE;
-            for (auto itFeatures = instanceId->second.begin(); itFeatures != instanceId->second.end(); ++itFeatures) {
-                size_t hashValue = _size_tHashSimple((*itFeatures +1) * (j+1) * A, MAX_VALUE);
-                if (hashValue < minHashValue) {
-                    minHashValue = hashValue;
-                }
+vsize_t MinHash::computeSignature(const vsize_t& featureVector) {
+
+    vsize_t signatureHash;
+    signatureHash.reserve(numberOfHashFunctions);
+
+    for(size_t j = 0; j < numberOfHashFunctions; ++j) {
+        size_t minHashValue = MAX_VALUE;
+        for (size_t i = 0; i < featureVector.size(); ++i) {
+            size_t hashValue = _size_tHashSimple((featureVector[i] +1) * (j+1) * A, MAX_VALUE);
+            if (hashValue < minHashValue) {
+                minHashValue = hashValue;
             }
-            signatureHash[j] = minHashValue;
         }
-    } 
+        signatureHash[j] = minHashValue;
+    }
     // reduce number of hash values by a factor of blockSize
     size_t k = 0;
     vsize_t signature;
@@ -69,64 +88,63 @@ vsize_t MinHash::computeSignature(const vsize_t& instanceFeatureVector) {
     }
     return signature;
 }
-vvsize_t MinHash::computeSignature_2(const umapVector& instanceFeatureVector) {
+umap_pair_vector* MinHash::computeSignatureMap(const umapVector& instanceFeatureVector) {
 
     const size_t sizeOfInstances = instanceFeatureVector.size();
-    vvsize_t instanceSignature;
-    instanceSignature.resize(sizeOfInstances);
+    umap_pair_vector* instanceSignature = new umap_pair_vector();
+    (*instanceSignature).reserve(sizeOfInstances);
     if (chunkSize <= 0) {
         chunkSize = ceil(instanceFeatureVector.size() / static_cast<float>(numberOfCores));
     }
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
+
+
 #pragma omp parallel for schedule(static, chunkSize) num_threads(numberOfCores)
     for(size_t index = 0; index < instanceFeatureVector.size(); ++index) {
 
         auto instanceId = instanceFeatureVector.begin();
         std::advance(instanceId, index);
+        
         // compute unique id
         size_t signatureId = 0;
         for (auto itFeatures = instanceId->second.begin(); itFeatures != instanceId->second.end(); ++itFeatures) {
                 signatureId = _size_tHashSimple((*itFeatures +1) * (signatureId+1) * A, MAX_VALUE);
         }
-        auto signatureIt = signatureStorage.find(signatureId);
-        if (signatureIt != signatureStorage.end()) {
-#pragma critical
-            instanceSignature[index] = signatureIt->second;
+        auto signatureIt = (*signatureStorage).find(signatureId);
+        if (signatureIt != (*signatureStorage).end()) {
+#pragma omp critical
+            instanceSignature->operator[](signatureId) = std::make_pair (instanceId->first, signatureIt->second.second);
             continue;
         }
         // for every hash function: compute the hash values of all features and take the minimum of these
         // as the hash value for one hash function --> h_j(x) = argmin (x_i of x) f_j(x_i)
         vsize_t signature = computeSignature(instanceId->second);
-#pragma critical
-
-        instanceSignature[index] = signature;
-        signatureStorage[signatureId] = signature;
+#pragma omp critical
+        {
+            instanceSignature->operator[](signatureId) = std::make_pair (instanceId->first, signature);
+            signatureStorage->operator[](signatureId) = std::make_pair (instanceId->first, signature);
+        }
     }
     return instanceSignature;
 }
-void MinHash::computeInverseIndex(umapVector& instanceFeatureVector) {
+void MinHash::computeInverseIndex(const umapVector& instanceFeatureVector) {
 
-    // if NULL than the inverse index is new created. Otherwise it is extended.
-    if (inverseIndex == NULL) {
-        inverseIndex = new std::vector<umapVector >();
-    }
-    if (signatureStorage == NULL) {
-        signatureStorage = new umapVector();
-    }
     size_t inverseIndexSize = ceil(((float) numberOfHashFunctions / (float) blockSize)+1);
     inverseIndex->resize(inverseIndexSize);
+
     if (chunkSize <= 0) {
-        chunkSize = ceil(instance_featureVector.size() / static_cast<float>(numberOfCores));
+        chunkSize = ceil(instanceFeatureVector.size() / static_cast<float>(numberOfCores));
     }
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
-#pragma omp parallel for schedule(static, chunkSize) num_threads(numberOfCores)
-    for(size_t index = 0; index < instance_featureVector.size(); ++index){
 
-        auto instanceId = instance_featureVector.begin();
+#pragma omp parallel for schedule(static, chunkSize) num_threads(numberOfCores)
+    for(size_t index = 0; index < instanceFeatureVector.size(); ++index) {
+
+        auto instanceId = instanceFeatureVector.begin();
         std::advance(instanceId, index);
 
         vmSize_tSize_t hashStorage;
@@ -135,27 +153,25 @@ void MinHash::computeInverseIndex(umapVector& instanceFeatureVector) {
         // as the hash value for one hash function --> h_j(x) = argmin (x_i of x) f_j(x_i)
         vsize_t signature = computeSignature(instanceId->second);
 
-        if (!lazyFitting) {
-            for (auto itFeatures = instanceId->second.begin(); itFeatures != instanceId->second.end(); ++itFeatures) {
-                signatureId = _size_tHashSimple((*itFeatures +1) * (signatureId+1) * A, MAX_VALUE);
-            }
-            signatureStorage[signatureId] = signature;
-        } else {
-            signatureStorage[index] = signature;
+        size_t signatureId = 0;
+        for (auto itFeatures = instanceId->second.begin(); itFeatures != instanceId->second.end(); ++itFeatures) {
+            signatureId = _size_tHashSimple((*itFeatures +1) * (signatureId+1) * A, MAX_VALUE);
         }
+        signatureStorage->operator[](signatureId) = std::make_pair (instanceId->first, signature);
+
         // insert in inverse index
 #pragma omp critical
         for (size_t j = 0; j < signature.size(); ++j) {
-            auto itHashValue_InstanceVector = inverseIndex[j].find(signature[j]);
+            auto itHashValue_InstanceVector = inverseIndex->operator[](j).find(signature[j]);
             // if for hash function h_i() the given hash values is already stored
-            if (itHashValue_InstanceVector != inverseIndex[j].end()) {
+            if (itHashValue_InstanceVector != inverseIndex->operator[](j).end()) {
                 // insert the instance id if not too many collisions (maxBinSize)
                 if (itHashValue_InstanceVector->second.size() < maxBinSize) {
                     // insert only if there wasn't any collisions in the past
                     if (itHashValue_InstanceVector->second.size() > 0) {
                         itHashValue_InstanceVector->second.push_back(instanceId->first);
                     }
-                } else {
+                } else { 
                     // too many collisions: delete stored ids. empty vector is interpreted as an error code 
                     // for too many collisions
                     itHashValue_InstanceVector->second.clear();
@@ -164,38 +180,41 @@ void MinHash::computeInverseIndex(umapVector& instanceFeatureVector) {
                 // given hash value for the specific hash function was not avaible: insert new hash value
                 vsize_t instanceIdVector;
                 instanceIdVector.push_back(instanceId->first);
-                inverseIndex[j][signature[j]] = instanceIdVector;
+                inverseIndex->operator[](j)[signature[j]] = instanceIdVector;
             }
         }
     }
 }
 
-std::pair<vvsize_t , vvfloat > MinHash::computeNeighbors(const vvsize_t signatures) {
+std::pair<vvsize_t , vvfloat > MinHash::computeNeighbors(umap_pair_vector* signaturesMap) {
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
-
     std::pair<vvsize_t , vvfloat > returnVector;
-
     vvsize_t neighbors;
     vvfloat distances;
+    neighbors.resize((*signaturesMap).size());
+    distances.resize((*signaturesMap).size());
 
-    neighbors.resize(signatures.size());
-    distances.resize(signatures.size());
     if (chunkSize <= 0) {
-        chunkSize = ceil(inverseIndex.size() / static_cast<float>(numberOfCores));
+        chunkSize = ceil((*inverseIndex).size() / static_cast<float>(numberOfCores));
     }
+
 #pragma omp parallel for schedule(static, chunkSize) num_threads(numberOfCores)
-    for (size_t i = 0; i < signatures.size(); ++i) {
-        std::map<size_t, size_t> neighborhood;
-        for (size_t j = 0; j < signatures[i].size(); ++j) {
-            size_t hashID = signatures[i][j];
+    for (size_t i = 0; i < (*signaturesMap).size(); ++i) {
+        auto instanceId = (*signaturesMap).begin();
+        std::advance(instanceId, i);
+ 
+        std::unordered_map<size_t, size_t> neighborhood;
+        auto signature = instanceId->second.second;
+        for (size_t j = 0; j < signature.size(); ++j) {
+            size_t hashID = signature[j];
             if (hashID != 0 && hashID != MAX_VALUE) {
                 size_t collisionSize = 0;
-                auto instances = inverseIndex.at(j).find(hashID);
-                if (instances != inverseIndex.at(j).end()) {
+                auto instances = inverseIndex->at(j).find(hashID);
+                if (instances != inverseIndex->at(j).end()) {
                     collisionSize = instances->second.size();
-                } else {
+                } else { 
                     continue;
                 }
                 if (collisionSize < maxBinSize && collisionSize > 0) {
@@ -205,8 +224,8 @@ std::pair<vvsize_t , vvfloat > MinHash::computeNeighbors(const vvsize_t signatur
                 }
             }
         }
-        std::vector< sort_map > neighborhoodVectorForSorting;
 
+        std::vector< sort_map > neighborhoodVectorForSorting;
         sort_map mapForSorting;
         for (auto it = neighborhood.begin(); it != neighborhood.end(); ++it) {
             mapForSorting.key = (*it).first;
@@ -229,10 +248,10 @@ std::pair<vvsize_t , vvfloat > MinHash::computeNeighbors(const vvsize_t signatur
                 break;
             }
         }
-        neighbors[i] = neighborhoodVector;
-        distances[i] = distanceVector;
-    }
 
+        neighbors[instanceId->second.first] = neighborhoodVector;
+        distances[instanceId->second.first] = distanceVector;
+    }
     returnVector.first = neighbors;
     returnVector.second = distances;
     return returnVector;

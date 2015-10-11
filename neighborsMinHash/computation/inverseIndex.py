@@ -13,10 +13,10 @@ import math
 import logging
 from multiprocessing import Manager
 from _hashUtility import computeInverseIndex
-from _hashUtility import computeSignature
-from _hashUtility import computeNeighborhood
-from _hashUtility import computePartialFit
 
+from _hashUtility import computeNeighborhood
+from _hashUtility import createObject
+from _hashUtility import deleteObject
 
 logger = logging.getLogger(__name__)
 
@@ -42,31 +42,29 @@ class InverseIndex():
     """
     def __init__(self, number_of_hash_functions=400,
                  max_bin_size = 50,
+                 number_of_nearest_neighbors = 5,
                  minimal_blocks_in_common = 1,
                  block_size = 4,
                  excess_factor = 5, 
                  number_of_cores = -1,
                  chunk_size = 0):
-        self._number_of_hash_functions = number_of_hash_functions
-        self._max_bin_size = max_bin_size
-        self._number_of_nearest_neighbors = number_of_nearest_neighbors
-        self._minimal_blocks_in_common = minimal_blocks_in_common
-        self._block_size = block_size
-        if self._number_of_hash_functions < self._block_size:
+        if number_of_hash_functions < block_size:
             logger.error("Number of hash functions is smaller than the block size!")
-        if int(math.ceil(self._number_of_hash_functions / float(self._block_size))) < 1:
+        if int(math.ceil(number_of_hash_functions / float(block_size))) < 1:
             logger.error("The allowed number of hash collisions is smaller than 1. Please increase number_of_hash_functions"
                          "or decrease the block_size.")
-        self._maximal_number_of_hash_collisions = int(math.ceil(self._number_of_hash_functions / float(self._block_size)))
-        self._inverse_index = None
-        self._signature_storage = None
-        self._excess_factor = excess_factor
-        self.MAX_VALUE = 2147483647
-        self._number_of_cores = number_of_cores
-        self._chunk_size = chunk_size
+        maximal_number_of_hash_collisions = int(math.ceil(number_of_hash_functions / float(block_size)))
         self._index_elements = 0
+        self.pointer_address_of_minHash_object = createObject(number_of_hash_functions, 
+                                                block_size, number_of_cores, chunk_size,
+                                                number_of_nearest_neighbors, 
+                                                minimal_blocks_in_common, max_bin_size,
+                                                maximal_number_of_hash_collisions, excess_factor)
 
-    def fit(self, X, lazy_fitting=False):
+    def __del__(self):
+        deleteObject(self.pointer_address_of_minHash_object)
+
+    def fit(self, X):
         """Fits the given dataset to the minHash model.
 
         Parameters
@@ -77,10 +75,12 @@ class InverseIndex():
         # get all ids of non-null features per instance and compute the inverse index in c++.
         self._index_elements = X.shape[0]
         instances, features = X.nonzero()
+        print "fit"
         # returns a pointer to the inverse index stored in c++
-        index_storage= computeInverseIndex(instances.tolist(), features.tolist() 1 if lazy_fitting else 0)
-        self._inverse_index = index_storage[0]
-        self._signature_storage = index_storage[1]
+        self.pointer_address_of_minHash_object = computeInverseIndex(instances.tolist(), features.tolist(), 
+                                            self.pointer_address_of_minHash_object)
+        print "after fit"
+        
 
     def partial_fit(self, X):
         """Extends the inverse index build in 'fit'.
@@ -95,21 +95,20 @@ class InverseIndex():
         for i in xrange(len(instances)):
             instances[i] += self._index_elements
         self._index_elements += X.shape[0]
-        index_storage = computePartialFit(instances.tolist(), features.tolist())
-        self._inverse_index = index_storage[0]
-        self._signature_storage = index_storage[1]
+        self.pointer_address_of_minHash_object = computeInverseIndex(instances.tolist(), features.tolist(), 
+                                            self.pointer_address_of_minHash_object)
 
-    def signature(self, instance_feature_list):
-        """Computes the signature based on the minHash model for one instaces.
+    # def signature(self, instance_feature_list):
+    #     """Computes the signature based on the minHash model for one instaces.
 
-        Parameters
-        ----------
-        instance : csr_matrix
-            The input row to compute the signature.
-        """
-        instances, features = instance_feature_list.nonzero()
-        # compute the siganture in c++
-        return computeSignature(instances.tolist(), features.tolist())
+    #     Parameters
+    #     ----------
+    #     instance : csr_matrix
+    #         The input row to compute the signature.
+    #     """
+    #     instances, features = instance_feature_list.nonzero()
+    #     # compute the siganture in c++
+    #     return computeSignature(instances.tolist(), features.tolist(), )
 
 
 
@@ -130,13 +129,7 @@ class InverseIndex():
         # define non local variables and functions as locals to increase performance
         instances, features = instance_feature_list.nonzero()
         # compute the siganture in c++
+        print "neighbrs"
         return computeNeighborhood(instances.tolist(), features.tolist(),
-                                    size_of_neighborhood, 1 if lazy_fitting else 0)
-
-
-    def get_signature_list(self, instances):
-        """Returns all signatures for the given sequences."""
-        # siganture_list = [[]] * instances.shape[0]
-        # for i in xrange(instances.shape[0]):
-        #     siganture_list[i] = self.signature(instances[i])
-        return self.signature(instances)
+                                    size_of_neighborhood, 1 if lazy_fitting else 0, 
+                                    self.pointer_address_of_minHash_object)

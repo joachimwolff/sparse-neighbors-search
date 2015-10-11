@@ -190,7 +190,7 @@ class MinHashKNeighborsClassifier():
         return self.nearestNeighbors.kneighbors_graph(X=X, n_neighbors=n_neighbors, mode=mode, fast=fast)
 
 
-    def predict(self, X, fast=None):
+    def predict(self, X):
         """Predict the class labels for the provided data
         Parameters
         ----------
@@ -204,9 +204,6 @@ class MinHashKNeighborsClassifier():
         X = check_array(X, accept_sparse='csr')
         n_neighbors = self.n_neighbors
         inverseIndex = self.nearestNeighbors._inverseIndex
-
-        if fast is None:
-            fast = self.fast
 
         # compute neighbors in inverse index
         _, neighbors = inverseIndex.neighbors(X, n_neighbors)
@@ -240,7 +237,7 @@ class MinHashKNeighborsClassifier():
 
 
 
-    def predict_proba(self, X, fast=None):
+    def predict_proba(self, X):
         """Return probability estimates for the test data X.
             Parameters
             ----------
@@ -257,8 +254,6 @@ class MinHashKNeighborsClassifier():
         n_neighbors = self.n_neighbors
         inverseIndex = self.nearestNeighbors._inverseIndex
         number_of_classes = len(set(self.nearestNeighbors._y))
-        if fast is None:
-            fast = self.fast
 
         # compute neighbors in inverse index
         _, neighbors = inverseIndex.neighbors(X, n_neighbors)
@@ -295,7 +290,7 @@ class MinHashKNeighborsClassifier():
                 result_classification.append(y_proba[:])
         return result_classification
         
-    def score(self, X, y , sample_weight=None, fast=None):
+    def score(self, X, y , sample_weight=None):
         """Returns the mean accuracy on the given test data and labels.
         In multi-label classification, this is the subset accuracy
         which is a harsh metric since you require for each sample that
@@ -317,8 +312,6 @@ class MinHashKNeighborsClassifier():
         X = check_array(X, accept_sparse='csr')
         n_neighbors = self.n_neighbors
         inverseIndex = self.nearestNeighbors._inverseIndex
-        if fast is None:
-            fast = self.fast
 
          # compute neighbors in inverse index
         _, neighbors = inverseIndex.neighbors(X, n_neighbors)
@@ -333,16 +326,16 @@ class MinHashKNeighborsClassifier():
 
         nearest_neighborsSK = KNeighborsClassifier(n_neighbors=n_neighbors)
 
-        if fast:
-            signatures = inverseIndex.signature(X)
-            nearest_neighborsSK.fit(
-                inverseIndex.get_signature_list(self.nearestNeighbors._X[candidate_list]),
-                self._getYValues(candidate_list))
-            return nearest_neighborsSK.score(signatures, y, sample_weight)
-        else:
-            nearest_neighborsSK.fit(
-                self.nearestNeighbors._X[candidate_list], self._getYValues(candidate_list))
-            return nearest_neighborsSK.score(X, y, sample_weight)
+        # if fast:
+        #     signatures = inverseIndex.signature(X)
+        #     nearest_neighborsSK.fit(
+        #         inverseIndex.get_signature_list(self.nearestNeighbors._X[candidate_list]),
+        #         self._getYValues(candidate_list))
+        #     return nearest_neighborsSK.score(signatures, y, sample_weight)
+        # else:
+        nearest_neighborsSK.fit(
+            self.nearestNeighbors._X[candidate_list], self._getYValues(candidate_list))
+        return nearest_neighborsSK.score(X, y, sample_weight)
 
     def set_params(self, **params):
         """Set the parameters of this estimator."""
