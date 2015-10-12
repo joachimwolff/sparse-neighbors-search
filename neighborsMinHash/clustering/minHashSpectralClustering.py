@@ -15,7 +15,7 @@ from sklearn.cluster import SpectralClustering
 class MinHashSpectralClustering():
     def __init__(self, n_clusters=8, eigen_solver=None, 
                 random_state=None, n_init=10, gamma=1.0, 
-                affinity='rbf', n_neighbors=10, eigen_tol=0.0, 
+                n_neighbors=10, eigen_tol=0.0, 
                 assign_labels='kmeans', degree=3, coef0=1, 
                 kernel_params=None, 
                 radius=1.0, fast=False, 
@@ -28,7 +28,6 @@ class MinHashSpectralClustering():
         self.random_state = random_state
         self.n_init = n_init
         self.gamma =  gamma
-        self.affinity = affinity
         self.n_neighbors = n_neighbors
         self.eigen_tol = eigen_tol
         self.assign_labels = assign_labels
@@ -49,7 +48,7 @@ class MinHashSpectralClustering():
                                                 random_state = self.random_state,
                                                 n_init = self.n_init,
                                                 gamma =  self.gamma,
-                                                affinity = self.affinity,
+                                                affinity = 'precomputed',
                                                 n_neighbors = self.n_neighbors,
                                                 eigen_tol = self.eigen_tol,
                                                 assign_labels = self.assign_labels,
