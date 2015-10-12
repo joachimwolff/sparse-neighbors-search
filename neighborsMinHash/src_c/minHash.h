@@ -18,7 +18,7 @@ typedef std::unordered_map< size_t, vsize_t > umapVector;
 typedef std::vector<vsize_t > vvsize_t;
 typedef std::vector< std::vector<float> > vvfloat;
 typedef std::vector<std::map<size_t, size_t> > vmSize_tSize_t;
-typedef std::unordered_map<size_t, std::pair<size_t, vsize_t> > umap_pair_vector;
+typedef std::unordered_map<size_t, std::pair<vsize_t, vsize_t> > umap_pair_vector;
 
 #define MAX_VALUE 2147483647
 
@@ -38,6 +38,9 @@ class MinHash {
     size_t maximalNumberOfHashCollisions;
     umap_pair_vector* signatureStorage;
   	std::vector<umapVector >* inverseIndex;
+
+    size_t mDoubleElementsStorage = 0;
+    size_t mDoubleElementsQuery = 0;
   	
   	// Return an hash value for a given key in defined range aModulo
   	size_t _size_tHashSimple(size_t key, size_t aModulo) {
@@ -62,8 +65,10 @@ class MinHash {
     vsize_t computeSignature(const vsize_t& instanceFeatureVector);
     umap_pair_vector* computeSignatureMap(const umapVector& instanceFeatureVector);
     // computes the neighborhood for the given instances
-    std::pair<vvsize_t , vvfloat > computeNeighbors(umap_pair_vector* signatures);
+    std::pair<vvsize_t , vvfloat > computeNeighbors(const umap_pair_vector* signatures, const size_t doubleElements);
 
     umap_pair_vector* getSignatureStorage(){return signatureStorage;}
+    size_t getDoubleElementsStorage(){return mDoubleElementsStorage;}
+    size_t getDoubleElementsQuery(){return mDoubleElementsQuery;}
 
 };

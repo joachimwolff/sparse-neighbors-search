@@ -25,16 +25,16 @@ import sys
 if "--openmp" in sys.argv:
     module1 = Extension('_hashUtility', sources = ['neighborsMinHash/src_c/hashUtility.cpp', 'neighborsMinHash/src_c/minHash.cpp' ], 
         depends=['neighborsMinHash/src_c/minHash.h'], define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
-        extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])
+        extra_compile_args=["-fopenmp", "-g", "-std=c++11"])
 
 elif platform.system() == 'Darwin' or "--noopenmp" in sys.argv:
     module1 = Extension('_hashUtility', sources = ['neighborsMinHash/src_c/hashUtility.cpp', 'neighborsMinHash/src_c/minHash.cpp' ], 
-        depends=['neighborsMinHash/src_c/minHash.h'], extra_compile_args=["-O3", "-std=c++11"])
+        depends=['neighborsMinHash/src_c/minHash.h'], extra_compile_args=["-g", "-std=c++11"])
 
 else:
     module1 = Extension('_hashUtility', sources = ['neighborsMinHash/src_c/hashUtility.cpp', 'neighborsMinHash/src_c/minHash.cpp' ], 
         depends=['neighborsMinHash/src_c/minHash.h'],  define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"],
-         extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])
+         extra_compile_args=["-fopenmp", "-g", "-std=c++11"])
 
 if "--openmp" in sys.argv:
     sys.argv.remove("--openmp")

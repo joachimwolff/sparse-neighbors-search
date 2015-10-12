@@ -99,19 +99,24 @@ static PyObject* computeNeighborhood(PyObject* self, PyObject* args) {
 
     umap_pair_vector* signatures;
     std::pair<vvsize_t , vvfloat > neighborsDistances;
+    size_t doubleNeighbors = 0;
     if (!lazyFitting) {
         // compute signatures of the instances
         signatures = (*minHash).computeSignatureMap(instanceFeatureVector);
+        doubleNeighbors = minHash->getDoubleElementsQuery();
     } else {
-        signatures = (*minHash).getSignatureStorage();
+        signatures = minHash->getSignatureStorage();
+        doubleNeighbors = minHash->getDoubleElementsStorage();
     }
     // compute the k-nearest neighbors
-    neighborsDistances = (*minHash).computeNeighbors(signatures);
-       
+    neighborsDistances = (*minHash).computeNeighbors(signatures, doubleNeighbors);
+    std::cout << "111" << std::endl;
+   
     size_t sizeOfNeighorList = neighborsDistances.first.size();
 
     PyObject * outerListNeighbors = PyList_New(sizeOfNeighorList);
     PyObject * outerListDistances = PyList_New(sizeOfNeighorList);
+    std::cout << "117" << std::endl;
 
     for (size_t i = 0; i < sizeOfNeighorList; ++i) {
         size_t sizeOfInnerNeighborList = neighborsDistances.first[i].size();
@@ -131,6 +136,7 @@ static PyObject* computeNeighborhood(PyObject* self, PyObject* args) {
     PyObject * returnList = PyList_New(2);
     PyList_SetItem(returnList, 0, outerListDistances);
     PyList_SetItem(returnList, 1, outerListNeighbors);
+    std::cout << "137" << std::endl;
 
     return returnList;
 }

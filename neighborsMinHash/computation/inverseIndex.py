@@ -62,7 +62,8 @@ class InverseIndex():
                                                 maximal_number_of_hash_collisions, excess_factor)
 
     def __del__(self):
-        deleteObject(self.pointer_address_of_minHash_object)
+        pass
+        # deleteObject(self.pointer_address_of_minHash_object)
 
     def fit(self, X):
         """Fits the given dataset to the minHash model.
@@ -75,12 +76,9 @@ class InverseIndex():
         # get all ids of non-null features per instance and compute the inverse index in c++.
         self._index_elements = X.shape[0]
         instances, features = X.nonzero()
-        print "fit"
         # returns a pointer to the inverse index stored in c++
         self.pointer_address_of_minHash_object = computeInverseIndex(instances.tolist(), features.tolist(), 
                                             self.pointer_address_of_minHash_object)
-        print "after fit"
-        
 
     def partial_fit(self, X):
         """Extends the inverse index build in 'fit'.
@@ -98,20 +96,6 @@ class InverseIndex():
         self.pointer_address_of_minHash_object = computeInverseIndex(instances.tolist(), features.tolist(), 
                                             self.pointer_address_of_minHash_object)
 
-    # def signature(self, instance_feature_list):
-    #     """Computes the signature based on the minHash model for one instaces.
-
-    #     Parameters
-    #     ----------
-    #     instance : csr_matrix
-    #         The input row to compute the signature.
-    #     """
-    #     instances, features = instance_feature_list.nonzero()
-    #     # compute the siganture in c++
-    #     return computeSignature(instances.tolist(), features.tolist(), )
-
-
-
     def neighbors(self, instance_feature_list, size_of_neighborhood, lazy_fitting=False):
         """This function computes the neighborhood for a given instance.
 
@@ -123,13 +107,9 @@ class InverseIndex():
             Size of neighborhood. If less neighbors are av
         """
 
-        # numberOfHashFunktions, instances_list, features_list, block_size,
-        # number_of_cores, chunk_size, size_of_neighborhood, MAX_VALUE, minimalBlocksInCommon,
-        # excessFactor, maxBinSize, inverseIndex
         # define non local variables and functions as locals to increase performance
         instances, features = instance_feature_list.nonzero()
         # compute the siganture in c++
-        print "neighbrs"
         return computeNeighborhood(instances.tolist(), features.tolist(),
                                     size_of_neighborhood, 1 if lazy_fitting else 0, 
                                     self.pointer_address_of_minHash_object)

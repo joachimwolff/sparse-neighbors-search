@@ -382,6 +382,15 @@ class MinHashNearestNeighbors():
                 A[i, j] is assigned the weight of edge that connects i to j.
             """
         self.fit(X)
+        if fast is not None:
+            self.fast = fast
+        else:
+            self.fastComputation = self._fast
+        if n_neighbors == None:
+            n_neighbors = self.n_neighbors
+        return_distance = True if mode == "connectivity" else False
+        return self._neighborhood_graph(X=X, neighborhood_measure=n_neighbors, return_distance=return_distance,
+                        computing_function="kneighbors")
         return self.kneighbors_graph(X, n_neighbors=n_neighbors, mode=mode, fast=fast)
 
     def fit_radius_neighbors(self, X, y=None, radius=None, return_distance=None, fast=None):
