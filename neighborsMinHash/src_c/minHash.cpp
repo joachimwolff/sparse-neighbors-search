@@ -130,17 +130,10 @@ umap_pair_vector* MinHash::computeSignatureMap(const umapVector& instanceFeature
                 vsize_t doubleInstanceVector(1);
                 doubleInstanceVector[0] = instanceId->first;
                 instanceSignature->operator[](signatureId) = std::make_pair (doubleInstanceVector, signature);
-                // signatureStorage->operator[](signatureId) = std::make_pair (doubleInstanceVector, signature);
             } else {
-                // std::cout << "Same unique id!MAP " << instanceId->first << ": " << signatureId << std::endl;
                 instanceSignature->operator[](signatureId).first.push_back(instanceId->first);
-                // signatureStorage->operator[](signatureId).first.push_back(instanceId->first);
                 mDoubleElementsQuery += 1;
-                // std::cout << "Size of double elementsMAP: " << instanceSignature->operator[](signatureId).first.size() << std::endl;
             }
-            // }
-            // instanceSignature->operator[](signatureId) = std::make_pair (instanceId->first, signature);
-            // signatureStorage->operator[](signatureId) = std::make_pair (instanceId->first, signature);
         }
     }
     return instanceSignature;
@@ -168,7 +161,6 @@ void MinHash::computeInverseIndex(const umapVector& instanceFeatureVector) {
         // for every hash function: compute the hash values of all features and take the minimum of these
         // as the hash value for one hash function --> h_j(x) = argmin (x_i of x) f_j(x_i)
         vsize_t signature = computeSignature(instanceId->second);
-        // std::cout << "Size of sigantue at creation: " << signature.size() << std::endl;
         size_t signatureId = 0;
         for (auto itFeatures = instanceId->second.begin(); itFeatures != instanceId->second.end(); ++itFeatures) {
             signatureId = _size_tHashSimple((*itFeatures +1) * (signatureId+1) * A, MAX_VALUE);
@@ -183,13 +175,9 @@ void MinHash::computeInverseIndex(const umapVector& instanceFeatureVector) {
                 doubleInstanceVector[0] = instanceId->first;
                 signatureStorage->operator[](signatureId) = std::make_pair (doubleInstanceVector, signature);
             } else {
-                // std::cout << "Same unique id! " << instanceId->first << ": " << signatureId << std::endl;
                  signatureStorage->operator[](signatureId).first.push_back(instanceId->first);
                  mDoubleElementsStorage += 1;
-                // std::cout << "Size of double elements: " << signatureStorage->operator[](signatureId).first.size() << std::endl;
             }
-            // signatureStorage->operator[](signatureId) = std::make_pair (instanceId->first, signature);
-
             for (size_t j = 0; j < signature.size(); ++j) {
                 auto itHashValue_InstanceVector = inverseIndex->operator[](j).find(signature[j]);
                 // if for hash function h_i() the given hash values is already stored
@@ -224,7 +212,6 @@ std::pair<vvsize_t , vvfloat > MinHash::computeNeighbors(const umap_pair_vector*
     std::pair<vvsize_t , vvfloat > returnVector;
     vvsize_t neighbors;
     vvfloat distances;
-    // std::cout << "Double elements: " << doubleElements << std::endl;
     neighbors.resize((*signaturesMap).size()+doubleElements);
     distances.resize((*signaturesMap).size()+doubleElements);
     if (chunkSize <= 0) {
@@ -238,10 +225,8 @@ std::pair<vvsize_t , vvfloat > MinHash::computeNeighbors(const umap_pair_vector*
         
         std::unordered_map<size_t, size_t> neighborhood;
         const vsize_t signature = instanceId->second.second;
-        // std::cout << "size of signature: " << signature.size() << std::endl;
         for (size_t j = 0; j < signature.size(); ++j) {
             size_t hashID = signature[j];
-            // std::cout << "HashID: " << hashID << std::endl;
             if (hashID != 0 && hashID != MAX_VALUE) {
                 size_t collisionSize = 0;
                 umapVector::const_iterator instances = inverseIndex->at(j).find(hashID);
@@ -252,8 +237,6 @@ std::pair<vvsize_t , vvfloat > MinHash::computeNeighbors(const umap_pair_vector*
                 }
 
                 if (collisionSize < maxBinSize && collisionSize > 0) {
-                    // std::cout << "Collision!" << std::endl;
-                    // std::cout << "instances->second.size()" << instances->second.size() << std::endl;
                     for (size_t k = 0; k < instances->second.size(); ++k) {
                         neighborhood[instances->second.at(k)] += 1;
                     }
@@ -288,16 +271,12 @@ std::pair<vvsize_t , vvfloat > MinHash::computeNeighbors(const umap_pair_vector*
 
 #pragma omp critical
         {
-            if (instanceId->first == 743329093) {
-            // std::cout << "Size of double elements!!!!: " << instanceId->second.first.size() << std::endl;
-            }
             for (size_t j = 0; j < instanceId->second.first.size(); ++j) {
                 neighbors[instanceId->second.first[j]] = neighborhoodVector;
                 distances[instanceId->second.first[j]] = distanceVector;
             }
         }
     }
-    // std::cout << "267" << std::endl;
     returnVector.first = neighbors;
     returnVector.second = distances;
     return returnVector;
