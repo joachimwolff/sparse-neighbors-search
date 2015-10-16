@@ -1,8 +1,8 @@
 /**
  Copyright 2015 Joachim Wolff
- Master Project
+ Master Thesis
  Tutors: Milad Miladi, Fabrizio Costa
- Summer semester 2015
+ Winter semester 2015/2016
 
  Chair of Bioinformatics
  Department of Computer Science

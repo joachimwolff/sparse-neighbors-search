@@ -1,0 +1,110 @@
+/**
+ Copyright 2015 Joachim Wolff
+ Master Project
+ Tutors: Milad Miladi, Fabrizio Costa
+ Summer semester 2015
+
+ Chair of Bioinformatics
+ Department of Computer Science
+ Faculty of Engineering
+ Albert-Ludwig-University Freiburg im Breisgau
+**/
+#include <vector>
+#include <map> 
+#include <unordered_map>
+
+#include <Python.h>
+ 
+typedef std::vector<size_t> vsize_t;
+typedef std::unordered_map< size_t, vsize_t > umapVector;
+typedef std::vector<vsize_t > vvsize_t;
+typedef std::vector< std::vector<float> > vvfloat;
+typedef std::vector<std::map<size_t, size_t> > vmSize_tSize_t;
+typedef std::unordered_map<size_t, std::pair<vsize_t, vsize_t> > umap_pair_vector;
+
+#define MAX_VALUE 2147483647
+
+umapVector _parseInstancesFeatures(PyObject * instancesListObj, PyObject * featuresListObj) {
+    PyObject * instanceSize_tObj;
+    PyObject * featureSize_tObj;
+    umapVector instance_featureVector;
+    vsize_t featureIds;
+    size_t instanceOld = 0;
+    size_t sizeOfFeatureVector = PyList_Size(instancesListObj);
+
+    for (size_t i = 0; i < sizeOfFeatureVector; ++i) {
+        instanceSize_tObj = PyList_GetItem(instancesListObj, i);
+        featureSize_tObj = PyList_GetItem(featuresListObj, i);
+        size_t featureValue;
+        size_t instanceValue;
+
+        PyArg_Parse(instanceSize_tObj, "k", &instanceValue);
+        PyArg_Parse(featureSize_tObj, "k", &featureValue);
+
+        if (instanceOld == instanceValue) {
+            featureIds.push_back(featureValue);
+            instanceOld = instanceValue;
+            if (i == sizeOfFeatureVector-1) {
+                instance_featureVector[instanceValue] = featureIds;
+            }
+        } else {
+            if (instanceOld != MAX_VALUE) {
+                instance_featureVector[instanceOld] = featureIds;
+            }
+            featureIds.clear();
+            featureIds.push_back(featureValue);
+            instanceOld = instanceValue;
+        }
+    }
+    return instance_featureVector;
+}
+
+class MinHashBase {
+  private:
+    //const size_t MAX_VALUE = 2147483647; 
+	  const double A = sqrt(2) - 1;
+
+    size_t mNumberOfHashFunctions;
+    size_t mBlockSize;
+    size_t mNumberOfCores;
+    size_t mChunkSize;
+    size_t mMaxBinSize;
+    size_t mSizeOfNeighborhood;
+    size_t mMinimalBlocksInCommon;
+    size_t mExcessFactor;
+    size_t mMaximalNumberOfHashCollisions;
+    
+
+    size_t mDoubleElementsStorage = 0;
+    size_t mDoubleElementsQuery = 0;
+  	
+  	// Return an hash value for a given key in defined range aModulo
+  	size_t _size_tHashSimple(size_t key, size_t aModulo) {
+  	    key = ~key + (key << 15);
+  	    key = key ^ (key >> 12);
+  	    key = key + (key << 2);
+  	    key = key ^ (key >> 4);
+  	    key = key * 2057;
+  	    key = key ^ (key >> 16);
+  	    return key % aModulo;
+  	};
+  public:
+  	MinHashBase(size_t pNumberOfHashFunctions, size_t pBlockSize,
+                    size_t pNumberOfCores, size_t pChunkSize,
+                    size_t pMaxBinSize,
+                    size_t pSizeOfNeighborhood, size_t pMinimalBlocksInCommon,
+                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions);
+  	~MinHashBase();
+    // compute the complete inverse index for all given instances and theire non null features
+    void computeInverseIndex(const umapVector& instanceFeatureVector);
+	  // computes the signature of a given instance
+    vsize_t computeSignature(const vsize_t& instanceFeatureVector);
+    umap_pair_vector* computeSignatureMap(const umapVector& instanceFeatureVector);
+    // computes the neighborhood for the given instances
+    std::pair<vvsize_t , vvfloat > computeNeighbors(const umap_pair_vector* signatures, const size_t doubleElements);
+
+    umap_pair_vector* getSignatureStorage(){return signatureStorage;}
+    size_t getDoubleElementsStorage(){return mDoubleElementsStorage;}
+    size_t getDoubleElementsQuery(){return mDoubleElementsQuery;}
+
+};
