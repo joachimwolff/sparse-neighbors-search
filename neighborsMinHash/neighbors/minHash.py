@@ -149,8 +149,9 @@ class MinHash():
         instances, features = X.nonzero()
         data = X.data
         # returns a pointer to the inverse index stored in c++
-        self._pointer_address_of_minHash_object = _minHash.fit(instances.tolist(), features.tolist(), data.tolist(),
-                                            self._pointer_address_of_minHash_object)
+        self._pointer_address_of_minHash_object = _minHash.fit(instances.tolist(), features.tolist(), data.tolist(), 
+                                                    X.shape[0], X.shape[1],
+                                                    self._pointer_address_of_minHash_object)
         
 
     def partial_fit(self, X, y=None):
@@ -198,7 +199,8 @@ class MinHash():
                 return_distance=True
             ind : array, shape = [n_samples, neighbors]
                 Indices of the nearest points in the population matrix."""
-
+        max_number_of_instances = 0
+        max_number_of_features = 0
         if X is None:
             instances = array(-1)
             features = array(-1)
@@ -206,7 +208,10 @@ class MinHash():
         else:
             instances, features = X.nonzero()
             data = X.data()
+            max_number_of_instances = X.shape[0]
+            max_number_of_features = X.shape[1]
         return _minHash.kneighbors(instances.tolist(), features.tolist(), data.tolist(), 
+                                    max_number_of_instances, max_number_of_features,
                                     n_neighbors, 1 if return_distance else 0,
                                     1 if fast else 0)
 

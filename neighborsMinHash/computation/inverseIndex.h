@@ -1,12 +1,15 @@
 #include "bloomierFilter.h"
-#include "minHashBase.h"
 
+#ifndef TYPE_DEFINITIONS
+#define TYPE_DEFINITIONS
+#include "typeDefinitions.h"
+#endif
 
 class InverseIndex {
 
   private: 
   	const double A = sqrt(2) - 1;
-	const size_t MAX_VALUE = 2147483647; 
+	  //const size_t MAX_VALUE = 2147483647;
     size_t mNumberOfHashFunctions;
     size_t mBlockSize;
     size_t mNumberOfCores;
@@ -20,7 +23,7 @@ class InverseIndex {
     size_t mDoubleElementsStorageCount = 0;
     size_t mDoubleElementsQueryCount = 0;
 
-  	umap_pair_vector mSignatureStorage;
+  	umap_uniqueElement mSignatureStorage;
   	std::vector<umapVector > mInverseIndexUmapVector;
   	std::vector<BloomierFilter> mInverseIndexBloomierFilter;
 
@@ -42,7 +45,7 @@ class InverseIndex {
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions);
   	~InverseIndex();
   	vsize_t computeSignature(const vsize_t& featureVector);
-  	umap_pair_vector* computeSignatureMap(const umapVector& instanceFeatureVector);
+  	umap_uniqueElement* computeSignatureMap(const umapVector& instanceFeatureVector);
   	void fit(const umapVector* instanceFeatureVector);
-  	neighborhood kneighbors(const umap_pair_vector* signaturesMap, const size_t doubleElements);
+  	neighborhood kneighbors(const umap_uniqueElement* signaturesMap);
 };

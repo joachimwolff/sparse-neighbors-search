@@ -15,41 +15,15 @@
 
 #include <Python.h>
 #include <boost/numeric/mtl/mtl.hpp>
+
+// #include "typeDefinitions.h"
+
+#ifndef INVERSE_INDEX
+#define INVERSE_INDEX
 #include "inverseIndex.h"
+#endif
 
-
-typedef std::vector<size_t> vsize_t;
-typedef std::unordered_map< size_t, vsize_t > umapVector;
-typedef std::vector<vsize_t > vvsize_t;
-typedef std::vector< std::vector<float> > vvfloat;
-typedef std::vector<std::map<size_t, size_t> > vmSize_tSize_t;
-
-typedef compressed2D<float, mat::parameters<tag::col_major> > csrMatrix;
-
-struct csr_neighborhood {
-  vvsize_t instances;
-  vvfloat features;
-  vvfloat data;
-};
-struct raw_data {
-  csrMatrix* matrixData;
-  umapVector* inverseIndexData;
-};
-
-struct uniqueElement {
-  vsize_t instances;
-  vsize_t features;
-};
-
-struct neighborhood {
-  vvsize_t* neighbors;
-  vvfloat* distances;
-};
-
-typedef std::unordered_map<size_t, uniqueElement > umap_uniqueElement;
-#define MAX_VALUE 2147483647
-
-raw_data parseRawData(PyObject * instancesListObj, PyObject * featuresListObj, PyObject * dataListObj,
+rawData parseRawData(PyObject * instancesListObj, PyObject * featuresListObj, PyObject * dataListObj,
                                               size_t maxNumberOfInstances, size_t maxNumberOfFeatures) {
     PyObject * instanceSize_tObj;
     PyObject * featureSize_tObj;
@@ -59,7 +33,7 @@ raw_data parseRawData(PyObject * instancesListObj, PyObject * featuresListObj, P
     umapVector* inverseIndexData = new umapVector();
     // create sparse matrix and inserter
     csrMatrix originalData(maxNumberOfInstances, maxNumberOfFeatures);
-    mat::inserter< csrMatrix >* insertElements = new mat::inserter< csrMatrix >(originalData);
+    mtl::mat::inserter< csrMatrix >* insertElements = new mtl::mat::inserter< csrMatrix >(originalData);
 
     vsize_t featureIds;
     size_t instanceOld = 0;
@@ -71,25 +45,26 @@ raw_data parseRawData(PyObject * instancesListObj, PyObject * featuresListObj, P
         dataSize_tObj = PyList_GetItem(dataListObj, i);
         size_t featureValue;
         size_t instanceValue;
+        float dataValue;
 
         PyArg_Parse(instanceSize_tObj, "k", &instanceValue);
         PyArg_Parse(featureSize_tObj, "k", &featureValue);
-        PyArg_Parse(dataSize_tObj, "k", &featureValue);
+        PyArg_Parse(dataSize_tObj, "f", &dataValue);
 
         if (instanceOld == instanceValue) {
             featureIds.push_back(featureValue);
-            (*insertElements)[instanceValue][featureValue] << dataSize_tObj;
+            (*insertElements)[instanceValue][featureValue] << dataValue;
             instanceOld = instanceValue;
             if (i == sizeOfFeatureVector-1) {
                 (*inverseIndexData)[instanceValue] = featureIds;
             }
         } else {
             if (instanceOld != MAX_VALUE) {
-                (inverseIndexData*)[instanceOld] = featureIds;
+                (*inverseIndexData)[instanceOld] = featureIds;
             }
             featureIds.clear();
             featureIds.push_back(featureValue);
-            insertElements[instanceValue][featureValue] << dataSize_tObj;
+            (*insertElements)[instanceValue][featureValue] << dataValue;
 
             instanceOld = instanceValue;
         }
@@ -97,9 +72,9 @@ raw_data parseRawData(PyObject * instancesListObj, PyObject * featuresListObj, P
     // delete inserter to get sparse matrix accessible
     delete insertElements;
 
-    raw_data returnValues;
+    rawData returnValues;
     returnValues.matrixData = &originalData;
-    returnValues.inverseIndexData = &inverseIndexData;
+    returnValues.inverseIndexData = inverseIndexData;
 
     return returnValues;
 }
@@ -109,9 +84,11 @@ class MinHashBase {
     InverseIndex* mInverseIndex;
     csrMatrix* mOriginalData;
 
-	  csr_neighborhood computeNeighborhood();
-    csr_neighborhood computeExactNeighborhood();
-  	csr_neighborhood computeNeighborhoodGraph();
+	  neighborhood computeNeighborhood();
+    neighborhood computeExactNeighborhood();
+  	neighborhood computeNeighborhoodGraph();
+
+    public:
 
   	MinHashBase(size_t pNumberOfHashFunctions, size_t pBlockSize,
                     size_t pNumberOfCores, size_t pChunkSize,
@@ -133,9 +110,8 @@ class MinHashBase {
     // Fits and calculates k-nearest neighbors as a graph.
     neighborhood fitKneighborsGraph();
     // Cut the neighborhood to the length of k-neighbors
-    void cutKneighborhood(neighborhood* pNeighborhood, size_t pKneighborhood);
-
-  public:
+    void cutNeighborhood(neighborhood* pNeighborhood, size_t pKneighborhood, 
+                      bool pRadiusNeighbors, bool pWithFirstElement);
 
     void set_mOriginalData(csrMatrix* pOriginalData) {
       mOriginalData = pOriginalData;

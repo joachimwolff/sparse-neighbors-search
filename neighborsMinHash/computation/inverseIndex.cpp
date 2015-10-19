@@ -204,8 +204,9 @@ void InverseIndex::fit(const umapVector* instanceFeatureVector) {
     }
 }
 
-neighborhood InverseIndex::kneighbors(const umap_pair_vector* signaturesMap, const size_t doubleElements) {
+neighborhood InverseIndex::kneighbors(const umap_pair_vector* signaturesMap) {
 
+    size_t doubleElements = 0;
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif

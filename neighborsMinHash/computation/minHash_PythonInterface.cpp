@@ -74,7 +74,7 @@ static PyObject* fit(PyObject* self, PyObject* args) {
 
     // get pointer to the minhash object
     MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
-    minHash->set_mOrginalData(originalDataMatrix);
+    minHash->set_mOriginalData(originalDataMatrix);
 
     minHash->fit(instanceFeatureVector);
 
@@ -88,7 +88,9 @@ static PyObject* partialFit(PyObject* self, PyObject* args) {
 }
 static PyObject* kneighbors(PyObject* self, PyObject* args) {
     size_t addressMinHashObject;
-    size_t nNeighbors
+    size_t nNeighbors;
+    size_t maxNumberOfInstances;
+    size_t maxNumberOfFeatures;
 
     PyObject * instancesListObj;
     PyObject * featuresListObj;
@@ -98,6 +100,8 @@ static PyObject* kneighbors(PyObject* self, PyObject* args) {
                         &PyList_Type, &instancesListObj,
                         &PyList_Type, &featuresListObj,  
                         &PyList_Type, &dataListObj,
+                        &maxNumberOfInstances,
+                        &maxNumberOfFeatures,
                         &nNeighbors, &addressMinHashObject))
         return NULL;
 
@@ -107,22 +111,22 @@ static PyObject* kneighbors(PyObject* self, PyObject* args) {
     MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
 
     // compute the k-nearest neighbors
-    neighborhood neighborsDistances = minHash->kneighbors(rawData_, nNeighbors);
+    neighborhood neighborhood_ = minHash->kneighbors(rawData_, nNeighbors);
    
-    size_t sizeOfNeighorList = neighborsDistances.neighbors.size();
+    size_t sizeOfNeighorList = neighborhood_.neighbors->size();
 
     PyObject * outerListNeighbors = PyList_New(sizeOfNeighorList);
     PyObject * outerListDistances = PyList_New(sizeOfNeighorList);
 
     for (size_t i = 0; i < sizeOfNeighorList; ++i) {
-        size_t sizeOfInnerNeighborList = neighborsDistances.neighbors[i].size();
+        size_t sizeOfInnerNeighborList = neighborhood_.neighbors[i].size();
         PyObject * innerListNeighbors = PyList_New(sizeOfInnerNeighborList);
         PyObject * innerListDistances = PyList_New(sizeOfInnerNeighborList);
 
         for (size_t j = 0; j < sizeOfInnerNeighborList; ++j) {
-            PyObject* valueNeighbor = Py_BuildValue("k", neighborsDistances.neighbors[i][j]);
+            PyObject* valueNeighbor = Py_BuildValue("k", neighborhood_.neighbors->operator[](i)[j]);
             PyList_SetItem(innerListNeighbors, j, valueNeighbor);
-            PyObject* valueDistance = Py_BuildValue("f", neighborsDistances.distances[i][j]);
+            PyObject* valueDistance = Py_BuildValue("f", neighborhood_.distances->operator[](i)[j]);
             PyList_SetItem(innerListDistances, j, valueDistance);
         }
         PyList_SetItem(outerListNeighbors, i, innerListNeighbors);
@@ -136,25 +140,31 @@ static PyObject* kneighbors(PyObject* self, PyObject* args) {
     return returnList;
 }
 static PyObject* kneighborsGraph(PyObject* self, PyObject* args) {
-
+    PyObject* foo;
+    return foo;
 }
 static PyObject* radiusNeighbors(PyObject* self, PyObject* args) {
-
-}
+PyObject* foo;
+    return foo;}
 static PyObject* radiusNeighborsGraph(PyObject* self, PyObject* args) {
-
+PyObject* foo;
+    return foo;
 }
 static PyObject* fitKneighbors(PyObject* self, PyObject* args) {
-
+PyObject* foo;
+    return foo;
 }
 static PyObject* fitKneighborsGraph(PyObject* self, PyObject* args) {
-
+PyObject* foo;
+    return foo;
 }
 static PyObject* fitRadiusNeighbors(PyObject* self, PyObject* args) {
-
+PyObject* foo;
+    return foo;
 }
 static PyObject* fitRadiusNeighborsGraph(PyObject* self, PyObject* args) {
-
+    PyObject* foo;
+    return foo;
 }
 // definition of avaible functions for python and which function parsing fucntion in c++ should be called.
 static PyMethodDef minHashFunctions[] = {

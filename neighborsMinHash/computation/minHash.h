@@ -13,7 +13,7 @@
 #include "minHashBase.h"
 
 
-class MinHash : MinHashBase {
+class MinHash : public MinHashBase {
   private:
 
 
@@ -25,11 +25,11 @@ class MinHash : MinHashBase {
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions);
   	~MinHash();
     // Calculate the neighbors inside a given radius.
-    csr_neighborhood radiusNeighbors();
+    neighborhood radiusNeighbors();
     // Calculate the neighbors inside a given radius as a graph.
-    csr_neighborhood radiusNeighborsGraph();
+    neighborhood radiusNeighborsGraph();
     // Fits and calculates the neighbors inside a given radius.
-    csr_neighborhood fitRadiusNeighbors();
+    neighborhood fitRadiusNeighbors();
     // Fits and calculates the neighbors inside a given radius as a graph.
-    csr_neighborhood fitRadiusNeighborsGraph();
+    neighborhood fitRadiusNeighborsGraph();
 };
