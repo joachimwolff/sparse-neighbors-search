@@ -15,6 +15,7 @@ from scipy.sparse import csr_matrix
 from scipy.sparse import vstack
 from sklearn.utils import check_X_y
 
+from numpy import array
 
 import _minHash
 
@@ -86,31 +87,38 @@ class MinHash():
     def __init__(self, n_neighbors=5, radius=1.0, fast=False, number_of_hash_functions=400,
                  max_bin_size = 50, minimal_blocks_in_common = 1, block_size = 4, excess_factor = 5,
                  number_of_cores=None, chunk_size=None):
-        self.n_neighbors = n_neighbors
-        self.radius = radius
+        # self.n_neighbors = n_neighbors
+        # self.radius = radius
         if fast is not None:
             self._fast = fast
         else:
             self._fast = False
-        self.fastComputation = self._fast
-        self._X = None
-        self._y = None
-        self._sizeOfX = None
-        self._shape_of_X = None
-        self._number_of_cores = number_of_cores
-        if number_of_cores is None:
-            self._number_of_cores = mp.cpu_count()
-        self._chunk_size = chunk_size
-        if chunk_size is None:
-            self._chunk_size = 0
-        self._inverseIndex = InverseIndex(number_of_hash_functions=number_of_hash_functions,
-                                          max_bin_size =max_bin_size,
-                                          number_of_nearest_neighbors=n_neighbors,
-                                          minimal_blocks_in_common=minimal_blocks_in_common,
-                                          block_size=block_size,
-                                          excess_factor=excess_factor,
-                                          number_of_cores = self._number_of_cores,
-                                          chunk_size = self._chunk_size)
+        # self.fastComputation = self._fast
+        # self._X = None
+        # self._y = None
+        # self._sizeOfX = None
+        # self._shape_of_X = None
+        # self._number_of_cores = number_of_cores
+        # if number_of_cores is None:
+        #     self._number_of_cores = mp.cpu_count()
+        # self._chunk_size = chunk_size
+        # if chunk_size is None:
+        #     self._chunk_size = 0
+        # self._inverseIndex = InverseIndex(number_of_hash_functions=number_of_hash_functions,
+        #                                   max_bin_size =max_bin_size,
+        #                                   number_of_nearest_neighbors=n_neighbors,
+        #                                   minimal_blocks_in_common=minimal_blocks_in_common,
+        #                                   block_size=block_size,
+        #                                   excess_factor=excess_factor,
+        #                                   number_of_cores = self._number_of_cores,
+        #                                   chunk_size = self._chunk_size)
+        maximal_number_of_hash_collisions = int(math.ceil(number_of_hash_functions / float(block_size)))
+        _index_elements_count = 0
+        _pointer_address_of_minHash_object = _minHash.createObject(number_of_hash_functions, 
+                                                    block_size, number_of_cores, chunk_size, n_neighbors,
+                                                    minimal_blocks_in_common, max_bin_size, 
+                                                    maximal_number_of_hash_collisions, excess_factor,
+                                                    1 if _fast else 0)
 
     def fit(self, X, y=None):
         """Fit the model using X as training data.
@@ -124,18 +132,26 @@ class MinHash():
                 this case.
             y : list, optional (default = None)
                 List of classes for the given input of X. Size have to be n_samples."""
-        if y is not None:
-            self._y_is_csr = True
-            self._X, self._y = check_X_y(X, y, "csr", multi_output=True)
-            if self._y.ndim == 1 or self._y.shape[1] == 1:
-                self._y_is_csr = False
-        else:
-            self._X = csr_matrix(X)
-            self._y_is_csr = False
+        # if y is not None:
+        #     self._y_is_csr = True
+        #     self._X, self._y = check_X_y(X, y, "csr", multi_output=True)
+        #     if self._y.ndim == 1 or self._y.shape[1] == 1:
+        #         self._y_is_csr = False
+        # else:
+        #     self._X = csr_matrix(X)
+        #     self._y_is_csr = False
         
-        self._sizeOfX = self._X.shape[0]
-        self._shape_of_X = self._X.shape[1]
-        self._inverseIndex.fit(self._X)
+        # self._sizeOfX = self._X.shape[0]
+        # self._shape_of_X = self._X.shape[1]
+        # self._inverseIndex.fit(self._X)
+
+        self._index_elements_count = X.shape[0]
+        instances, features = X.nonzero()
+        data = X.data
+        # returns a pointer to the inverse index stored in c++
+        self._pointer_address_of_minHash_object = _minHash.fit(instances.tolist(), features.tolist(), data.tolist(),
+                                            self._pointer_address_of_minHash_object)
+        
 
     def partial_fit(self, X, y=None):
         """Extend the model by X as additional training data.
@@ -146,13 +162,14 @@ class MinHash():
                 Training data. Shape = [n_samples, n_features]
             y : list, optional (default = None)
                 List of classes for the given input of X. Size have to be n_samples."""
-        self._inverseIndex.partial_fit(X)
-        if y is not None:
-            if self._y_is_csr:
-                self._y = vstack([self._y, y])
-            else:
-                self._y = np.concatenate((self._y, y), axis=0)
-        self._X = vstack(csr_matrix(self._X), csr_matrix(X))
+        instances, features = X.nonzero()
+        data = X.data
+        for i in xrange(len(instances)):
+            instances[i] += self._index_elements_count 
+        self._index_elements_count  += X.shape[0]
+        self._pointer_address_of_minHash_object = _minHash.fit(instances.tolist(), features.tolist(), data.tolist(),
+                                            self._pointer_address_of_minHash_object)
+       
         
     def kneighbors(self,X=None, n_neighbors=None, return_distance=True, fast=None):
         """Finds the n_neighbors of a point X or of all points of X.
@@ -181,14 +198,18 @@ class MinHash():
                 return_distance=True
             ind : array, shape = [n_samples, neighbors]
                 Indices of the nearest points in the population matrix."""
-        if fast is not None:
-            self.fastComputation = fast
+
+        if X is None:
+            instances = array(-1)
+            features = array(-1)
+            data = array(-1)
         else:
-            self.fastComputation = self._fast
-        if n_neighbors == None:
-            n_neighbors = self.n_neighbors
-        return self._neighborhood(X=X, neighborhood_measure=n_neighbors,
-                                  return_distance=return_distance, computing_function="kneighbors")
+            instances, features = X.nonzero()
+            data = X.data()
+        return _minHash.kneighbors(instances.tolist(), features.tolist(), data.tolist(), 
+                                    n_neighbors, 1 if return_distance else 0,
+                                    1 if fast else 0)
+
 
     def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', fast=None):
         """Computes the (weighted) graph of k-Neighbors for points in X
@@ -217,15 +238,27 @@ class MinHash():
                 n_samples_fit is the number of samples in the fitted data
                 A[i, j] is assigned the weight of edge that connects i to j.
             """
-        if fast is not None:
-            self.fast = fast
+
+        if X is None:
+            instances = array(-1)
+            features = array(-1)
+            data = array(-1)
         else:
-            self.fastComputation = self._fast
-        if n_neighbors == None:
-            n_neighbors = self.n_neighbors
-        return_distance = True if mode == "connectivity" else False
-        return self._neighborhood_graph(X=X, neighborhood_measure=n_neighbors, return_distance=return_distance,
-                        computing_function="kneighbors")
+            instances, features = X.nonzero()
+            data = X.data()
+
+        mode_cpp = -1
+        if mode == "connectivity":
+            mode_cpp = 0
+        elif mode == 'distance':
+            mode_cpp = 1
+        if mode_cpp == -1:
+            return
+        return _minHash.kneighbors(instances.tolist(), features.tolist(), data.tolist(), 
+                                    n_neighbors if n_neighbors else -1,
+                                    mode_cpp,
+                                    1 if fast else 0)
+
 
     def radius_neighbors(self, X=None, radius=None, return_distance=None, fast=None):
         """Finds the neighbors within a given radius of a point or points.
@@ -261,14 +294,25 @@ class MinHash():
             An array of arrays of indices of the approximate nearest points
             from the population matrix that lie within a ball of size
             ``radius`` around the query points."""
-        if fast is not None:
-            self.fast = fast
+        if X is None:
+            instances = array(-1)
+            features = array(-1)
+            data = array(-1)
         else:
-            self.fastComputation = self._fast
-        if radius == None:
-            radius = self.radius
-        return self._neighborhood(X=X, neighborhood_measure=radius,
-                                  return_distance=return_distance, computing_function="radius_neighbors")
+            instances, features = X.nonzero()
+            data = X.data()
+
+        mode_cpp = -1
+        if mode == "connectivity":
+            mode_cpp = 0
+        elif mode == 'distance':
+            mode_cpp = 1
+        if mode_cpp == -1:
+            return
+        return _minHash.radius_neighbors(instances.tolist(), features.tolist(), data.tolist(), 
+                                    radius if radius else -1,
+                                    1 if return_distance else 0,
+                                    1 if fast else 0)
 
     def radius_neighbors_graph(self, X=None, radius=None, mode='connectivity', fast=None):
         """Computes the (weighted) graph of Neighbors for points in X

@@ -9,21 +9,13 @@
  Faculty of Engineering
  Albert-Ludwig-University Freiburg im Breisgau
 **/
-#include <vector>
-#include <map> 
-#include <unordered_map>
 
-#include "minHash.h"
+#include "minHashBase.h"
 
-#define MAX_VALUE 2147483647
 
 class MinHash : MinHashBase {
   private:
-    //const size_t MAX_VALUE = 2147483647; 
-	  const double A = sqrt(2) - 1;
 
-    umap_pair_vector* mSignatureStorage;
-  	std::vector<umapVector >* mInverseIndex;
 
   public:
   	MinHash(size_t pNumberOfHashFunctions, size_t pBlockSize,
@@ -32,16 +24,12 @@ class MinHash : MinHashBase {
                     size_t pSizeOfNeighborhood, size_t pMinimalBlocksInCommon,
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions);
   	~MinHash();
-    // compute the complete inverse index for all given instances and theire non null features
-    void computeInverseIndex(const umapVector& instanceFeatureVector);
-	  // computes the signature of a given instance
-    vsize_t computeSignature(const vsize_t& instanceFeatureVector);
-    umap_pair_vector* computeSignatureMap(const umapVector& instanceFeatureVector);
-    // computes the neighborhood for the given instances
-    std::pair<vvsize_t , vvfloat > computeNeighbors(const umap_pair_vector* signatures, const size_t doubleElements);
-
-    umap_pair_vector* getSignatureStorage(){return signatureStorage;}
-    size_t getDoubleElementsStorage(){return mDoubleElementsStorage;}
-    size_t getDoubleElementsQuery(){return mDoubleElementsQuery;}
-
+    // Calculate the neighbors inside a given radius.
+    csr_neighborhood radiusNeighbors();
+    // Calculate the neighbors inside a given radius as a graph.
+    csr_neighborhood radiusNeighborsGraph();
+    // Fits and calculates the neighbors inside a given radius.
+    csr_neighborhood fitRadiusNeighbors();
+    // Fits and calculates the neighbors inside a given radius as a graph.
+    csr_neighborhood fitRadiusNeighborsGraph();
 };

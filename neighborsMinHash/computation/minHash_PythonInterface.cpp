@@ -17,16 +17,16 @@
 static PyObject* createObject(PyObject* self, PyObject* args) {
 
     size_t numberOfHashFunctions, blockSize, numberOfCores, chunkSize,
-    sizeOfNeighborhood, minimalBlocksInCommon, maxBinSize,
-    maximalNumberOfHashCollisions, excessFactor;
+    nNeighbors, minimalBlocksInCommon, maxBinSize,
+    maximalNumberOfHashCollisions, excessFactor, fast;
 
     if (!PyArg_ParseTuple(args, "kkkkkkkkk", &numberOfHashFunctions,
-                        &blockSize, &numberOfCores, &chunkSize, &sizeOfNeighborhood,
+                        &blockSize, &numberOfCores, &chunkSize, &nNeighbors,
                         &minimalBlocksInCommon, &maxBinSize,
-                        &maximalNumberOfHashCollisions, &excessFactor))
+                        &maximalNumberOfHashCollisions, &excessFactor, &fast))
         return NULL;
     MinHash* minHash = new MinHash (numberOfHashFunctions, blockSize, numberOfCores, chunkSize,
-                    maxBinSize, sizeOfNeighborhood, minimalBlocksInCommon, 
+                    maxBinSize, nNeighbors, minimalBlocksInCommon, 
                     excessFactor, maximalNumberOfHashCollisions);
     
     size_t adressMinHashObject = reinterpret_cast<size_t>(minHash);
@@ -48,23 +48,35 @@ static PyObject* deleteObject(PyObject* self, PyObject* args) {
 
 static PyObject* fit(PyObject* self, PyObject* args) {
     size_t addressMinHashObject;
+    size_t maxNumberOfInstances;
+    size_t maxNumberOfFeatures;
+    
     PyObject * instancesListObj;
     PyObject * featuresListObj;
+    PyObject * dataListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!k", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkk", 
                             &PyList_Type, &instancesListObj, 
                             &PyList_Type, &featuresListObj,
+                            &PyList_Type, &dataListObj,
+                            &maxNumberOfInstances,
+                            &maxNumberOfFeatures,
                             &addressMinHashObject))
         return NULL;
 
     // parse from python list to a c++ map<size_t, vector<size_t> >
     // where key == instance id and vector<size_t> == non null feature ids
-    umapVector instanceFeatureVector = _parseInstancesFeatures(instancesListObj, featuresListObj);
+
+    rawData rawData_ = parseRawData(instancesListObj, featuresListObj, dataListObj, 
+                                                    maxNumberOfInstances, maxNumberOfFeatures);
+    umapVector* instanceFeatureVector = rawData_.inverseIndexData;
+    csrMatrix* originalDataMatrix = rawData_.matrixData;
 
     // get pointer to the minhash object
     MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
+    minHash->set_mOrginalData(originalDataMatrix);
 
-    (*minHash).computeInverseIndex(instanceFeatureVector);
+    minHash->fit(instanceFeatureVector);
 
     addressMinHashObject = reinterpret_cast<size_t>(minHash);
     PyObject * pointerToInverseIndex = Py_BuildValue("k", addressMinHashObject);
@@ -76,49 +88,41 @@ static PyObject* partialFit(PyObject* self, PyObject* args) {
 }
 static PyObject* kneighbors(PyObject* self, PyObject* args) {
     size_t addressMinHashObject;
-    size_t sizeOfNeighborhood, lazyFitting;
+    size_t nNeighbors
 
-    PyObject * listInstancesObj;
-    PyObject * listFeaturesObj;
-     
-    if (!PyArg_ParseTuple(args, "O!O!kkk", 
-                        &PyList_Type, &listInstancesObj,
-                        &PyList_Type, &listFeaturesObj,  
-                        &sizeOfNeighborhood, &lazyFitting, &addressMinHashObject))
+    PyObject * instancesListObj;
+    PyObject * featuresListObj;
+    PyObject * dataListObj;
+
+    if (!PyArg_ParseTuple(args, "O!O!O!kkk", 
+                        &PyList_Type, &instancesListObj,
+                        &PyList_Type, &featuresListObj,  
+                        &PyList_Type, &dataListObj,
+                        &nNeighbors, &addressMinHashObject))
         return NULL;
 
-    umapVector instanceFeatureVector = _parseInstancesFeatures(listInstancesObj, listFeaturesObj);
-
+    rawData rawData_ = parseRawData(instancesListObj, featuresListObj, dataListObj, 
+                                                    maxNumberOfInstances, maxNumberOfFeatures);
+    
     MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
 
-    umap_pair_vector* signatures;
-    std::pair<vvsize_t , vvfloat > neighborsDistances;
-    size_t doubleNeighbors = 0;
-    if (!lazyFitting) {
-        // compute signatures of the instances
-        signatures = (*minHash).computeSignatureMap(instanceFeatureVector);
-        doubleNeighbors = minHash->getDoubleElementsQuery();
-    } else {
-        signatures = minHash->getSignatureStorage();
-        doubleNeighbors = minHash->getDoubleElementsStorage();
-    }
     // compute the k-nearest neighbors
-    neighborsDistances = (*minHash).computeNeighbors(signatures, doubleNeighbors);
+    neighborhood neighborsDistances = minHash->kneighbors(rawData_, nNeighbors);
    
-    size_t sizeOfNeighorList = neighborsDistances.first.size();
+    size_t sizeOfNeighorList = neighborsDistances.neighbors.size();
 
     PyObject * outerListNeighbors = PyList_New(sizeOfNeighorList);
     PyObject * outerListDistances = PyList_New(sizeOfNeighorList);
 
     for (size_t i = 0; i < sizeOfNeighorList; ++i) {
-        size_t sizeOfInnerNeighborList = neighborsDistances.first[i].size();
+        size_t sizeOfInnerNeighborList = neighborsDistances.neighbors[i].size();
         PyObject * innerListNeighbors = PyList_New(sizeOfInnerNeighborList);
         PyObject * innerListDistances = PyList_New(sizeOfInnerNeighborList);
 
         for (size_t j = 0; j < sizeOfInnerNeighborList; ++j) {
-            PyObject* valueNeighbor = Py_BuildValue("k", neighborsDistances.first[i][j]);
+            PyObject* valueNeighbor = Py_BuildValue("k", neighborsDistances.neighbors[i][j]);
             PyList_SetItem(innerListNeighbors, j, valueNeighbor);
-            PyObject* valueDistance = Py_BuildValue("f", neighborsDistances.second[i][j]);
+            PyObject* valueDistance = Py_BuildValue("f", neighborsDistances.distances[i][j]);
             PyList_SetItem(innerListDistances, j, valueDistance);
         }
         PyList_SetItem(outerListNeighbors, i, innerListNeighbors);
