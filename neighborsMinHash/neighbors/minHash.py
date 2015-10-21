@@ -10,13 +10,14 @@
 
 __author__ = 'joachimwolff'
 import logging
-
+import multiprocessing as mp
 from scipy.sparse import csr_matrix
 from scipy.sparse import vstack
 from sklearn.utils import check_X_y
 
 from numpy import array
 
+import math
 import _minHash
 
 logger = logging.getLogger(__name__)
@@ -87,38 +88,17 @@ class MinHash():
     def __init__(self, n_neighbors=5, radius=1.0, fast=False, number_of_hash_functions=400,
                  max_bin_size = 50, minimal_blocks_in_common = 1, block_size = 4, excess_factor = 5,
                  number_of_cores=None, chunk_size=None):
-        # self.n_neighbors = n_neighbors
-        # self.radius = radius
-        if fast is not None:
-            self._fast = fast
-        else:
-            self._fast = False
-        # self.fastComputation = self._fast
-        # self._X = None
-        # self._y = None
-        # self._sizeOfX = None
-        # self._shape_of_X = None
-        # self._number_of_cores = number_of_cores
-        # if number_of_cores is None:
-        #     self._number_of_cores = mp.cpu_count()
-        # self._chunk_size = chunk_size
-        # if chunk_size is None:
-        #     self._chunk_size = 0
-        # self._inverseIndex = InverseIndex(number_of_hash_functions=number_of_hash_functions,
-        #                                   max_bin_size =max_bin_size,
-        #                                   number_of_nearest_neighbors=n_neighbors,
-        #                                   minimal_blocks_in_common=minimal_blocks_in_common,
-        #                                   block_size=block_size,
-        #                                   excess_factor=excess_factor,
-        #                                   number_of_cores = self._number_of_cores,
-        #                                   chunk_size = self._chunk_size)
+        if number_of_cores is None:
+            number_of_cores = mp.cpu_count()
+        if chunk_size is None:
+            chunk_size = 0
         maximal_number_of_hash_collisions = int(math.ceil(number_of_hash_functions / float(block_size)))
         _index_elements_count = 0
-        _pointer_address_of_minHash_object = _minHash.createObject(number_of_hash_functions, 
+        self._pointer_address_of_minHash_object = _minHash.createObject(number_of_hash_functions, 
                                                     block_size, number_of_cores, chunk_size, n_neighbors,
                                                     minimal_blocks_in_common, max_bin_size, 
                                                     maximal_number_of_hash_collisions, excess_factor,
-                                                    1 if _fast else 0)
+                                                    1 if fast else 0)
 
     def fit(self, X, y=None):
         """Fit the model using X as training data.
@@ -212,8 +192,9 @@ class MinHash():
             max_number_of_features = X.shape[1]
         return _minHash.kneighbors(instances.tolist(), features.tolist(), data.tolist(), 
                                     max_number_of_instances, max_number_of_features,
-                                    n_neighbors, 1 if return_distance else 0,
-                                    1 if fast else 0)
+                                    n_neighbors if n_neighbors else -1,
+                                    1 if return_distance else 0,
+                                    1 if fast else 0, self._pointer_address_of_minHash_object)
 
 
     def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', fast=None):

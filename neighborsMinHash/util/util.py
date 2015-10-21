@@ -24,7 +24,7 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.neighbors import LSHForest
 import sklearn
 
-from ..neighbors import MinHashNearestNeighbors
+from ..neighbors import MinHash
 # import pyflann
 import annoy
 
@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt
 
 
 def accuracy(neighbors_exact, neighbors_approx, neighbors_sklearn):
-    """Computes the accuracy for the exact and approximate version of the minHashNearestNeighbors algorithm.
+    """Computes the accuracy for the exact and approximate version of the MinHash algorithm.
 
     Parameters
     ----------
@@ -280,7 +280,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
         iteration_of_dataset += 1
         # print "Dataset processing: ", iteration_of_dataset, "/", length_of_dataset
         nearest_neighbor_sklearn = NearestNeighbors(n_neighbors = n_neighbors_sklearn)
-        nearest_neighbor_minHash = MinHashNearestNeighbors(n_neighbors = n_neighbors_minHash, number_of_hash_functions=number_of_hashfunctions)
+        nearest_neighbor_minHash = MinHash(n_neighbors = n_neighbors_minHash, number_of_hash_functions=number_of_hashfunctions)
         nearest_neighbor_lshf = LSHForest(n_estimators=20, n_candidates=200, n_neighbors=n_neighbors_minHash)
         time_start = time.time()
         nearest_neighbor_sklearn.fit(dataset_)

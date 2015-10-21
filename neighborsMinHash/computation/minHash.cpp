@@ -11,9 +11,9 @@
 **/
 
 #include <iostream>
-#include <iterator>
-#include <algorithm>
-#include <utility>
+// #include <iterator>
+// #include <algorithm>
+// #include <utility>
 
 #ifdef OPENMP
 #include <omp.h>

@@ -17,7 +17,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.utils import check_array
 import logging
 
-import _minHashClassifier
+# import _minHashClassifier
 
 logger = logging.getLogger(__name__)
 class MinHashClassifier():

@@ -8,7 +8,7 @@
 # Faculty of Engineering
 # Albert-Ludwig-University Freiburg im Breisgau
 
-from ..neighbors import MinHashNearestNeighbors
+from ..neighbors import MinHash
 
 from sklearn.cluster import SpectralClustering
 
@@ -58,7 +58,7 @@ class MinHashSpectralClustering():
         # only for comptible issues
         self.labels_ = None
     def fit(self, X, y=None):
-        minHashNeighbors = MinHashNearestNeighbors(n_neighbors = self.n_neighbors, 
+        minHashNeighbors = MinHash(n_neighbors = self.n_neighbors, 
         radius = self.radius, fast = self.fast,
         number_of_hash_functions = self.number_of_hash_functions,
         max_bin_size = self.max_bin_size,

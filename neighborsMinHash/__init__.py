@@ -10,8 +10,7 @@
 
 __author__ = 'joachimwolff'
 
-from neighbors.minHashKNeighborsClassifier import MinHashKNeighborsClassifier
-from neighbors.minHashNearestNeighbors import MinHashNearestNeighbors
-from computation.inverseIndex import InverseIndex
+from neighbors.minHashClassifier import MinHashClassifier
+from neighbors.minHash import MinHash
 import util
 import clustering

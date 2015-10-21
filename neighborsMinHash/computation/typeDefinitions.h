@@ -1,4 +1,12 @@
+#ifndef TYPE_DEFINTIONS_H
+#define TYPE_DEFINTIONS_H
+
+#include <vector>
+#include <map> 
+#include <unordered_map>
+
 #include <boost/numeric/mtl/mtl.hpp>
+
 #define MAX_VALUE 2147483647
 
 typedef std::vector<size_t> vsize_t;
@@ -32,3 +40,5 @@ struct neighborhood {
 };
 
 typedef std::unordered_map<size_t, uniqueElement > umap_uniqueElement;
+
+#endif // TYPE_DEFINTIONS_H

@@ -1,10 +1,11 @@
 #include "bloomierFilter.h"
 
-#ifndef TYPE_DEFINITIONS
-#define TYPE_DEFINITIONS
-#include "typeDefinitions.h"
-#endif
 
+#include "typeDefinitions.h"
+
+
+#ifndef INVERSE_INDEX_H
+#define INVERSE_INDEX_H
 class InverseIndex {
 
   private: 
@@ -23,9 +24,9 @@ class InverseIndex {
     size_t mDoubleElementsStorageCount = 0;
     size_t mDoubleElementsQueryCount = 0;
 
-  	umap_uniqueElement mSignatureStorage;
-  	std::vector<umapVector > mInverseIndexUmapVector;
-  	std::vector<BloomierFilter> mInverseIndexBloomierFilter;
+  	umap_uniqueElement* mSignatureStorage;
+  	std::vector<umapVector >* mInverseIndexUmapVector;
+  	std::vector<BloomierFilter>* mInverseIndexBloomierFilter;
 
   	size_t _size_tHashSimple(size_t key, size_t aModulo) {
   	    key = ~key + (key << 15);
@@ -45,7 +46,9 @@ class InverseIndex {
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions);
   	~InverseIndex();
   	vsize_t computeSignature(const vsize_t& featureVector);
-  	umap_uniqueElement* computeSignatureMap(const umapVector& instanceFeatureVector);
+  	umap_uniqueElement* computeSignatureMap(const umapVector* instanceFeatureVector);
   	void fit(const umapVector* instanceFeatureVector);
   	neighborhood kneighbors(const umap_uniqueElement* signaturesMap);
+  	umap_uniqueElement* getSignatureStorage(){return mSignatureStorage;};
 };
+#endif // INVERSE_INDEX_H

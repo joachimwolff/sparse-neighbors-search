@@ -28,7 +28,19 @@ void MinHashBase::partialFit() {
 
 }
 neighborhood MinHashBase::kneighbors(rawData pRawData, size_t pNneighbors, size_t pReturnDistance, size_t pFast) {
-	neighborhood neighborhood_ = mInverseIndex->kneighbors(&(*pRawData.inverseIndexData));
+	int nNeighbors = 0;
+	if (pNneighbors == -1) {
+		nNeighbors = mNneighbors;
+	}
+	umap_uniqueElement* X;
+	if (pRawData.inverseIndexData->size() == 1 && pRawData.inverseIndexData->find(-1) != pRawData.inverseIndexData->end()) {
+		// no query data given, use stored signatures
+		X = mInverseIndex->getSignatureStorage();
+	} else {
+		X = mInverseIndex->computeSignatureMap(pRawData.inverseIndexData);
+	}
+	neighborhood neighborhood_ = mInverseIndex->kneighbors(X);
+
 	if (pFast) {
 		cutNeighborhood(&neighborhood_, pNneighbors, false, false);
 		return neighborhood_;
@@ -82,18 +94,18 @@ void MinHashBase::cutNeighborhood(neighborhood* pNeighborhood, size_t pKneighbor
 	} else {
 		size_t appendSize = 0;
 		for (size_t i = 0; i < pNeighborhood->neighbors->size(); ++i) {
-			appendSize = pKneighborhood - pNeighborhood->neighbors[i].size();
+			appendSize = pKneighborhood - pNeighborhood->neighbors->operator[](i).size();
 			for (size_t j = 0; j < appendSize; ++j) {
-				(pNeighborhood->neighbors[i]).push_back(-1);
-				(pNeighborhood->distances[i]).push_back(0.0);
+				pNeighborhood->neighbors->operator[](i).push_back(-1);
+				pNeighborhood->distances->operator[](i).push_back(0.0);
 			}
 			if (pWithFirstElement) {
-				pNeighborhood->neighbors[i].erase(pNeighborhood->neighbors[i].begin()+pKneighborhood, 
-													pNeighborhood->neighbors[i].end());
+				pNeighborhood->neighbors->operator[](i).erase(pNeighborhood->neighbors->operator[](i).begin()+pKneighborhood, 
+													pNeighborhood->neighbors->operator[](i).end());
 			} else {
-				pNeighborhood->neighbors[i].erase(pNeighborhood->neighbors[i].begin());
-				pNeighborhood->neighbors[i].erase(pNeighborhood->neighbors[i].begin()+pKneighborhood, 
-													pNeighborhood->neighbors[i].end());
+				pNeighborhood->neighbors->operator[](i).erase(pNeighborhood->neighbors->operator[](i).begin());
+				pNeighborhood->neighbors->operator[](i).erase(pNeighborhood->neighbors->operator[](i).begin()+pKneighborhood, 
+													pNeighborhood->neighbors->operator[](i).end());
 			}
 		}
 	}

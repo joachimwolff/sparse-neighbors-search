@@ -12,7 +12,7 @@
 #include <Python.h>
 
 #include "minHash.h"
-
+#include "parsePythonToCpp.h"
 
 static PyObject* createObject(PyObject* self, PyObject* args) {
 
@@ -20,7 +20,7 @@ static PyObject* createObject(PyObject* self, PyObject* args) {
     nNeighbors, minimalBlocksInCommon, maxBinSize,
     maximalNumberOfHashCollisions, excessFactor, fast;
 
-    if (!PyArg_ParseTuple(args, "kkkkkkkkk", &numberOfHashFunctions,
+    if (!PyArg_ParseTuple(args, "kkkkkkkkkk", &numberOfHashFunctions,
                         &blockSize, &numberOfCores, &chunkSize, &nNeighbors,
                         &minimalBlocksInCommon, &maxBinSize,
                         &maximalNumberOfHashCollisions, &excessFactor, &fast))
@@ -88,21 +88,24 @@ static PyObject* partialFit(PyObject* self, PyObject* args) {
 }
 static PyObject* kneighbors(PyObject* self, PyObject* args) {
     size_t addressMinHashObject;
-    size_t nNeighbors;
+    int nNeighbors;
     size_t maxNumberOfInstances;
     size_t maxNumberOfFeatures;
+    size_t returnDistance;
+    size_t fast;
 
     PyObject * instancesListObj;
     PyObject * featuresListObj;
     PyObject * dataListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!kkk", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkkkkk", 
                         &PyList_Type, &instancesListObj,
                         &PyList_Type, &featuresListObj,  
                         &PyList_Type, &dataListObj,
                         &maxNumberOfInstances,
                         &maxNumberOfFeatures,
-                        &nNeighbors, &addressMinHashObject))
+                        &nNeighbors, &returnDistance,
+                        &fast, &addressMinHashObject))
         return NULL;
 
     rawData rawData_ = parseRawData(instancesListObj, featuresListObj, dataListObj, 
@@ -111,7 +114,8 @@ static PyObject* kneighbors(PyObject* self, PyObject* args) {
     MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
 
     // compute the k-nearest neighbors
-    neighborhood neighborhood_ = minHash->kneighbors(rawData_, nNeighbors);
+    // rawData pRawData, size_t pNneighbors, size_t pReturnDistance, size_t pFast)
+    neighborhood neighborhood_ = minHash->kneighbors(rawData_, nNeighbors, returnDistance, fast);
    
     size_t sizeOfNeighorList = neighborhood_.neighbors->size();
 
@@ -185,7 +189,7 @@ static PyMethodDef minHashFunctions[] = {
 
 // definition of the module for python
 PyMODINIT_FUNC
-init_hashUtility(void)
+init_minHash(void)
 {
     (void) Py_InitModule("_minHash", minHashFunctions);
 }
