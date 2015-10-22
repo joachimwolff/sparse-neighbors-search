@@ -39,6 +39,18 @@ Instead of cloning the repository via git clone and than running the installatio
 	
 	pip install git+https://github.com/joachimwolff/minHashNearestNeighbors.git
 
+Dependencies
+------------
+
+This software has the following dependecies:
+	- boost
+	- mtl4
+	- numpy
+	- scipy
+
+Please consider that numpy and scipy are having dependencies like libblas, liblapack and gfortan.	
+
+
 Uninstall
 ---------
 To delete neighborsMinHash run the following command:

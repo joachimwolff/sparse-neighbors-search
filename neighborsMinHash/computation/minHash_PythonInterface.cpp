@@ -31,7 +31,7 @@ static PyObject* createObject(PyObject* self, PyObject* args) {
     
     size_t adressMinHashObject = reinterpret_cast<size_t>(minHash);
     PyObject* pointerToInverseIndex = Py_BuildValue("k", adressMinHashObject);
-    
+    std::cout << "Object for minhash created!" <<std::endl;
     return pointerToInverseIndex;
 }
 static PyObject* deleteObject(PyObject* self, PyObject* args) {
@@ -47,6 +47,7 @@ static PyObject* deleteObject(PyObject* self, PyObject* args) {
 }
 
 static PyObject* fit(PyObject* self, PyObject* args) {
+    std::cout << "start fitting" << std::endl;
     size_t addressMinHashObject;
     size_t maxNumberOfInstances;
     size_t maxNumberOfFeatures;
@@ -80,15 +81,16 @@ static PyObject* fit(PyObject* self, PyObject* args) {
 
     addressMinHashObject = reinterpret_cast<size_t>(minHash);
     PyObject * pointerToInverseIndex = Py_BuildValue("k", addressMinHashObject);
-    
+    std::cout << "Fitting Done!" << std::endl;
     return pointerToInverseIndex;
 }
 static PyObject* partialFit(PyObject* self, PyObject* args) {
     return fit(self, args);
 }
 static PyObject* kneighbors(PyObject* self, PyObject* args) {
+    std::cout << "Starting computing kneighbors in interface..." << std::endl; 
     size_t addressMinHashObject;
-    int nNeighbors;
+    size_t nNeighbors;
     size_t maxNumberOfInstances;
     size_t maxNumberOfFeatures;
     size_t returnDistance;
@@ -116,33 +118,17 @@ static PyObject* kneighbors(PyObject* self, PyObject* args) {
     // compute the k-nearest neighbors
     // rawData pRawData, size_t pNneighbors, size_t pReturnDistance, size_t pFast)
     neighborhood neighborhood_ = minHash->kneighbors(rawData_, nNeighbors, returnDistance, fast);
-   
-    size_t sizeOfNeighorList = neighborhood_.neighbors->size();
-
-    PyObject * outerListNeighbors = PyList_New(sizeOfNeighorList);
-    PyObject * outerListDistances = PyList_New(sizeOfNeighorList);
-
-    for (size_t i = 0; i < sizeOfNeighorList; ++i) {
-        size_t sizeOfInnerNeighborList = neighborhood_.neighbors[i].size();
-        PyObject * innerListNeighbors = PyList_New(sizeOfInnerNeighborList);
-        PyObject * innerListDistances = PyList_New(sizeOfInnerNeighborList);
-
-        for (size_t j = 0; j < sizeOfInnerNeighborList; ++j) {
-            PyObject* valueNeighbor = Py_BuildValue("k", neighborhood_.neighbors->operator[](i)[j]);
-            PyList_SetItem(innerListNeighbors, j, valueNeighbor);
-            PyObject* valueDistance = Py_BuildValue("f", neighborhood_.distances->operator[](i)[j]);
-            PyList_SetItem(innerListDistances, j, valueDistance);
-        }
-        PyList_SetItem(outerListNeighbors, i, innerListNeighbors);
-        PyList_SetItem(outerListDistances, i, innerListDistances);
-
+    size_t cutFirstValue = 0;
+    if (rawData_.inverseIndexData->size() == 0) {
+        cutFirstValue = 1;
     }
-    PyObject * returnList = PyList_New(2);
-    PyList_SetItem(returnList, 0, outerListDistances);
-    PyList_SetItem(returnList, 1, outerListNeighbors);
-
-    return returnList;
+    if (nNeighbors == 0) {
+        nNeighbors = minHash->getNneighbors();
+    }
+    return bringNeighborhoodInShape(neighborhood_, nNeighbors, cutFirstValue);
 }
+
+
 static PyObject* kneighborsGraph(PyObject* self, PyObject* args) {
     PyObject* foo;
     return foo;

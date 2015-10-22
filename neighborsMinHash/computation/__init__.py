@@ -9,4 +9,4 @@
 # Albert-Ludwig-University Freiburg im Breisgau
 
 __author__ = 'joachimwolff'
-from inverseIndex import InverseIndex
+# from inverseIndex import InverseIndex

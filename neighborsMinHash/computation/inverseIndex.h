@@ -16,7 +16,6 @@ class InverseIndex {
     size_t mNumberOfCores;
     size_t mChunkSize;
     size_t mMaxBinSize;
-    size_t mSizeOfNeighborhood;
     size_t mMinimalBlocksInCommon;
     size_t mExcessFactor;
     size_t mMaximalNumberOfHashCollisions;
@@ -41,14 +40,13 @@ class InverseIndex {
   public:
   	InverseIndex(size_t pNumberOfHashFunctions, size_t pBlockSize,
                     size_t pNumberOfCores, size_t pChunkSize,
-                    size_t pMaxBinSize,
-                    size_t pSizeOfNeighborhood, size_t pMinimalBlocksInCommon,
+                    size_t pMaxBinSize, size_t pMinimalBlocksInCommon,
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions);
   	~InverseIndex();
   	vsize_t computeSignature(const vsize_t& featureVector);
   	umap_uniqueElement* computeSignatureMap(const umapVector* instanceFeatureVector);
   	void fit(const umapVector* instanceFeatureVector);
-  	neighborhood kneighbors(const umap_uniqueElement* signaturesMap);
+  	neighborhood kneighbors(const umap_uniqueElement* signaturesMap, const int pNneighborhood);
   	umap_uniqueElement* getSignatureStorage(){return mSignatureStorage;};
 };
 #endif // INVERSE_INDEX_H

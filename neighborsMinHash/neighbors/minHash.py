@@ -182,19 +182,28 @@ class MinHash():
         max_number_of_instances = 0
         max_number_of_features = 0
         if X is None:
-            instances = array(-1)
-            features = array(-1)
-            data = array(-1)
+            print "Starting PYTHON"
+
+            bla= _minHash.kneighbors([], [], [], 
+                                    0, 0,
+                                    n_neighbors if n_neighbors else 0,
+                                    1 if return_distance else 0,
+                                    1 if fast else 0, self._pointer_address_of_minHash_object)
+            print "END PYTHON"
+
         else:
             instances, features = X.nonzero()
             data = X.data()
             max_number_of_instances = X.shape[0]
             max_number_of_features = X.shape[1]
-        return _minHash.kneighbors(instances.tolist(), features.tolist(), data.tolist(), 
+            print "Starting PYTHON"
+            bla =  _minHash.kneighbors(instances.tolist(), features.tolist(), data.tolist(), 
                                     max_number_of_instances, max_number_of_features,
-                                    n_neighbors if n_neighbors else -1,
+                                    n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
                                     1 if fast else 0, self._pointer_address_of_minHash_object)
+            print "END PYTHON"
+        print bla
 
 
     def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', fast=None):

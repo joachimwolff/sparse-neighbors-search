@@ -8,9 +8,9 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pBlockSize,
 
       mInverseIndex = new InverseIndex(pNumberOfHashFunctions, pBlockSize,
                                       pNumberOfCores, pChunkSize,
-                                      pMaxBinSize, pSizeOfNeighborhood, 
-                                      pMinimalBlocksInCommon, pExcessFactor,
-                                      pMaximalNumberOfHashCollisions);
+                                      pMaxBinSize, pMinimalBlocksInCommon, 
+                                      pExcessFactor, pMaximalNumberOfHashCollisions);
+      mNneighbors = pSizeOfNeighborhood;
 
 }
 
@@ -28,21 +28,23 @@ void MinHashBase::partialFit() {
 
 }
 neighborhood MinHashBase::kneighbors(rawData pRawData, size_t pNneighbors, size_t pReturnDistance, size_t pFast) {
-	int nNeighbors = 0;
-	if (pNneighbors == -1) {
-		nNeighbors = mNneighbors;
+	std::cout << "start of kneighbors in minHashBase." << std::endl;
+	if (pNneighbors == 0) {
+		pNneighbors = mNneighbors;
 	}
 	umap_uniqueElement* X;
-	if (pRawData.inverseIndexData->size() == 1 && pRawData.inverseIndexData->find(-1) != pRawData.inverseIndexData->end()) {
+	if (pRawData.inverseIndexData->size() == 0) {
 		// no query data given, use stored signatures
 		X = mInverseIndex->getSignatureStorage();
 	} else {
 		X = mInverseIndex->computeSignatureMap(pRawData.inverseIndexData);
 	}
-	neighborhood neighborhood_ = mInverseIndex->kneighbors(X);
+	std::cout << "Computing neighbors..." << std::endl;
+	neighborhood neighborhood_ = mInverseIndex->kneighbors(X, pNneighbors);
+	std::cout << "Computing neighbors... Done!" << std::endl;
 
-	if (pFast) {
-		cutNeighborhood(&neighborhood_, pNneighbors, false, false);
+
+	if (pFast) {		
 		return neighborhood_;
 	}
 
@@ -84,31 +86,5 @@ neighborhood MinHashBase::computeExactNeighborhood() {
 neighborhood MinHashBase::computeNeighborhoodGraph() {
 	neighborhood a;
 	return a;
-}
-
-void MinHashBase::cutNeighborhood(neighborhood* pNeighborhood, size_t pKneighborhood, 
-											bool pRadiusNeighbors, bool pWithFirstElement) {
-
-	if (pRadiusNeighbors) {
-
-	} else {
-		size_t appendSize = 0;
-		for (size_t i = 0; i < pNeighborhood->neighbors->size(); ++i) {
-			appendSize = pKneighborhood - pNeighborhood->neighbors->operator[](i).size();
-			for (size_t j = 0; j < appendSize; ++j) {
-				pNeighborhood->neighbors->operator[](i).push_back(-1);
-				pNeighborhood->distances->operator[](i).push_back(0.0);
-			}
-			if (pWithFirstElement) {
-				pNeighborhood->neighbors->operator[](i).erase(pNeighborhood->neighbors->operator[](i).begin()+pKneighborhood, 
-													pNeighborhood->neighbors->operator[](i).end());
-			} else {
-				pNeighborhood->neighbors->operator[](i).erase(pNeighborhood->neighbors->operator[](i).begin());
-				pNeighborhood->neighbors->operator[](i).erase(pNeighborhood->neighbors->operator[](i).begin()+pKneighborhood, 
-													pNeighborhood->neighbors->operator[](i).end());
-			}
-		}
-	}
-
 }
 

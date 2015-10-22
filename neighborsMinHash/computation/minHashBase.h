@@ -32,6 +32,7 @@ class MinHashBase {
     neighborhood computeExactNeighborhood();
   	neighborhood computeNeighborhoodGraph();
 
+    size_t mNneighbors;
     public:
 
   	MinHashBase(size_t pNumberOfHashFunctions, size_t pBlockSize,
@@ -61,4 +62,5 @@ class MinHashBase {
       mOriginalData = pOriginalData;
       return;
     }
+    size_t getNneighbors() { return mNneighbors; };
 };
