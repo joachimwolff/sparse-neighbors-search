@@ -5,7 +5,7 @@
 #include <map> 
 #include <unordered_map>
 
-#include <boost/numeric/mtl/mtl.hpp>
+// #include <boost/numeric/mtl/mtl.hpp>
 
 #define MAX_VALUE 2147483647
 
@@ -17,7 +17,7 @@ typedef std::vector<vint > vvint;
 typedef std::vector< std::vector<float> > vvfloat;
 typedef std::vector<std::map<size_t, size_t> > vmSize_tSize_t;
 
-typedef mtl::compressed2D<float, mtl::mat::parameters<mtl::tag::col_major> > csrMatrix;
+// typedef mtl::compressed2D<float, mtl::mat::parameters<mtl::tag::col_major> > csrMatrix;
 
 struct csrNeighborhood {
   vvsize_t instances;
@@ -25,7 +25,7 @@ struct csrNeighborhood {
   vvfloat data;
 };
 struct rawData {
-  csrMatrix* matrixData;
+  // csrMatrix* matrixData;
   umapVector* inverseIndexData;
 };
 

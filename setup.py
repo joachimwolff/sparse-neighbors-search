@@ -35,7 +35,7 @@ elif platform.system() == 'Darwin' or "--noopenmp" in sys.argv:
                                                     'neighborsMinHash/computation/minHashBase.cpp', 'neighborsMinHash/computation/inverseIndex.cpp' ], 
         depends=['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/computation/minHashBase.h', 'neighborsMinHash/computation/inverseIndex.h'
         , 'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h'], 
-        extra_compile_args=["-g", "-std=c++11"]) #, include_dirs=['/home/wolffj/Software/boost_1_59_0', '/home/wolffj/Software/mtl4'])
+        extra_compile_args=["-g", "-std=c++11"], include_dirs=['/Users/joachimwolff/Software/boost_1_59_0'])
 
 else:
     module1 = Extension('_minHash', sources = ['neighborsMinHash/computation/minHash_PythonInterface.cpp', 'neighborsMinHash/computation/minHash.cpp', 

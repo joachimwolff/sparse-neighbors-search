@@ -26,7 +26,7 @@
 class MinHashBase {
   protected:
     InverseIndex* mInverseIndex;
-    csrMatrix* mOriginalData;
+    // csrMatrix* mOriginalData;
 
 	  neighborhood computeNeighborhood();
     neighborhood computeExactNeighborhood();
@@ -47,7 +47,7 @@ class MinHashBase {
     // Extend the inverse index with the given instances.
     void partialFit(); 
     // Calculate k-nearest neighbors.
-    neighborhood kneighbors(rawData pRawData, size_t pNneighbors, size_t pReturnDistance=1, size_t pFast=0); 
+    neighborhood kneighbors(rawData pRawData, size_t pNneighbors, size_t pFast=0); 
     // Calculate k-nearest neighbors as a graph.
     neighborhood kneighborsGraph();
     // Fits and calculates k-nearest neighbors.
@@ -58,9 +58,9 @@ class MinHashBase {
     void cutNeighborhood(neighborhood* pNeighborhood, size_t pKneighborhood, 
                       bool pRadiusNeighbors, bool pWithFirstElement);
 
-    void set_mOriginalData(csrMatrix* pOriginalData) {
-      mOriginalData = pOriginalData;
-      return;
-    }
+    // void set_mOriginalData(csrMatrix* pOriginalData) {
+    //   mOriginalData = pOriginalData;
+    //   return;
+    // }
     size_t getNneighbors() { return mNneighbors; };
 };

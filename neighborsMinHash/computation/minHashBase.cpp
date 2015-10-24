@@ -1,5 +1,5 @@
 #include "minHashBase.h"
-
+#include <iostream>
 MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pBlockSize,
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize,
@@ -16,7 +16,7 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pBlockSize,
 
 MinHashBase::~MinHashBase(){
 	delete mInverseIndex;
-	delete mOriginalData;
+	// delete mOriginalData;
 }
 
 void MinHashBase::fit(umapVector* instanceFeatureVector) {
@@ -27,7 +27,7 @@ void MinHashBase::fit(umapVector* instanceFeatureVector) {
 void MinHashBase::partialFit() {
 
 }
-neighborhood MinHashBase::kneighbors(rawData pRawData, size_t pNneighbors, size_t pReturnDistance, size_t pFast) {
+neighborhood MinHashBase::kneighbors(rawData pRawData, size_t pNneighbors, size_t pFast) {
 	std::cout << "start of kneighbors in minHashBase." << std::endl;
 	if (pNneighbors == 0) {
 		pNneighbors = mNneighbors;

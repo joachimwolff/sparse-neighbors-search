@@ -44,19 +44,3 @@ MinHash::MinHash(size_t pNumberOfHashFunctions, size_t pBlockSize,
 MinHash::~MinHash() {
 }
 
-neighborhood MinHash::radiusNeighbors() {
-    neighborhood a;
-    return a;
-}
-neighborhood MinHash::radiusNeighborsGraph() {
-    neighborhood a;
-    return a;
-}
-neighborhood MinHash::fitRadiusNeighbors() {
-    neighborhood a;
-    return a;
-}
-neighborhood MinHash::fitRadiusNeighborsGraph() {
-    neighborhood a;
-    return a;
-}
