@@ -26,20 +26,23 @@
 class MinHashBase {
   protected:
     InverseIndex* mInverseIndex;
-    // csrMatrix* mOriginalData;
+    SparseMatrixFloat* mOriginalData;
 
-	  neighborhood computeNeighborhood();
+	neighborhood computeNeighborhood();
     neighborhood computeExactNeighborhood();
   	neighborhood computeNeighborhoodGraph();
 
     size_t mNneighbors;
+    int mFast;
+    size_t mNumberOfCores;
+    size_t mChunkSize;
     public:
 
   	MinHashBase(size_t pNumberOfHashFunctions, size_t pBlockSize,
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize,
                     size_t pSizeOfNeighborhood, size_t pMinimalBlocksInCommon,
-                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions);
+                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, int pFast);
 
   	~MinHashBase();
     // Calculate the inverse index for the given instances.
@@ -47,20 +50,12 @@ class MinHashBase {
     // Extend the inverse index with the given instances.
     void partialFit(); 
     // Calculate k-nearest neighbors.
-    neighborhood kneighbors(rawData pRawData, size_t pNneighbors, size_t pFast=0); 
+    neighborhood kneighbors(rawData pRawData, size_t pNneighbors, int pFast); 
     // Calculate k-nearest neighbors as a graph.
-    neighborhood kneighborsGraph();
-    // Fits and calculates k-nearest neighbors.
-    neighborhood fitKneighbors();
-    // Fits and calculates k-nearest neighbors as a graph.
-    neighborhood fitKneighborsGraph();
-    // Cut the neighborhood to the length of k-neighbors
-    void cutNeighborhood(neighborhood* pNeighborhood, size_t pKneighborhood, 
-                      bool pRadiusNeighbors, bool pWithFirstElement);
 
-    // void set_mOriginalData(csrMatrix* pOriginalData) {
-    //   mOriginalData = pOriginalData;
-    //   return;
-    // }
+    void set_mOriginalData(SparseMatrixFloat* pOriginalData) {
+      mOriginalData = pOriginalData;
+      return;
+    }
     size_t getNneighbors() { return mNneighbors; };
 };

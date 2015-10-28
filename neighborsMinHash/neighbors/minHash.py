@@ -107,9 +107,17 @@ class MinHash():
                 this case.
             y : list, optional (default = None)
                 List of classes for the given input of X. Size have to be n_samples."""
-        self._index_elements_count = X.shape[0]
-        instances, features = X.nonzero()
-        data = X.data
+         # if y is not None:
+         #    _y_is_csr = True
+         #    _X, self._y = check_X_y(X, y, "csr", multi_output=True)
+         #    if ._y.ndim == 1 or self._y.shape[1] == 1:
+         #        self._y_is_csr = False
+        # else:
+        X_ = csr_matrix(X)
+        # _y_is_csr = False
+        self._index_elements_count = X_.shape[0]
+        instances, features = X_.nonzero()
+        data = X_.data
         # returns a pointer to the inverse index stored in c++
         self._pointer_address_of_minHash_object = _minHash.fit(instances.tolist(), features.tolist(), data.tolist(), 
                                                     X.shape[0], X.shape[1],
@@ -125,8 +133,10 @@ class MinHash():
                 Training data. Shape = [n_samples, n_features]
             y : list, optional (default = None)
                 List of classes for the given input of X. Size have to be n_samples."""
-        instances, features = X.nonzero()
-        data = X.data
+        X_ = csr_matrix(X)
+
+        instances, features = X_.nonzero()
+        data = X_.data
         for i in xrange(len(instances)):
             instances[i] += self._index_elements_count 
         self._index_elements_count  += X.shape[0]
@@ -163,6 +173,12 @@ class MinHash():
                 Indices of the nearest points in the population matrix."""
         max_number_of_instances = 0
         max_number_of_features = 0
+        if fast is None: 
+            fast = -1
+        elif fast:
+            fast = 1
+        else:
+            fast = 0
         if X is None:
             result = _minHash.kneighbors([], [], [], 
                                     0, 0,
@@ -170,15 +186,17 @@ class MinHash():
                                     1 if return_distance else 0,
                                     1 if fast else 0, self._pointer_address_of_minHash_object)
         else:
-            instances, features = X.nonzero()
-            data = X.data()
-            max_number_of_instances = X.shape[0]
-            max_number_of_features = X.shape[1]
-            result =   _minHash.kneighbors(instances.tolist(), features.tolist(), data.tolist(), 
+            X_ = csr_matrix(X)
+
+            instances, features = X_.nonzero()
+            data = X_.data()
+            max_number_of_instances = X_.shape[0]
+            max_number_of_features = X_.shape[1]
+            result =  _minHash.kneighbors(instances.tolist(), features.tolist(), data.tolist(), 
                                     max_number_of_instances, max_number_of_features,
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
-                                    1 if fast else 0, self._pointer_address_of_minHash_object)
+                                    fast, self._pointer_address_of_minHash_object)
         if return_distance:
             return asarray(result[0]), asarray(result[1])
         else:
@@ -211,6 +229,12 @@ class MinHash():
                 n_samples_fit is the number of samples in the fitted data
                 A[i, j] is assigned the weight of edge that connects i to j.
             """
+        if fast is None: 
+            fast = -1
+        elif fast:
+            fast = 1
+        else:
+            fast = 0
 
         if mode == "connectivity":
             return_distance = False
@@ -227,6 +251,8 @@ class MinHash():
                                     1 if return_distance else 0,
                                     1 if fast else 0, self._pointer_address_of_minHash_object)
         else:
+            X = csr_matrix(X)
+
             instances, features = X.nonzero()
             data = X.data()
             max_number_of_instances = X.shape[0]
@@ -235,11 +261,11 @@ class MinHash():
                                     max_number_of_instances, max_number_of_features,
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
-                                    1 if fast else 0, self._pointer_address_of_minHash_object)
+                                    fast, self._pointer_address_of_minHash_object)
 
         return csr_matrix((data, (row, column)))
 
-    def radius_neighbors(self, X=None, radius=None, return_distance=None, fast=False):
+    def radius_neighbors(self, X=None, radius=None, return_distance=None, fast=None):
         """Finds the neighbors within a given radius of a point or points.
         Return the indices and distances of each point from the dataset
         lying in a ball with size ``radius`` around the points of the query
@@ -274,6 +300,13 @@ class MinHash():
             from the population matrix that lie within a ball of size
             ``radius`` around the query points."""
 
+        if fast is None: 
+            fast = -1
+        elif fast:
+            fast = 1
+        else:
+            fast = 0
+
         if radius is None:
             radius = 0
         max_number_of_instances = 0
@@ -283,8 +316,10 @@ class MinHash():
                                     0, 0,
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
-                                    1 if fast else 0, self._pointer_address_of_minHash_object)
+                                    fast, self._pointer_address_of_minHash_object)
         else:
+            X = csr_matrix(X)
+
             instances, features = X.nonzero()
             data = X.data()
             max_number_of_instances = X.shape[0]
@@ -293,7 +328,7 @@ class MinHash():
                                     max_number_of_instances, max_number_of_features,
                                     radius,
                                     1 if return_distance else 0,
-                                    1 if fast else 0, self._pointer_address_of_minHash_object)
+                                    fast, self._pointer_address_of_minHash_object)
         if return_distance:
             return asarray(result[0]), asarray(result[1])
         else:
@@ -327,6 +362,12 @@ class MinHash():
         -------
         A : sparse matrix in CSR format, shape = [n_samples, n_samples]
         A[i, j] is assigned the weight of edge that connects i to j."""
+        if fast is None: 
+            fast = -1
+        elif fast:
+            fast = 1
+        else:
+            fast = 0
 
         if mode == "connectivity":
             return_distance = False
@@ -341,8 +382,10 @@ class MinHash():
                                     0, 0,
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
-                                    1 if fast else 0, self._pointer_address_of_minHash_object)
+                                    fast, self._pointer_address_of_minHash_object)
         else:
+            X = csr_matrix(X)
+
             instances, features = X.nonzero()
             data = X.data()
             max_number_of_instances = X.shape[0]
@@ -351,7 +394,7 @@ class MinHash():
                                     max_number_of_instances, max_number_of_features,
                                     radius if radius else 0,
                                     1 if return_distance else 0,
-                                    1 if fast else 0, self._pointer_address_of_minHash_object)
+                                    fast, self._pointer_address_of_minHash_object)
 
         return csr_matrix((data, (row, column)))
 
@@ -381,6 +424,14 @@ class MinHash():
                 return_distance=True
             ind : array, shape = [n_samples, neighbors]
                 Indices of the nearest points in the population matrix."""
+        if fast is None: 
+            fast = -1
+        elif fast:
+            fast = 1
+        else:
+            fast = 0
+        X = csr_matrix(X)
+
         self._index_elements_count = X.shape[0]
         instances, features = X.nonzero()
         data = X.data
@@ -389,7 +440,7 @@ class MinHash():
                                                     X.shape[0], X.shape[1],
                                                     n_neighbors if n_neighbors else 0,
                                                     1 if return_distance else 0,
-                                                    1 if fast else 0,
+                                                    fast,
                                                     self._pointer_address_of_minHash_object)
         if return_distance:
             return asarray(result[0]), asarray(result[1])
@@ -421,13 +472,20 @@ class MinHash():
                 n_samples_fit is the number of samples in the fitted data
                 A[i, j] is assigned the weight of edge that connects i to j.
             """
-
+        if fast is None: 
+            fast = -1
+        elif fast:
+            fast = 1
+        else:
+            fast = 0
         if mode == "connectivity":
             return_distance = False
         elif mode == "distance":
             return_distance = True
         else:
             return
+        X = csr_matrix(X)
+
         self._index_elements_count = X.shape[0]
         instances, features = X.nonzero()
         data = X.data
@@ -436,7 +494,7 @@ class MinHash():
                                                     X.shape[0], X.shape[1],
                                                     n_neighbors if n_neighbors else 0,
                                                     1 if return_distance else 0,
-                                                    1 if fast else 0,
+                                                    fast,
                                                     self._pointer_address_of_minHash_object)
         return csr_matrix((data, (row, column)))
 
@@ -472,6 +530,14 @@ class MinHash():
             An array of arrays of indices of the approximate nearest points
             from the population matrix that lie within a ball of size
             ``radius`` around the query points."""
+        if fast is None: 
+            fast = -1
+        elif fast:
+            fast = 1
+        else:
+            fast = 0
+        X = csr_matrix(X)
+
         self._index_elements_count = X.shape[0]
         instances, features = X.nonzero()
         data = X.data
@@ -480,7 +546,7 @@ class MinHash():
                                                     X.shape[0], X.shape[1],
                                                     radius if radius else 0,
                                                     1 if return_distance else 0,
-                                                    1 if fast else 0,
+                                                    fast,
                                                     self._pointer_address_of_minHash_object)
         if return_distance:
             return asarray(result[0]), asarray(result[1])
@@ -513,12 +579,22 @@ class MinHash():
         -------
         A : sparse matrix in CSR format, shape = [n_samples, n_samples]
         A[i, j] is assigned the weight of edge that connects i to j."""
+
+        if fast is None: 
+            fast = -1
+        elif fast:
+            fast = 1
+        else:
+            fast = 0
+
         if mode == "connectivity":
             return_distance = False
         elif mode == "distance":
             return_distance = True
         else:
             return
+        X = csr_matrix(X)
+
         self._index_elements_count = X.shape[0]
         instances, features = X.nonzero()
         data = X.data
@@ -527,6 +603,6 @@ class MinHash():
                                                     X.shape[0], X.shape[1],
                                                     radius if radius else 0,
                                                     1 if return_distance else 0,
-                                                    1 if fast else 0,
+                                                    fast,
                                                     self._pointer_address_of_minHash_object)
         return csr_matrix((data, (row, column)))

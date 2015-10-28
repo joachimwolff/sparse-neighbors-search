@@ -26,7 +26,7 @@ if "--openmp" in sys.argv:
     module1 = Extension('_minHash', sources = ['neighborsMinHash/computation/minHash_PythonInterface.cpp', 'neighborsMinHash/computation/minHash.cpp', 
                                                     'neighborsMinHash/computation/minHashBase.cpp', 'neighborsMinHash/computation/inverseIndex.cpp' ], 
         depends=['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/computation/minHashBase.h', 'neighborsMinHash/computation/inverseIndex.h'
-                , 'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h'],
+                , 'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h', 'neighborsMinHash/computation/sparseMatrix.h'],
          define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
         extra_compile_args=["-fopenmp", "-g", "-std=c++11"])#, include_dirs=['/home/wolffj/Software/boost_1_59_0', '/home/wolffj/Software/mtl4'])
 
@@ -34,14 +34,14 @@ elif platform.system() == 'Darwin' or "--noopenmp" in sys.argv:
     module1 = Extension('_minHash', sources = ['neighborsMinHash/computation/minHash_PythonInterface.cpp', 'neighborsMinHash/computation/minHash.cpp', 
                                                     'neighborsMinHash/computation/minHashBase.cpp', 'neighborsMinHash/computation/inverseIndex.cpp' ], 
         depends=['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/computation/minHashBase.h', 'neighborsMinHash/computation/inverseIndex.h'
-        , 'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h'], 
+        , 'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h', 'neighborsMinHash/computation/sparseMatrix.h'], 
         extra_compile_args=["-g", "-std=c++11"], include_dirs=['/Users/joachimwolff/Software/boost_1_59_0'])
 
 else:
     module1 = Extension('_minHash', sources = ['neighborsMinHash/computation/minHash_PythonInterface.cpp', 'neighborsMinHash/computation/minHash.cpp', 
                                                     'neighborsMinHash/computation/minHashBase.cpp', 'neighborsMinHash/computation/inverseIndex.cpp' ], 
         depends=['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/computation/minHashBase.h', 'neighborsMinHash/computation/inverseIndex.h'
-        , 'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h'],
+        , 'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h', 'neighborsMinHash/computation/sparseMatrix.h'],
         define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"],
          extra_compile_args=["-fopenmp", "-g", "-std=c++11"]) #, include_dirs=['/home/wolffj/Software/boost_1_59_0', '/home/wolffj/Software/mtl4'])
 

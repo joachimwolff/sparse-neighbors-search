@@ -3,21 +3,24 @@
 
 #include "typeDefinitions.h"
 
+
+
 rawData parseRawData(PyObject * instancesListObj, PyObject * featuresListObj, PyObject * dataListObj,
                                               size_t maxNumberOfInstances, size_t maxNumberOfFeatures) {
     PyObject * instanceSize_tObj;
     PyObject * featureSize_tObj;
     PyObject * dataSize_tObj;
 
-
-    umapVector* inverseIndexData = new umapVector();
-    // create sparse matrix and inserter
-    // csrMatrix originalData(maxNumberOfInstances, maxNumberOfFeatures);
-    // mtl::mat::inserter< csrMatrix >* insertElements = new mtl::mat::inserter< csrMatrix >(originalData);
-
     vsize_t featureIds;
     size_t instanceOld = 0;
     size_t sizeOfFeatureVector = PyList_Size(instancesListObj);
+
+    umapVector* inverseIndexData = new umapVector();
+    std::vector<size_t>* features = new std::vector<size_t>();
+    std::vector<float>* values = new std::vector<float>();
+    SparseMatrixFloat* originalData = new SparseMatrixFloat(maxNumberOfInstances);
+
+    size_t instanceCount = 0;
 
     for (size_t i = 0; i < sizeOfFeatureVector; ++i) {
         instanceSize_tObj = PyList_GetItem(instancesListObj, i);
@@ -33,27 +36,32 @@ rawData parseRawData(PyObject * instancesListObj, PyObject * featuresListObj, Py
 
         if (instanceOld == instanceValue) {
             featureIds.push_back(featureValue);
-            // (*insertElements)[instanceValue][featureValue] << dataValue;
+            features->push_back(featureValue);
+            values->push_back(dataValue);
+
             instanceOld = instanceValue;
             if (i == sizeOfFeatureVector-1) {
                 (*inverseIndexData)[instanceValue] = featureIds;
+                originalData->insert(instanceCount, reinterpret_cast<size_t> (features), reinterpret_cast<size_t>(values));
             }
         } else {
             if (instanceOld != MAX_VALUE) {
                 (*inverseIndexData)[instanceOld] = featureIds;
+                originalData->insert(instanceCount, reinterpret_cast<size_t> (features), reinterpret_cast<size_t>(values));
+                instanceCount++;
             }
             featureIds.clear();
             featureIds.push_back(featureValue);
-            // (*insertElements)[instanceValue][featureValue] << dataValue;
-
+            values = new std::vector<float>();
+            features = new std::vector<size_t>();
+            features->push_back(featureValue);
+            values->push_back(dataValue);
             instanceOld = instanceValue;
         }
     }
-    // delete inserter to get sparse matrix accessible
-    // delete insertElements;
-
+    std::cout << "Number of instances!!!: " << originalData->getSize() << std::endl;
     rawData returnValues;
-    // returnValues.matrixData = &originalData;
+    returnValues.matrixData = originalData;
     returnValues.inverseIndexData = inverseIndexData;
     return returnValues;
 }

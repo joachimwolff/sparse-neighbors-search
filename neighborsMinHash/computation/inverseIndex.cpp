@@ -21,7 +21,6 @@
 
 #include "inverseIndex.h"
 
-
 class sort_map {
   public:
     size_t key;
@@ -51,7 +50,7 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pBlockSize,
     size_t inverseIndexSize = ceil(((float) mNumberOfHashFunctions / (float) mBlockSize)+1);
     mInverseIndexUmapVector->resize(inverseIndexSize);
 }
-
+ 
 InverseIndex::~InverseIndex() {
     delete mSignatureStorage;
     delete mInverseIndexUmapVector;
@@ -134,7 +133,7 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const umapVector* instance
                 doubleInstanceVector[0] = instanceId->first;
                 uniqueElement element;
                 element.instances = doubleInstanceVector;
-                element.features = signature;
+                element.signature = signature;
                 instanceSignature->operator[](signatureId) = element;
             } else {
                 instanceSignature->operator[](signatureId).instances.push_back(instanceId->first);
@@ -150,7 +149,7 @@ void InverseIndex::fit(const umapVector* instanceFeatureVector) {
     mDoubleElementsStorageCount = 0;
     size_t inverseIndexSize = ceil(((float) mNumberOfHashFunctions / (float) mBlockSize)+1);
     mInverseIndexUmapVector->resize(inverseIndexSize);
-
+    std::cout << "Number of instances: " << instanceFeatureVector->size() << std::endl;
     if (mChunkSize <= 0) {
         mChunkSize = ceil(instanceFeatureVector->size() / static_cast<float>(mNumberOfCores));
     }
@@ -163,27 +162,37 @@ void InverseIndex::fit(const umapVector* instanceFeatureVector) {
 
         auto instanceId = instanceFeatureVector->begin();
         std::advance(instanceId, index);
-
-        vmSize_tSize_t hashStorage;
-        vsize_t signatureHash(mNumberOfHashFunctions);
-        // for every hash function: compute the hash values of all features and take the minimum of these
-        // as the hash value for one hash function --> h_j(x) = argmin (x_i of x) f_j(x_i)
-        vsize_t signature = computeSignature(instanceId->second);
         size_t signatureId = 0;
+
         for (auto itFeatures = instanceId->second.begin(); itFeatures != instanceId->second.end(); ++itFeatures) {
             signatureId = _size_tHashSimple((*itFeatures +1) * (signatureId+1) * A, MAX_VALUE);
         }
+        vsize_t signature;
+
+        auto itSignatureStorage = mSignatureStorage->find(signatureId);
+        if (itSignatureStorage == mSignatureStorage->end()) {
+            signature = computeSignature(instanceId->second);
+        } else {
+            signature = itSignatureStorage->second.signature;
+        }
+
+
+        // vmSize_tSize_t hashStorage;
+        // vsize_t signatureHash(mNumberOfHashFunctions);
+        // for every hash function: compute the hash values of all features and take the minimum of these
+        // as the hash value for one hash function --> h_j(x) = argmin (x_i of x) f_j(x_i)
+        
 
 
         // insert in inverse index
 #pragma omp critical
         {    
-            if (mSignatureStorage->find(signatureId) == mSignatureStorage->end()) {
+            if (itSignatureStorage == mSignatureStorage->end()) {
                 vsize_t doubleInstanceVector(1);
                 doubleInstanceVector[0] = instanceId->first;
                 uniqueElement element;
                 element.instances = doubleInstanceVector;
-                element.features = signature;
+                element.signature = signature;
                 mSignatureStorage->operator[](signatureId) = element;
 
                 // instanceSignature->operator[](signatureId) = (*mSignatureStorage)[signatureId];
@@ -230,27 +239,37 @@ void InverseIndex::fit(const umapVector* instanceFeatureVector) {
     // }
 }
 
-neighborhood InverseIndex::kneighbors(const umap_uniqueElement* signaturesMap, const int pNneighborhood) {
-    std::cout << "Start computing neihgor" << std::endl;
+neighborhood InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, const int pNneighborhood, const bool pDoubleElementsStorageCount) {
+    // std::cout << "Start computing neihgor" << std::endl;
+    // std::cout << "235" << std::endl;
+
     size_t doubleElements = 0;
+    if (pDoubleElementsStorageCount) {
+        doubleElements = mDoubleElementsStorageCount;
+    } else {
+        doubleElements = mDoubleElementsQueryCount;
+    }
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
     vvint* neighbors = new vvint();
     vvfloat* distances = new vvfloat();
-    neighbors->resize(signaturesMap->size()+doubleElements);
-    distances->resize(signaturesMap->size()+doubleElements);
+    // std::cout << "SIze of signauresMap: " << pSignaturesMap->size() << " doubleElements: " << doubleElements << std::endl;
+    neighbors->resize(pSignaturesMap->size()+doubleElements);
+    distances->resize(pSignaturesMap->size()+doubleElements);
+    // std::cout << "Size of neighbors: " << neighbors->size() << std::endl;
     if (mChunkSize <= 0) {
         mChunkSize = ceil(mInverseIndexUmapVector->size() / static_cast<float>(mNumberOfCores));
     }
+    // std::cout << "248" << std::endl;
 
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
-    for (size_t i = 0; i < signaturesMap->size(); ++i) {
-        umap_uniqueElement::const_iterator instanceId = signaturesMap->begin();
+    for (size_t i = 0; i < pSignaturesMap->size(); ++i) {
+        umap_uniqueElement::const_iterator instanceId = pSignaturesMap->begin();
         std::advance(instanceId, i); 
         
         std::unordered_map<size_t, size_t> neighborhood;
-        const vsize_t signature = instanceId->second.features;
+        const vsize_t signature = instanceId->second.signature;
         for (size_t j = 0; j < signature.size(); ++j) {
             size_t hashID = signature[j];
             if (hashID != 0 && hashID != MAX_VALUE) {
@@ -269,6 +288,7 @@ neighborhood InverseIndex::kneighbors(const umap_uniqueElement* signaturesMap, c
                 }
             }
         }
+    // std::cout << "275" << std::endl;
 
         std::vector< sort_map > neighborhoodVectorForSorting;
         
@@ -294,6 +314,8 @@ neighborhood InverseIndex::kneighbors(const umap_uniqueElement* signaturesMap, c
                 break;
             }
         }
+    // std::cout << "301" << std::endl;
+
         // guarantee that at least k-neighbors + 1 elements are in each vector.
         // +1 : in the case of nearest neighbors query for all instances, 
         //      the first value will be cut in the python interface
@@ -305,13 +327,18 @@ neighborhood InverseIndex::kneighbors(const umap_uniqueElement* signaturesMap, c
         // }
         
 #pragma omp critical
-        {
+        { 
+            // std::cout << "instances with nearest neighbors: ";
             for (size_t j = 0; j < instanceId->second.instances.size(); ++j) {
+                // std::cout << instanceId->second.instances[j] << std::endl;
                 (*neighbors)[instanceId->second.instances[j]] = neighborhoodVector;
                 (*distances)[instanceId->second.instances[j]] = distanceVector;
             }
+            // std::cout << std::endl;
         }
     }
+    // std::cout << "326" << std::endl;
+
     neighborhood neighborhood_;
     neighborhood_.neighbors = neighbors;
     neighborhood_.distances = distances;
@@ -327,6 +354,7 @@ neighborhood InverseIndex::kneighbors(const umap_uniqueElement* signaturesMap, c
     // std::cout << " ]" << std::endl;
 
 
+    // std::cout << "336" << std::endl;
 
     return neighborhood_;
 }

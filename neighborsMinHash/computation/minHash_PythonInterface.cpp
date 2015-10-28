@@ -16,19 +16,19 @@
 
 
 static PyObject* createObject(PyObject* self, PyObject* args) {
-
     size_t numberOfHashFunctions, blockSize, numberOfCores, chunkSize,
     nNeighbors, minimalBlocksInCommon, maxBinSize,
-    maximalNumberOfHashCollisions, excessFactor, fast;
+    maximalNumberOfHashCollisions, excessFactor;
+    int fast;
 
-    if (!PyArg_ParseTuple(args, "kkkkkkkkkk", &numberOfHashFunctions,
+    if (!PyArg_ParseTuple(args, "kkkkkkkkki", &numberOfHashFunctions,
                         &blockSize, &numberOfCores, &chunkSize, &nNeighbors,
                         &minimalBlocksInCommon, &maxBinSize,
                         &maximalNumberOfHashCollisions, &excessFactor, &fast))
         return NULL;
     MinHash* minHash = new MinHash (numberOfHashFunctions, blockSize, numberOfCores, chunkSize,
                     maxBinSize, nNeighbors, minimalBlocksInCommon, 
-                    excessFactor, maximalNumberOfHashCollisions);
+                    excessFactor, maximalNumberOfHashCollisions, fast);
     
     size_t adressMinHashObject = reinterpret_cast<size_t>(minHash);
     PyObject* pointerToInverseIndex = Py_BuildValue("k", adressMinHashObject);
@@ -36,7 +36,6 @@ static PyObject* createObject(PyObject* self, PyObject* args) {
     return pointerToInverseIndex;
 }
 static PyObject* deleteObject(PyObject* self, PyObject* args) {
-
     size_t addressMinHashObject;
 
     if (!PyArg_ParseTuple(args, "k", &addressMinHashObject))
@@ -48,13 +47,8 @@ static PyObject* deleteObject(PyObject* self, PyObject* args) {
 }
 
 static PyObject* fit(PyObject* self, PyObject* args) {
-    size_t addressMinHashObject;
-    size_t maxNumberOfInstances;
-    size_t maxNumberOfFeatures;
-    
-    PyObject * instancesListObj;
-    PyObject * featuresListObj;
-    PyObject * dataListObj;
+    size_t addressMinHashObject, maxNumberOfInstances, maxNumberOfFeatures;
+    PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
     if (!PyArg_ParseTuple(args, "O!O!O!kkk", 
                             &PyList_Type, &instancesListObj, 
@@ -67,15 +61,14 @@ static PyObject* fit(PyObject* self, PyObject* args) {
 
     // parse from python list to a c++ map<size_t, vector<size_t> >
     // where key == instance id and vector<size_t> == non null feature ids
-
     rawData rawData_ = parseRawData(instancesListObj, featuresListObj, dataListObj, 
                                                     maxNumberOfInstances, maxNumberOfFeatures);
     umapVector* instanceFeatureVector = rawData_.inverseIndexData;
-    // csrMatrix* originalDataMatrix = rawData_.matrixData;
+    SparseMatrixFloat* originalDataMatrix = rawData_.matrixData;
 
     // get pointer to the minhash object
     MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
-    // minHash->set_mOriginalData(originalDataMatrix);
+    minHash->set_mOriginalData(originalDataMatrix);
 
     minHash->fit(instanceFeatureVector);
 
@@ -87,18 +80,12 @@ static PyObject* partialFit(PyObject* self, PyObject* args) {
     return fit(self, args);
 }
 static PyObject* kneighbors(PyObject* self, PyObject* args) {
-    size_t addressMinHashObject;
-    size_t nNeighbors;
-    size_t maxNumberOfInstances;
-    size_t maxNumberOfFeatures;
-    size_t returnDistance;
-    size_t fast;
+    size_t addressMinHashObject, nNeighbors, maxNumberOfInstances,
+            maxNumberOfFeatures, returnDistance;
+    int fast;
+    PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    PyObject * instancesListObj;
-    PyObject * featuresListObj;
-    PyObject * dataListObj;
-
-    if (!PyArg_ParseTuple(args, "O!O!O!kkkkkk", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkkkik", 
                         &PyList_Type, &instancesListObj,
                         &PyList_Type, &featuresListObj,  
                         &PyList_Type, &dataListObj,
@@ -128,18 +115,12 @@ static PyObject* kneighbors(PyObject* self, PyObject* args) {
 
 
 static PyObject* kneighborsGraph(PyObject* self, PyObject* args) {
-    size_t addressMinHashObject;
-    size_t nNeighbors;
-    size_t maxNumberOfInstances;
-    size_t maxNumberOfFeatures;
-    size_t returnDistance;
-    size_t fast;
+    size_t addressMinHashObject, nNeighbors, maxNumberOfInstances,
+            maxNumberOfFeatures, returnDistance;
+    int fast;
+    PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    PyObject * instancesListObj;
-    PyObject * featuresListObj;
-    PyObject * dataListObj;
-
-    if (!PyArg_ParseTuple(args, "O!O!O!kkkkkk", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkkkik", 
                         &PyList_Type, &instancesListObj,
                         &PyList_Type, &featuresListObj,  
                         &PyList_Type, &dataListObj,
@@ -160,18 +141,12 @@ static PyObject* kneighborsGraph(PyObject* self, PyObject* args) {
     return buildGraph(neighborhood_, nNeighbors, returnDistance);
 }
 static PyObject* radiusNeighbors(PyObject* self, PyObject* args) {
-    size_t addressMinHashObject;
-    size_t radius;
-    size_t maxNumberOfInstances;
-    size_t maxNumberOfFeatures;
-    size_t returnDistance;
-    size_t fast;
+    size_t addressMinHashObject, radius, maxNumberOfInstances,
+             maxNumberOfFeatures, returnDistance;
+    int fast;
+    PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    PyObject * instancesListObj;
-    PyObject * featuresListObj;
-    PyObject * dataListObj;
-
-    if (!PyArg_ParseTuple(args, "O!O!O!kkkkkk", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkkkik", 
                         &PyList_Type, &instancesListObj,
                         &PyList_Type, &featuresListObj,  
                         &PyList_Type, &dataListObj,
@@ -196,18 +171,12 @@ static PyObject* radiusNeighbors(PyObject* self, PyObject* args) {
     return radiusNeighborhood(neighborhood_, radius, cutFirstValue, returnDistance); 
 }
 static PyObject* radiusNeighborsGraph(PyObject* self, PyObject* args) {
-    size_t addressMinHashObject;
-    size_t radius;
-    size_t maxNumberOfInstances;
-    size_t maxNumberOfFeatures;
-    size_t returnDistance;
-    size_t fast;
+    size_t addressMinHashObject, radius, maxNumberOfInstances,
+            maxNumberOfFeatures, returnDistance;
+    int fast;
+    PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    PyObject * instancesListObj;
-    PyObject * featuresListObj;
-    PyObject * dataListObj;
-
-    if (!PyArg_ParseTuple(args, "O!O!O!kkkkkk", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkkkik", 
                         &PyList_Type, &instancesListObj,
                         &PyList_Type, &featuresListObj,  
                         &PyList_Type, &dataListObj,
@@ -228,17 +197,12 @@ static PyObject* radiusNeighborsGraph(PyObject* self, PyObject* args) {
     return radiusNeighborhoodGraph(neighborhood_, radius, returnDistance); 
 }
 static PyObject* fitKneighbors(PyObject* self, PyObject* args) {
-    size_t addressMinHashObject;
-    size_t maxNumberOfInstances;
-    size_t maxNumberOfFeatures;
-    size_t nNeighbors;
-    size_t returnDistance;
-    size_t fast;
-    PyObject * instancesListObj;
-    PyObject * featuresListObj;
-    PyObject * dataListObj;
+    size_t addressMinHashObject, maxNumberOfInstances, maxNumberOfFeatures,
+            nNeighbors, returnDistance;
+    int fast;
+    PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!kkkkk", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkkkik", 
                             &PyList_Type, &instancesListObj, 
                             &PyList_Type, &featuresListObj,
                             &PyList_Type, &dataListObj,
@@ -255,11 +219,11 @@ static PyObject* fitKneighbors(PyObject* self, PyObject* args) {
     rawData rawData_ = parseRawData(instancesListObj, featuresListObj, dataListObj, 
                                                     maxNumberOfInstances, maxNumberOfFeatures);
     umapVector* instanceFeatureVector = rawData_.inverseIndexData;
-    // csrMatrix* originalDataMatrix = rawData_.matrixData;
+    SparseMatrixFloat* originalDataMatrix = rawData_.matrixData;
 
     // get pointer to the minhash object
     MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
-    // minHash->set_mOriginalData(originalDataMatrix);
+    minHash->set_mOriginalData(originalDataMatrix);
 
     minHash->fit(instanceFeatureVector);
     delete rawData_.inverseIndexData;
@@ -276,17 +240,12 @@ static PyObject* fitKneighbors(PyObject* self, PyObject* args) {
     return bringNeighborhoodInShape(neighborhood_, nNeighbors, cutFirstValue, returnDistance);
 }
 static PyObject* fitKneighborsGraph(PyObject* self, PyObject* args) {
-    size_t addressMinHashObject;
-    size_t maxNumberOfInstances;
-    size_t maxNumberOfFeatures;
-    size_t nNeighbors;
-    size_t returnDistance;
-    size_t fast;
-    PyObject * instancesListObj;
-    PyObject * featuresListObj;
-    PyObject * dataListObj;
+    size_t addressMinHashObject, maxNumberOfInstances, maxNumberOfFeatures,
+            nNeighbors, returnDistance;
+    int fast;
+    PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!kkkkk", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkkik", 
                             &PyList_Type, &instancesListObj, 
                             &PyList_Type, &featuresListObj,
                             &PyList_Type, &dataListObj,
@@ -303,11 +262,11 @@ static PyObject* fitKneighborsGraph(PyObject* self, PyObject* args) {
     rawData rawData_ = parseRawData(instancesListObj, featuresListObj, dataListObj, 
                                                     maxNumberOfInstances, maxNumberOfFeatures);
     umapVector* instanceFeatureVector = rawData_.inverseIndexData;
-    // csrMatrix* originalDataMatrix = rawData_.matrixData;
+    SparseMatrixFloat* originalDataMatrix = rawData_.matrixData;
 
     // get pointer to the minhash object
     MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
-    // minHash->set_mOriginalData(originalDataMatrix);
+    minHash->set_mOriginalData(originalDataMatrix);
 
     minHash->fit(instanceFeatureVector);
     delete rawData_.inverseIndexData;
@@ -318,18 +277,12 @@ static PyObject* fitKneighborsGraph(PyObject* self, PyObject* args) {
 
 }
 static PyObject* fitRadiusNeighbors(PyObject* self, PyObject* args) {
-    size_t addressMinHashObject;
-    size_t maxNumberOfInstances;
-    size_t maxNumberOfFeatures;
-    size_t radius;
-    size_t returnDistance;
-    size_t fast;
-    
-    PyObject * instancesListObj;
-    PyObject * featuresListObj;
-    PyObject * dataListObj;
+    size_t addressMinHashObject, maxNumberOfInstances, maxNumberOfFeatures,
+            radius, returnDistance;
+    int fast;
+    PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!kkk", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkkkik", 
                             &PyList_Type, &instancesListObj, 
                             &PyList_Type, &featuresListObj,
                             &PyList_Type, &dataListObj,
@@ -345,11 +298,11 @@ static PyObject* fitRadiusNeighbors(PyObject* self, PyObject* args) {
     rawData rawData_ = parseRawData(instancesListObj, featuresListObj, dataListObj, 
                                                     maxNumberOfInstances, maxNumberOfFeatures);
     umapVector* instanceFeatureVector = rawData_.inverseIndexData;
-    // csrMatrix* originalDataMatrix = rawData_.matrixData;
+    SparseMatrixFloat* originalDataMatrix = rawData_.matrixData;
 
     // get pointer to the minhash object
     MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
-    // minHash->set_mOriginalData(originalDataMatrix);
+    minHash->set_mOriginalData(originalDataMatrix);
 
     minHash->fit(instanceFeatureVector);
 
@@ -365,23 +318,18 @@ static PyObject* fitRadiusNeighbors(PyObject* self, PyObject* args) {
     return radiusNeighborhood(neighborhood_, radius, cutFirstValue, returnDistance); 
 }
 static PyObject* fitRadiusNeighborsGraph(PyObject* self, PyObject* args) {
-    size_t addressMinHashObject;
-    size_t maxNumberOfInstances;
-    size_t maxNumberOfFeatures;
-    size_t radius;
-    size_t returnDistance;
-    size_t fast;
-    
-    PyObject * instancesListObj;
-    PyObject * featuresListObj;
-    PyObject * dataListObj;
+    size_t addressMinHashObject, maxNumberOfInstances, maxNumberOfFeatures,
+            radius, returnDistance;
+    int fast;
+    PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!kkk", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkkkik", 
                             &PyList_Type, &instancesListObj, 
                             &PyList_Type, &featuresListObj,
                             &PyList_Type, &dataListObj,
                             &maxNumberOfInstances,
                             &maxNumberOfFeatures,
+                            &radius, &returnDistance, &fast,
                             &addressMinHashObject))
         return NULL;
 
@@ -390,11 +338,11 @@ static PyObject* fitRadiusNeighborsGraph(PyObject* self, PyObject* args) {
     rawData rawData_ = parseRawData(instancesListObj, featuresListObj, dataListObj, 
                                                     maxNumberOfInstances, maxNumberOfFeatures);
     umapVector* instanceFeatureVector = rawData_.inverseIndexData;
-    // csrMatrix* originalDataMatrix = rawData_.matrixData;
+    SparseMatrixFloat* originalDataMatrix = rawData_.matrixData;
 
     // get pointer to the minhash object
     MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
-    // minHash->set_mOriginalData(originalDataMatrix);
+    minHash->set_mOriginalData(originalDataMatrix);
 
     minHash->fit(instanceFeatureVector);
 

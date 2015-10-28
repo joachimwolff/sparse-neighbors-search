@@ -28,10 +28,11 @@ MinHash::MinHash(size_t pNumberOfHashFunctions, size_t pBlockSize,
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize,
                     size_t pSizeOfNeighborhood, size_t pMinimalBlocksInCommon,
-                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions):MinHashBase(pNumberOfHashFunctions, pBlockSize,
+                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, int pFast):MinHashBase(pNumberOfHashFunctions, pBlockSize,
                                                 pNumberOfCores, pChunkSize, pMaxBinSize,
                                                 pSizeOfNeighborhood, pMinimalBlocksInCommon,
-                                                pExcessFactor, pMaximalNumberOfHashCollisions) {
+                                                pExcessFactor, pMaximalNumberOfHashCollisions,
+                                                pFast) {
     
    
     // inverseIndex = new std::vector<umapVector >();

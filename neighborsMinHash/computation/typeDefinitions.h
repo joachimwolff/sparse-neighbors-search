@@ -5,8 +5,10 @@
 #include <map> 
 #include <unordered_map>
 
+// #include <eigen3/Eigen/Sparse>
 // #include <boost/numeric/mtl/mtl.hpp>
-
+// #include <armadillo>
+#include "sparseMatrix.h"
 #define MAX_VALUE 2147483647
 
 typedef std::vector<size_t> vsize_t;
@@ -17,7 +19,13 @@ typedef std::vector<vint > vvint;
 typedef std::vector< std::vector<float> > vvfloat;
 typedef std::vector<std::map<size_t, size_t> > vmSize_tSize_t;
 
-// typedef mtl::compressed2D<float, mtl::mat::parameters<mtl::tag::col_major> > csrMatrix;
+// typedef Eigen::Triplet<double> triplet;
+// typedef arma::sp_fmat SparseMatrixFloat;
+// typedef arma::umat umat;
+// typedef arma::vec vec;
+// typedef arma::endr endr;
+// typedef Eigen::SparseVector<float> SparseVectorFloat;
+
 
 struct csrNeighborhood {
   vvsize_t instances;
@@ -25,13 +33,13 @@ struct csrNeighborhood {
   vvfloat data;
 };
 struct rawData {
-  // csrMatrix* matrixData;
+  SparseMatrixFloat* matrixData;
   umapVector* inverseIndexData;
 };
 
 struct uniqueElement {
   vsize_t instances;
-  vsize_t features;
+  vsize_t signature;
 };
 
 struct neighborhood {
@@ -40,5 +48,6 @@ struct neighborhood {
 };
 
 typedef std::unordered_map<size_t, uniqueElement > umap_uniqueElement;
+
 
 #endif // TYPE_DEFINTIONS_H
