@@ -187,9 +187,8 @@ class MinHash():
                                     1 if fast else 0, self._pointer_address_of_minHash_object)
         else:
             X_ = csr_matrix(X)
-
             instances, features = X_.nonzero()
-            data = X_.data()
+            data = X_.data
             max_number_of_instances = X_.shape[0]
             max_number_of_features = X_.shape[1]
             result =  _minHash.kneighbors(instances.tolist(), features.tolist(), data.tolist(), 
@@ -254,7 +253,7 @@ class MinHash():
             X = csr_matrix(X)
 
             instances, features = X.nonzero()
-            data = X.data()
+            data = X.data
             max_number_of_instances = X.shape[0]
             max_number_of_features = X.shape[1]
             row, column, data = _minHash.kneighbors_graph(instances.tolist(), features.tolist(), data.tolist(),
@@ -321,7 +320,7 @@ class MinHash():
             X = csr_matrix(X)
 
             instances, features = X.nonzero()
-            data = X.data()
+            data = X.data
             max_number_of_instances = X.shape[0]
             max_number_of_features = X.shape[1]
             result = _minHash.kneighbors(instances.tolist(), features.tolist(), data.tolist(), 
@@ -387,7 +386,7 @@ class MinHash():
             X = csr_matrix(X)
 
             instances, features = X.nonzero()
-            data = X.data()
+            data = X.data
             max_number_of_instances = X.shape[0]
             max_number_of_features = X.shape[1]
             row, column, data = _minHash.radius_neighbors_graph(instances.tolist(), features.tolist(), data.tolist(),

@@ -1,0 +1,41 @@
+#ifndef TYPE_DEFINTIONS_BASIC_H
+#define TYPE_DEFINTIONS_BASIC_H
+
+#include <vector>
+#include <map> 
+#include <unordered_map>
+
+#define MAX_VALUE 2147483647
+
+typedef std::vector<size_t> vsize_t;
+typedef std::vector<int> vint;
+typedef std::vector<float> vfloat;
+typedef std::unordered_map< size_t, vsize_t > umapVector;
+typedef std::vector<vsize_t > vvsize_t;
+typedef std::vector<vint > vvint;
+typedef std::vector< vfloat > vvfloat;
+typedef std::vector<std::map<size_t, size_t> > vmSize_tSize_t;
+
+struct uniqueElement {
+  vsize_t* instances;
+  vsize_t* signature;
+};
+
+struct neighborhood {
+  vvint* neighbors;
+  vvfloat* distances;
+};
+
+typedef std::unordered_map<size_t, uniqueElement* > umap_uniqueElement;
+
+
+struct sortMapFloat {
+    size_t key;
+    float val;
+};
+
+static bool mapSortDescByValueFloat(const sortMapFloat& a, const sortMapFloat& b) {
+        return a.val > b.val;
+};
+
+#endif // TYPE_DEFINTIONS_BASIC_H

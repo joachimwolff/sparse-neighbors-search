@@ -5,19 +5,17 @@
 
 
 
-rawData parseRawData(PyObject * instancesListObj, PyObject * featuresListObj, PyObject * dataListObj,
+SparseMatrixFloat* parseRawData(PyObject * instancesListObj, PyObject * featuresListObj, PyObject * dataListObj,
                                               size_t maxNumberOfInstances, size_t maxNumberOfFeatures) {
     PyObject * instanceSize_tObj;
     PyObject * featureSize_tObj;
     PyObject * dataSize_tObj;
 
-    vsize_t featureIds;
     size_t instanceOld = 0;
     size_t sizeOfFeatureVector = PyList_Size(instancesListObj);
 
-    umapVector* inverseIndexData = new umapVector();
-    std::vector<size_t>* features = new std::vector<size_t>();
-    std::vector<float>* values = new std::vector<float>();
+    vsize_t* features = new std::vector<size_t>();
+    vfloat* values = new std::vector<float>();
     SparseMatrixFloat* originalData = new SparseMatrixFloat(maxNumberOfInstances);
 
     size_t instanceCount = 0;
@@ -35,35 +33,29 @@ rawData parseRawData(PyObject * instancesListObj, PyObject * featuresListObj, Py
         PyArg_Parse(dataSize_tObj, "f", &dataValue);
 
         if (instanceOld == instanceValue) {
-            featureIds.push_back(featureValue);
+            // featureIds.push_back(featureValue);
             features->push_back(featureValue);
             values->push_back(dataValue);
 
             instanceOld = instanceValue;
             if (i == sizeOfFeatureVector-1) {
-                (*inverseIndexData)[instanceValue] = featureIds;
                 originalData->insert(instanceCount, reinterpret_cast<size_t> (features), reinterpret_cast<size_t>(values));
             }
         } else {
             if (instanceOld != MAX_VALUE) {
-                (*inverseIndexData)[instanceOld] = featureIds;
                 originalData->insert(instanceCount, reinterpret_cast<size_t> (features), reinterpret_cast<size_t>(values));
                 instanceCount++;
             }
-            featureIds.clear();
-            featureIds.push_back(featureValue);
-            values = new std::vector<float>();
-            features = new std::vector<size_t>();
+            // featureIds.clear();
+            // featureIds.push_back(featureValue);
+            values = new vfloat();
+            features = new vsize_t();
             features->push_back(featureValue);
             values->push_back(dataValue);
             instanceOld = instanceValue;
         }
     }
-    std::cout << "Number of instances!!!: " << originalData->getSize() << std::endl;
-    rawData returnValues;
-    returnValues.matrixData = originalData;
-    returnValues.inverseIndexData = inverseIndexData;
-    return returnValues;
+    return originalData;
 }
 
 static PyObject* radiusNeighborhood(const neighborhood pNeighborhood, const size_t pRadius, const size_t pCutFirstValue, const size_t pReturnDistance) {
