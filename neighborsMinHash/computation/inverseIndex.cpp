@@ -94,6 +94,7 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
+
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
@@ -101,17 +102,12 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
 
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     for(size_t index = 0; index < pRawData->size(); ++index) {
-
-        // auto instanceId = instanceFeatureVector->begin();
-        // std::advance(instanceId, index);
         vsize_t* features = pRawData->getFeatureRow(index);
-        
         // compute unique id
         size_t signatureId = 0;
         for (size_t j = 0; j < features->size(); ++j) {
                 signatureId = _size_tHashSimple(((*features)[j] +1) * (signatureId+1) * A, MAX_VALUE);
         }
-
         // signature is in storage && 
         auto signatureIt = (*mSignatureStorage).find(signatureId);
         if (signatureIt != (*mSignatureStorage).end() && (instanceSignature->find(signatureId) != instanceSignature->end())) {
@@ -123,6 +119,7 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
             }
             continue;
         }
+
         // for every hash function: compute the hash values of all features and take the minimum of these
         // as the hash value for one hash function --> h_j(x) = argmin (x_i of x) f_j(x_i)
         vsize_t* signature = computeSignature(features);
@@ -131,7 +128,7 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
             if (instanceSignature->find(signatureId) == instanceSignature->end()) {
                 vsize_t* doubleInstanceVector = new vsize_t(1);
                 (*doubleInstanceVector)[0] = index;
-                uniqueElement* element;
+                uniqueElement* element = new uniqueElement();;
                 element->instances = doubleInstanceVector;
                 element->signature = signature;
                 instanceSignature->operator[](signatureId) = element;
@@ -212,7 +209,6 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
 
 neighborhood InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                         const int pNneighborhood, const bool pDoubleElementsStorageCount) {
-
     size_t doubleElements = 0;
     if (pDoubleElementsStorageCount) {
         doubleElements = mDoubleElementsStorageCount;
@@ -229,7 +225,6 @@ neighborhood InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
     if (mChunkSize <= 0) {
         mChunkSize = ceil(mInverseIndexUmapVector->size() / static_cast<float>(mNumberOfCores));
     }
-
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     for (size_t i = 0; i < pSignaturesMap->size(); ++i) {
         umap_uniqueElement::const_iterator instanceId = pSignaturesMap->begin();
@@ -255,7 +250,6 @@ neighborhood InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 }
             }
         }
-
         std::vector< sort_map > neighborhoodVectorForSorting;
         
         for (auto it = neighborhood.begin(); it != neighborhood.end(); ++it) {
@@ -293,7 +287,6 @@ neighborhood InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             }
         }
     }
-
     neighborhood neighborhood_;
     neighborhood_.neighbors = neighbors;
     neighborhood_.distances = distances;

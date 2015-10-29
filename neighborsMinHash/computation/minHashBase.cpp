@@ -57,7 +57,6 @@ neighborhood MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t p
         X = mInverseIndex->computeSignatureMap(pRawData);
     }
     neighborhood neighborhood_ = mInverseIndex->kneighbors(X, pNneighbors, doubleElementsStorageCount);
-
     if (pFast) {     
         return neighborhood_;
     }
@@ -75,8 +74,10 @@ if (mChunkSize <= 0) {
 
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     for (size_t i = 0; i < neighborhood_.neighbors->size(); ++i) {
+
         std::vector<sortMapFloat> exactNeighbors = 
         mOriginalData->getSubMatrixByRowVector(neighborhood_.neighbors->operator[](i))->multiplyVectorAndSort(mOriginalData->getRow(i));
+
         std::vector<int> neighborsVector(exactNeighbors.size());
         std::vector<float> distancesVector(exactNeighbors.size());
 
@@ -84,6 +85,7 @@ if (mChunkSize <= 0) {
             neighborsVector[j] = static_cast<int> (neighborhood_.neighbors->operator[](i)[exactNeighbors[j].key]);
             distancesVector[j] = exactNeighbors[j].val;
         }
+
 #pragma omp critical
         {
             neighborhoodExact.neighbors->operator[](i) = neighborsVector;

@@ -118,6 +118,7 @@ static PyObject* kneighbors(PyObject* self, PyObject* args) {
     // compute the k-nearest neighbors
     neighborhood neighborhood_ = neighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
                                                 maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast);
+
     size_t cutFirstValue = 0;
     if (PyList_Size(instancesListObj) == 0) {
         cutFirstValue = 1;
@@ -128,7 +129,6 @@ static PyObject* kneighbors(PyObject* self, PyObject* args) {
     }
     return bringNeighborhoodInShape(neighborhood_, nNeighbors, cutFirstValue, returnDistance);
 }
-
 
 static PyObject* kneighborsGraph(PyObject* self, PyObject* args) {
     size_t addressMinHashObject, nNeighbors, maxNumberOfInstances,
