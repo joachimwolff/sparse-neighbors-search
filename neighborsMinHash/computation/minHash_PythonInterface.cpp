@@ -14,7 +14,7 @@
 #include "minHash.h"
 #include "parsePythonToCpp.h"
 
-static neighborhood neighborhoodComputation(size_t pMinHashAddress, PyObject* pInstancesListObj,PyObject* pFeaturesListObj,PyObject* pDataListObj, 
+static neighborhood* neighborhoodComputation(size_t pMinHashAddress, PyObject* pInstancesListObj,PyObject* pFeaturesListObj,PyObject* pDataListObj, 
                                                    size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures, 
                                                    size_t pNneighbors, int pFast) {
     SparseMatrixFloat* originalDataMatrix = parseRawData(pInstancesListObj, pFeaturesListObj, pDataListObj, 
@@ -24,7 +24,7 @@ static neighborhood neighborhoodComputation(size_t pMinHashAddress, PyObject* pI
     return minHash->kneighbors(originalDataMatrix, pNneighbors, pFast);
 }
 
-static neighborhood fitNeighborhoodComputation(size_t pMinHashAddress, PyObject* pInstancesListObj,PyObject* pFeaturesListObj,PyObject* pDataListObj, 
+static neighborhood* fitNeighborhoodComputation(size_t pMinHashAddress, PyObject* pInstancesListObj,PyObject* pFeaturesListObj,PyObject* pDataListObj, 
                                                    size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures, 
                                                    size_t pNneighbors, int pFast) {
     SparseMatrixFloat* originalDataMatrix = parseRawData(pInstancesListObj, pFeaturesListObj, pDataListObj, 
@@ -35,10 +35,9 @@ static neighborhood fitNeighborhoodComputation(size_t pMinHashAddress, PyObject*
 
     minHash->fit(originalDataMatrix);
     SparseMatrixFloat* emptyMatrix = new SparseMatrixFloat(0);
-    neighborhood neighborhood_ = minHash->kneighbors(emptyMatrix, pNneighbors, pFast);
+    neighborhood* neighborhood_ = minHash->kneighbors(emptyMatrix, pNneighbors, pFast);
     delete emptyMatrix;
     return neighborhood_;
-
 }
 
 static PyObject* createObject(PyObject* self, PyObject* args) {
@@ -116,7 +115,7 @@ static PyObject* kneighbors(PyObject* self, PyObject* args) {
                         &fast, &addressMinHashObject))
         return NULL;
     // compute the k-nearest neighbors
-    neighborhood neighborhood_ = neighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
+    neighborhood* neighborhood_ = neighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
                                                 maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast);
 
     size_t cutFirstValue = 0;
@@ -146,7 +145,7 @@ static PyObject* kneighborsGraph(PyObject* self, PyObject* args) {
                         &fast, &addressMinHashObject))
         return NULL;
     // compute the k-nearest neighbors
-    neighborhood neighborhood_ = neighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
+    neighborhood* neighborhood_ = neighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
                                                 maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast);
     return buildGraph(neighborhood_, nNeighbors, returnDistance);
 }
@@ -166,7 +165,7 @@ static PyObject* radiusNeighbors(PyObject* self, PyObject* args) {
                         &fast, &addressMinHashObject))
         return NULL;
     // compute the k-nearest neighbors
-    neighborhood neighborhood_ = neighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
+    neighborhood* neighborhood_ = neighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
                                                 maxNumberOfInstances, maxNumberOfFeatures, MAX_VALUE, fast);
     size_t cutFirstValue = 0;
     if (PyList_Size(instancesListObj) == 0) {
@@ -190,7 +189,7 @@ static PyObject* radiusNeighborsGraph(PyObject* self, PyObject* args) {
                         &fast, &addressMinHashObject))
         return NULL;
     // compute the k-nearest neighbors
-    neighborhood neighborhood_ = neighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
+    neighborhood* neighborhood_ = neighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
                                                 maxNumberOfInstances, maxNumberOfFeatures, MAX_VALUE, fast);
     return radiusNeighborhoodGraph(neighborhood_, radius, returnDistance); 
 }
@@ -211,12 +210,9 @@ static PyObject* fitKneighbors(PyObject* self, PyObject* args) {
                             &addressMinHashObject))
         return NULL;
 
-    neighborhood neighborhood_ = fitNeighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
+    neighborhood* neighborhood_ = fitNeighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
                                                    maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast);
-    size_t cutFirstValue = 0;
-    if (PyList_Size(instancesListObj) == 0) {
-        cutFirstValue = 1;
-    }
+    size_t cutFirstValue = 1;
     if (nNeighbors == 0) {
         MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
         nNeighbors = minHash->getNneighbors();
@@ -240,12 +236,9 @@ static PyObject* fitKneighborsGraph(PyObject* self, PyObject* args) {
                             &addressMinHashObject))
         return NULL;
 
-    neighborhood neighborhood_ = fitNeighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
+    neighborhood* neighborhood_ = fitNeighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
                                                    maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast);
-    size_t cutFirstValue = 0;
-    if (PyList_Size(instancesListObj) == 0) {
-        cutFirstValue = 1;
-    }
+    size_t cutFirstValue = 1;
     if (nNeighbors == 0) {
         MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
         nNeighbors = minHash->getNneighbors();
@@ -270,12 +263,9 @@ static PyObject* fitRadiusNeighbors(PyObject* self, PyObject* args) {
                             &addressMinHashObject))
         return NULL;
 
-    neighborhood neighborhood_ = fitNeighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
+    neighborhood* neighborhood_ = fitNeighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
                                                    maxNumberOfInstances, maxNumberOfFeatures, MAX_VALUE, fast); 
-    size_t cutFirstValue = 0;
-    if (PyList_Size(instancesListObj) == 0) {
-        cutFirstValue = 1;
-    }
+    size_t cutFirstValue = 1;
     return radiusNeighborhood(neighborhood_, radius, cutFirstValue, returnDistance); 
 }
 static PyObject* fitRadiusNeighborsGraph(PyObject* self, PyObject* args) {
@@ -294,12 +284,8 @@ static PyObject* fitRadiusNeighborsGraph(PyObject* self, PyObject* args) {
                             &addressMinHashObject))
         return NULL;
 
-    neighborhood neighborhood_ = fitNeighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
+    neighborhood* neighborhood_ = fitNeighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
                                                    maxNumberOfInstances, maxNumberOfFeatures, MAX_VALUE, fast);
-    size_t cutFirstValue = 0;
-    if (PyList_Size(instancesListObj) == 0) {
-        cutFirstValue = 1;
-    }
     return radiusNeighborhoodGraph(neighborhood_, radius, returnDistance); 
 }
 // definition of avaible functions for python and which function parsing fucntion in c++ should be called.

@@ -1,3 +1,14 @@
+/**
+ Copyright 2015 Joachim Wolff
+ Master Thesis
+ Tutors: Milad Miladi, Fabrizio Costa
+ Winter semester 2015/2016
+
+ Chair of Bioinformatics
+ Department of Computer Science
+ Faculty of Engineering
+ Albert-Ludwig-University Freiburg im Breisgau
+**/
 #ifndef TYPE_DEFINTIONS_BASIC_H
 #define TYPE_DEFINTIONS_BASIC_H
 
@@ -7,14 +18,18 @@
 
 #define MAX_VALUE 2147483647
 
-typedef std::vector<size_t> vsize_t;
-typedef std::vector<int> vint;
-typedef std::vector<float> vfloat;
-typedef std::unordered_map< size_t, vsize_t > umapVector;
-typedef std::vector<vsize_t > vvsize_t;
-typedef std::vector<vint > vvint;
+typedef std::vector< size_t > vsize_t;
+typedef std::vector< int > vint;
+typedef std::vector< float > vfloat;
+
+typedef std::vector< vsize_t > vvsize_t;
+typedef std::vector< vint > vvint;
 typedef std::vector< vfloat > vvfloat;
-typedef std::vector<std::map<size_t, size_t> > vmSize_tSize_t;
+
+typedef std::unordered_map< size_t, vsize_t > umapVector;
+
+typedef std::vector< std::map< size_t, size_t > > vmSize_tSize_t;
+typedef std::vector< umapVector > vector__umapVector;
 
 struct uniqueElement {
   vsize_t* instances;
@@ -26,7 +41,7 @@ struct neighborhood {
   vvfloat* distances;
 };
 
-typedef std::unordered_map<size_t, uniqueElement* > umap_uniqueElement;
+typedef std::unordered_map< size_t, uniqueElement* > umap_uniqueElement;
 
 
 struct sortMapFloat {

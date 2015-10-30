@@ -10,11 +10,6 @@
  Albert-Ludwig-University Freiburg im Breisgau
 **/
 
-#include <iostream>
-// #include <iterator>
-// #include <algorithm>
-// #include <utility>
-
 #ifdef OPENMP
 #include <omp.h>
 #endif
@@ -33,14 +28,7 @@ MinHash::MinHash(size_t pNumberOfHashFunctions, size_t pBlockSize,
                                                 pSizeOfNeighborhood, pMinimalBlocksInCommon,
                                                 pExcessFactor, pMaximalNumberOfHashCollisions,
                                                 pFast) {
-    
-   
-    // inverseIndex = new std::vector<umapVector >();
-    // signatureStorage = new umap_pair_vector();
-    // size_t inverseIndexSize = ceil(((float) numberOfHashFunctions / (float) blockSize)+1);
-    // inverseIndex->resize(inverseIndexSize);
 }
-
 
 MinHash::~MinHash() {
 }

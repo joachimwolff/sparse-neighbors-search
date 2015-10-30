@@ -1,3 +1,14 @@
+/**
+ Copyright 2015 Joachim Wolff
+ Master Thesis
+ Tutors: Milad Miladi, Fabrizio Costa
+ Winter semester 2015/2016
+
+ Chair of Bioinformatics
+ Department of Computer Science
+ Faculty of Engineering
+ Albert-Ludwig-University Freiburg im Breisgau
+**/
 #include "bloomierFilter.h"
 
 
@@ -28,13 +39,21 @@ class InverseIndex {
   	std::vector<BloomierFilter>* mInverseIndexBloomierFilter;
 
   	size_t _size_tHashSimple(size_t key, size_t aModulo) {
-  	    key = ~key + (key << 15);
-  	    key = key ^ (key >> 12);
-  	    key = key + (key << 2);
-  	    key = key ^ (key >> 4);
-  	    key = key * 2057;
-  	    key = key ^ (key >> 16);
-  	    return key % aModulo;
+        char key_char = static_cast<char>(key);
+        key_char = ~key_char + (key_char << 5);
+        key_char = key_char ^ (key_char >> 3);
+        key_char = key_char + (key_char << 2);
+        key_char = key_char ^ (key_char >> 1);
+        key_char = key_char * 127;
+        key_char = key_char ^ (key_char >> 3);
+        return static_cast<size_t>(key_char) % aModulo;
+  	    // key = ~key + (key << 15);
+  	    // key = key ^ (key >> 12);
+  	    // key = key + (key << 2);
+  	    // key = key ^ (key >> 4);
+  	    // key = key * 2057;
+  	    // key = key ^ (key >> 16);
+  	    // return key % aModulo;
   	};
 
   public:
@@ -46,7 +65,7 @@ class InverseIndex {
   	vsize_t* computeSignature(const vsize_t* featureVector);
   	umap_uniqueElement* computeSignatureMap(const SparseMatrixFloat* pRawData);
   	void fit(const SparseMatrixFloat* pRawData);
-  	neighborhood kneighbors(const umap_uniqueElement* signaturesMap, const int pNneighborhood, const bool pDoubleElementsStorageCount);
+  	neighborhood* kneighbors(const umap_uniqueElement* signaturesMap, const int pNneighborhood, const bool pDoubleElementsStorageCount);
   	umap_uniqueElement* getSignatureStorage(){return mSignatureStorage;};
 };
 #endif // INVERSE_INDEX_H

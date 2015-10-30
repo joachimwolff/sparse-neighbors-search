@@ -10,9 +10,9 @@
  Albert-Ludwig-University Freiburg im Breisgau
 **/
 
+#include <algorithm>
 #include <iostream>
 #include <iterator>
-#include <algorithm>
 #include <utility>
 
 #ifdef OPENMP
@@ -45,15 +45,22 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pBlockSize,
     mMinimalBlocksInCommon = pMinimalBlocksInCommon;
     mExcessFactor = pExcessFactor;
     mMaximalNumberOfHashCollisions = pMaximalNumberOfHashCollisions;
-    mInverseIndexUmapVector = new std::vector<umapVector >();
+    mInverseIndexUmapVector = new vector__umapVector();
     mSignatureStorage = new umap_uniqueElement();
     size_t inverseIndexSize = ceil(((float) mNumberOfHashFunctions / (float) mBlockSize)+1);
     mInverseIndexUmapVector->resize(inverseIndexSize);
 }
  
 InverseIndex::~InverseIndex() {
-    delete mSignatureStorage;
-    delete mInverseIndexUmapVector;
+
+    // for (auto it = (*mSignatureStorage).begin(); it != (*mSignatureStorage).end(); ++it) {
+    //     delete it->second->instances;
+    //     delete it->second->signature;
+    //     delete it->second;
+
+    // }
+    // delete mSignatureStorage;
+    // delete mInverseIndexUmapVector;
 }
  // compute the signature for one instance
 vsize_t* InverseIndex::computeSignature(const vsize_t* featureVector) {
@@ -207,14 +214,18 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     }
 }
 
-neighborhood InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
+neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                         const int pNneighborhood, const bool pDoubleElementsStorageCount) {
+    // std::cout <<  "219" << std::endl;
+    
     size_t doubleElements = 0;
     if (pDoubleElementsStorageCount) {
         doubleElements = mDoubleElementsStorageCount;
     } else {
         doubleElements = mDoubleElementsQueryCount;
     }
+    // std::cout <<  "227" << std::endl;
+
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
@@ -225,10 +236,13 @@ neighborhood InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
     if (mChunkSize <= 0) {
         mChunkSize = ceil(mInverseIndexUmapVector->size() / static_cast<float>(mNumberOfCores));
     }
+    // std::cout <<  "239" << std::endl;
+
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     for (size_t i = 0; i < pSignaturesMap->size(); ++i) {
         umap_uniqueElement::const_iterator instanceId = pSignaturesMap->begin();
         std::advance(instanceId, i); 
+    // std::cout <<  "245" << std::endl;
         
         std::unordered_map<size_t, size_t> neighborhood;
         const vsize_t* signature = instanceId->second->signature;
@@ -250,6 +264,8 @@ neighborhood InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 }
             }
         }
+    // std::cout <<  "267" << std::endl;
+
         std::vector< sort_map > neighborhoodVectorForSorting;
         
         for (auto it = neighborhood.begin(); it != neighborhood.end(); ++it) {
@@ -259,15 +275,24 @@ neighborhood InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             neighborhoodVectorForSorting.push_back(mapForSorting);
         }
         std::sort(neighborhoodVectorForSorting.begin(), neighborhoodVectorForSorting.end(), mapSortDescByValue);
+        
+        std::cout << "\ninstance: " << std::endl;
+            for (auto it = neighborhoodVectorForSorting.begin(); it != neighborhoodVectorForSorting.end(); ++it) {
+                std::cout << "Key: " << it->key << " value: " << it->val << std::endl;
+            }
+            std::cout << std::endl;
         vint neighborhoodVector;
         std::vector<float> distanceVector;
         size_t sizeOfNeighborhoodAdjusted;
+    // std::cout <<  "281" << std::endl;
+
         if (pNneighborhood == MAX_VALUE) {
             sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(pNneighborhood), neighborhoodVectorForSorting.size());
         } else {
             sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(pNneighborhood * mExcessFactor), neighborhoodVectorForSorting.size());
         }
         size_t count = 0;
+    // std::cout <<  "289" << std::endl;
 
         for (auto it = neighborhoodVectorForSorting.begin();
                 it != neighborhoodVectorForSorting.end(); ++it) {
@@ -278,6 +303,7 @@ neighborhood InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 break;
             }
         }
+    // std::cout <<  "300" << std::endl;
         
 #pragma omp critical
         { 
@@ -287,9 +313,12 @@ neighborhood InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             }
         }
     }
-    neighborhood neighborhood_;
-    neighborhood_.neighbors = neighbors;
-    neighborhood_.distances = distances;
+    // std::cout <<  "310" << std::endl;
+
+    neighborhood* neighborhood_ = new neighborhood();
+    neighborhood_->neighbors = neighbors;
+    neighborhood_->distances = distances;
+    // std::cout <<  "315" << std::endl;
 
     return neighborhood_;
 }

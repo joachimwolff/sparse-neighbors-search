@@ -1,14 +1,24 @@
-#include "minHashBase.h"
+/**
+ Copyright 2015 Joachim Wolff
+ Master Thesis
+ Tutors: Milad Miladi, Fabrizio Costa
+ Winter semester 2015/2016
+
+ Chair of Bioinformatics
+ Department of Computer Science
+ Faculty of Engineering
+ Albert-Ludwig-University Freiburg im Breisgau
+**/
+
 #include <iostream>
+
+#include "minHashBase.h"
 #include "sparseMatrix.h"
 
 #ifdef OPENMP
 #include <omp.h>
 #endif
-// struct sort_map_float {
-//     size_t key;
-//     float val;
-// };
+
 MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pBlockSize,
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize,
@@ -28,7 +38,7 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pBlockSize,
 }
 
 MinHashBase::~MinHashBase(){
-    delete mInverseIndex;
+    // delete mInverseIndex;
     // delete mOriginalData;
 }
 
@@ -40,7 +50,7 @@ void MinHashBase::fit(const SparseMatrixFloat* pRawData) {
 void MinHashBase::partialFit() {
 
 }
-neighborhood MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast) {
+neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast) {
     if (pFast == -1) {
         pFast = mFast;
     } 
@@ -56,41 +66,74 @@ neighborhood MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t p
     } else {
         X = mInverseIndex->computeSignatureMap(pRawData);
     }
-    neighborhood neighborhood_ = mInverseIndex->kneighbors(X, pNneighbors, doubleElementsStorageCount);
+    // std::cout <<  "69" << std::endl;
+
+    neighborhood* neighborhood_ = mInverseIndex->kneighbors(X, pNneighbors, doubleElementsStorageCount);
+    // std::cout <<  "72" << std::endl;
+
+    if (pRawData->size() == 0) {
+    // std::cout <<  "75" << std::endl;
+
+        for (auto it = X->begin(); it != X->end(); ++it) {
+            // delete it->second->instances;
+            // delete it->second->signature;
+        }
+    // std::cout <<  "81" << std::endl;
+
+        // delete X;
+    }
     if (pFast) {     
+    // std::cout <<  "86" << std::endl;
+
         return neighborhood_;
     }
-    neighborhood neighborhoodExact;
-    neighborhoodExact.neighbors = new vvint(neighborhood_.neighbors->size());
-
-    neighborhoodExact.distances = new vvfloat(neighborhood_.neighbors->size());
+    // std::cout <<  "80" << std::endl;
+    neighborhood* neighborhoodExact = new neighborhood();
+    neighborhoodExact->neighbors = new vvint(neighborhood_->neighbors->size());
+    neighborhoodExact->distances = new vvfloat(neighborhood_->neighbors->size());
+    // std::cout <<  "94" << std::endl;
 
 if (mChunkSize <= 0) {
-        mChunkSize = ceil(neighborhood_.neighbors->size() / static_cast<float>(mNumberOfCores));
+        mChunkSize = ceil(neighborhood_->neighbors->size() / static_cast<float>(mNumberOfCores));
     }
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
+    // std::cout <<  "92" << std::endl;
 
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
-    for (size_t i = 0; i < neighborhood_.neighbors->size(); ++i) {
+    for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
+    // std::cout <<  "96" << std::endl;
 
-        std::vector<sortMapFloat> exactNeighbors = 
-        mOriginalData->getSubMatrixByRowVector(neighborhood_.neighbors->operator[](i))->multiplyVectorAndSort(mOriginalData->getRow(i));
+        SparseMatrixFloat* subMatrix = mOriginalData->getSubMatrixByRowVector(neighborhood_->neighbors->operator[](i));
+    // std::cout <<  "99" << std::endl;
 
-        std::vector<int> neighborsVector(exactNeighbors.size());
-        std::vector<float> distancesVector(exactNeighbors.size());
+        std::vector<sortMapFloat>* exactNeighbors = subMatrix->multiplyVectorAndSort(mOriginalData->getRow(i));
+    // std::cout <<  "102" << std::endl;
 
-        for (size_t j = 0; j < exactNeighbors.size(); ++j) {
-            neighborsVector[j] = static_cast<int> (neighborhood_.neighbors->operator[](i)[exactNeighbors[j].key]);
-            distancesVector[j] = exactNeighbors[j].val;
+        // delete subMatrix;
+        std::vector<int> neighborsVector(exactNeighbors->size());
+        std::vector<float> distancesVector(exactNeighbors->size());
+    // std::cout <<  "107" << std::endl;
+
+        for (size_t j = 0; j < exactNeighbors->size(); ++j) {
+            neighborsVector[j] = static_cast<int> (neighborhood_->neighbors->operator[](i)[(*exactNeighbors)[j].key]);
+            distancesVector[j] = (*exactNeighbors)[j].val;
+    // std::cout <<  "112" << std::endl;
+
         }
+        // delete exactNeighbors;
+    // std::cout <<  "116" << std::endl;
 
 #pragma omp critical
         {
-            neighborhoodExact.neighbors->operator[](i) = neighborsVector;
-            neighborhoodExact.distances->operator[](i) = distancesVector;
+            neighborhoodExact->neighbors->operator[](i) = neighborsVector;
+            neighborhoodExact->distances->operator[](i) = distancesVector;
         }
+    // std::cout <<  "123" << std::endl;
+
     }
-   return neighborhoodExact;
+    // std::cout <<  "126" << std::endl;
+
+    return neighborhoodExact;
 }

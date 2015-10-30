@@ -1,8 +1,8 @@
 /**
  Copyright 2015 Joachim Wolff
- Master Project
+ Master Thesis
  Tutors: Milad Miladi, Fabrizio Costa
- Summer semester 2015
+ Winter semester 2015/2016
 
  Chair of Bioinformatics
  Department of Computer Science
@@ -12,16 +12,10 @@
 
 #include <Python.h>
 
-// #include "typeDefinitions.h"
-
-#ifndef INVERSE_INDEX
-#define INVERSE_INDEX
 #include "inverseIndex.h"
-#endif
-// #ifndef TYPE_DEFINTIONS
-// #define TYPE_DEFINTIONS
-// #include "typeDefinitions.h"
-// #endif
+
+#ifndef MIN_HASH_BASE_H
+#define MIN_HASH_BASE_H
 
 class MinHashBase {
   protected:
@@ -50,7 +44,7 @@ class MinHashBase {
     // Extend the inverse index with the given instances.
     void partialFit(); 
     // Calculate k-nearest neighbors.
-    neighborhood kneighbors(const SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast); 
+    neighborhood* kneighbors(const SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast); 
     // Calculate k-nearest neighbors as a graph.
 
     void set_mOriginalData(SparseMatrixFloat* pOriginalData) {
@@ -59,3 +53,4 @@ class MinHashBase {
     }
     size_t getNneighbors() { return mNneighbors; };
 };
+#endif // MIN_HASH_BASE_H
