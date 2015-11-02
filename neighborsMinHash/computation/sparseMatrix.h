@@ -9,6 +9,7 @@
  Faculty of Engineering
  Albert-Ludwig-University Freiburg im Breisgau
 **/
+#include <math.h>
 
 #include <algorithm>
 #include <iostream>
@@ -81,24 +82,33 @@ class SparseMatrixFloat {
             size_t featurePointer = 0;
             size_t featureMatrixPointer = 0;
 
-            while (featureMatrixPointer < featuresMatrix->size() && featurePointer < features->size()) {
+            while (featureMatrixPointer < featuresMatrix->size() || featurePointer < features->size()) {
                 if ((*featuresMatrix)[featureMatrixPointer] == (*features)[featurePointer]) {
-                    element.val += (*valuesMatrix)[featureMatrixPointer] * (*values)[featurePointer];
+                    element.val += pow((*valuesMatrix)[featureMatrixPointer] - (*values)[featurePointer], 2);
                     ++featureMatrixPointer;
                     ++featurePointer;
-                } else if ((*featuresMatrix)[featureMatrixPointer] < (*features)[featurePointer]) {
+                }
+                // if ((*featuresMatrix)[featureMatrixPointer] == (*features)[featurePointer]) {
+                //     element.val += (*valuesMatrix)[featureMatrixPointer] * (*values)[featurePointer];
+                //     ++featureMatrixPointer;
+                //     ++featurePointer;
+                else if ((*featuresMatrix)[featureMatrixPointer] < (*features)[featurePointer]) {
+                    element.val += pow((*valuesMatrix)[featureMatrixPointer], 2);
+
                     ++featureMatrixPointer;
                 } else {
+                    element.val += pow((*values)[featurePointer], 2);
                     ++featurePointer;
                 }
             }
+            element.val = sqrt(element.val);
             if (element.val != 0.0) {
                 // (*returnValue)[i/2] = element;
                 returnValue->push_back(element);
             }
         }
         if (returnValue->size() != 0) {
-            std::sort(returnValue->begin(), returnValue->end(), mapSortDescByValueFloat);
+            std::sort(returnValue->begin(), returnValue->end(), mapSortAscByValueFloat);
             // std::cout << "\ninstance: " << std::endl;
             // for (auto it = returnValue->begin(); it != returnValue->end(); ++it) {
             //     std::cout << "Key: " << it->key << " value: " << it->val << std::endl;

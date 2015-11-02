@@ -78,6 +78,8 @@ def accuracy(neighbors_exact, neighbors_approx, neighbors_sklearn):
         all_elements += len(neighbors_exact[i])
     # approx vs. exact
     approx_exact = matches / float(all_elements) 
+
+    print exact_sklearn
     return exact_sklearn, approx_sklearn, approx_exact
 
 def create_dataset(seed=None,
@@ -383,8 +385,12 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
             # print "Computation of flann done!"
 
         accuracy_1_50_lshf.append(np.in1d(n_neighbors_lshf_1_50, n_neighbors_sklearn_1_50).mean())
-        accuracy_1_50_minHash_exact.append(np.in1d(n_neighbors_minHash_exact_1_50, n_neighbors_sklearn_1_50).mean())
-        accuracy_1_50_minHash_aprox.append(np.in1d(n_neighbors_minHash_approx_1_50, n_neighbors_sklearn_1_50).mean())
+        exact, approx, _ = accuracy(n_neighbors_minHash_exact_1_50, n_neighbors_minHash_approx_1_50, n_neighbors_sklearn_1_50)
+        accuracy_1_50_minHash_exact.append(exact)
+        accuracy_1_50_minHash_aprox.append(approx)
+
+        # accuracy_1_50_minHash_exact.append(np.in1d(n_neighbors_minHash_exact_1_50, n_neighbors_sklearn_1_50).mean())
+        # accuracy_1_50_minHash_aprox.append(np.in1d(n_neighbors_minHash_approx_1_50, n_neighbors_sklearn_1_50).mean())
         # accuracy_1_50_annoy.append(np.in1d(n_neighbors_annoy_1_50, n_neighbors_sklearn_1_50).mean())
         # accuracy_1_50_flann.append(np.in1d(n_neighbors_flann_1_50, n_neighbors_sklearn_1_50).mean())
 
