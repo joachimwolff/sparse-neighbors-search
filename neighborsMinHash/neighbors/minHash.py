@@ -200,10 +200,6 @@ class MinHash():
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
                                     fast, self._pointer_address_of_minHash_object)
-
-        # print result[0]
-        # print result[1]
-
         if return_distance:
             return asarray(result[0]), asarray(result[1])
         else:

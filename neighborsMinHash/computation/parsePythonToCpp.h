@@ -110,11 +110,14 @@ static PyObject* radiusNeighborhood(const neighborhood* pNeighborhood, const siz
 
 static PyObject* bringNeighborhoodInShape(const neighborhood* pNeighborhood, const size_t pNneighbors, const size_t pCutFirstValue, const size_t pReturnDistance) {
     size_t sizeOfNeighborList = pNeighborhood->neighbors->size();
+    // std::cout << "sizeOfNeighborList: " << sizeOfNeighborList << std::endl;
     PyObject * outerListNeighbors = PyList_New(sizeOfNeighborList);
     PyObject * outerListDistances = PyList_New(sizeOfNeighborList);
 
     for (size_t i = 0; i < sizeOfNeighborList; ++i) {
         size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
+        // std::cout << "sizeOfInnerNeighborList: " << sizeOfInnerNeighborList << std::endl;
+
         PyObject* innerListNeighbors = PyList_New(pNneighbors);
         PyObject* innerListDistances = PyList_New(pNneighbors);
         if (sizeOfInnerNeighborList > pNneighbors) {

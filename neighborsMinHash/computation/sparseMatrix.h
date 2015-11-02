@@ -101,9 +101,10 @@ class SparseMatrixFloat {
                     ++featurePointer;
                 }
             }
-            element.val = sqrt(element.val);
-            if (element.val != 0.0) {
+            
+            if (element.val >= 0.0) {
                 // (*returnValue)[i/2] = element;
+                element.val = sqrt(element.val);
                 returnValue->push_back(element);
             }
         }
@@ -114,9 +115,10 @@ class SparseMatrixFloat {
             //     std::cout << "Key: " << it->key << " value: " << it->val << std::endl;
             // }
             // std::cout << std::endl;
-        } else {
-            // std::cout << 'no values found' << std::endl;
         }
+        // } else {
+        //     // std::cout << 'no values found' << std::endl;
+        // }
         
         return returnValue;
     };

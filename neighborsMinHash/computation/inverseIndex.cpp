@@ -41,7 +41,6 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pBlockSize,
     mNumberOfCores = pNumberOfCores;
     mChunkSize = pChunkSize;
     mMaxBinSize = pMaxBinSize;
-    // mSizeOfNeighborhood = pSizeOfNeighborhood;
     mMinimalBlocksInCommon = pMinimalBlocksInCommon;
     mExcessFactor = pExcessFactor;
     mMaximalNumberOfHashCollisions = pMaximalNumberOfHashCollisions;
@@ -148,12 +147,14 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     return instanceSignature;
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
+
     mDoubleElementsStorageCount = 0;
     size_t inverseIndexSize = ceil(((float) mNumberOfHashFunctions / (float) mBlockSize)+1);
-    mInverseIndexUmapVector->resize(pRawData->size());
+    mInverseIndexUmapVector->resize(inverseIndexSize);
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
+
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
@@ -173,7 +174,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
         } else {
             signature = itSignatureStorage->second->signature;
         }
-                // insert in inverse index
+        // insert in inverse index
 #pragma omp critical
         {    
             if (itSignatureStorage == mSignatureStorage->end()) {
@@ -189,7 +190,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
             }
 
             for (size_t j = 0; j < signature->size(); ++j) {
-                auto itHashValue_InstanceVector = mInverseIndexUmapVector->operator[](j).find((*signature)[j]);
+                auto itHashValue_InstanceVector = (*mInverseIndexUmapVector)[j].find((*signature)[j]);
                 // if for hash function h_i() the given hash values is already stored
                 if (itHashValue_InstanceVector != mInverseIndexUmapVector->operator[](j).end()) {
                     // insert the instance id if not too many collisions (maxBinSize)
@@ -270,11 +271,6 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         }
         std::sort(neighborhoodVectorForSorting.begin(), neighborhoodVectorForSorting.end(), mapSortDescByValue);
         
-        // std::cout << "\ninstance: " << std::endl;
-        //     for (auto it = neighborhoodVectorForSorting.begin(); it != neighborhoodVectorForSorting.end(); ++it) {
-        //         std::cout << "Key: " << it->key << " value: " << it->val << std::endl;
-        //     }
-        //     std::cout << std::endl;
         vint neighborhoodVector;
         std::vector<float> distanceVector;
         size_t sizeOfNeighborhoodAdjusted;

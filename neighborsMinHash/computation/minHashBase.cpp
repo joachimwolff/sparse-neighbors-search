@@ -108,16 +108,16 @@ if (mChunkSize <= 0) {
         // for (size_t j = 0; j < neighborhood_->neighbors->operator[](i).size(); ++j) {
         //     std::cout << neighborhood_->neighbors->operator[](i)[j] << " ";
         // }
-        std::cout << "\nEXact version: ";
-        for (size_t j = 0; j < neighborsVector.size(); ++j) {
-            std::cout << neighborsVector[j] << " ";
-        }
-        std::cout << std::endl;
-        std::cout << "EXact version distance: ";
-        for (size_t j = 0; j < neighborsVector.size(); ++j) {
-            std::cout << distancesVector[j] << " ";
-        }
-        std::cout << std::endl << std::endl;
+        // std::cout << "\nEXact version: ";
+        // for (size_t j = 0; j < neighborsVector.size(); ++j) {
+        //     std::cout << neighborsVector[j] << " ";
+        // }
+        // std::cout << std::endl;
+        // std::cout << "EXact version distance: ";
+        // for (size_t j = 0; j < neighborsVector.size(); ++j) {
+        //     std::cout << distancesVector[j] << " ";
+        // }
+        // std::cout << std::endl << std::endl;
         // if (i == 10) {
         //     return NULL;
         // }

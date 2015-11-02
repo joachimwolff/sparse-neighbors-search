@@ -34,8 +34,11 @@ static neighborhood* fitNeighborhoodComputation(size_t pMinHashAddress, PyObject
     minHash->set_mOriginalData(originalDataMatrix);
 
     minHash->fit(originalDataMatrix);
+
     SparseMatrixFloat* emptyMatrix = new SparseMatrixFloat(0);
+
     neighborhood* neighborhood_ = minHash->kneighbors(emptyMatrix, pNneighbors, pFast);
+
     delete emptyMatrix;
     return neighborhood_;
 }
@@ -238,7 +241,6 @@ static PyObject* fitKneighborsGraph(PyObject* self, PyObject* args) {
 
     neighborhood* neighborhood_ = fitNeighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
                                                    maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast);
-    size_t cutFirstValue = 1;
     if (nNeighbors == 0) {
         MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
         nNeighbors = minHash->getNneighbors();

@@ -29,6 +29,7 @@ from ..neighbors import MinHash
 import annoy
 
 import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score
 
 
 def accuracy(neighbors_exact, neighbors_approx, neighbors_sklearn):
@@ -280,7 +281,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
 
     for dataset_, dataset_dense_ in zip(dataset, dataset_dense):
         iteration_of_dataset += 1
-        # print "Dataset processing: ", iteration_of_dataset, "/", length_of_dataset
+        print "Dataset processing: ", iteration_of_dataset, "/", length_of_dataset
         nearest_neighbor_sklearn = NearestNeighbors(n_neighbors = n_neighbors_sklearn)
         nearest_neighbor_minHash = MinHash(n_neighbors = n_neighbors_minHash, number_of_hash_functions=number_of_hashfunctions)
         nearest_neighbor_lshf = LSHForest(n_estimators=20, n_candidates=200, n_neighbors=n_neighbors_minHash)
@@ -288,19 +289,19 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
         nearest_neighbor_sklearn.fit(dataset_)
         time_end = time.time()
         time_fit_sklearn.append(time_end - time_start)
-        # print "Fitting of sklearn_nneighbors done!"
+        print "Fitting of sklearn_nneighbors done!"
         time_start = time.time()
         nearest_neighbor_minHash.fit(dataset_)
         time_end = time.time()
         time_fit_minHash.append(time_end - time_start)
-        # print "Fitting of minHash_nneighbors done!"
+        print "Fitting of minHash_nneighbors done!"
 
         if dataset_dense is not None:
             time_start = time.time()
             nearest_neighbor_lshf.fit(dataset_dense_)
             time_end = time.time()
             time_fit_lshf.append(time_end - time_start)
-            # print "Fitting of LSHF done!"
+            print "Fitting of LSHF done!"
 
             time_start = time.time()
             annoy_ = annoy.AnnoyIndex(f=dataset_dense_.shape[1])
@@ -309,7 +310,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
             annoy_.build(100) # ntrees = 100
             time_end = time.time()
             time_fit_annoy.append(time_end - time_start)
-            # print "Fitting of annoy done!"
+            print "Fitting of annoy done!"
 
             # time_start = time.time()
             # flann_ = pyflann.FLANN(target_precision=0.8, algorithm='autotuned', log_level='info')
@@ -348,7 +349,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
 
         time_start = time.time()
         # print "Calling kneighbors"
-        n_neighbors_minHash_exact_1_50 = nearest_neighbor_minHash.kneighbors(query, return_distance=False)
+        n_neighbors_minHash_exact_1_50 = nearest_neighbor_minHash.kneighbors(query, fast=False, return_distance=False)
         time_end = time.time()
         time_query_time_1_50_minHash_exact.append(time_end - time_start)
         # print "Computation of minHash_slow done!"
@@ -384,10 +385,29 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
 
             # print "Computation of flann done!"
 
-        accuracy_1_50_lshf.append(np.in1d(n_neighbors_lshf_1_50, n_neighbors_sklearn_1_50).mean())
-        exact, approx, _ = accuracy(n_neighbors_minHash_exact_1_50, n_neighbors_minHash_approx_1_50, n_neighbors_sklearn_1_50)
-        accuracy_1_50_minHash_exact.append(exact)
-        accuracy_1_50_minHash_aprox.append(approx)
+        accuracy_score_ = 0.0
+        for x, y in zip(n_neighbors_lshf_1_50, n_neighbors_sklearn_1_50):
+            accuracy_score_ += accuracy_score(x, y)
+        # print "Accuracy: ", accuracy_score_ / float(len(approx1))
+        accuracy_1_50_lshf.append(accuracy_score_ / float(len(n_neighbors_lshf_1_50)))
+
+        accuracy_score_ = 0.0
+        for x, y in zip(n_neighbors_minHash_exact_1_50, n_neighbors_sklearn_1_50):
+            accuracy_score_ += accuracy_score(x, y)
+        # print "Accuracy: ", accuracy_score_ / float(len(approx1))
+        accuracy_1_50_minHash_exact.append(accuracy_score_ / float(len(n_neighbors_minHash_exact_1_50)))
+
+        accuracy_score_ = 0.0
+        for x, y in zip(n_neighbors_minHash_approx_1_50, n_neighbors_sklearn_1_50):
+            accuracy_score_ += accuracy_score(x, y)
+        # print "Accuracy: ", accuracy_score_ / float(len(approx1))
+        accuracy_1_50_minHash_aprox.append(accuracy_score_ / float(len(n_neighbors_minHash_approx_1_50)))
+
+
+        # accuracy_1_50_lshf.append(np.in1d(n_neighbors_lshf_1_50, n_neighbors_sklearn_1_50).mean())
+        # exact, approx, _ = accuracy(n_neighbors_minHash_exact_1_50, n_neighbors_minHash_approx_1_50, n_neighbors_sklearn_1_50)
+        # accuracy_1_50_minHash_exact.append(exact)
+        # accuracy_1_50_minHash_aprox.append(approx)
 
         # accuracy_1_50_minHash_exact.append(np.in1d(n_neighbors_minHash_exact_1_50, n_neighbors_sklearn_1_50).mean())
         # accuracy_1_50_minHash_aprox.append(np.in1d(n_neighbors_minHash_approx_1_50, n_neighbors_sklearn_1_50).mean())
@@ -442,7 +462,14 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
                 time_query_time_50_1_annoy_loc.append(time_end - time_start)
                 n_neighbors_annoy_1_50.append(nearest_neighbor_annoy)
             time_query_time_50_1_annoy.append(np.sum(time_query_time_50_1_annoy_loc))
-            accuracy_1_50_annoy.append(np.in1d(n_neighbors_annoy_1_50, n_neighbors_sklearn_1_50).mean())
+
+            accuracy_score_ = 0.0
+            for x, y in zip(n_neighbors_annoy_1_50, n_neighbors_sklearn_1_50):
+                accuracy_score_ += accuracy_score(x, y)
+            # print "Accuracy: ", accuracy_score_ / float(len(approx1))
+            accuracy_1_50_annoy.append(accuracy_score_ / float(len(n_neighbors_annoy_1_50)))
+
+                # accuracy_1_50_annoy.append(np.in1d(n_neighbors_annoy_1_50, n_neighbors_sklearn_1_50).mean())
 
             # print "Computation_2 of annoy done!"
 
