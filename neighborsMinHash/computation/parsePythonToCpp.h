@@ -93,9 +93,9 @@ static PyObject* radiusNeighborhood(const neighborhood* pNeighborhood, const siz
         PyList_SetItem(outerListNeighbors, i, innerListNeighbors);
         PyList_SetItem(outerListDistances, i, innerListDistances);
     }
-    // delete pNeighborhood->neighbors;
-    // delete pNeighborhood->distances;
-    // delete pNeighborhood;
+    delete pNeighborhood->neighbors;
+    delete pNeighborhood->distances;
+    delete pNeighborhood;
     PyObject * returnList;
     if (pReturnDistance) {
         returnList = PyList_New(2);
@@ -144,9 +144,9 @@ static PyObject* bringNeighborhoodInShape(const neighborhood* pNeighborhood, con
         PyList_SetItem(outerListNeighbors, i, innerListNeighbors);
         PyList_SetItem(outerListDistances, i, innerListDistances);
     }
-    // delete pNeighborhood->neighbors;
-    // delete pNeighborhood->distances;
-    // delete pNeighborhood;
+    delete pNeighborhood->neighbors;
+    delete pNeighborhood->distances;
+    delete pNeighborhood;
 
     PyObject * returnList;
     if (pReturnDistance) {
@@ -185,9 +185,9 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
             PyList_SetItem(dataList, i+j -1, distance); 
         }
     }
-    // delete pNeighborhood->neighbors;
-    // delete pNeighborhood->distances;
-    // delete pNeighborhood;
+    delete pNeighborhood->neighbors;
+    delete pNeighborhood->distances;
+    delete pNeighborhood;
 
     PyObject* graph = PyList_New(3);
     PyList_SetItem(graph, 0, rowList);
@@ -224,9 +224,9 @@ static PyObject* radiusNeighborhoodGraph(const neighborhood* pNeighborhood, cons
             }
         }
     }
-    // delete pNeighborhood->neighbors;
-    // delete pNeighborhood->distances;
-    // delete pNeighborhood;
+    delete pNeighborhood->neighbors;
+    delete pNeighborhood->distances;
+    delete pNeighborhood;
     
     PyObject* graph = PyList_New(3);
     PyList_SetItem(graph, 0, rowList);

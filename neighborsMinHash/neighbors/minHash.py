@@ -89,11 +89,15 @@ class MinHash():
             chunk_size = 0
         maximal_number_of_hash_collisions = int(math.ceil(number_of_hash_functions / float(block_size)))
         self._index_elements_count = 0
-        self._pointer_address_of_minHash_object = _minHash.createObject(number_of_hash_functions, 
+        self._pointer_address_of_minHash_object = _minHash.create_object(number_of_hash_functions, 
                                                     block_size, number_of_cores, chunk_size, n_neighbors,
                                                     minimal_blocks_in_common, max_bin_size, 
                                                     maximal_number_of_hash_collisions, excess_factor,
                                                     1 if fast else 0)
+
+    def __del__(self):
+        if _minHash.delete_object(self._pointer_address_of_minHash_object) != 0:
+            pass
 
     def fit(self, X, y=None):
         """Fit the model using X as training data.

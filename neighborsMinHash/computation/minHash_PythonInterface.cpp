@@ -63,11 +63,11 @@ static PyObject* deleteObject(PyObject* self, PyObject* args) {
     size_t addressMinHashObject;
 
     if (!PyArg_ParseTuple(args, "k", &addressMinHashObject))
-        return NULL;
+        return Py_BuildValue("i", 1);;
 
     MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
     delete minHash;
-    return NULL;
+    return Py_BuildValue("i", 0);
 }
 
 static PyObject* fit(PyObject* self, PyObject* args) {
@@ -300,8 +300,8 @@ static PyMethodDef minHashFunctions[] = {
     {"fit_kneighbors_graph", fitKneighborsGraph, METH_VARARGS, "Fits and calculates k-nearest neighbors as a graph."},
     {"fit_radius_neighbors", fitRadiusNeighbors, METH_VARARGS, "Fits and calculates the neighbors inside a given radius."},
     {"fit_radius_neighbors_graph", fitRadiusNeighborsGraph, METH_VARARGS, "Fits and calculates the neighbors inside a given radius as a graph."},
-    {"createObject", createObject, METH_VARARGS, "Create the c++ object."},
-    {"deleteObject", deleteObject, METH_VARARGS, "Delete the c++ object by calling the destructor."},
+    {"create_object", createObject, METH_VARARGS, "Create the c++ object."},
+    {"delete_object", deleteObject, METH_VARARGS, "Delete the c++ object by calling the destructor."},
     {NULL, NULL, 0, NULL}
 };
 

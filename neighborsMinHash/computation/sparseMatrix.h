@@ -30,14 +30,14 @@ class SparseMatrixFloat {
         mSparseMatrix.resize(rowsCount*2);
     };
     ~SparseMatrixFloat() {
-        // for (size_t i = 0; i < mSparseMatrix.size(); i += 2) {
-        //     vsize_t* features = reinterpret_cast<vsize_t* >(mSparseMatrix[i]);
-        //     delete features;
-        // }
-        // for (size_t i = 1; i < mSparseMatrix.size(); i += 2) {
-        //     vfloat* values = reinterpret_cast<vfloat* >(mSparseMatrix[i]);
-        //     delete values;
-        // }
+        for (size_t i = 0; i < mSparseMatrix.size(); i += 2) {
+            vsize_t* features = reinterpret_cast<vsize_t* >(mSparseMatrix[i]);
+            delete features;
+        }
+        for (size_t i = 1; i < mSparseMatrix.size(); i += 2) {
+            vfloat* values = reinterpret_cast<vfloat* >(mSparseMatrix[i]);
+            delete values;
+        }
     };
     size_t size() const {
         return mSparseMatrix.size() / 2;

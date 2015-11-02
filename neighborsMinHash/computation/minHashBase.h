@@ -22,7 +22,7 @@ class MinHashBase {
     InverseIndex* mInverseIndex;
     SparseMatrixFloat* mOriginalData;
 
-	neighborhood computeNeighborhood();
+	  neighborhood computeNeighborhood();
     neighborhood computeExactNeighborhood();
   	neighborhood computeNeighborhoodGraph();
 
