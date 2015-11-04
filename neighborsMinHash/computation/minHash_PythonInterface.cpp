@@ -147,6 +147,11 @@ static PyObject* kneighborsGraph(PyObject* self, PyObject* args) {
     // compute the k-nearest neighbors
     neighborhood* neighborhood_ = neighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
                                                 maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast);
+    if (nNeighbors == 0) {
+        MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
+        nNeighbors = minHash->getNneighbors();
+    }
+    std::cout << "return in kneighborsGraph" << std::endl;
     return buildGraph(neighborhood_, nNeighbors, returnDistance);
 }
 static PyObject* radiusNeighbors(PyObject* self, PyObject* args) {
