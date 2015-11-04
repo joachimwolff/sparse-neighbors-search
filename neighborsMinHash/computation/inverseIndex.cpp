@@ -268,7 +268,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             mapForSorting.val = (*it).second;
             neighborhoodVectorForSorting.push_back(mapForSorting);
         }
-        std::sort(neighborhoodVectorForSorting.begin(), neighborhoodVectorForSorting.end(), mapSortDescByValue);
+        std::parital_sort(neighborhoodVectorForSorting.begin(), neighborhoodVectorForSorting.begin()+pNneighborhood, neighborhoodVectorForSorting.end(), mapSortDescByValue);
         
         // std::cout << "\ninstance: " << std::endl;
         //     for (auto it = neighborhoodVectorForSorting.begin(); it != neighborhoodVectorForSorting.end(); ++it) {
