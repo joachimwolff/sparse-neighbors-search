@@ -1,0 +1,14 @@
+example/.ipynb_checkpoints/
+neighborsMinHash.egg-info/
+neighborsMinHash/__init__.pyc
+neighborsMinHash/clustering/__init__.pyc
+neighborsMinHash/clustering/minHashSpectralClustering.pyc
+neighborsMinHash/computation/__init__.pyc
+neighborsMinHash/neighbors/__init__.pyc
+neighborsMinHash/neighbors/minHash.pyc
+neighborsMinHash/neighbors/minHashClassifier.pyc
+neighborsMinHash/util/__init__.pyc
+neighborsMinHash/util/util.pyc
+_minHash.so
+build/
+developmentScript.py
