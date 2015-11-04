@@ -16,8 +16,8 @@
 
 
 
-SparseMatrixFloat* parseRawData(PyObject * instancesListObj, PyObject * featuresListObj, PyObject * dataListObj,
-                                              size_t maxNumberOfInstances, size_t maxNumberOfFeatures) {
+SparseMatrixFloat* parseRawData(PyObject * pInstancesListObj, PyObject * pFeaturesListObj, PyObject * pDataListObj,
+                                              size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures) {
     PyObject * instanceSize_tObj;
     PyObject * featureSize_tObj;
     PyObject * dataSize_tObj;
@@ -25,46 +25,26 @@ SparseMatrixFloat* parseRawData(PyObject * instancesListObj, PyObject * features
     size_t instanceOld = 0;
     size_t sizeOfFeatureVector = PyList_Size(instancesListObj);
 
-    vsize_t* features = new std::vector<size_t>();
-    vfloat* values = new std::vector<float>();
-    SparseMatrixFloat* originalData = new SparseMatrixFloat(maxNumberOfInstances);
+    SparseMatrixFloat* originalData = new SparseMatrixFloat(pMaxNumberOfInstances, pMaxNumberOfFeatures);
 
-    size_t instanceCount = 0;
-
+    size_t featuresCount = 0;
+    size_t featureValue;
+    size_t instanceValue;
+    float dataValue;
     for (size_t i = 0; i < sizeOfFeatureVector; ++i) {
-        instanceSize_tObj = PyList_GetItem(instancesListObj, i);
-        featureSize_tObj = PyList_GetItem(featuresListObj, i);
-        dataSize_tObj = PyList_GetItem(dataListObj, i);
-        size_t featureValue;
-        size_t instanceValue;
-        float dataValue;
-
+        instanceSize_tObj = PyList_GetItem(pInstancesListObj, i);
+        featureSize_tObj = PyList_GetItem(pFeaturesListObj, i);
+        dataSize_tObj = PyList_GetItem(pDataListObj, i);
+        
         PyArg_Parse(instanceSize_tObj, "k", &instanceValue);
         PyArg_Parse(featureSize_tObj, "k", &featureValue);
         PyArg_Parse(dataSize_tObj, "f", &dataValue);
 
-        if (instanceOld == instanceValue) {
-            // featureIds.push_back(featureValue);
-            features->push_back(featureValue);
-            values->push_back(dataValue);
-
-            instanceOld = instanceValue;
-            if (i == sizeOfFeatureVector-1) {
-                originalData->insert(instanceCount, reinterpret_cast<size_t> (features), reinterpret_cast<size_t>(values));
-            }
-        } else {
-            if (instanceOld != MAX_VALUE) {
-                originalData->insert(instanceCount, reinterpret_cast<size_t> (features), reinterpret_cast<size_t>(values));
-                instanceCount++;
-            }
-            // featureIds.clear();
-            // featureIds.push_back(featureValue);
-            values = new vfloat();
-            features = new vsize_t();
-            features->push_back(featureValue);
-            values->push_back(dataValue);
-            instanceOld = instanceValue;
-        }
+        if (instanceOld != instanceValue) {
+            featuresCount = 0;
+        } 
+        originalData->insertElement(instanceValue, featuresCount, featureValue, dataValue);
+        ++featuresCount;
     }
     return originalData;
 }
@@ -162,7 +142,7 @@ static PyObject* bringNeighborhoodInShape(const neighborhood* pNeighborhood, con
 
 static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNneighbors, const size_t pReturnDistance) {
     size_t sizeOfNeighborList = pNeighborhood->neighbors->size();
-
+    // std::cout << "sizeOfNeighborList: " << sizeOfNeighborList << std::endl;
     PyObject * rowList = PyList_New(sizeOfNeighborList * pNneighbors);
     PyObject * columnList = PyList_New(sizeOfNeighborList * pNneighbors);
     PyObject * dataList = PyList_New(sizeOfNeighborList * pNneighbors);
@@ -182,7 +162,7 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
             }
             PyList_SetItem(rowList, i+j-1, root);
             PyList_SetItem(columnList, i+j-1 , node);
-            PyList_SetItem(dataList, i+j -1, distance); 
+            PyList_SetItem(dataList, i+j -1, distance);
         }
     }
     delete pNeighborhood->neighbors;
@@ -193,6 +173,8 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
     PyList_SetItem(graph, 0, rowList);
     PyList_SetItem(graph, 1, columnList);
     PyList_SetItem(graph, 2, dataList);
+    std::cout << "return in buildGraph" << std::endl;
+
     return graph;
 }
 
