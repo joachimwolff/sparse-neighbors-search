@@ -11,7 +11,8 @@
 **/
 #include <Python.h>
 
-#include "minHash.h"
+#include "minHashClassifier.h"
+#include "parsePythonToCpp.h"
 
 umapVector _parseInstancesFeatures(PyObject * instancesListObj, PyObject * featuresListObj) {
     PyObject * instanceSize_tObj;
@@ -168,10 +169,13 @@ static PyObject* kneighbors(PyObject* self, PyObject* args) {
 static PyObject* kneighborsGraph(PyObject* self, PyObject* args) {
 
 }
-static PyObject* radiusNeighbors(PyObject* self, PyObject* args) {
+static PyObject* predict(PyObject* self, PyObject* args) {
 
 }
-static PyObject* radiusNeighborsGraph(PyObject* self, PyObject* args) {
+static PyObject* predictProba(PyObject* self, PyObject* args) {
+
+}
+static PyObject* score(PyObject* self, PyObject* args) {
 
 }
 static PyObject* fitKneighbors(PyObject* self, PyObject* args) {
@@ -180,10 +184,13 @@ static PyObject* fitKneighbors(PyObject* self, PyObject* args) {
 static PyObject* fitKneighborsGraph(PyObject* self, PyObject* args) {
 
 }
-static PyObject* fitRadiusNeighbors(PyObject* self, PyObject* args) {
+static PyObject* fitPredict(PyObject* self, PyObject* args) {
 
 }
-static PyObject* fitRadiusNeighborsGraph(PyObject* self, PyObject* args) {
+static PyObject* fitPredictProba(PyObject* self, PyObject* args) {
+
+}
+static PyObject* fitScore(PyObject* self, PyObject* args) {
 
 }
 // definition of avaible functions for python and which function parsing fucntion in c++ should be called.
@@ -192,12 +199,14 @@ static PyMethodDef minHashClassifierFunctions[] = {
     {"partial_fit", partialFit, METH_VARARGS, "Extend the inverse index with the given instances."},
     {"kneighbors", kneighbors, METH_VARARGS, "Calculate k-nearest neighbors."},
     {"kneighbors_graph", kneighborsGraph, METH_VARARGS, "Calculate k-nearest neighbors as a graph."},
-    {"radius_neighbors", radiusNeighbors, METH_VARARGS, "Calculate the neighbors inside a given radius."},
-    {"radius_neighbors_graph", radiusNeighborsGraph, METH_VARARGS, "Calculate the neighbors inside a given radius as a graph."},
-    {"fit_kneighbors", fitKneighbors, METH_VARARGS, "Fits and calculates k-nearest neighbors."},
+    {"predict", predict, METH_VARARGS, "Calculate the neighbors inside a given radius."},
+    {"predict_proba", predictProba, METH_VARARGS, "Calculate the neighbors inside a given radius as a graph."},
+    {"score", score, METH_VARARGS, "Fits and calculates k-nearest neighbors."},
+    {"fit_kneighbors", fitKneighbors, METH_VARARGS, "Fits and calculates k-nearest neighbors as a graph."},
     {"fit_kneighbors_graph", fitKneighborsGraph, METH_VARARGS, "Fits and calculates k-nearest neighbors as a graph."},
-    {"fit_radius_neighbors", fitRadiusNeighbors, METH_VARARGS, "Fits and calculates the neighbors inside a given radius."},
-    {"fit_radius_neighbors_graph", fitRadiusNeighborsGraph, METH_VARARGS, "Fits and calculates the neighbors inside a given radius as a graph."},
+    {"fit_predict", fitPredict, METH_VARARGS, "Fits and calculates the neighbors inside a given radius."},
+    {"fit_predict_proba", fitPredictProba, METH_VARARGS, "Fits and calculates the neighbors inside a given radius as a graph."},
+    {"fit_score", fitScore, METH_VARARGS, "Fits and calculates the neighbors inside a given radius as a graph."},
     {"createObject", createObject, METH_VARARGS, "Create the c++ object."},
     {"deleteObject", deleteObject, METH_VARARGS, "Delete the c++ object by calling the destructor."},
     {NULL, NULL, 0, NULL}
