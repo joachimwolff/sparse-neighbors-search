@@ -1,7 +1,7 @@
 /**
  Copyright 2015 Joachim Wolff
  Master Thesis
- Tutors: Milad Miladi, Fabrizio Costa
+ Tutor: Fabrizio Costa
  Winter semester 2015/2016
 
  Chair of Bioinformatics
@@ -25,101 +25,73 @@ class SparseMatrixFloat {
     // stores only the pointer addresses to:
     //      if even index: size_t which is pointer for vsize
     //      if odd indeX: size_t which is pointer for vfloat
-    vsize_t mSparseMatrix;
+    size_t* mSparseMatrix;
+    float*  mSparseMatrixValues;
+    size_t* mSizesOfInstances;
+    size_t mMaxNnz;
   public:
-    SparseMatrixFloat(size_t rowsCount) {
-        mSparseMatrix.resize(rowsCount*2);
+    SparseMatrixFloat(size_t pInstanceId, size_t pMaxNnz) {
+        mSparseMatrix = new size_t [pInstanceId * pMaxNnz];
+        mSparseMatrixValues = new float [pInstanceId * pMaxNnz];
+        mSizesOfInstances = new size_t [pInstanceId];
+        mMaxNnz = pMaxNnz;
     };
     ~SparseMatrixFloat() {
-        for (size_t i = 0; i < mSparseMatrix.size(); i += 2) {
-            vsize_t* features = reinterpret_cast<vsize_t* >(mSparseMatrix[i]);
-            delete features;
-        }
-        for (size_t i = 1; i < mSparseMatrix.size(); i += 2) {
-            vfloat* values = reinterpret_cast<vfloat* >(mSparseMatrix[i]);
-            delete values;
-        }
+        delete mSparseMatrix;
+        delete mSparseMatrixValues;
+        delete mSizesOfInstances;
     };
-    size_t size() const {
-        return mSparseMatrix.size() / 2;
-    };
-    void insert(size_t rowID, size_t column, size_t value) {
-
-        mSparseMatrix[rowID*2] = column; 
-        mSparseMatrix[rowID*2 + 1] = value;
-    };
-
-    SparseMatrixFloat* getSubMatrixByRowVector(std::vector<int> rowIDs) const {
-        SparseMatrixFloat* subMatrix = new SparseMatrixFloat(rowIDs.size());
-
-        for (size_t i = 0; i < rowIDs.size(); ++i) {
-            subMatrix->insert(i, mSparseMatrix[rowIDs[i]*2], mSparseMatrix[rowIDs[i]*2 + 1]);
-        }
-        return subMatrix;
-    }    
-    vsize_t getRow(size_t rowID) const{
-        std::vector<size_t> row(2);
-        row[0] = mSparseMatrix[rowID*2];
-        row[1] = mSparseMatrix[rowID*2 + 1];
-        return row;
+    size_t* getFeatureList() {
+        return mSparseMatrix;
     }
-    vsize_t* getFeatureRow(size_t rowID) const {
-        return reinterpret_cast<vsize_t* >(mSparseMatrix[rowID * 2]);
+    float* getSparseMatrixValues() {
+        return mSparseMatrixValues;
     }
-    std::vector<sortMapFloat>* multiplyVectorAndSort(std::vector<size_t> row) const {
+    size_t getSizeOfInstance(size_t pInstance) {
+        return mSizesOfInstances[pInstance];
+    }
+    void insertElement(size_t pInstanceId, size_t pNnzCount, size_t pFeatureId, float pValue) {
+        mSparseMatrix[pInstanceId*mMaxNNz + pNnzCount] = pFeatureId;
+        mSparseMatrixValues[pInstanceId*mMaxNNz + pNnzCount] = pValue; 
+    };
 
-        std::vector<sortMapFloat>* returnValue = new std::vector<sortMapFloat>();
-        returnValue->reserve(mSparseMatrix.size());
-        vsize_t* features = reinterpret_cast<vsize_t* >(row[0]);
-        vfloat* values = reinterpret_cast<vfloat* >(row[1]); 
+    void insertToSizesOfInstances(size_t pInstanceId, size_t pSizeOfInstance) {
+        mSizesOfInstances[pInstanceId] = pSizeOfInstance;
+    };
 
-        for (size_t i = 0; i < mSparseMatrix.size() - 1; i += 2) {
-            vsize_t* featuresMatrix = reinterpret_cast<vsize_t* >(mSparseMatrix[i]);
-            vfloat* valuesMatrix = reinterpret_cast<vfloat* >(mSparseMatrix[i + 1]); 
+    std::vector<sortMapFloat>* euclidianDistance(std::vector<size_t> pRowIdVector, size_t pRowId, size_t pNneighbors) const {
+        std::vector<sortMapFloat>* returnValue = new std::vector<sortMapFloat>(pRowIdVector.size());
+        size_t pointerToMatrixElement = 0;
+        size_t pointerToVectorElement = 0;
+        for (size_t i = 0; i < pRowIdVector.size(); ++i) {
             sortMapFloat element; 
-            element.key = i / 2;
+            element.key = pRowIdVector[i];
             element.val = 0.0;
-            size_t featurePointer = 0;
-            size_t featureMatrixPointer = 0;
-
-            while (featureMatrixPointer < featuresMatrix->size() || featurePointer < features->size()) {
-                if ((*featuresMatrix)[featureMatrixPointer] == (*features)[featurePointer]) {
-                    element.val += pow((*valuesMatrix)[featureMatrixPointer] - (*values)[featurePointer], 2);
-                    ++featureMatrixPointer;
-                    ++featurePointer;
-                }
-                // if ((*featuresMatrix)[featureMatrixPointer] == (*features)[featurePointer]) {
-                //     element.val += (*valuesMatrix)[featureMatrixPointer] * (*values)[featurePointer];
-                //     ++featureMatrixPointer;
-                //     ++featurePointer;
-                else if ((*featuresMatrix)[featureMatrixPointer] < (*features)[featurePointer]) {
-                    element.val += pow((*valuesMatrix)[featureMatrixPointer], 2);
-
-                    ++featureMatrixPointer;
+            while (pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]] || pointerToVectorElement < mSizesOfInstances[pRowId]) {
+                if (mSparseMatrix[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] == mSparseMatrix[pRowId*mMaxNnz + pointerToMatrixElement]) {
+                    element.val += 
+                    pow(mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] - mSparseMatrixValues[pRowId*mMaxNnz + pointerToMatrixElement], 2);
+                    ++pointerToMatrixElement;
+                    ++pointerToVectorElement;
+                } else if (mSparseMatrix[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] < mSparseMatrix[pRowId*mMaxNnz + pointerToMatrixElement]) {
+                    element.val += pow(mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement], 2);
+                    ++pointerToMatrixElement;
                 } else {
-                    element.val += pow((*values)[featurePointer], 2);
-                    ++featurePointer;
+                    element.val += pow(mSparseMatrixValues[pRowId*mMaxNnz + pointerToMatrixElement], 2);
+                    ++pointerToVectorElement;
                 }
             }
+            pointerToMatrixElement = 0;
+            pointerToVectorElement = 0;
             element.val = sqrt(element.val);
             if (element.val != 0.0) {
-                // (*returnValue)[i/2] = element;
                 returnValue->push_back(element);
             }
         }
         if (returnValue->size() != 0) {
-            std::sort(returnValue->begin(), returnValue->end(), mapSortAscByValueFloat);
-            // std::cout << "\ninstance: " << std::endl;
-            // for (auto it = returnValue->begin(); it != returnValue->end(); ++it) {
-            //     std::cout << "Key: " << it->key << " value: " << it->val << std::endl;
-            // }
-            // std::cout << std::endl;
-        } else {
-            // std::cout << 'no values found' << std::endl;
+            std::partial_sort(returnValue->begin(), returnValue->begin()+pNneighbors, returnValue->end(), mapSortAscByValueFloat);
         }
-        
         return returnValue;
     };
-
 };
 #endif // SPARSE_MATRIX_H
