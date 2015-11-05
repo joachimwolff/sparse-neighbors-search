@@ -23,10 +23,8 @@ SparseMatrixFloat* parseRawData(PyObject * pInstancesListObj, PyObject * pFeatur
     PyObject * dataSize_tObj;
 
     size_t instanceOld = 0;
-    size_t sizeOfFeatureVector = PyList_Size(instancesListObj);
-
+    size_t sizeOfFeatureVector = PyList_Size(pInstancesListObj);
     SparseMatrixFloat* originalData = new SparseMatrixFloat(pMaxNumberOfInstances, pMaxNumberOfFeatures);
-
     size_t featuresCount = 0;
     size_t featureValue;
     size_t instanceValue;
@@ -41,11 +39,15 @@ SparseMatrixFloat* parseRawData(PyObject * pInstancesListObj, PyObject * pFeatur
         PyArg_Parse(dataSize_tObj, "f", &dataValue);
 
         if (instanceOld != instanceValue) {
+            originalData->insertToSizesOfInstances(instanceOld, featuresCount);
             featuresCount = 0;
-        } 
+        }
         originalData->insertElement(instanceValue, featuresCount, featureValue, dataValue);
+        instanceOld = instanceValue;
         ++featuresCount;
     }
+    originalData->insertToSizesOfInstances(instanceOld, featuresCount);
+
     return originalData;
 }
 
