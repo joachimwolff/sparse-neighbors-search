@@ -121,10 +121,20 @@ class MinHash():
         # _y_is_csr = False
         self._index_elements_count = X_.shape[0]
         instances, features = X_.nonzero()
+        maxFeatures = 0
+        countFeatures = 0;
+        oldInstance = 0
+        for i in instances:
+            if (oldInstance == i):
+                countFeatures += 1
+            else:
+                if countFeatures > maxFeatures:
+                    maxFeatures = countFeatures
+                countFeatures = 0
         data = X_.data
         # returns a pointer to the inverse index stored in c++
         self._pointer_address_of_minHash_object = _minHash.fit(instances.tolist(), features.tolist(), data.tolist(), 
-                                                    X.shape[0], X.shape[1],
+                                                    X.shape[0], maxFeatures,
                                                     self._pointer_address_of_minHash_object)
         
 
