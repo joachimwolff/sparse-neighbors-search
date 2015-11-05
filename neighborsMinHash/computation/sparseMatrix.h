@@ -43,44 +43,55 @@ class SparseMatrixFloat {
         delete mSparseMatrixValues;
         delete mSizesOfInstances;
     };
-    size_t* getFeatureList() {
+    size_t* getFeatureList() const {
         return mSparseMatrix;
     }
-    size_t getNextElement(size_t pInstance, size_t pCounter){
+    size_t getNextElement(size_t pInstance, size_t pCounter) const {
         if (pCounter < mSizesOfInstances[pInstance]) {
             return mSparseMatrix[pInstance*mMaxNnz+pCounter];
         } else {
             return MAX_VALUE;
         }
     }
-    size_t size() {
+    size_t size() const {
         return mNumberOfInstance;
     }
-    float* getSparseMatrixValues() {
+    float* getSparseMatrixValues() const {
         return mSparseMatrixValues;
     }
-    size_t getSizeOfInstance(size_t pInstance) {
+    size_t getSizeOfInstance(size_t pInstance) const {
         return mSizesOfInstances[pInstance];
     }
     void insertElement(size_t pInstanceId, size_t pNnzCount, size_t pFeatureId, float pValue) {
-        mSparseMatrix[pInstanceId*mMaxNNz + pNnzCount] = pFeatureId;
-        mSparseMatrixValues[pInstanceId*mMaxNNz + pNnzCount] = pValue; 
+        mSparseMatrix[pInstanceId*mMaxNnz + pNnzCount] = pFeatureId;
+        mSparseMatrixValues[pInstanceId*mMaxNnz + pNnzCount] = pValue; 
     };
 
     void insertToSizesOfInstances(size_t pInstanceId, size_t pSizeOfInstance) {
         mSizesOfInstances[pInstanceId] = pSizeOfInstance;
     };
 
-    std::vector<sortMapFloat>* euclidianDistance(std::vector<size_t> pRowIdVector, size_t pRowId, size_t pNneighbors) const {
+    std::vector<sortMapFloat>* euclidianDistance(const std::vector<int> pRowIdVector, const int pRowId, const size_t pNneighbors) const {
         std::vector<sortMapFloat>* returnValue = new std::vector<sortMapFloat>(pRowIdVector.size());
         size_t pointerToMatrixElement = 0;
         size_t pointerToVectorElement = 0;
         for (size_t i = 0; i < pRowIdVector.size(); ++i) {
+        std::cout << "79_2" << std::endl;
+        std::cout << "pRowId: " << pRowId << std::endl;
+        std::cout << "pRowIdVector[i]: " << pRowIdVector[i] << std::endl;
             sortMapFloat element; 
             element.key = pRowIdVector[i];
             element.val = 0.0;
             while (pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]] || pointerToVectorElement < mSizesOfInstances[pRowId]) {
-                if (mSparseMatrix[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] == mSparseMatrix[pRowId*mMaxNnz + pointerToMatrixElement]) {
+                if (pRowIdVector[i] == 0 && pRowId == 1) {
+                    std::cout << "85+2" << std::endl;
+                    std::cout << "pointerToMatrixElement: " << pointerToMatrixElement << " pointerToVectorElement" << pointerToVectorElement << std::endl;
+                    std::cout << "mSizesOfInstances[pRowIdVector[i]]: " << mSizesOfInstances[pRowIdVector[i]] << "mSizesOfInstances[pRowId]: " << mSizesOfInstances[pRowId] << std::endl;
+                    std::cout <<  "First value: " << mSparseMatrix[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
+                    std::cout << "Second Value: " << mSparseMatrix[pRowId*mMaxNnz + pointerToMatrixElement] << std::endl;
+                    if (pointerToVectorElement > 105) return NULL;
+                }
+                if (mSparseMatrix[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] == mSparseMatrix[pRowId*mMaxNnz + pointerToVectorElement]) {
                     element.val += 
                     pow(mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] - mSparseMatrixValues[pRowId*mMaxNnz + pointerToMatrixElement], 2);
                     ++pointerToMatrixElement;
@@ -92,7 +103,10 @@ class SparseMatrixFloat {
                     element.val += pow(mSparseMatrixValues[pRowId*mMaxNnz + pointerToMatrixElement], 2);
                     ++pointerToVectorElement;
                 }
+                // 
             }
+        std::cout << "100_12" << std::endl;
+
             pointerToMatrixElement = 0;
             pointerToVectorElement = 0;
             element.val = sqrt(element.val);
@@ -101,8 +115,14 @@ class SparseMatrixFloat {
             }
         }
         if (returnValue->size() != 0) {
-            std::partial_sort(returnValue->begin(), returnValue->begin()+pNneighbors, returnValue->end(), mapSortAscByValueFloat);
+            size_t numberOfElementsToSort = pNneighbors;
+            if (pNneighbors > returnValue->size()) {
+                numberOfElementsToSort = returnValue->size();
+            }
+            std::partial_sort(returnValue->begin(), returnValue->begin()+numberOfElementsToSort, returnValue->end(), mapSortAscByValueFloat);
         }
+        std::cout << "116_we" << std::endl;
+
         return returnValue;
     };
 };
