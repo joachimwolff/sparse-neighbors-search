@@ -19,9 +19,14 @@ static neighborhood* neighborhoodComputation(size_t pMinHashAddress, PyObject* p
                                                    size_t pNneighbors, int pFast) {
     SparseMatrixFloat* originalDataMatrix = parseRawData(pInstancesListObj, pFeaturesListObj, pDataListObj, 
                                                     pMaxNumberOfInstances, pMaxNumberOfFeatures);
+
     MinHash* minHash = reinterpret_cast<MinHash* >(pMinHashAddress);
     // compute the k-nearest neighbors
-    return minHash->kneighbors(originalDataMatrix, pNneighbors, pFast);
+    std::cout << "24!" << std::endl;
+    auto foo = minHash->kneighbors(originalDataMatrix, pNneighbors, pFast);
+    std::cout << "26" << std::endl;
+    // return minHash->kneighbors(originalDataMatrix, pNneighbors, pFast);
+    return foo;
 }
 
 static neighborhood* fitNeighborhoodComputation(size_t pMinHashAddress, PyObject* pInstancesListObj,PyObject* pFeaturesListObj,PyObject* pDataListObj, 
@@ -34,7 +39,7 @@ static neighborhood* fitNeighborhoodComputation(size_t pMinHashAddress, PyObject
     minHash->set_mOriginalData(originalDataMatrix);
 
     minHash->fit(originalDataMatrix);
-    SparseMatrixFloat* emptyMatrix = new SparseMatrixFloat(0);
+    SparseMatrixFloat* emptyMatrix = new SparseMatrixFloat(0, 0);
     neighborhood* neighborhood_ = minHash->kneighbors(emptyMatrix, pNneighbors, pFast);
     delete emptyMatrix;
     return neighborhood_;
@@ -89,11 +94,16 @@ static PyObject* fit(PyObject* self, PyObject* args) {
                                                     maxNumberOfInstances, maxNumberOfFeatures);
     // get pointer to the minhash object
     MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
+    std::cout << "setting data" << std::endl;
     minHash->set_mOriginalData(originalDataMatrix);
+    std::cout << "fitting data" << std::endl;
+
     minHash->fit(originalDataMatrix);
+    std::cout << "fitting data done1" << std::endl;
+
     addressMinHashObject = reinterpret_cast<size_t>(minHash);
     PyObject * pointerToInverseIndex = Py_BuildValue("k", addressMinHashObject);
-
+    std::cout << "Fitting done!" << std::endl;
     return pointerToInverseIndex;
 }
 static PyObject* partialFit(PyObject* self, PyObject* args) {
@@ -102,6 +112,7 @@ static PyObject* partialFit(PyObject* self, PyObject* args) {
 static PyObject* kneighbors(PyObject* self, PyObject* args) {
     size_t addressMinHashObject, nNeighbors, maxNumberOfInstances,
             maxNumberOfFeatures, returnDistance;
+    std::cout << "Parsing 110" << std::endl;
     int fast;
     PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
@@ -115,8 +126,11 @@ static PyObject* kneighbors(PyObject* self, PyObject* args) {
                         &fast, &addressMinHashObject))
         return NULL;
     // compute the k-nearest neighbors
+    std::cout << "COmpute neighborhood" << std::endl;
     neighborhood* neighborhood_ = neighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
                                                 maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast);
+    std::cout << "COmpute neighborhood Done!" << std::endl;
+
 
     size_t cutFirstValue = 0;
     if (PyList_Size(instancesListObj) == 0) {
@@ -243,7 +257,6 @@ static PyObject* fitKneighborsGraph(PyObject* self, PyObject* args) {
 
     neighborhood* neighborhood_ = fitNeighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
                                                    maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast);
-    size_t cutFirstValue = 1;
     if (nNeighbors == 0) {
         MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
         nNeighbors = minHash->getNneighbors();
