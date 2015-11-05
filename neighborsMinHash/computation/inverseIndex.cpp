@@ -63,7 +63,7 @@ InverseIndex::~InverseIndex() {
     delete mInverseIndexUmapVector;
 }
  // compute the signature for one instance
-vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, size_t pInstance) {
+vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance) {
 
     vsize_t signatureHash;
     signatureHash.reserve(mNumberOfHashFunctions);
@@ -71,7 +71,7 @@ vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, size_
     for(size_t j = 0; j < mNumberOfHashFunctions; ++j) {
         size_t minHashValue = MAX_VALUE;
         for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); ++i) {
-            size_t hashValue = _size_tHashSimple(pRawData->getNextElement(pInstance, i) +1) * (j+1) * A, MAX_VALUE);
+            size_t hashValue = _size_tHashSimple((pRawData->getNextElement(pInstance, i) +1) * (j+1) * A, MAX_VALUE);
             if (hashValue < minHashValue) {
                 minHashValue = hashValue;
             }
@@ -151,6 +151,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     mDoubleElementsStorageCount = 0;
     size_t inverseIndexSize = ceil(((float) mNumberOfHashFunctions / (float) mBlockSize)+1);
     mInverseIndexUmapVector->resize(pRawData->size());
+
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
@@ -161,9 +162,10 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
 
     for (size_t index = 0; index < pRawData->size(); ++index) {
-        // vsize_t* features = pRawData->getFeatureRow(index);
         size_t signatureId = 0;
+
         for (size_t j = 0; j < pRawData->getSizeOfInstance(index); ++j) {
+            if (j > 1000000) return;
             signatureId = _size_tHashSimple((pRawData->getNextElement(index, j) +1) * (signatureId+1) * A, MAX_VALUE);
         }
         vsize_t* signature;
@@ -173,7 +175,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
         } else {
             signature = itSignatureStorage->second->signature;
         }
-                // insert in inverse index
+        // insert in inverse index
 #pragma omp critical
         {    
             if (itSignatureStorage == mSignatureStorage->end()) {
@@ -189,6 +191,8 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
             }
 
             for (size_t j = 0; j < signature->size(); ++j) {
+        // std::cout << "201" << std::endl;
+
                 auto itHashValue_InstanceVector = mInverseIndexUmapVector->operator[](j).find((*signature)[j]);
                 // if for hash function h_i() the given hash values is already stored
                 if (itHashValue_InstanceVector != mInverseIndexUmapVector->operator[](j).end()) {
@@ -222,7 +226,6 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
     } else {
         doubleElements = mDoubleElementsQueryCount;
     }
-
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
@@ -259,7 +262,6 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 }
             }
         }
-
         std::vector< sort_map > neighborhoodVectorForSorting;
         
         for (auto it = neighborhood.begin(); it != neighborhood.end(); ++it) {
@@ -268,22 +270,22 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             mapForSorting.val = (*it).second;
             neighborhoodVectorForSorting.push_back(mapForSorting);
         }
-        std::parital_sort(neighborhoodVectorForSorting.begin(), neighborhoodVectorForSorting.begin()+pNneighborhood, neighborhoodVectorForSorting.end(), mapSortDescByValue);
-        
-        // std::cout << "\ninstance: " << std::endl;
-        //     for (auto it = neighborhoodVectorForSorting.begin(); it != neighborhoodVectorForSorting.end(); ++it) {
-        //         std::cout << "Key: " << it->key << " value: " << it->val << std::endl;
-        //     }
-        //     std::cout << std::endl;
+
+        size_t numberOfElementsToSort = pNneighborhood;
+        if (pNneighborhood > neighborhoodVectorForSorting.size()) {
+            numberOfElementsToSort = neighborhoodVectorForSorting.size();
+        }
+        std::partial_sort(neighborhoodVectorForSorting.begin(), neighborhoodVectorForSorting.begin()+numberOfElementsToSort, neighborhoodVectorForSorting.end(), mapSortDescByValue);
+
         vint neighborhoodVector;
         std::vector<float> distanceVector;
         size_t sizeOfNeighborhoodAdjusted;
-
         if (pNneighborhood == MAX_VALUE) {
             sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(pNneighborhood), neighborhoodVectorForSorting.size());
         } else {
             sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(pNneighborhood * mExcessFactor), neighborhoodVectorForSorting.size());
         }
+
         size_t count = 0;
 
         for (auto it = neighborhoodVectorForSorting.begin();
@@ -295,7 +297,6 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 break;
             }
         }
-        
 #pragma omp critical
         { 
             for (size_t j = 0; j < instanceId->second->instances->size(); ++j) {
@@ -304,7 +305,6 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             }
         }
     }
-
     neighborhood* neighborhood_ = new neighborhood();
     neighborhood_->neighbors = neighbors;
     neighborhood_->distances = distances;
