@@ -29,12 +29,14 @@ class SparseMatrixFloat {
     float*  mSparseMatrixValues;
     size_t* mSizesOfInstances;
     size_t mMaxNnz;
+    size_t mNumberOfInstance;
   public:
-    SparseMatrixFloat(size_t pInstanceId, size_t pMaxNnz) {
-        mSparseMatrix = new size_t [pInstanceId * pMaxNnz];
-        mSparseMatrixValues = new float [pInstanceId * pMaxNnz];
-        mSizesOfInstances = new size_t [pInstanceId];
+    SparseMatrixFloat(size_t pNumberOfInstance, size_t pMaxNnz) {
+        mSparseMatrix = new size_t [pNumberOfInstance * pMaxNnz];
+        mSparseMatrixValues = new float [pNumberOfInstance * pMaxNnz];
+        mSizesOfInstances = new size_t [pNumberOfInstance];
         mMaxNnz = pMaxNnz;
+        mNumberOfInstance = pNumberOfInstance;
     };
     ~SparseMatrixFloat() {
         delete mSparseMatrix;
@@ -43,6 +45,16 @@ class SparseMatrixFloat {
     };
     size_t* getFeatureList() {
         return mSparseMatrix;
+    }
+    size_t getNextElement(size_t pInstance, size_t pCounter){
+        if (pCounter < mSizesOfInstances[pInstance]) {
+            return mSparseMatrix[pInstance*mMaxNnz+pCounter];
+        } else {
+            return MAX_VALUE;
+        }
+    }
+    size_t size() {
+        return mNumberOfInstance;
     }
     float* getSparseMatrixValues() {
         return mSparseMatrixValues;
