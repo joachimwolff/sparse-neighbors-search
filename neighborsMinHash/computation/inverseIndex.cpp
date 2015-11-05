@@ -63,15 +63,15 @@ InverseIndex::~InverseIndex() {
     delete mInverseIndexUmapVector;
 }
  // compute the signature for one instance
-vsize_t* InverseIndex::computeSignature(const vsize_t* featureVector) {
+vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, size_t pInstance) {
 
     vsize_t signatureHash;
     signatureHash.reserve(mNumberOfHashFunctions);
 
     for(size_t j = 0; j < mNumberOfHashFunctions; ++j) {
         size_t minHashValue = MAX_VALUE;
-        for (size_t i = 0; i < featureVector->size(); ++i) {
-            size_t hashValue = _size_tHashSimple(((*featureVector)[i] +1) * (j+1) * A, MAX_VALUE);
+        for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); ++i) {
+            size_t hashValue = _size_tHashSimple(pRawData->getNextElement(pInstance, i) +1) * (j+1) * A, MAX_VALUE);
             if (hashValue < minHashValue) {
                 minHashValue = hashValue;
             }
@@ -109,11 +109,11 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
 
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     for(size_t index = 0; index < pRawData->size(); ++index) {
-        vsize_t* features = pRawData->getFeatureRow(index);
+        // vsize_t* features = pRawData->getFeatureRow(index);
         // compute unique id
         size_t signatureId = 0;
-        for (size_t j = 0; j < features->size(); ++j) {
-                signatureId = _size_tHashSimple(((*features)[j] +1) * (signatureId+1) * A, MAX_VALUE);
+        for (size_t j = 0; j < pRawData->getSizeOfInstance(index); ++j) {
+                signatureId = _size_tHashSimple((pRawData->getNextElement(index, j) +1) * (signatureId+1) * A, MAX_VALUE);
         }
         // signature is in storage && 
         auto signatureIt = (*mSignatureStorage).find(signatureId);
@@ -129,7 +129,7 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
 
         // for every hash function: compute the hash values of all features and take the minimum of these
         // as the hash value for one hash function --> h_j(x) = argmin (x_i of x) f_j(x_i)
-        vsize_t* signature = computeSignature(features);
+        vsize_t* signature = computeSignature(pRawData, index);
 #pragma omp critical
         {
             if (instanceSignature->find(signatureId) == instanceSignature->end()) {
@@ -161,15 +161,15 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
 
     for (size_t index = 0; index < pRawData->size(); ++index) {
-        vsize_t* features = pRawData->getFeatureRow(index);
+        // vsize_t* features = pRawData->getFeatureRow(index);
         size_t signatureId = 0;
-        for (size_t j = 0; j < features->size(); ++j) {
-            signatureId = _size_tHashSimple(((*features)[j] +1) * (signatureId+1) * A, MAX_VALUE);
+        for (size_t j = 0; j < pRawData->getSizeOfInstance(index); ++j) {
+            signatureId = _size_tHashSimple((pRawData->getNextElement(index, j) +1) * (signatureId+1) * A, MAX_VALUE);
         }
         vsize_t* signature;
         auto itSignatureStorage = mSignatureStorage->find(signatureId);
         if (itSignatureStorage == mSignatureStorage->end()) {
-            signature = computeSignature(features);
+            signature = computeSignature(pRawData, index);
         } else {
             signature = itSignatureStorage->second->signature;
         }
