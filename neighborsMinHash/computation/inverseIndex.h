@@ -58,7 +58,7 @@ class InverseIndex {
                     size_t pMaxBinSize, size_t pMinimalBlocksInCommon,
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions);
   	~InverseIndex();
-  	vsize_t* computeSignature(const vsize_t* featureVector);
+  	vsize_t* computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance);
   	umap_uniqueElement* computeSignatureMap(const SparseMatrixFloat* pRawData);
   	void fit(const SparseMatrixFloat* pRawData);
   	neighborhood* kneighbors(const umap_uniqueElement* signaturesMap, const int pNneighborhood, const bool pDoubleElementsStorageCount);
