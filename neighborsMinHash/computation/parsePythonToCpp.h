@@ -32,7 +32,7 @@ SparseMatrixFloat* parseRawData(PyObject * pInstancesListObj, PyObject * pFeatur
     for (size_t i = 0; i < sizeOfFeatureVector; ++i) {
         instanceSize_tObj = PyList_GetItem(pInstancesListObj, i);
         featureSize_tObj = PyList_GetItem(pFeaturesListObj, i);
-        dataSize_tObj = PyList_GetItem(pDataListObj, i);
+        dataSize_tObj = PyList_GetItem(pDataListObj, i); 
         
         PyArg_Parse(instanceSize_tObj, "k", &instanceValue);
         PyArg_Parse(featureSize_tObj, "k", &featureValue);
