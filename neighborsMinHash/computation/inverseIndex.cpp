@@ -165,7 +165,6 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
         size_t signatureId = 0;
 
         for (size_t j = 0; j < pRawData->getSizeOfInstance(index); ++j) {
-            if (j > 1000000) return;
             signatureId = _size_tHashSimple((pRawData->getNextElement(index, j) +1) * (signatureId+1) * A, MAX_VALUE);
         }
         vsize_t* signature;
