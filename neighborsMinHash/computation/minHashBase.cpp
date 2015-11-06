@@ -61,26 +61,14 @@ neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t 
     bool doubleElementsStorageCount = false;
     if (pRawData->size() == 0) {
         // no query data given, use stored signatures
-        std::cout << "64" << std::endl;
         X = mInverseIndex->getSignatureStorage();
-        std::cout << "66" << std::endl;
-
         doubleElementsStorageCount = true;
     } else {
-        std::cout << "70" << std::endl;
-
         X = mInverseIndex->computeSignatureMap(pRawData);
-        std::cout << "73" << std::endl;
-
     }
-        std::cout << "76" << std::endl;
-
     neighborhood* neighborhood_ = mInverseIndex->kneighbors(X, pNneighbors, doubleElementsStorageCount);
-        std::cout << "79" << std::endl;
-
 
     if (pFast) {     
-
         return neighborhood_;
     }
     neighborhood* neighborhoodExact = new neighborhood();
@@ -96,21 +84,16 @@ if (mChunkSize <= 0) {
 
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
-        std::cout << "99" << std::endl;
 
         std::vector<sortMapFloat>* exactNeighbors =
                 mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), neighborhood_->neighbors->operator[](i)[0], pNneighbors);
         std::vector<int> neighborsVector(exactNeighbors->size());
         std::vector<float> distancesVector(exactNeighbors->size());
-        std::cout << "105" << std::endl;
 
         for (size_t j = 0; j < exactNeighbors->size(); ++j) {
-        std::cout << "108" << std::endl;
-
-            neighborsVector[j] = static_cast<int> (neighborhood_->neighbors->operator[](i)[(*exactNeighbors)[j].key]);
+            neighborsVector[j] = (*exactNeighbors)[j].key;
             distancesVector[j] = (*exactNeighbors)[j].val;
         }
-
 #pragma omp critical
         {
             neighborhoodExact->neighbors->operator[](i) = neighborsVector;
