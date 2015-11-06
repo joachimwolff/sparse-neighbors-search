@@ -131,6 +131,7 @@ class MinHash():
                 if countFeatures > maxFeatures:
                     maxFeatures = countFeatures
                 countFeatures = 0
+            oldInstance = i
         data = X_.data
         # returns a pointer to the inverse index stored in c++
         self._pointer_address_of_minHash_object = _minHash.fit(instances.tolist(), features.tolist(), data.tolist(), 
