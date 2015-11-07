@@ -31,12 +31,12 @@ class SparseMatrixFloat {
     size_t mMaxNnz;
     size_t mNumberOfInstance;
   public:
-    SparseMatrixFloat(size_t pNumberOfInstance, size_t pMaxNnz) {
+    SparseMatrixFloat(size_t pNumberOfInstances, size_t pMaxNnz) {
         mSparseMatrix = new size_t [pNumberOfInstance * pMaxNnz];
         mSparseMatrixValues = new float [pNumberOfInstance * pMaxNnz];
         mSizesOfInstances = new size_t [pNumberOfInstance];
         mMaxNnz = pMaxNnz;
-        mNumberOfInstance = pNumberOfInstance;
+        mNumberOfInstances = pNumberOfInstances;
     };
     ~SparseMatrixFloat() {
         delete mSparseMatrix;
@@ -54,7 +54,7 @@ class SparseMatrixFloat {
         }
     }
     size_t size() const {
-        return mNumberOfInstance;
+        return mNumberOfInstances;
     }
     float* getSparseMatrixValues() const {
         return mSparseMatrixValues;
