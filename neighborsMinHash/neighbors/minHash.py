@@ -451,13 +451,26 @@ class MinHash():
         else:
             fast = 0
         X = csr_matrix(X)
-
+        
         self._index_elements_count = X.shape[0]
         instances, features = X.nonzero()
         data = X.data
+
+        maxFeatures = 0
+        countFeatures = 0;
+        oldInstance = 0
+        for i in instances:
+            if (oldInstance == i):
+                countFeatures += 1
+            else:
+                if countFeatures > maxFeatures:
+                    maxFeatures = countFeatures
+                countFeatures = 0
+            oldInstance = i
+
         # returns a pointer to the inverse index stored in c++
         result = _minHash.fit_kneighbors(instances.tolist(), features.tolist(), data.tolist(), 
-                                                    X.shape[0], X.shape[1],
+                                                    X.shape[0], maxFeatures,
                                                     n_neighbors if n_neighbors else 0,
                                                     1 if return_distance else 0,
                                                     fast,
@@ -509,6 +522,7 @@ class MinHash():
         self._index_elements_count = X.shape[0]
         instances, features = X.nonzero()
         data = X.data
+
         # returns a pointer to the inverse index stored in c++
         row, column, data =  _minHash.fit_kneighbor_graph(instances.tolist(), features.tolist(), data.tolist(), 
                                                     X.shape[0], X.shape[1],
@@ -561,9 +575,20 @@ class MinHash():
         self._index_elements_count = X.shape[0]
         instances, features = X.nonzero()
         data = X.data
+        maxFeatures = 0
+        countFeatures = 0;
+        oldInstance = 0
+        for i in instances:
+            if (oldInstance == i):
+                countFeatures += 1
+            else:
+                if countFeatures > maxFeatures:
+                    maxFeatures = countFeatures
+                countFeatures = 0
+            oldInstance = i
         # returns a pointer to the inverse index stored in c++
         result = _minHash.fit_radius_neighbors(instances.tolist(), features.tolist(), data.tolist(), 
-                                                    X.shape[0], X.shape[1],
+                                                    X.shape[0], maxFeatures,
                                                     radius if radius else 0,
                                                     1 if return_distance else 0,
                                                     fast,
@@ -618,9 +643,21 @@ class MinHash():
         self._index_elements_count = X.shape[0]
         instances, features = X.nonzero()
         data = X.data
+
+        maxFeatures = 0
+        countFeatures = 0;
+        oldInstance = 0
+        for i in instances:
+            if (oldInstance == i):
+                countFeatures += 1
+            else:
+                if countFeatures > maxFeatures:
+                    maxFeatures = countFeatures
+                countFeatures = 0
+            oldInstance = i
         # returns a pointer to the inverse index stored in c++
         row, column, data = _minHash.fit_radius_neighbors_graph(instances.tolist(), features.tolist(), data.tolist(),
-                                                    X.shape[0], X.shape[1],
+                                                    X.shape[0], maxFeatures,
                                                     radius if radius else 0,
                                                     1 if return_distance else 0,
                                                     fast,
