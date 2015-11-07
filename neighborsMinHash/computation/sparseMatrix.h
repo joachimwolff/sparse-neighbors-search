@@ -29,12 +29,12 @@ class SparseMatrixFloat {
     float*  mSparseMatrixValues;
     size_t* mSizesOfInstances;
     size_t mMaxNnz;
-    size_t mNumberOfInstance;
+    size_t mNumberOfInstances;
   public:
     SparseMatrixFloat(size_t pNumberOfInstances, size_t pMaxNnz) {
-        mSparseMatrix = new size_t [pNumberOfInstance * pMaxNnz];
-        mSparseMatrixValues = new float [pNumberOfInstance * pMaxNnz];
-        mSizesOfInstances = new size_t [pNumberOfInstance];
+        mSparseMatrix = new size_t [pNumberOfInstances * pMaxNnz];
+        mSparseMatrixValues = new float [pNumberOfInstances * pMaxNnz];
+        mSizesOfInstances = new size_t [pNumberOfInstances];
         mMaxNnz = pMaxNnz;
         mNumberOfInstances = pNumberOfInstances;
     };
