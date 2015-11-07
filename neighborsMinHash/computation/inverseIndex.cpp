@@ -148,9 +148,11 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     return instanceSignature;
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
+    std::cout << "Fitting started" << std::endl;
     mDoubleElementsStorageCount = 0;
     size_t inverseIndexSize = ceil(((float) mNumberOfHashFunctions / (float) mBlockSize)+1);
     mInverseIndexUmapVector->resize(pRawData->size());
+    std::cout << "155" << std::endl;
 
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
@@ -163,6 +165,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
 
     for (size_t index = 0; index < pRawData->size(); ++index) {
         size_t signatureId = 0;
+    std::cout << "168 " << std::endl;
 
         for (size_t j = 0; j < pRawData->getSizeOfInstance(index); ++j) {
             signatureId = _size_tHashSimple((pRawData->getNextElement(index, j) +1) * (signatureId+1) * A, MAX_VALUE);
@@ -177,6 +180,8 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
         // insert in inverse index
 #pragma omp critical
         {    
+    std::cout << "183" << std::endl;
+
             if (itSignatureStorage == mSignatureStorage->end()) {
                 vsize_t* doubleInstanceVector = new vsize_t(1);
                 (*doubleInstanceVector)[0] = index;
@@ -188,33 +193,54 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
                  mSignatureStorage->operator[](signatureId)->instances->push_back(index);
                  mDoubleElementsStorageCount += 1;
             }
+    std::cout << "196" << std::endl;
 
             for (size_t j = 0; j < signature->size(); ++j) {
-        // std::cout << "201" << std::endl;
+        std::cout << "199" << std::endl;
 
                 auto itHashValue_InstanceVector = mInverseIndexUmapVector->operator[](j).find((*signature)[j]);
                 // if for hash function h_i() the given hash values is already stored
+        std::cout << "203" << std::endl;
+
                 if (itHashValue_InstanceVector != mInverseIndexUmapVector->operator[](j).end()) {
+        std::cout << "206" << std::endl;
+
                     // insert the instance id if not too many collisions (maxBinSize)
                     if (itHashValue_InstanceVector->second.size() < mMaxBinSize) {
+        std::cout << "210" << std::endl;
+
                         // insert only if there wasn't any collisions in the past
                         if (itHashValue_InstanceVector->second.size() > 0) {
+        std::cout << "214" << std::endl;
+
                             itHashValue_InstanceVector->second.push_back(index);
                         }
                     } else { 
+        std::cout << "219" << std::endl;
+
                         // too many collisions: delete stored ids. empty vector is interpreted as an error code 
                         // for too many collisions
                         itHashValue_InstanceVector->second.clear();
                     }
                 } else {
+        std::cout << "226" << std::endl;
+
                     // given hash value for the specific hash function was not avaible: insert new hash value
                     vsize_t instanceIdVector;
+        std::cout << "230" << std::endl;
+
                     instanceIdVector.push_back(index);
+        std::cout << "233" << std::endl;
+
                     mInverseIndexUmapVector->operator[](j)[(*signature)[j]] = instanceIdVector;
+        std::cout << "236" << std::endl;
+
                 }
             }
         }
     }
+    std::cout << "242" << std::endl;
+
 }
 
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
