@@ -1,9 +1,9 @@
 #!/usr/bin/python
 #! /usr/bin/python
 # Copyright 2015 Joachim Wolff
-# Master Project
-# Tutors: Milad Miladi, Fabrizio Costa
-# Summer semester 2015
+# Master Thesis
+# Tutors: Fabrizio Costa
+# Winter semester 2015/2016
 #
 # Chair of Bioinformatics
 # Department of Computer Science
@@ -43,7 +43,7 @@ else:
         depends=['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/computation/minHashBase.h', 'neighborsMinHash/computation/inverseIndex.h'
         , 'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h', 'neighborsMinHash/computation/sparseMatrix.h'],
         define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"],
-         extra_compile_args=["-fopenmp", "-g", "-std=c++11"]) #, include_dirs=['/home/wolffj/Software/boost_1_59_0', '/home/wolffj/Software/mtl4'])
+         extra_compile_args=["-fopenmp", "-O3", "-std=c++11"]) #, include_dirs=['/home/wolffj/Software/boost_1_59_0', '/home/wolffj/Software/mtl4'])
 
 if "--openmp" in sys.argv:
     sys.argv.remove("--openmp")
