@@ -238,6 +238,7 @@ def mesure_performance_2(algorithm, X_training, X_queries, n_neighbors=5):
 
     return time_fit, time_query, time_fit_query
 
+
 def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 5, size_of_query = 50, number_of_hashfunctions=400, dataset_dense=None):
     """Function to measure and plot the performance for the given input data.
         For the query times two methods are measured:
