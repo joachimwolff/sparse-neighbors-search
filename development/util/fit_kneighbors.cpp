@@ -22,7 +22,7 @@ SparseMatrixFloat* parseRawData(std::vector<size_t>* pInstances, std::vector<siz
         
     	instanceValue = (*pInstances)[i];
     	featureValue = (*pFeatures)[i];
-    	dataValue = (*pFeatures)[i];
+    	dataValue = (*pData)[i];
 
         if (instanceOld != instanceValue) {
             originalData->insertToSizesOfInstances(instanceOld, featuresCount);
@@ -86,8 +86,8 @@ int main( int argc, const char* argv[] ) {
     std::istream_iterator<float> end_data; 
     std::copy(begin_data, end_data, std::back_inserter(data));
 
-	std::istream_iterator<float> begin_addInfo(file_addInfo);
-    std::istream_iterator<float> end_addInfo; 
+	std::istream_iterator<size_t> begin_addInfo(file_addInfo);
+    std::istream_iterator<size_t> end_addInfo; 
     std::copy(begin_addInfo, end_addInfo, std::back_inserter(addInfo));
 
     size_t numberOfHashFunctions = 400;
@@ -127,5 +127,6 @@ int main( int argc, const char* argv[] ) {
     	std::cout << "]" << std::endl;
     }
     std::cout << "]" << std::endl;
+    delete minHash;
 	return 0;
 }
