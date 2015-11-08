@@ -12,7 +12,8 @@
 
 #include "minHashBase.h"
 
-
+#ifndef MIN_HASH_H
+#define MIN_HASH_H
 class MinHash : public MinHashBase {
   private:
 
@@ -32,3 +33,4 @@ class MinHash : public MinHashBase {
     // Fits and calculates the neighbors inside a given radius as a graph.
     neighborhood fitRadiusNeighborsGraph();
 };
+#endif // MIN_HASH_H
