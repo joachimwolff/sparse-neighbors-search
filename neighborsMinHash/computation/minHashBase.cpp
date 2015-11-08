@@ -85,19 +85,27 @@ if (mChunkSize <= 0) {
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
 
-        std::vector<sortMapFloat>* exactNeighbors =
-                mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), neighborhood_->neighbors->operator[](i)[0], pNneighbors);
-        std::vector<int> neighborsVector(exactNeighbors->size());
-        std::vector<float> distancesVector(exactNeighbors->size());
+        if (neighborhood_->neighbors->operator[](i).size() != 1) {
+            std::vector<sortMapFloat>* exactNeighbors =
+                    mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), neighborhood_->neighbors->operator[](i)[0], pNneighbors);
+            std::vector<int> neighborsVector(exactNeighbors->size());
+            std::vector<float> distancesVector(exactNeighbors->size());
 
-        for (size_t j = 0; j < exactNeighbors->size(); ++j) {
-            neighborsVector[j] = (*exactNeighbors)[j].key;
-            distancesVector[j] = (*exactNeighbors)[j].val;
-        }
+            for (size_t j = 0; j < exactNeighbors->size(); ++j) {
+                neighborsVector[j] = (*exactNeighbors)[j].key;
+                distancesVector[j] = (*exactNeighbors)[j].val;
+            }
 #pragma omp critical
-        {
-            neighborhoodExact->neighbors->operator[](i) = neighborsVector;
-            neighborhoodExact->distances->operator[](i) = distancesVector;
+            {
+                neighborhoodExact->neighbors->operator[](i) = neighborsVector;
+                neighborhoodExact->distances->operator[](i) = distancesVector;
+            }
+        } else {
+#pragma omp critical
+            {
+                neighborhoodExact->neighbors->operator[](i) = neighborhood_->neighbors->operator[](i);
+                neighborhoodExact->distances->operator[](i) = neighborhood_->distances->operator[](i);
+            }
         }
     }
     delete neighborhood_->neighbors;
