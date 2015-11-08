@@ -15,12 +15,14 @@
 #include "typeDefinitions.h"
 
 
+#ifndef PARSE_H
+#define PARSE_H
 
 SparseMatrixFloat* parseRawData(PyObject * pInstancesListObj, PyObject * pFeaturesListObj, PyObject * pDataListObj,
                                               size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures) {
     PyObject * instanceSize_tObj;
     PyObject * featureSize_tObj;
-    PyObject * dataSize_tObj;
+    PyObject * dataSize_tObj; 
 
     size_t instanceOld = 0;
     size_t sizeOfFeatureVector = PyList_Size(pInstancesListObj);
@@ -218,3 +220,5 @@ static PyObject* radiusNeighborhoodGraph(const neighborhood* pNeighborhood, cons
     PyList_SetItem(graph, 2, dataList);
     return graph;
 }
+
+#endif // PARSE_H
