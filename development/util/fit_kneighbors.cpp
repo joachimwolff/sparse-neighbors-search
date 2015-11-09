@@ -108,25 +108,25 @@ int main( int argc, const char* argv[] ) {
     SparseMatrixFloat* dataSparse = new SparseMatrixFloat(0, 0);
     neighborhood* neighborhood_ = minHash->kneighbors(dataSparse, nNeighbors, fast);
 
-    std::cout << "\n[";
-    for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
-    	std::cout << "[";
-    	for (size_t j = 0; j < neighborhood_->neighbors->operator[](i).size(); ++j) {
-    		std::cout << " " << neighborhood_->neighbors->operator[](i)[j];
-    	}
-    	std::cout << "]" << std::endl;
-    }
-    std::cout << "]" << std::endl;
+ //    std::cout << "\n[";
+ //    for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
+ //    	std::cout << "[";
+ //    	for (size_t j = 0; j < neighborhood_->neighbors->operator[](i).size(); ++j) {
+ //    		std::cout << " " << neighborhood_->neighbors->operator[](i)[j];
+ //    	}
+ //    	std::cout << "]" << std::endl;
+ //    }
+ //    std::cout << "]" << std::endl;
 
-	std::cout << "\n[";
-    for (size_t i = 0; i < neighborhood_->distances->size(); ++i) {
-    	std::cout << "[";
-    	for (size_t j = 0; j < neighborhood_->distances->operator[](i).size(); ++j) {
-    		std::cout << " " << neighborhood_->distances->operator[](i)[j];
-    	}
-    	std::cout << "]" << std::endl;
-    }
-    std::cout << "]" << std::endl;
+	// std::cout << "\n[";
+ //    for (size_t i = 0; i < neighborhood_->distances->size(); ++i) {
+ //    	std::cout << "[";
+ //    	for (size_t j = 0; j < neighborhood_->distances->operator[](i).size(); ++j) {
+ //    		std::cout << " " << neighborhood_->distances->operator[](i)[j];
+ //    	}
+ //    	std::cout << "]" << std::endl;
+ //    }
+ //    std::cout << "]" << std::endl;
     delete minHash;
 	return 0;
 }
