@@ -60,7 +60,7 @@ static PyObject* parseAndStoreVector(PyObject* self, PyObject* args) {
         return Py_BuildValue("i", 1);
     std::copy(instances.begin(),instances.end(), std::ostream_iterator<size_t>(file_instances," "));
     std::copy(features.begin(),features.end(), std::ostream_iterator<size_t>(file_features," "));
-    std::copy(data.begin(),data.end(), std::ostream_iterator<size_t>(file_data," "));
+    std::copy(data.begin(),data.end(), std::ostream_iterator<float>(file_data," "));
 
     std::ofstream additionalInformation;
     additionalInformation.open (fileName+additionalInformationString);
