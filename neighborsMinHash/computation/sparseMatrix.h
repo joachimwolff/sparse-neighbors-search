@@ -84,29 +84,32 @@ class SparseMatrixFloat {
             // every instances starts at index indexId*mMaxNnz --> every instance can store maximal mMaxNnz feature ids
             // how many elements per index are stored is stored in mSizesOfInstances[indexID]
             // iterate until both instances have no more feature ids
-            while (pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]] || pointerToVectorElement < mSizesOfInstances[pRowId]) {
+            bool endOfFirstVector = pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]];
+            bool endOfSecondVector = pointerToVectorElement < mSizesOfInstances[pRowId];
+            while (endOfFirstVector || endOfSecondVector) {
                 // are the feature ids of the two instances the same?
-                if (mSparseMatrix[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] == mSparseMatrix[pRowId*mMaxNnz + pointerToVectorElement]) {
-                    // if (mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] > 1 || mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement] > 1) {
-                    //     std::cout << "featureID: " << mSparseMatrix[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
-                    //     std::cout << "value: " << mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
-                    //     std::cout << "\nfeatureId_V: " << mSparseMatrix[pRowId*mMaxNnz + pointerToVectorElement];
-                    //     std::cout << "featureID_V " << mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement] << std::endl;
-                    // }
+                size_t featureIdFirstVector = mSparseMatrix[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
+                size_t featureIdSecondVector = mSparseMatrix[pRowId*mMaxNnz + pointerToVectorElement];
+                if (featureIdFirstVector == featureIdSecondVector) {
+                   
                     // if they are the same substract the values, compute the square and sum it up
                     element.val += 
                     pow(mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] - mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement], 2);
                     // increase both counters to the next element 
                     ++pointerToMatrixElement;
                     ++pointerToVectorElement;
-                } else if (mSparseMatrix[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] < mSparseMatrix[pRowId*mMaxNnz + pointerToVectorElement]) {
+                } else if (featureIdFirstVector < featureIdSecondVector) {
                     // if the feature ids are unequal square only the smaller one and add it to the sum
                     element.val += pow(mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement], 2);
+                    // increase counter for first vector
                     ++pointerToMatrixElement;
                 } else {
                     element.val += pow(mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement], 2);
                     ++pointerToVectorElement;
                 }
+
+                endOfFirstVector = pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]];
+                endOfSecondVector = pointerToVectorElement < mSizesOfInstances[pRowId];
             }
 
             pointerToMatrixElement = 0;
