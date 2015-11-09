@@ -75,6 +75,7 @@ class SparseMatrixFloat {
         std::vector<sortMapFloat>* returnValue = new std::vector<sortMapFloat>(pRowIdVector.size());
         size_t pointerToMatrixElement = 0;
         size_t pointerToVectorElement = 0;
+        float value = 0.0;
         // iterate over all candidates
         for (size_t i = 0; i < pRowIdVector.size(); ++i) {
             sortMapFloat element; 
@@ -86,29 +87,47 @@ class SparseMatrixFloat {
             // iterate until both instances have no more feature ids
             bool endOfFirstVector = pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]];
             bool endOfSecondVector = pointerToVectorElement < mSizesOfInstances[pRowId];
-            while (endOfFirstVector || endOfSecondVector) {
+
+            while (endOfFirstVector && endOfSecondVector) {
                 // are the feature ids of the two instances the same?
                 size_t featureIdFirstVector = mSparseMatrix[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
                 size_t featureIdSecondVector = mSparseMatrix[pRowId*mMaxNnz + pointerToVectorElement];
                 if (featureIdFirstVector == featureIdSecondVector) {
                    
                     // if they are the same substract the values, compute the square and sum it up
-                    element.val += 
-                    pow(mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] - mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement], 2);
+                    value = mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] - mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
+                    element.val += value * value;
+                    // , 2);
                     // increase both counters to the next element 
                     ++pointerToMatrixElement;
                     ++pointerToVectorElement;
                 } else if (featureIdFirstVector < featureIdSecondVector) {
                     // if the feature ids are unequal square only the smaller one and add it to the sum
-                    element.val += pow(mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement], 2);
+                    value = mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
+                    element.val += value * value;
+                    // element.val += pow(mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement], 2);
                     // increase counter for first vector
                     ++pointerToMatrixElement;
                 } else {
-                    element.val += pow(mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement], 2);
+                    value = mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
+                    element.val += value * value;
+                    // element.val += pow(mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement], 2);
                     ++pointerToVectorElement;
                 }
 
                 endOfFirstVector = pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]];
+                endOfSecondVector = pointerToVectorElement < mSizesOfInstances[pRowId];
+            }
+            while (endOfFirstVector) {
+                value = mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
+                element.val += value * value;
+                ++pointerToMatrixElement;
+                endOfFirstVector = pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]];
+            }
+            while (endOfSecondVector) {
+                value = mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
+                element.val += value * value;
+                ++pointerToVectorElement;
                 endOfSecondVector = pointerToVectorElement < mSizesOfInstances[pRowId];
             }
 
