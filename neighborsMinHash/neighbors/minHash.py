@@ -280,10 +280,8 @@ class MinHash():
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
                                     fast, self._pointer_address_of_minHash_object)
-        # print "Transform to csr"
-        foo = csr_matrix((data, (row, column)))
-        # print "Return csr"
-        return foo
+        
+        return csr_matrix((data, (row, column)))
 
     def radius_neighbors(self, X=None, radius=None, return_distance=None, fast=None):
         """Finds the neighbors within a given radius of a point or points.
