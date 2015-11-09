@@ -226,117 +226,123 @@ def create_dataset_fixed_nonzero(seed=None,
     return csr_matrix(dataset), y
 
 
-# class SklearnEuclidianDistance:
-#     def __init__(self, pKneighbors, pReturn_distance):
-#         self.name = "SklearnEuclidianDistance"
-#         self.kneighbors = pKneighbors
-#         self.nearest_neighbors = NearestNeighbors(n_neighbors=pKneighbors, return_distance=pReturn_distance)
-#     def fit(self, X):
-#         self.nearest_neighbors.fit(X)
-#     def kneighbors(self, X, pKneighbors=None):
-#         return self.nearest_neighbors.kneighbors(X, n_neighbors = pKneighbors)
+class SklearnEuclidianDistance():
+    def __init__(self, pKneighbors, pReturn_distance):
+        self.name = "SklearnEuclidianDistance"
+        self.kneighbors = pKneighbors
+        self.nearest_neighbors = NearestNeighbors(n_neighbors=pKneighbors, return_distance=pReturn_distance)
+    def fit(self, X):
+        self.nearest_neighbors.fit(X)
+    def kneighbors(self, X, pKneighbors=None):
+        return self.nearest_neighbors.kneighbors(X, n_neighbors = pKneighbors)
 
-# class MinHash:
-#     def __init__(self, pKneighbors, pReturn_distance, pNumber_of_hash_functions, pFast):
-#         self.name = "MinHash"
-#         self.minHash = MinHash(fast = pFast, number_of_hash_functions=pNumber_of_hash_functions, pReturn_distance = False)
-#     def fit(self, X):
-#         self.minHash.fit(X)
-#     def kneighbors(self, X, pKneighbors=None):
-#         return self.minHash.kneighbors(X, n_neighbors = pKneighbors)
+class MinHashUtil():
+    def __init__(self, pKneighbors, pReturn_distance, pNumber_of_hash_functions, pFast):
+        self.name = "MinHash"
+        self.return_distance = pReturn_distance
+        self.minHash = MinHash(fast = pFast, number_of_hash_functions=pNumber_of_hash_functions)
+    def fit(self, X):
+        self.minHash.fit(X)
+    def kneighbors(self, X, pKneighbors=None):
+        return self.minHash.kneighbors(X, n_neighbors = pKneighbors, return_distance = self.return_distance)
 
-# class LSHF:
-#     def __init__(self, pKneighbors, pN_estimators, pN_candidates):
-#         self.name = "SklearnEuclidianDistance"
-#         self.kneighbors = pKneighbors
-#         self.lshf = LSHForest(n_estimators=pN_estimators, n_candidates=pN_candidates, n_neighbors=pKneighbors)
-#     def fit(self, X):
-#         self.lshf.fit(X)
-#     def kneighbors(self, X, pKneighbors=None):
-#         return self.lshf.kneighbors(X, n_neighbors = pKneighbors)
+class LSHF():
+    def __init__(self, pKneighbors, pN_estimators, pN_candidates):
+        self.name = "LSHF"
+        self.kneighbors = pKneighbors
+        self.lshf = LSHForest(n_estimators=pN_estimators, n_candidates=pN_candidates, n_neighbors=pKneighbors)
+    def fit(self, X):
+        self.lshf.fit(X)
+    def kneighbors(self, X, pKneighbors=None):
+        return self.lshf.kneighbors(X, n_neighbors = pKneighbors)
 
-# class Annoy:
-#     def __init__(self, pKneighbors, pMetric, pN_trees, pSearch_k):
-#         self._n_trees = pN_trees
-#         self._search_k = pSearch_k
-#         self._metric = pMetric
-#         self.n_neighbors = pKneighbors
-#     def fit(self, X):
-#         self.annoy_ = annoy.AnnoyIndex(f=X.shape[1], matric=self._metric)
-#         for i, x in enumerate(X):
-#             self.annoy_.add_item(i, x.toarray()[0])
-#         self.annoy_.build(self._n_trees) # ntrees = 100
-#     def kneighbors(self, X, pKneighbors=None):
-#         nearest_neighbors = []
-#         if pKneighbors is None:
-#             pKneighbors = self.n_neighbors
-#         for i in xrange(size_of_query-1):
-#             time_start = time.time()
-#             nearest_neighbor.append(annoy_.get_nns_by_vector(query_dense[i].toarray()[0], n = pKneighbors, self._search_k))
+class Annoy():
+    def __init__(self, pKneighbors, pMetric, pN_trees, pSearch_k):
+        self._n_trees = pN_trees
+        self._search_k = pSearch_k
+        self._metric = pMetric
+        self.n_neighbors = pKneighbors
+    def fit(self, X):
+        self.annoy_ = annoy.AnnoyIndex(f=X.shape[1], matric=self._metric)
+        for i, x in enumerate(X):
+            self.annoy_.add_item(i, x.toarray()[0])
+        self.annoy_.build(self._n_trees) # ntrees = 100
+    def kneighbors(self, X, pKneighbors=None):
+        nearest_neighbors = []
+        if pKneighbors is None:
+            pKneighbors = self.n_neighbors
+        for i in xrange(size_of_query-1):
+            time_start = time.time()
+            nearest_neighbor.append(annoy_.get_nns_by_vector(X[i].toarray()[0], pKneighbors, self._search_k))
+        return nearest_neighbors
 
-# def mesure_performance_2(X_sparse, X_dense, pKneighbors, pIterations):
-#     algorithm_sparse = [MinHash(5, False, 400, True), MinHash(5, False, 400, False)]
-#     algorithm_dense = [LSHF(5, 20, 200), Annoy(5, None, 100, 100)]
+def accuracy_and_time(X_sparse, X_dense, pKneighbors, pIterations):
+    algorithm_sparse = [MinHashUtil(5, False, 400, True), MinHashUtil(5, False, 400, False)]
+    algorithm_dense = [LSHF(5, 20, 200), Annoy(5, None, 100, 100)]
     
-#     kneighbors_list = [[]] * (len(algorithm_sparse) + len(algorithm_dense))
-#     time_fit_list = [[]] * (len(algorithm_sparse) + len(algorithm_dense))
-#     time_query_list = [[]]* (len(algorithm_sparse) + len(algorithm_dense))
-#     accuracy = []
-#     accuracy_intersection = []
-#     accuracy_intersection_2k = []
-#     time_fit = []
-#     time_query = []
+    kneighbors_list = [[]] * (len(algorithm_sparse) + len(algorithm_dense))
+    time_fit_list = [[]] * (len(algorithm_sparse) + len(algorithm_dense))
+    time_query_list = [[]]* (len(algorithm_sparse) + len(algorithm_dense))
+    accuracy = []
+    accuracy_intersection = []
+    accuracy_intersection_2k = []
+    time_fit = []
+    time_query = []
 
 
-#     time_start = time.time()
-#     sklearn = SklearnEuclidianDistance(5, False)
-#     sklearn.fit(X_sparse)
-#     time_sklearn_fit = time.time() - time_start
-#     time_start = time.time()
-#     sklearn_neighbors = sklearn.kneighbors(X_sparse)
-#     time_sklearn_query = time.time() - time_start
-#     sklearn_neighbors_2k = sklearn.kneighbors(X_sparse, pKneighbors=pKneighbors*2)
+    time_start = time.time()
+    sklearn_ = SklearnEuclidianDistance(5, False)
+    sklearn_.fit(X_sparse)
+    time_sklearn_fit = time.time() - time_start
+    time_start = time.time()
+    sklearn_neighbors = sklearn_.kneighbors(X_sparse)
+    time_sklearn_query = time.time() - time_start
+    sklearn_neighbors_2k = sklearn_.kneighbors(X_sparse, pKneighbors=pKneighbors*2)
 
-#     for i in xrange(pIterations):
-#         for j in xrange(len(algorithm_sparse)):
-#             time_start = time.time()
-#             algorithm_sparse[j].fit(X_sparse)
-#             time_fit_list[j].append(time.time() - time_start)
-#             time_start = time.time()
-#             kneighbors_list[j].append(algorithm_sparse[j].kneighbors(X_sparse))
-#             time_query_list[j].append(time.time() - time_start)
-#     for i in xrange(len(algorithm_sparse)):
-#         for j in xrange(len(kneighbors_list[i])):
-#             accuracy[i] += np.in1d(kneighbors_list[i][j], sklearn_neighbors).mean()
-#             accuracy_intersection[i] += np.intersect1d(kneighbors_list[i][j], sklearn_neighbors) / float(len(np.ravel(kneighbors_list[i][j])))
-#             accuracy_intersection_2k[i] += np.intersect1d(kneighbors_list[i][j], sklearn_neighbors_2k) / float(len(np.ravel(kneighbors_list[i][j])))
-
-
-#         # accuracy_1_50_lshf.append(np.in1d(n_neighbors_lshf_1_50, n_neighbors_sklearn_1_50).mean())
-#         # exact, approx, _ = accuracy(n_neighbors_minHash_exact_1_50, n_neighbors_minHash_approx_1_50, n_neighbors_sklearn_1_50)
-#         # accuracy_1_50_minHash_exact.append(exact)
-#         # accuracy_1_50_minHash_aprox.append(approx)
+    for i in xrange(pIterations):
+        for j in xrange(len(algorithm_sparse)):
+            time_start = time.time()
+            algorithm_sparse[j].fit(X_sparse)
+            time_fit_list[j].append(time.time() - time_start)
+            time_start = time.time()
+            kneighbors_list[j].append(algorithm_sparse[j].kneighbors(X_sparse))
+            time_query_list[j].append(time.time() - time_start)
+    for i in xrange(len(algorithm_sparse)):
+        for j in xrange(len(kneighbors_list[i])):
+            accuracy[i] += np.in1d(kneighbors_list[i][j], sklearn_neighbors).mean()
+            accuracy_intersection[i] += np.intersect1d(kneighbors_list[i][j], sklearn_neighbors) / float(len(np.ravel(kneighbors_list[i][j])))
+            accuracy_intersection_2k[i] += np.intersect1d(kneighbors_list[i][j], sklearn_neighbors_2k) / float(len(np.ravel(kneighbors_list[i][j])))
 
 
+        # accuracy_1_50_lshf.append(np.in1d(n_neighbors_lshf_1_50, n_neighbors_sklearn_1_50).mean())
+        # exact, approx, _ = accuracy(n_neighbors_minHash_exact_1_50, n_neighbors_minHash_approx_1_50, n_neighbors_sklearn_1_50)
+        # accuracy_1_50_minHash_exact.append(exact)
+        # accuracy_1_50_minHash_aprox.append(approx)
 
-#     for i in xrange(pIterations):
-#         for j in xrange(len(algorithm_dense)):
-#             time_start = time.time()
-#             algorithm_dense[j].fit(X_dense)
-#             time_fit_list[j+len(algorithm_sparse)].append(time.time() - time_start)
-#             time_start = time.time()
-#             kneighbors_list[j+len(algorithm_sparse)].append(algorithm_dense[j].kneighbors(X_sparse))
-#             time_query_list[j+len(algorithm_sparse)].append(time.time() - time_start)
 
-#     for i in xrange(len(algorithm_dense)):
-#         for j in xrange(len(kneighbors_list[i+len(algorithm_sparse)])):
-#             accuracy[i+len(algorithm_sparse)] += np.in1d(kneighbors_list[i+len(algorithm_sparse)][j], sklearn_neighbors).mean()
-#             accuracy_intersection[i+len(algorithm_sparse)] += np.intersect1d(kneighbors_list[i+len(algorithm_sparse)][j], sklearn_neighbors) / float(len(np.ravel(kneighbors_list[i+len(algorithm_sparse)][j])))
-#             accuracy_intersection_2k[i+len(algorithm_sparse)] += np.intersect1d(kneighbors_list[i+len(algorithm_sparse)][j], sklearn_neighbors_2k) / float(len(np.ravel(kneighbors_list[i+len(algorithm_sparse)][j])))
 
-#     # for i in xrange(len(accuracy)):
-        
+    for i in xrange(pIterations):
+        for j in xrange(len(algorithm_dense)):
+            time_start = time.time()
+            algorithm_dense[j].fit(X_dense)
+            time_fit_list[j+len(algorithm_sparse)].append(time.time() - time_start)
+            time_start = time.time()
+            kneighbors_list[j+len(algorithm_sparse)].append(algorithm_dense[j].kneighbors(X_sparse))
+            time_query_list[j+len(algorithm_sparse)].append(time.time() - time_start)
 
+    for i in xrange(len(algorithm_sparse)):
+        for j in xrange(len(kneighbors_list[i])):
+            accuracy[i] += np.in1d(kneighbors_list[i][j], sklearn_neighbors).mean()
+            accuracy_intersection[i] += np.intersect1d(kneighbors_list[i][j], sklearn_neighbors) / float(len(np.ravel(kneighbors_list[i][j])))
+            accuracy_intersection_2k[i] += np.intersect1d(kneighbors_list[i][j], sklearn_neighbors_2k) / float(len(np.ravel(kneighbors_list[i][j])))
+    
+    for i in xrange(len(algorithm_dense)):
+        for j in xrange(len(kneighbors_list[i+len(algorithm_sparse)])):
+            accuracy[i+len(algorithm_sparse)] += np.in1d(kneighbors_list[i+len(algorithm_sparse)][j], sklearn_neighbors).mean()
+            accuracy_intersection[i+len(algorithm_sparse)] += np.intersect1d(kneighbors_list[i+len(algorithm_sparse)][j], sklearn_neighbors) / float(len(np.ravel(kneighbors_list[i+len(algorithm_sparse)][j])))
+            accuracy_intersection_2k[i+len(algorithm_sparse)] += np.intersect1d(kneighbors_list[i+len(algorithm_sparse)][j], sklearn_neighbors_2k) / float(len(np.ravel(kneighbors_list[i+len(algorithm_sparse)][j])))
+
+    return accuracy, accuracy_intersection, accuracy_intersection_2k
 
 
     
