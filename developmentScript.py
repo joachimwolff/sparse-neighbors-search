@@ -194,40 +194,48 @@ def create_dataset(seed=None,
     return dataset, y
 
 def test_kneighbor_graph(data):
-    if not os.path.exists("inverse_index.approx"):
-        print "Build inverse index for approximate..."
-        time_build_approx_start = time.time()
-        minHash_approximate = MinHashKNeighborsClassifier(algorithm='approximate')
-        minHash_approximate.fit(data[0], data[1])
-        time_build_approx_end = time.time()
-        print "Build inverse index for approximate... Done!"
-        print "Time: ", time_build_approx_end - time_build_approx_start
-        pickle.dump( minHash_approximate, open( "inverse_index.approx", "wb" ) ) #write
-    else:
-        print "loading data..."
-        minHash_approximate = pickle.load( open( "inverse_index.approx", "rb" ) ) #load
-        print "loading data... Done!"
-    if not os.path.exists("inverse_index.exact"):
-        print "Build inverse index for exact solution..."
-        time_build_exact_start = time.time()
-        minHash_exact = MinHashKNeighborsClassifier(algorithm='exact')
-        minHash_exact.fit(data[0], data[1])
-        time_build_exact_end= time.time()
-        print "Build inverse index for exact... Done!"
-        print "Time: ", time_build_exact_end - time_build_exact_start
-        pickle.dump( minHash_exact, open( "inverse_index.exact", "wb" ) ) #write
-    else:
-        print "loading data..."
-        minHash_exact = pickle.load( open( "inverse_index.exact", "rb" ) ) #load
-        print "loading data... Done!\n\n"
+    # if not os.path.exists("inverse_index.approx"):
+    #     print "Build inverse index for approximate..."
+    #     time_build_approx_start = time.time()
+    #     minHash_approximate = MinHashKNeighborsClassifier(algorithm='approximate')
+    #     minHash_approximate.fit(data[0], data[1])
+    #     time_build_approx_end = time.time()
+    #     print "Build inverse index for approximate... Done!"
+    #     print "Time: ", time_build_approx_end - time_build_approx_start
+    #     pickle.dump( minHash_approximate, open( "inverse_index.approx", "wb" ) ) #write
+    # else:
+    #     print "loading data..."
+    #     minHash_approximate = pickle.load( open( "inverse_index.approx", "rb" ) ) #load
+    #     print "loading data... Done!"
+    # if not os.path.exists("inverse_index.exact"):
+    #     print "Build inverse index for exact solution..."
+    #     time_build_exact_start = time.time()
+    #     minHash_exact = MinHashKNeighborsClassifier(algorithm='exact')
+    #     minHash_exact.fit(data[0], data[1])
+    #     time_build_exact_end= time.time()
+    #     print "Build inverse index for exact... Done!"
+    #     print "Time: ", time_build_exact_end - time_build_exact_start
+    #     pickle.dump( minHash_exact, open( "inverse_index.exact", "wb" ) ) #write
+    # else:
+    #     print "loading data..."
+    #     minHash_exact = pickle.load( open( "inverse_index.exact", "rb" ) ) #load
+    #     print "loading data... Done!\n\n"
+    graphs = gspan_to_eden( 'http://www.bioinf.uni-freiburg.de/~costa/bursi.gspan' )
+    vectorizer = Vectorizer( r=2,d=5 )
+    datasetBursi = vectorizer.transform( graphs )
 
-    print "exact:connectivity: ", minHash_exact.kneighbors_graph( mode='connectivity')
-    print "exact:distance: ", minHash_exact.kneighbors_graph(mode='distance')
 
-    print "approx:connectivity: ",minHash_approximate.kneighbors_graph(mode='connectivity')
-    print "approx:distance: ", minHash_approximate.kneighbors_graph(mode='distance')
+    minHash = MinHash(number_of_hash_functions=400)
+    # minHash.fit(data[0])
+    minHash.fit(datasetBursi)
+
+    print "exact:connectivity: ", minHash.kneighbors_graph(mode='connectivity', fast=False)
+    print "exact:distance: ", minHash.kneighbors_graph(mode='distance', fast = False)
+
+    print "approx:connectivity: ",minHash.kneighbors_graph(mode='connectivity', fast=True)
+    print "approx:distance: ", minHash.kneighbors_graph(mode='distance', fast=True)
     nearest_Neighbors = KNeighborsClassifier()
-    nearest_Neighbors.fit(data[0], data[1])
+    nearest_Neighbors.fit(datasetBursi)
     print "exact: ", nearest_Neighbors.kneighbors_graph(mode='connectivity')
 
 def test_predict(data):
@@ -396,9 +404,9 @@ if __name__ == "__main__":
     #     dataset = pickle.load( open( "dataset", "rb" ) ) #load
     # print "row: ", dataset[0].getrow(0).keys()[0]
     # print "nnz: ", dataset[0].getrow(0).getnnz()
-    #test_kneighbor_graph(dataset)
+    test_kneighbor_graph(dataset)
     # inverse_index_obj = InverseIndex()
     # print inverse_index_obj.signature(dataset[0].getrow(0))
-    test(dataset)
+    # test(dataset)
     # test_predict(dataset)
     #test_radius_neighbors(dataset)
