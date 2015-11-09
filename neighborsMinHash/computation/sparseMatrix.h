@@ -96,7 +96,6 @@ class SparseMatrixFloat {
                     // if they are the same substract the values, compute the square and sum it up
                     float value = mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] - mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
                     element.val += value * value;
-                    // , 2);
                     // increase both counters to the next element 
                     ++pointerToMatrixElement;
                     ++pointerToVectorElement;
@@ -104,13 +103,11 @@ class SparseMatrixFloat {
                     // if the feature ids are unequal square only the smaller one and add it to the sum
                     float value = mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
                     element.val += value * value;
-                    // element.val += pow(mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement], 2);
                     // increase counter for first vector
                     ++pointerToMatrixElement;
                 } else {
                     float value = mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
                     element.val += value * value;
-                    // element.val += pow(mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement], 2);
                     ++pointerToVectorElement;
                 }
 
