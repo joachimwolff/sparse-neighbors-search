@@ -146,10 +146,9 @@ static PyObject* bringNeighborhoodInShape(const neighborhood* pNeighborhood, con
 
 static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNneighbors, const size_t pReturnDistance) {
     size_t sizeOfNeighborList = pNeighborhood->neighbors->size();
-    // std::cout << "sizeOfNeighborList: " << sizeOfNeighborList << std::endl;
-    PyObject * rowList = PyList_New(sizeOfNeighborList * pNneighbors);
-    PyObject * columnList = PyList_New(sizeOfNeighborList * pNneighbors);
-    PyObject * dataList = PyList_New(sizeOfNeighborList * pNneighbors);
+    PyObject * rowList = PyList_New(0);
+    PyObject * columnList = PyList_New(0);
+    PyObject * dataList = PyList_New(0);
 
 
     for (size_t i = 0; i < sizeOfNeighborList; ++i) {
@@ -164,9 +163,9 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
             } else {
                 distance = Py_BuildValue("f", 1.0);
             }
-            PyList_SetItem(rowList, i+j-1, root);
-            PyList_SetItem(columnList, i+j-1 , node);
-            PyList_SetItem(dataList, i+j -1, distance);
+            PyList_Append(rowList, root);
+            PyList_Append(columnList, node);
+            PyList_Append(dataList, distance);
         }
     }
     delete pNeighborhood->neighbors;
@@ -177,7 +176,6 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
     PyList_SetItem(graph, 0, rowList);
     PyList_SetItem(graph, 1, columnList);
     PyList_SetItem(graph, 2, dataList);
-    std::cout << "return in buildGraph" << std::endl;
 
     return graph;
 }
