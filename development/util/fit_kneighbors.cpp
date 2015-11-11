@@ -105,7 +105,8 @@ int main( int argc, const char* argv[] ) {
     					minimalBlocksInCommon, maxBinSize, maximalNumberOfHashCollisions,
     					excessFactor, fast);
     fit(minHash, &instances, &features, &data, addInfo[0], addInfo[1]);
-    SparseMatrixFloat* dataSparse = new SparseMatrixFloat(0, 0);
+    SparseMatrixFloat* dataSparse = parseRawData(&instances, &features, &data, 
+                                                    addInfo[0], addInfo[1]);
     neighborhood* neighborhood_ = minHash->kneighbors(dataSparse, nNeighbors, fast);
 
  //    std::cout << "\n[";
