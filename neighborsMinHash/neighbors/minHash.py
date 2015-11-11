@@ -203,24 +203,35 @@ class MinHash():
         else:
             X_ = csr_matrix(X)
             instances, features = X_.nonzero()
+            maxFeatures = 0
+            countFeatures = 0;
+            oldInstance = 0
+            for i in instances:
+                if (oldInstance == i):
+                    countFeatures += 1
+                else:
+                    if countFeatures > maxFeatures:
+                        maxFeatures = countFeatures
+                    countFeatures = 0
+                oldInstance = i
             data = X_.data
             max_number_of_instances = X_.shape[0]
-            max_number_of_features = X_.shape[1]
+            # max_number_of_features = X_.shape[1]
             result =  _minHash.kneighbors(instances.tolist(), features.tolist(), data.tolist(), 
-                                    max_number_of_instances, max_number_of_features,
+                                    max_number_of_instances, maxFeatures,
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
                                     fast, self._pointer_address_of_minHash_object)
 
         # print result[0]
         # print result[1]
-
+        print "foo"
         if return_distance:
             return asarray(result[0]), asarray(result[1])
         else:
             return asarray(result[0])
 
-    def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', fast=None):
+    def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', fast=None, symmetric=True):
         """Computes the (weighted) graph of k-Neighbors for points in X
             Parameters
             ----------
@@ -274,9 +285,19 @@ class MinHash():
             instances, features = X.nonzero()
             data = X.data
             max_number_of_instances = X.shape[0]
-            max_number_of_features = X.shape[1]
+            maxFeatures = 0
+            countFeatures = 0;
+            oldInstance = 0
+            for i in instances:
+                if (oldInstance == i):
+                    countFeatures += 1
+                else:
+                    if countFeatures > maxFeatures:
+                        maxFeatures = countFeatures
+                    countFeatures = 0
+                oldInstance = i
             row, column, data = _minHash.kneighbors_graph(instances.tolist(), features.tolist(), data.tolist(),
-                                    max_number_of_instances, max_number_of_features,
+                                    max_number_of_instances, maxFeatures,
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
                                     fast, self._pointer_address_of_minHash_object)
@@ -341,9 +362,19 @@ class MinHash():
             instances, features = X.nonzero()
             data = X.data
             max_number_of_instances = X.shape[0]
-            max_number_of_features = X.shape[1]
+            maxFeatures = 0
+            countFeatures = 0;
+            oldInstance = 0
+            for i in instances:
+                if (oldInstance == i):
+                    countFeatures += 1
+                else:
+                    if countFeatures > maxFeatures:
+                        maxFeatures = countFeatures
+                    countFeatures = 0
+                oldInstance = i
             result = _minHash.kneighbors(instances.tolist(), features.tolist(), data.tolist(), 
-                                    max_number_of_instances, max_number_of_features,
+                                    max_number_of_instances, maxFeatures,
                                     radius,
                                     1 if return_distance else 0,
                                     fast, self._pointer_address_of_minHash_object)
@@ -352,7 +383,7 @@ class MinHash():
         else:
             return asarray(result[0])
 
-    def radius_neighbors_graph(self, X=None, radius=None, mode='connectivity', fast=None):
+    def radius_neighbors_graph(self, X=None, radius=None, mode='connectivity', fast=None, symmetric=True):
         """Computes the (weighted) graph of Neighbors for points in X
         Neighborhoods are restricted the points at a distance lower than
         radius.
@@ -407,9 +438,19 @@ class MinHash():
             instances, features = X.nonzero()
             data = X.data
             max_number_of_instances = X.shape[0]
-            max_number_of_features = X.shape[1]
+            maxFeatures = 0
+            countFeatures = 0;
+            oldInstance = 0
+            for i in instances:
+                if (oldInstance == i):
+                    countFeatures += 1
+                else:
+                    if countFeatures > maxFeatures:
+                        maxFeatures = countFeatures
+                    countFeatures = 0
+                oldInstance = i
             row, column, data = _minHash.radius_neighbors_graph(instances.tolist(), features.tolist(), data.tolist(),
-                                    max_number_of_instances, max_number_of_features,
+                                    max_number_of_instances, maxFeatures,
                                     radius if radius else 0,
                                     1 if return_distance else 0,
                                     fast, self._pointer_address_of_minHash_object)
@@ -478,7 +519,7 @@ class MinHash():
         else:
             return asarray(result[0])
 
-    def fit_kneighbor_graph(self, X, n_neighbors=None, mode='connectivity', fast=None):
+    def fit_kneighbor_graph(self, X, n_neighbors=None, mode='connectivity', fast=None, symmetric=True):
         """Fits and computes the (weighted) graph of k-Neighbors for points in X
             Parameters
             ----------
@@ -519,11 +560,22 @@ class MinHash():
 
         self._index_elements_count = X.shape[0]
         instances, features = X.nonzero()
+        maxFeatures = 0
+        countFeatures = 0;
+        oldInstance = 0
+        for i in instances:
+            if (oldInstance == i):
+                countFeatures += 1
+            else:
+                if countFeatures > maxFeatures:
+                    maxFeatures = countFeatures
+                countFeatures = 0
+            oldInstance = i
         data = X.data
 
         # returns a pointer to the inverse index stored in c++
         row, column, data =  _minHash.fit_kneighbor_graph(instances.tolist(), features.tolist(), data.tolist(), 
-                                                    X.shape[0], X.shape[1],
+                                                    X.shape[0], maxFeatures,
                                                     n_neighbors if n_neighbors else 0,
                                                     1 if return_distance else 0,
                                                     fast,
@@ -596,7 +648,7 @@ class MinHash():
         else:
             return asarray(result[0])
         
-    def fit_radius_neighbors_graph(self, X, radius=None, mode='connectivity', fast=None):
+    def fit_radius_neighbors_graph(self, X, radius=None, mode='connectivity', fast=None, symmetric=True):
         """Fits and computes the (weighted) graph of Neighbors for points in X
         Neighborhoods are restricted the points at a distance lower than
         radius.
