@@ -40,4 +40,4 @@ for d in dimensions:
 
 n_neighbors_sklearn = 5
 n_neighbors_minHash = 5
-returnValuesBursi = measure_performance([datasetBursi]*9, n_neighbors_sklearn, n_neighbors_minHash, number_of_hashfunctions=20000, dataset_dense=projected_data)
+returnValuesBursi = measure_performance([datasetBursi]*9, n_neighbors_sklearn, n_neighbors_minHash, size_of_query=4336, number_of_hashfunctions=800, dataset_dense=projected_data)
