@@ -71,22 +71,34 @@ class SparseMatrixFloat {
         size_t pointerToMatrixElement = 0;
         size_t pointerToVectorElement = 0;
         // iterate over all candidates
+    std::cout << "74S" << std::endl;
+
         for (size_t i = 0; i < pRowIdVector.size(); ++i) {
+    // std::cout << "77S" << std::endl;
+
             sortMapFloat element; 
             element.key = pRowIdVector[i];
             element.val = 0.0;
+    // std::cout << "82S" << std::endl;
+
             // features ids are stored in mSparseMatrix. 
             // every instances starts at index indexId*mMaxNnz --> every instance can store maximal mMaxNnz feature ids
             // how many elements per index are stored is stored in mSizesOfInstances[indexID]
             // iterate until both instances have no more feature ids
             bool endOfFirstVector = pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]];
             bool endOfSecondVector = pointerToVectorElement < mSizesOfInstances[pRowId];
+    // std::cout << "90S" << std::endl;
 
             while (endOfFirstVector && endOfSecondVector) {
                 // are the feature ids of the two instances the same?
+    // std::cout << "94S" << std::endl;
+
                 size_t featureIdFirstVector = mSparseMatrix[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
                 size_t featureIdSecondVector = mSparseMatrix[pRowId*mMaxNnz + pointerToVectorElement];
+    // std::cout << "98S" << std::endl;
+
                 if (featureIdFirstVector == featureIdSecondVector) {
+    // std::cout << "101S" << std::endl;
                    
                     // if they are the same substract the values, compute the square and sum it up
                     float value = mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] - mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
@@ -94,33 +106,53 @@ class SparseMatrixFloat {
                     // increase both counters to the next element 
                     ++pointerToMatrixElement;
                     ++pointerToVectorElement;
+    // std::cout << "109S" << std::endl;
+                
                 } else if (featureIdFirstVector < featureIdSecondVector) {
+    // std::cout << "112S" << std::endl;
+                
                     // if the feature ids are unequal square only the smaller one and add it to the sum
                     float value = mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
                     element.val += value * value;
                     // increase counter for first vector
                     ++pointerToMatrixElement;
+    // std::cout << "119S" << std::endl;
+                
                 } else {
+    // std::cout << "122S" << std::endl;
+                
                     float value = mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
                     element.val += value * value;
                     ++pointerToVectorElement;
+    // std::cout << "127S" << std::endl;
+                
                 }
+    // std::cout << "130S" << std::endl;
 
                 endOfFirstVector = pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]];
                 endOfSecondVector = pointerToVectorElement < mSizesOfInstances[pRowId];
             }
             while (endOfFirstVector) {
+    // std::cout << "136S" << std::endl;
+
                 float value = mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
                 element.val += value * value;
                 ++pointerToMatrixElement;
                 endOfFirstVector = pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]];
+    // std::cout << "142S" << std::endl;
+
             }
             while (endOfSecondVector) {
+    // std::cout << "146S" << std::endl;
+
                 float value = mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
                 element.val += value * value;
                 ++pointerToVectorElement;
                 endOfSecondVector = pointerToVectorElement < mSizesOfInstances[pRowId];
+    // std::cout << "152S" << std::endl;
+
             }
+    // std::cout << "155S" << std::endl;
 
             pointerToMatrixElement = 0;
             pointerToVectorElement = 0;
@@ -128,12 +160,18 @@ class SparseMatrixFloat {
             element.val = sqrt(element.val);
             
             (*returnValue)[i] = element;
+    // std::cout << "163S" << std::endl;
             
         }
+
+    // std::cout << "167S" << std::endl;
+
         size_t numberOfElementsToSort = pNneighbors;
         if (pNneighbors > returnValue->size()) {
             numberOfElementsToSort = returnValue->size();
         }
+    std::cout << "173S" << std::endl;
+
         // sort the values by increasing order
         std::partial_sort(returnValue->begin(), returnValue->begin()+numberOfElementsToSort, returnValue->end(), mapSortAscByValueFloat);
         return returnValue;
