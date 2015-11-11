@@ -51,12 +51,15 @@ void MinHashBase::partialFit() {
 
 }
 neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast) {
+    std::cout << "53M" << std::endl;
     if (pFast == -1) {
         pFast = mFast;
     } 
     if (pNneighbors == 0) {
         pNneighbors = mNneighbors;
     }
+    std::cout << "61M" << std::endl;
+
     umap_uniqueElement* X;
     bool doubleElementsStorageCount = false;
     if (pRawData->size() == 0) {
@@ -71,6 +74,8 @@ neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t 
     if (pFast) {     
         return neighborhood_;
     }
+    std::cout << "77M" << std::endl;
+
     neighborhood* neighborhoodExact = new neighborhood();
     neighborhoodExact->neighbors = new vvint(neighborhood_->neighbors->size());
     neighborhoodExact->distances = new vvfloat(neighborhood_->neighbors->size());
@@ -81,35 +86,55 @@ if (mChunkSize <= 0) {
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
+    std::cout << "89M" << std::endl;
 
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
+    std::cout << "93M" << std::endl;
 
         if (neighborhood_->neighbors->operator[](i).size() != 1) {
+    std::cout << "96M" << std::endl;
+    std::cout << "i: " << i << std::endl;
+    std::cout << "size: " << neighborhood_->neighbors->size() << std::endl;
+    std::cout << "start foo: " << neighborhood_->neighbors->operator[](i).size() << std::endl ;
+    std::cout << "again foo: "<< neighborhood_->neighbors->operator[](i)[0] << std::endl;
             std::vector<sortMapFloat>* exactNeighbors =
                     mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), neighborhood_->neighbors->operator[](i)[0], pNneighbors);
+            
+    std::cout << "101M" << std::endl;
             std::vector<int> neighborsVector(exactNeighbors->size());
             std::vector<float> distancesVector(exactNeighbors->size());
+    std::cout << "104M" << std::endl;
 
             for (size_t j = 0; j < exactNeighbors->size(); ++j) {
                 neighborsVector[j] = (*exactNeighbors)[j].key;
                 distancesVector[j] = (*exactNeighbors)[j].val;
             }
+    std::cout << "105M" << std::endl;
+
 #pragma omp critical
             {
+    std::cout << "109M" << std::endl;
+
                 neighborhoodExact->neighbors->operator[](i) = neighborsVector;
                 neighborhoodExact->distances->operator[](i) = distancesVector;
             }
         } else {
 #pragma omp critical
             {
+    std::cout << "117M" << std::endl;
+
                 neighborhoodExact->neighbors->operator[](i) = neighborhood_->neighbors->operator[](i);
                 neighborhoodExact->distances->operator[](i) = neighborhood_->distances->operator[](i);
             }
         }
     }
+    std::cout << "124M" << std::endl;
+
     delete neighborhood_->neighbors;
     delete neighborhood_->distances;
     delete neighborhood_;
+    std::cout << "129M" << std::endl;
+
     return neighborhoodExact;
 }
