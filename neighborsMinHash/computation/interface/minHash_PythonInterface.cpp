@@ -11,8 +11,8 @@
 **/
 #include <Python.h>
 
-#include "minHash.h"
-#include "parsePythonToCpp.h"
+#include "../minHash.h"
+#include "../parsePythonToCpp.h"
 
 static neighborhood* neighborhoodComputation(size_t pMinHashAddress, PyObject* pInstancesListObj,PyObject* pFeaturesListObj,PyObject* pDataListObj, 
                                                    size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures, 

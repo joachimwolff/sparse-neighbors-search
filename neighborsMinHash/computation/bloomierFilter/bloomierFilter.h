@@ -1,4 +1,4 @@
-#include "typeDefinitions.h"
+#include "../typeDefinitions.h"
 #ifndef BLOOMIER_FILTER_H
 #define BLOOMIER_FILTER_H
 class BloomierFilter {

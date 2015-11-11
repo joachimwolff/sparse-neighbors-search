@@ -11,7 +11,7 @@
 **/
 
 #include <functional>
-#include "bloomierFilter.h"
+#include "bloomierFilter/bloomierFilter.h"
 
 
 #include "typeDefinitions.h"

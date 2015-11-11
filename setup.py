@@ -9,12 +9,13 @@
 # Department of Computer Science
 # Faculty of Engineering
 # Albert-Ludwig-University Freiburg im Breisgau
+import time 
 __author__ = "Joachim Wolff"
 __contact__ = "wolffj@informatik.uni-freiburg.de"
 __copyright__ = "Copyright 2015, Joachim Wolff"
 __credits__ = ["Milad Miladi", "Fabrizio Costa"]
 __license__ = "No License"
-__date__ = "05.08.2015"
+__date__ = time.strftime("%d/%m/%Y")
 __version_ = "0.1.dev"
 
 from setuptools import setup, find_packages
@@ -22,8 +23,9 @@ from distutils.core import Extension
 import platform
 import sys
 
+
 if "--openmp" in sys.argv:
-    module1 = Extension('_minHash', sources = ['neighborsMinHash/computation/minHash_PythonInterface.cpp', 'neighborsMinHash/computation/minHash.cpp', 
+    module1 = Extension('_minHash', sources = ['neighborsMinHash/computation/interface/minHash_PythonInterface.cpp', 'neighborsMinHash/computation/minHash.cpp', 
                                                     'neighborsMinHash/computation/minHashBase.cpp', 'neighborsMinHash/computation/inverseIndex.cpp' ], 
         depends=['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/computation/minHashBase.h', 'neighborsMinHash/computation/inverseIndex.h'
                 , 'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h', 'neighborsMinHash/computation/sparseMatrix.h'],
@@ -31,14 +33,14 @@ if "--openmp" in sys.argv:
         extra_compile_args=["-fopenmp", "-g", "-std=c++11"])#, include_dirs=['/home/wolffj/Software/boost_1_59_0', '/home/wolffj/Software/mtl4'])
 
 elif platform.system() == 'Darwin' or "--noopenmp" in sys.argv:
-    module1 = Extension('_minHash', sources = ['neighborsMinHash/computation/minHash_PythonInterface.cpp', 'neighborsMinHash/computation/minHash.cpp', 
+    module1 = Extension('_minHash', sources = ['neighborsMinHash/computation/interface/minHash_PythonInterface.cpp', 'neighborsMinHash/computation/minHash.cpp', 
                                                     'neighborsMinHash/computation/minHashBase.cpp', 'neighborsMinHash/computation/inverseIndex.cpp' ], 
         depends=['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/computation/minHashBase.h', 'neighborsMinHash/computation/inverseIndex.h'
         , 'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h', 'neighborsMinHash/computation/sparseMatrix.h'], 
         extra_compile_args=["-g", "-std=c++11"], include_dirs=['/Users/joachimwolff/Software/boost_1_59_0'])
 
 else:
-    module1 = Extension('_minHash', sources = ['neighborsMinHash/computation/minHash_PythonInterface.cpp', 'neighborsMinHash/computation/minHash.cpp', 
+    module1 = Extension('_minHash', sources = ['neighborsMinHash/computation/interface/minHash_PythonInterface.cpp', 'neighborsMinHash/computation/minHash.cpp', 
                                                     'neighborsMinHash/computation/minHashBase.cpp', 'neighborsMinHash/computation/inverseIndex.cpp' ], 
         depends=['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/computation/minHashBase.h', 'neighborsMinHash/computation/inverseIndex.h'
         , 'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h', 'neighborsMinHash/computation/sparseMatrix.h'],
