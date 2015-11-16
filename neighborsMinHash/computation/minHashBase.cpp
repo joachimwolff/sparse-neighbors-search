@@ -24,7 +24,7 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pBlockSize,
                     size_t pMaxBinSize,
                     size_t pSizeOfNeighborhood, size_t pMinimalBlocksInCommon,
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions,
-                    int pFast) {
+                    int pFast, int pSimilarity) {
 
         mInverseIndex = new InverseIndex(pNumberOfHashFunctions, pBlockSize,
                                         pNumberOfCores, pChunkSize,
@@ -34,6 +34,7 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pBlockSize,
         mFast = pFast;
         mNumberOfCores = pNumberOfCores;
         mChunkSize = pChunkSize;
+        mSimilarity = pSimilarity;
 }
 
 MinHashBase::~MinHashBase(){
@@ -49,13 +50,16 @@ void MinHashBase::fit(const SparseMatrixFloat* pRawData) {
 void MinHashBase::partialFit() {
 
 }
-neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast, size_t pSimilarity) {
+neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast, int pSimilarity) {
     // std::cout << "53M" << std::endl;
     if (pFast == -1) {
         pFast = mFast;
     } 
     if (pNneighbors == 0) {
         pNneighbors = mNneighbors;
+    }
+    if (pSimilarity == -1) {
+        pSimilarity = mSimilarity;
     }
     // std::cout << "61M" << std::endl;
 
