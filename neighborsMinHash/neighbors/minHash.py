@@ -50,6 +50,9 @@ class MinHash():
             precision of the :meth:`algorithm=exact` version of the implementation.
             E.g.: n_neighbors = 5, excess_factor = 5. Internally n_neighbors*excess_factor = 25 neighbors will be returned.
             Now the reduced data set for sklearn.NearestNeighbors is of size 25 and not 5.
+        similarity : bool, optional
+            If true: cosine similarity is used
+            If false: Euclidean distance is used
         number_of_cores : int, optional
             Number of cores that should be used for openmp. If your system doesn't support openmp, this value
             will have no effect. If it supports openmp and it is not defined, the maximum number of cores is used.
@@ -82,7 +85,7 @@ class MinHash():
         http://bioinformatics.oxfordjournals.org/content/28/12/i224.full.pdf+html"""
     def __init__(self, n_neighbors=5, radius=1.0, fast=False, number_of_hash_functions=400,
                  max_bin_size = 50, minimal_blocks_in_common = 1, block_size = 4, excess_factor = 5,
-                 number_of_cores=None, chunk_size=None):
+                 similarity=False, number_of_cores=None, chunk_size=None):
         if number_of_cores is None:
             number_of_cores = mp.cpu_count()
         if chunk_size is None:
@@ -93,7 +96,7 @@ class MinHash():
                                                     block_size, number_of_cores, chunk_size, n_neighbors,
                                                     minimal_blocks_in_common, max_bin_size, 
                                                     maximal_number_of_hash_collisions, excess_factor,
-                                                    1 if fast else 0)
+                                                    1 if fast else 0, 1 if similarity else 0)
 
     def __del__(self):
         if _minHash.delete_object(self._pointer_address_of_minHash_object) != 0:
@@ -150,7 +153,7 @@ class MinHash():
                                                                     self._pointer_address_of_minHash_object)
        
         
-    def kneighbors(self,X=None, n_neighbors=None, return_distance=True, fast=None):
+    def kneighbors(self,X=None, n_neighbors=None, return_distance=True, fast=None, similarity=None):
         """Finds the n_neighbors of a point X or of all points of X.
 
             Parameters
@@ -185,12 +188,19 @@ class MinHash():
             fast = 1
         else:
             fast = 0
+
+        if similarity is None:
+            similarity = -1
+        elif similarity:
+            similarity = 1
+        else:
+            similarity = 0
         if X is None:
             result = _minHash.kneighbors([], [], [], 
                                     0, 0,
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
-                                    1 if fast else 0, self._pointer_address_of_minHash_object)
+                                    1 if fast else 0, similarity, self._pointer_address_of_minHash_object)
         else:
             X_csr = csr_matrix(X)
             instances, features = X_csr.nonzero()
@@ -202,7 +212,8 @@ class MinHash():
                                     max_number_of_instances, maxFeatures,
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
-                                    fast, self._pointer_address_of_minHash_object)
+                                    fast, 1 if similarity else 0, 
+                                    self._pointer_address_of_minHash_object)
 
         # print result[0]
         # print result[1]
@@ -212,7 +223,7 @@ class MinHash():
         else:
             return asarray(result[0])
 
-    def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', fast=None, symmetric=True):
+    def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', fast=None, symmetric=True, similarity=None):
         """Computes the (weighted) graph of k-Neighbors for points in X
             Parameters
             ----------
@@ -245,6 +256,12 @@ class MinHash():
             fast = 1
         else:
             fast = 0
+        if similarity is None:
+            similarity = -1
+        elif similarity:
+            similarity = 1
+        else:
+            similarity = 0
 
         if mode == "connectivity":
             return_distance = False
@@ -260,6 +277,7 @@ class MinHash():
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
                                     1 if fast else 0, 1 if symmetric else 0,
+                                    similarity, 
                                     self._pointer_address_of_minHash_object)
         else:
             X_csr = csr_matrix(X)
@@ -273,11 +291,12 @@ class MinHash():
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
                                     fast, 1 if symmetric else 0, 
+                                    1 if similarity else 0, 
                                     self._pointer_address_of_minHash_object)
         
         return csr_matrix((data, (row, column)))
 
-    def radius_neighbors(self, X=None, radius=None, return_distance=None, fast=None):
+    def radius_neighbors(self, X=None, radius=None, return_distance=None, fast=None, similarity=None):
         """Finds the neighbors within a given radius of a point or points.
         Return the indices and distances of each point from the dataset
         lying in a ball with size ``radius`` around the points of the query
@@ -319,6 +338,13 @@ class MinHash():
         else:
             fast = 0
 
+        if similarity is None:
+            similarity = -1
+        elif similarity:
+            similarity = 1
+        else:
+            similarity = 0
+
         if radius is None:
             radius = 0
         max_number_of_instances = 0
@@ -328,7 +354,8 @@ class MinHash():
                                     0, 0,
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
-                                    fast, self._pointer_address_of_minHash_object)
+                                    fast, similarity, 
+                                    self._pointer_address_of_minHash_object)
         else:
             X_csr = csr_matrix(X)
 
@@ -340,13 +367,14 @@ class MinHash():
                                     max_number_of_instances, maxFeatures,
                                     radius,
                                     1 if return_distance else 0,
-                                    fast, self._pointer_address_of_minHash_object)
+                                    fast, similarity, 
+                                    self._pointer_address_of_minHash_object)
         if return_distance:
             return asarray(result[0]), asarray(result[1])
         else:
             return asarray(result[0])
 
-    def radius_neighbors_graph(self, X=None, radius=None, mode='connectivity', fast=None, symmetric=True):
+    def radius_neighbors_graph(self, X=None, radius=None, mode='connectivity', fast=None, symmetric=True, similarity=None):
         """Computes the (weighted) graph of Neighbors for points in X
         Neighborhoods are restricted the points at a distance lower than
         radius.
@@ -381,6 +409,13 @@ class MinHash():
         else:
             fast = 0
 
+        if similarity is None:
+            similarity = -1
+        elif similarity:
+            similarity = 1
+        else:
+            similarity = 0
+
         if mode == "connectivity":
             return_distance = False
         elif mode == "distance":
@@ -395,6 +430,7 @@ class MinHash():
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
                                     fast, 1 if symmetric else 0,
+                                    similarity, 
                                     self._pointer_address_of_minHash_object)
         else:
             X_csr = csr_matrix(X)
@@ -408,12 +444,13 @@ class MinHash():
                                     radius if radius else 0,
                                     1 if return_distance else 0,
                                     fast, 1 if symmetric else 0, 
+                                    similarity, 
                                     self._pointer_address_of_minHash_object)
 
         return csr_matrix((data, (row, column)))
 
 
-    def fit_kneighbors(self, X, n_neighbors=None, return_distance=True, fast=None):
+    def fit_kneighbors(self, X, n_neighbors=None, return_distance=True, fast=None, similarity=None):
         """"Fits and returns the n_neighbors of X.
 
         Parameters
@@ -444,6 +481,12 @@ class MinHash():
             fast = 1
         else:
             fast = 0
+        if similarity is None:
+            similarity = -1
+        elif similarity:
+            similarity = 1
+        else:
+            similarity = 0
         X_csr = csr_matrix(X)
         
         self._index_elements_count = X_csr.shape[0]
@@ -457,14 +500,14 @@ class MinHash():
                                                     X_csr.shape[0], maxFeatures,
                                                     n_neighbors if n_neighbors else 0,
                                                     1 if return_distance else 0,
-                                                    fast,
+                                                    fast, similarity, 
                                                     self._pointer_address_of_minHash_object)
         if return_distance:
             return asarray(result[0]), asarray(result[1])
         else:
             return asarray(result[0])
 
-    def fit_kneighbor_graph(self, X, n_neighbors=None, mode='connectivity', fast=None, symmetric=True):
+    def fit_kneighbor_graph(self, X, n_neighbors=None, mode='connectivity', fast=None, symmetric=True, similarity=None):
         """Fits and computes the (weighted) graph of k-Neighbors for points in X
             Parameters
             ----------
@@ -495,6 +538,13 @@ class MinHash():
             fast = 1
         else:
             fast = 0
+        if similarity is None:
+            similarity = -1
+        elif similarity:
+            similarity = 1
+        else:
+            similarity = 0
+
         if mode == "connectivity":
             return_distance = False
         elif mode == "distance":
@@ -514,10 +564,11 @@ class MinHash():
                                                     n_neighbors if n_neighbors else 0,
                                                     1 if return_distance else 0,
                                                     fast, 1 if symmetric else 0, 
+                                                    similarity, 
                                                     self._pointer_address_of_minHash_object)
         return csr_matrix((data, (row, column)))
 
-    def fit_radius_neighbors(self, X, radius=None, return_distance=None, fast=None):
+    def fit_radius_neighbors(self, X, radius=None, return_distance=None, fast=None, similarity=None):
         """Finds the neighbors within a given radius of a point or points.
         Return the indices and distances of each point from the dataset
         lying in a ball with size ``radius`` around the points of the query
@@ -555,6 +606,14 @@ class MinHash():
             fast = 1
         else:
             fast = 0
+
+        if similarity is None:
+            similarity = -1
+        elif similarity:
+            similarity = 1
+        else:
+            similarity = 0
+
         X_csr = csr_matrix(X)
 
         self._index_elements_count = X_csr.shape[0]
@@ -566,14 +625,14 @@ class MinHash():
                                                     X_csr.shape[0], maxFeatures,
                                                     radius if radius else 0,
                                                     1 if return_distance else 0,
-                                                    fast,
+                                                    fast, similarity, 
                                                     self._pointer_address_of_minHash_object)
         if return_distance:
             return asarray(result[0]), asarray(result[1])
         else:
             return asarray(result[0])
         
-    def fit_radius_neighbors_graph(self, X, radius=None, mode='connectivity', fast=None, symmetric=True):
+    def fit_radius_neighbors_graph(self, X, radius=None, mode='connectivity', fast=None, symmetric=True, similarity=None):
         """Fits and computes the (weighted) graph of Neighbors for points in X
         Neighborhoods are restricted the points at a distance lower than
         radius.
@@ -607,6 +666,13 @@ class MinHash():
         else:
             fast = 0
 
+        if similarity is None:
+            similarity = -1
+        elif similarity:
+            similarity = 1
+        else:
+            similarity = 0
+
         if mode == "connectivity":
             return_distance = False
         elif mode == "distance":
@@ -626,5 +692,6 @@ class MinHash():
                                                     radius if radius else 0,
                                                     1 if return_distance else 0,
                                                     fast, 1 if symmetric else 0, 
+                                                    similarity, 
                                                     self._pointer_address_of_minHash_object)
         return csr_matrix((data, (row, column)))
