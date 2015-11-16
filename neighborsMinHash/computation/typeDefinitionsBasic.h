@@ -15,6 +15,7 @@
 #include <vector>
 #include <map> 
 #include <unordered_map>
+#include <utility>
 
 #define MAX_VALUE 2147483647
 
@@ -49,9 +50,9 @@ struct sortMapFloat {
     float val;
 };
 
-// static bool mapSortDescByValueFloat(const sortMapFloat& a, const sortMapFloat& b) {
-//         return a.val > b.val;
-// };
+static bool mapSortDescByValueFloat(const sortMapFloat& a, const sortMapFloat& b) {
+        return a.val > b.val;
+};
 static bool mapSortAscByValueFloat(const sortMapFloat& a, const sortMapFloat& b) {
         return a.val < b.val;
 };
