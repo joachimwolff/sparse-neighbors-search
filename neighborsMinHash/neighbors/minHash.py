@@ -225,7 +225,7 @@ class MinHash():
 
         # print result[0]
         # print result[1]
-        print "foo"
+        # print "foo"
         if return_distance:
             return asarray(result[0]), asarray(result[1])
         else:
@@ -300,7 +300,8 @@ class MinHash():
                                     max_number_of_instances, maxFeatures,
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
-                                    fast, self._pointer_address_of_minHash_object)
+                                    fast, 1 if symmetric else 0, 
+                                    self._pointer_address_of_minHash_object)
         
         return csr_matrix((data, (row, column)))
 
@@ -453,7 +454,8 @@ class MinHash():
                                     max_number_of_instances, maxFeatures,
                                     radius if radius else 0,
                                     1 if return_distance else 0,
-                                    fast, self._pointer_address_of_minHash_object)
+                                    fast, 1 if symmetric else 0, 
+                                    self._pointer_address_of_minHash_object)
 
         return csr_matrix((data, (row, column)))
 
@@ -578,7 +580,7 @@ class MinHash():
                                                     X.shape[0], maxFeatures,
                                                     n_neighbors if n_neighbors else 0,
                                                     1 if return_distance else 0,
-                                                    fast,
+                                                    fast, 1 if symmetric else 0, 
                                                     self._pointer_address_of_minHash_object)
         return csr_matrix((data, (row, column)))
 
@@ -710,6 +712,6 @@ class MinHash():
                                                     X.shape[0], maxFeatures,
                                                     radius if radius else 0,
                                                     1 if return_distance else 0,
-                                                    fast,
+                                                    fast, 1 if symmetric else 0, 
                                                     self._pointer_address_of_minHash_object)
         return csr_matrix((data, (row, column)))
