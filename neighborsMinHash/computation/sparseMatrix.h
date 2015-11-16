@@ -84,8 +84,8 @@ class SparseMatrixFloat {
         // iterate over all candidates
 
         for (size_t i = 0; i < pRowIdVector.size(); ++i) {
-            std::cout << "77S" << std::endl;
-            std::cout << "id: " << pRowIdVector[i] << std::endl;
+            // std::cout << "77S" << std::endl;
+            // std::cout << "id: " << pRowIdVector[i] << std::endl;
             sortMapFloat element; 
             element.key = pRowIdVector[i];
             element.val = 0.0;
