@@ -71,11 +71,11 @@ class SparseMatrixFloat {
         size_t pointerToMatrixElement = 0;
         size_t pointerToVectorElement = 0;
         // iterate over all candidates
-    std::cout << "74S" << std::endl;
+    // std::cout << "74S" << std::endl;
 
         for (size_t i = 0; i < pRowIdVector.size(); ++i) {
-    // std::cout << "77S" << std::endl;
-
+    std::cout << "77S" << std::endl;
+    std::cout << "id: " << pRowIdVector[i] << std::endl;
             sortMapFloat element; 
             element.key = pRowIdVector[i];
             element.val = 0.0;
@@ -170,10 +170,87 @@ class SparseMatrixFloat {
         if (pNneighbors > returnValue->size()) {
             numberOfElementsToSort = returnValue->size();
         }
-    std::cout << "173S" << std::endl;
+    // std::cout << "173S" << std::endl;
 
         // sort the values by increasing order
         std::partial_sort(returnValue->begin(), returnValue->begin()+numberOfElementsToSort, returnValue->end(), mapSortAscByValueFloat);
+        return returnValue;
+    };
+
+    std::vector<sortMapFloat>* cosineSimilarity(const std::vector<int> pRowIdVector, const int pRowId, const size_t pNneighbors) const {
+
+        std::vector<sortMapFloat>* returnValue = new std::vector<sortMapFloat>(pRowIdVector.size());
+        size_t pointerToMatrixElement = 0;
+        size_t pointerToVectorElement = 0;
+        // iterate over all candidates
+
+        for (size_t i = 0; i < pRowIdVector.size(); ++i) {
+            sortMapFloat element; 
+            element.key = pRowIdVector[i];
+            element.val = 0.0;
+            float dotProduct = 0.0;
+            float magnitudeFirstVector = 0.0;
+            float magnitudeSecondVector = 0.0;
+
+            // features ids are stored in mSparseMatrix. 
+            // every instances starts at index indexId*mMaxNnz --> every instance can store maximal mMaxNnz feature ids
+            // how many elements per index are stored is stored in mSizesOfInstances[indexID]
+            // iterate until both instances have no more feature ids
+            bool endOfFirstVector = pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]];
+            bool endOfSecondVector = pointerToVectorElement < mSizesOfInstances[pRowId];
+
+            while (endOfFirstVector && endOfSecondVector) {
+                // are the feature ids of the two instances the same?
+                size_t featureIdFirstVector = mSparseMatrix[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
+                size_t featureIdSecondVector = mSparseMatrix[pRowId*mMaxNnz + pointerToVectorElement];
+                if (featureIdFirstVector == featureIdSecondVector) {
+                    // if they are the same substract the values, compute the square and sum it up
+                    dotProduct += mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] * mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
+                    magnitudeFirstVector += mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] * mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
+                    magnitudeSecondVector += mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement] * mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
+                    // increase both counters to the next element 
+                    ++pointerToMatrixElement;
+                    ++pointerToVectorElement;
+                } else if (featureIdFirstVector < featureIdSecondVector) {
+                    // if the feature ids are unequal square only the smaller one and add it to the sum
+                    // float value = mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
+                    // element.val += value * value;
+                    // increase counter for first vector
+                    magnitudeFirstVector += mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] * mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
+                    ++pointerToMatrixElement;
+                } else {
+                    // float value = mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
+                    // element.val += value * value;
+                    magnitudeSecondVector += mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement] * mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
+                    ++pointerToVectorElement;
+                }
+                endOfFirstVector = pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]];
+                endOfSecondVector = pointerToVectorElement < mSizesOfInstances[pRowId];
+            }
+            while (endOfFirstVector) {
+                magnitudeFirstVector += mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] * mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
+                ++pointerToMatrixElement;
+                endOfFirstVector = pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]];
+            }
+            while (endOfSecondVector) {
+                magnitudeSecondVector += mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement] * mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
+                ++pointerToVectorElement;
+                endOfSecondVector = pointerToVectorElement < mSizesOfInstances[pRowId];
+            }
+
+            pointerToMatrixElement = 0;
+            pointerToVectorElement = 0;
+            // square root of the sum
+            element.val = dotProduct / static_cast<float>(magnitudeFirstVector * magnitudeSecondVector);
+            
+            (*returnValue)[i] = element;
+        }
+        size_t numberOfElementsToSort = pNneighbors;
+        if (pNneighbors > returnValue->size()) {
+            numberOfElementsToSort = returnValue->size();
+        }
+        // sort the values by increasing order
+        std::partial_sort(returnValue->begin(), returnValue->begin()+numberOfElementsToSort, returnValue->end(), mapSortDescByValueFloat);
         return returnValue;
     };
 };
