@@ -34,7 +34,6 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pBlockSize,
         mFast = pFast;
         mNumberOfCores = pNumberOfCores;
         mChunkSize = pChunkSize;
-
 }
 
 MinHashBase::~MinHashBase(){
@@ -62,7 +61,7 @@ neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t 
 
     umap_uniqueElement* X;
     bool doubleElementsStorageCount = false;
-    if (pRawData->size() == 0) {
+    if (pRawData == NULL) {
         // no query data given, use stored signatures
         X = mInverseIndex->getSignatureStorage();
         doubleElementsStorageCount = true;
@@ -101,10 +100,10 @@ if (mChunkSize <= 0) {
             std::vector<sortMapFloat>* exactNeighbors;
             if (pSimilarity) {
                 exactNeighbors = 
-                    mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), neighborhood_->neighbors->operator[](i)[0], pNneighbors);
+                    mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), neighborhood_->neighbors->operator[](i)[0], pNneighbors, pRawData);
             } else {
                 exactNeighbors = 
-                    mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), neighborhood_->neighbors->operator[](i)[0], pNneighbors);
+                    mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), neighborhood_->neighbors->operator[](i)[0], pNneighbors, pRawData);
             }
             
     // std::cout << "101M" << std::endl;
