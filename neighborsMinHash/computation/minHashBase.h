@@ -44,7 +44,7 @@ class MinHashBase {
     // Extend the inverse index with the given instances.
     void partialFit(); 
     // Calculate k-nearest neighbors.
-    neighborhood* kneighbors(const SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast); 
+    neighborhood* kneighbors(const SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast, size_t pSimilarity = 0); 
     // Calculate k-nearest neighbors as a graph.
 
     void set_mOriginalData(SparseMatrixFloat* pOriginalData) {
