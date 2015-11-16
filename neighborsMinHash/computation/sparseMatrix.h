@@ -50,6 +50,13 @@ class SparseMatrixFloat {
             return MAX_VALUE;
         }
     }
+    float getNextValue(size_t pInstance, size_t pCounter) const {
+        if (pCounter < mSizesOfInstances[pInstance]) {
+            return mSparseMatrixValues[pInstance*mMaxNnz+pCounter];
+        } else {
+            return MAX_VALUE;
+        }
+    }
     size_t size() const {
         return mNumberOfInstances;
     }
@@ -66,119 +73,92 @@ class SparseMatrixFloat {
         mSizesOfInstances[pInstanceId] = pSizeOfInstance;
     };
 
-    std::vector<sortMapFloat>* euclidianDistance(const std::vector<int> pRowIdVector, const int pRowId, const size_t pNneighbors) const {
+    std::vector<sortMapFloat>* euclidianDistance(const std::vector<int> pRowIdVector, const int pRowId, const size_t pNneighbors, const SparseMatrixFloat* pQueryData=NULL) const {
+        const SparseMatrixFloat* queryData = this;
+        if (pQueryData != NULL) {
+            queryData = pQueryData;
+        }
         std::vector<sortMapFloat>* returnValue = new std::vector<sortMapFloat>(pRowIdVector.size());
         size_t pointerToMatrixElement = 0;
         size_t pointerToVectorElement = 0;
         // iterate over all candidates
-    // std::cout << "74S" << std::endl;
 
         for (size_t i = 0; i < pRowIdVector.size(); ++i) {
-    std::cout << "77S" << std::endl;
-    std::cout << "id: " << pRowIdVector[i] << std::endl;
+            std::cout << "77S" << std::endl;
+            std::cout << "id: " << pRowIdVector[i] << std::endl;
             sortMapFloat element; 
             element.key = pRowIdVector[i];
             element.val = 0.0;
-    // std::cout << "82S" << std::endl;
-
             // features ids are stored in mSparseMatrix. 
             // every instances starts at index indexId*mMaxNnz --> every instance can store maximal mMaxNnz feature ids
             // how many elements per index are stored is stored in mSizesOfInstances[indexID]
             // iterate until both instances have no more feature ids
-            bool endOfFirstVector = pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]];
-            bool endOfSecondVector = pointerToVectorElement < mSizesOfInstances[pRowId];
-    // std::cout << "90S" << std::endl;
+            bool endOfFirstVectorNotReached = pointerToMatrixElement < this->getSizeOfInstance(pRowIdVector[i]);
+            // bool endOfSecondVector = pointerToVectorElement < mSizesOfInstances[pRowId];
+            bool endOfSecondVectorNotReached = pointerToVectorElement < queryData->getSizeOfInstance(pRowId);
 
-            while (endOfFirstVector && endOfSecondVector) {
+            while (endOfFirstVectorNotReached && endOfSecondVectorNotReached) {
                 // are the feature ids of the two instances the same?
-    // std::cout << "94S" << std::endl;
 
-                size_t featureIdFirstVector = mSparseMatrix[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
-                size_t featureIdSecondVector = mSparseMatrix[pRowId*mMaxNnz + pointerToVectorElement];
-    // std::cout << "98S" << std::endl;
+                size_t featureIdFirstVector = this->getNextElement(pRowIdVector[i], pointerToMatrixElement);
+                size_t featureIdSecondVector = queryData->getNextElement(pRowId, pointerToVectorElement);
 
                 if (featureIdFirstVector == featureIdSecondVector) {
-    // std::cout << "101S" << std::endl;
-                   
                     // if they are the same substract the values, compute the square and sum it up
-                    float value = mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] - mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
+                    float value = this->getNextValue(pRowIdVector[i], pointerToMatrixElement) - queryData->getNextValue(pRowId, pointerToVectorElement);
                     element.val += value * value;
                     // increase both counters to the next element 
                     ++pointerToMatrixElement;
                     ++pointerToVectorElement;
-    // std::cout << "109S" << std::endl;
-                
                 } else if (featureIdFirstVector < featureIdSecondVector) {
-    // std::cout << "112S" << std::endl;
-                
                     // if the feature ids are unequal square only the smaller one and add it to the sum
-                    float value = mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
+                    float value = this->getNextValue(pRowIdVector[i], pointerToMatrixElement);
                     element.val += value * value;
                     // increase counter for first vector
                     ++pointerToMatrixElement;
-    // std::cout << "119S" << std::endl;
-                
                 } else {
-    // std::cout << "122S" << std::endl;
-                
-                    float value = mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
+                    float value = queryData->getNextValue(pRowId, pointerToVectorElement);
                     element.val += value * value;
                     ++pointerToVectorElement;
-    // std::cout << "127S" << std::endl;
-                
                 }
-    // std::cout << "130S" << std::endl;
 
-                endOfFirstVector = pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]];
-                endOfSecondVector = pointerToVectorElement < mSizesOfInstances[pRowId];
+                endOfFirstVectorNotReached = pointerToMatrixElement < this->getSizeOfInstance(pRowIdVector[i]);
+                endOfSecondVectorNotReached = pointerToVectorElement < queryData->getSizeOfInstance(pRowId);
             }
-            while (endOfFirstVector) {
-    // std::cout << "136S" << std::endl;
-
-                float value = mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
+            while (endOfFirstVectorNotReached) {
+                float value = this->getNextValue(pRowIdVector[i], pointerToMatrixElement);
                 element.val += value * value;
                 ++pointerToMatrixElement;
-                endOfFirstVector = pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]];
-    // std::cout << "142S" << std::endl;
-
+                endOfFirstVectorNotReached = pointerToMatrixElement < this->getSizeOfInstance(pRowIdVector[i]);
             }
-            while (endOfSecondVector) {
-    // std::cout << "146S" << std::endl;
-
-                float value = mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
+            while (endOfSecondVectorNotReached) {
+                float value = queryData->getNextValue(pRowId, pointerToVectorElement);
                 element.val += value * value;
                 ++pointerToVectorElement;
-                endOfSecondVector = pointerToVectorElement < mSizesOfInstances[pRowId];
-    // std::cout << "152S" << std::endl;
-
+                endOfSecondVectorNotReached = pointerToVectorElement < queryData->getSizeOfInstance(pRowId);
             }
-    // std::cout << "155S" << std::endl;
-
             pointerToMatrixElement = 0;
             pointerToVectorElement = 0;
             // square root of the sum
             element.val = sqrt(element.val);
             
             (*returnValue)[i] = element;
-    // std::cout << "163S" << std::endl;
-            
         }
-
-    // std::cout << "167S" << std::endl;
 
         size_t numberOfElementsToSort = pNneighbors;
         if (pNneighbors > returnValue->size()) {
             numberOfElementsToSort = returnValue->size();
         }
-    // std::cout << "173S" << std::endl;
-
         // sort the values by increasing order
         std::partial_sort(returnValue->begin(), returnValue->begin()+numberOfElementsToSort, returnValue->end(), mapSortAscByValueFloat);
         return returnValue;
     };
 
-    std::vector<sortMapFloat>* cosineSimilarity(const std::vector<int> pRowIdVector, const int pRowId, const size_t pNneighbors) const {
-
+    std::vector<sortMapFloat>* cosineSimilarity(const std::vector<int> pRowIdVector, const int pRowId, const size_t pNneighbors, const SparseMatrixFloat* pQueryData=NULL) const {
+        const SparseMatrixFloat* queryData = this;
+        if (pQueryData != NULL) {
+            queryData = pQueryData;
+        }
         std::vector<sortMapFloat>* returnValue = new std::vector<sortMapFloat>(pRowIdVector.size());
         size_t pointerToMatrixElement = 0;
         size_t pointerToVectorElement = 0;
@@ -196,51 +176,49 @@ class SparseMatrixFloat {
             // every instances starts at index indexId*mMaxNnz --> every instance can store maximal mMaxNnz feature ids
             // how many elements per index are stored is stored in mSizesOfInstances[indexID]
             // iterate until both instances have no more feature ids
-            bool endOfFirstVector = pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]];
-            bool endOfSecondVector = pointerToVectorElement < mSizesOfInstances[pRowId];
+            bool endOfFirstVectorNotReached = pointerToMatrixElement < this->getSizeOfInstance(pRowIdVector[i]);
+            bool endOfSecondVectorNotReached = pointerToVectorElement < queryData->getSizeOfInstance(pRowId);
 
-            while (endOfFirstVector && endOfSecondVector) {
+            while (endOfFirstVectorNotReached && endOfSecondVectorNotReached) {
                 // are the feature ids of the two instances the same?
-                size_t featureIdFirstVector = mSparseMatrix[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
-                size_t featureIdSecondVector = mSparseMatrix[pRowId*mMaxNnz + pointerToVectorElement];
+                size_t featureIdFirstVector = this->getNextElement(pRowIdVector[i], pointerToMatrixElement);
+                size_t featureIdSecondVector = queryData->getNextElement(pRowId, pointerToVectorElement);
+
                 if (featureIdFirstVector == featureIdSecondVector) {
                     // if they are the same substract the values, compute the square and sum it up
-                    dotProduct += mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] * mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
-                    magnitudeFirstVector += mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] * mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
-                    magnitudeSecondVector += mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement] * mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
+                    dotProduct += this->getNextValue(pRowIdVector[i], pointerToMatrixElement) * queryData->getNextValue(pRowId, pointerToVectorElement);
+                    magnitudeFirstVector += pow(this->getNextValue(pRowIdVector[i], pointerToMatrixElement), 2);
+                    magnitudeSecondVector += pow(queryData->getNextValue(pRowId, pointerToVectorElement),2);
                     // increase both counters to the next element 
                     ++pointerToMatrixElement;
                     ++pointerToVectorElement;
                 } else if (featureIdFirstVector < featureIdSecondVector) {
                     // if the feature ids are unequal square only the smaller one and add it to the sum
-                    // float value = mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
-                    // element.val += value * value;
+                    magnitudeFirstVector += pow(this->getNextValue(pRowIdVector[i], pointerToMatrixElement), 2);
                     // increase counter for first vector
-                    magnitudeFirstVector += mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] * mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
                     ++pointerToMatrixElement;
                 } else {
-                    // float value = mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
-                    // element.val += value * value;
-                    magnitudeSecondVector += mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement] * mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
+                    magnitudeSecondVector += pow(queryData->getNextValue(pRowId, pointerToVectorElement), 2);
+                    // increase counter for second vector
                     ++pointerToVectorElement;
                 }
-                endOfFirstVector = pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]];
-                endOfSecondVector = pointerToVectorElement < mSizesOfInstances[pRowId];
+                endOfFirstVectorNotReached = pointerToMatrixElement < this->getSizeOfInstance(pRowIdVector[i]);
+                endOfSecondVectorNotReached = pointerToVectorElement < queryData->getSizeOfInstance(pRowId);
             }
-            while (endOfFirstVector) {
-                magnitudeFirstVector += mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement] * mSparseMatrixValues[pRowIdVector[i]*mMaxNnz + pointerToMatrixElement];
+            while (endOfFirstVectorNotReached) {
+                magnitudeFirstVector += pow(this->getNextValue(pRowIdVector[i], pointerToMatrixElement), 2);
                 ++pointerToMatrixElement;
-                endOfFirstVector = pointerToMatrixElement < mSizesOfInstances[pRowIdVector[i]];
+                endOfFirstVectorNotReached = pointerToMatrixElement < this->getSizeOfInstance(pRowIdVector[i]);
             }
-            while (endOfSecondVector) {
-                magnitudeSecondVector += mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement] * mSparseMatrixValues[pRowId*mMaxNnz + pointerToVectorElement];
+            while (endOfSecondVectorNotReached) {
+                magnitudeSecondVector += pow(queryData->getNextValue(pRowId, pointerToVectorElement), 2);
                 ++pointerToVectorElement;
-                endOfSecondVector = pointerToVectorElement < mSizesOfInstances[pRowId];
+                endOfSecondVectorNotReached = pointerToVectorElement < queryData->getSizeOfInstance(pRowId);
             }
 
             pointerToMatrixElement = 0;
             pointerToVectorElement = 0;
-            // square root of the sum
+            // compute cosine similarity
             element.val = dotProduct / static_cast<float>(magnitudeFirstVector * magnitudeSecondVector);
             
             (*returnValue)[i] = element;
