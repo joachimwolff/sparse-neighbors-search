@@ -52,7 +52,7 @@ def test(data):
     # if not os.path.exists("inverse_index.approx"):
     print "Build inverse index for approximate..."
     time_build_approx_start = time.time()
-    minHash = MinHash(number_of_hash_functions=400)
+    minHash = MinHash(number_of_hash_functions=400, similarity=True)
     # minHash.fit(data[0])
     minHash.fit(datasetBursi)
 
@@ -70,7 +70,7 @@ def test(data):
 
 
     time_comp_approx = time.time()
-    approx1 = minHash.kneighbors(fast=True,return_distance=False)
+    approx1 = minHash.kneighbors(fast=True,return_distance=True)
     print "Approx solution, distance=False: ", approx1
     # print "Approx solution, distance=True: ", minHash_approximate.kneighbors(centroids_neighborhood,return_distance=True)
 
@@ -79,7 +79,7 @@ def test(data):
     print "\n\n"
 
     time_comp_approx = time.time()
-    exact1 = minHash.kneighbors(fast=False,return_distance=False)
+    exact1 = minHash.kneighbors(fast=False,return_distance=True)
     print "Exact solution, distance=False: ", exact1
     # print "Approx solution, distance=True: ", minHash_approximate.kneighbors(centroids_neighborhood,return_distance=True)
 
@@ -404,9 +404,9 @@ if __name__ == "__main__":
     #     dataset = pickle.load( open( "dataset", "rb" ) ) #load
     # print "row: ", dataset[0].getrow(0).keys()[0]
     # print "nnz: ", dataset[0].getrow(0).getnnz()
-    test_kneighbor_graph(dataset)
+    # test_kneighbor_graph(dataset)
     # inverse_index_obj = InverseIndex()
     # print inverse_index_obj.signature(dataset[0].getrow(0))
-    # test(dataset)
+    test(dataset)
     # test_predict(dataset)
     #test_radius_neighbors(dataset)
