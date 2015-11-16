@@ -18,13 +18,12 @@ static neighborhood* neighborhoodComputation(size_t pMinHashAddress, PyObject* p
                                                    size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures, 
                                                    size_t pNneighbors, int pFast) {
     // std::cout << "20" << std::endl;
-
-    SparseMatrixFloat* originalDataMatrix = parseRawData(pInstancesListObj, pFeaturesListObj, pDataListObj, 
+    SparseMatrixFloat* originalDataMatrix = NULL;
+    if (pMaxNumberOfInstances != 0) {
+        originalDataMatrix = parseRawData(pInstancesListObj, pFeaturesListObj, pDataListObj, 
                                                     pMaxNumberOfInstances, pMaxNumberOfFeatures);
-    // std::cout << "24" << std::endl;
-
+    }
     MinHash* minHash = reinterpret_cast<MinHash* >(pMinHashAddress);
-    // std::cout << "27" << std::endl;
 
     // compute the k-nearest neighbors
     return minHash->kneighbors(originalDataMatrix, pNneighbors, pFast);
@@ -40,9 +39,9 @@ static neighborhood* fitNeighborhoodComputation(size_t pMinHashAddress, PyObject
     minHash->set_mOriginalData(originalDataMatrix);
 
     minHash->fit(originalDataMatrix);
-    SparseMatrixFloat* emptyMatrix = new SparseMatrixFloat(0, 0);
+    SparseMatrixFloat* emptyMatrix = NULL;
     neighborhood* neighborhood_ = minHash->kneighbors(emptyMatrix, pNneighbors, pFast);
-    delete emptyMatrix;
+    // delete emptyMatrix;
     return neighborhood_;
 }
 
