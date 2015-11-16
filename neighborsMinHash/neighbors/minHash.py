@@ -278,7 +278,8 @@ class MinHash():
                                     0, 0,
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
-                                    1 if fast else 0, self._pointer_address_of_minHash_object)
+                                    1 if fast else 0, 1 if symmetric else 0,
+                                    self._pointer_address_of_minHash_object)
         else:
             X = csr_matrix(X)
 
@@ -432,7 +433,8 @@ class MinHash():
                                     0, 0,
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
-                                    fast, self._pointer_address_of_minHash_object)
+                                    fast, 1 if symmetric else 0,
+                                    self._pointer_address_of_minHash_object)
         else:
             X = csr_matrix(X)
 
