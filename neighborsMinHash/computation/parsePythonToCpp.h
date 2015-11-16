@@ -248,24 +248,69 @@ static PyObject* radiusNeighborhoodGraph(const neighborhood* pNeighborhood, cons
     PyObject * columnList = PyList_New(0);
     PyObject * dataList = PyList_New(0);
 
-    for (size_t i = 0; i < sizeOfNeighborList; ++i) {
+    std::map<std::pair<size_t, size_t>, float> symmetricMatrix;
+    if (symmetric) {
+        for (size_t i = 0; i < sizeOfNeighborList; ++i) {
+            size_t root = pNeighborhood->neighbors->operator[](i)[0];
+            size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
 
-        PyObject* root = Py_BuildValue("i", pNeighborhood->neighbors->operator[](i)[0]);
-        size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
-        for (size_t j = 1; j < sizeOfInnerNeighborList; ++j) {
-            if (pNeighborhood->distances->operator[](i)[j] <= pRadius) {
-                PyObject* node = Py_BuildValue("i", pNeighborhood->neighbors->operator[](i)[j]);
-                PyObject* distance;
-                if (pReturnDistance) {
-                    distance = Py_BuildValue("f", pNeighborhood->distances->operator[](i)[j]);
+            for (size_t j = 0; j < sizeOfInnerNeighborList; ++j) {
+                if (pNeighborhood->distances->operator[](i)[j] <= pRadius) {
+                    size_t node = pNeighborhood->neighbors->operator[](i)[j];
+                    float distance;
+                    if (pReturnDistance) {
+                        distance = pNeighborhood->distances->operator[](i)[j];
+                    } else {
+                        distance = 1.0;
+                    }
+                    std::pair<size_t, size_t> rootNodePair = std::make_pair(root, node);
+                    auto it = symmetricMatrix.find(rootNodePair);
+                    if (it != symmetricMatrix.end()) {
+                        symmetricMatrix[rootNodePair] = (symmetricMatrix[rootNodePair] + distance) / 2;
+                    } else {
+                        symmetricMatrix[rootNodePair] = distance;
+                    }
+                    rootNodePair = std::make_pair(node, root);
+                    it = symmetricMatrix.find(rootNodePair);
+                    if (it != symmetricMatrix.end()) {
+                        symmetricMatrix[rootNodePair] = (symmetricMatrix[rootNodePair] + distance) / 2;
+                    } else {
+                        symmetricMatrix[rootNodePair] = distance;
+                    }
                 } else {
-                    distance = Py_BuildValue("f", 1.0);
+                    break;
                 }
-                PyList_Append(rowList, root);
-                PyList_Append(columnList, node);
-                PyList_Append(dataList, distance); 
-            } else {
-                break;
+            }
+        }
+
+        for (auto itSymmetric = symmetricMatrix.begin(); itSymmetric != symmetricMatrix.end(); ++itSymmetric) {
+            PyObject* root = Py_BuildValue("i", itSymmetric->first.first);
+            PyObject* node = Py_BuildValue("i", itSymmetric->first.second);
+            PyObject* distance = Py_BuildValue("f", itSymmetric->second);
+            PyList_Append(rowList, root);
+            PyList_Append(columnList, node);
+            PyList_Append(dataList, distance);
+        }
+    } else {
+        for (size_t i = 0; i < sizeOfNeighborList; ++i) {
+
+            PyObject* root = Py_BuildValue("i", pNeighborhood->neighbors->operator[](i)[0]);
+            size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
+            for (size_t j = 1; j < sizeOfInnerNeighborList; ++j) {
+                if (pNeighborhood->distances->operator[](i)[j] <= pRadius) {
+                    PyObject* node = Py_BuildValue("i", pNeighborhood->neighbors->operator[](i)[j]);
+                    PyObject* distance;
+                    if (pReturnDistance) {
+                        distance = Py_BuildValue("f", pNeighborhood->distances->operator[](i)[j]);
+                    } else {
+                        distance = Py_BuildValue("f", 1.0);
+                    }
+                    PyList_Append(rowList, root);
+                    PyList_Append(columnList, node);
+                    PyList_Append(dataList, distance); 
+                } else {
+                    break;
+                }
             }
         }
     }
