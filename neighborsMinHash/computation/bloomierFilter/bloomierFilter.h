@@ -1,4 +1,5 @@
 #include "../typeDefinitions.h"
+#include "bloomierHash.h"
 #ifndef BLOOMIER_FILTER_H
 #define BLOOMIER_FILTER_H
 class BloomierFilter {
@@ -9,6 +10,8 @@ class BloomierFilter {
     size_t mM;
     size_t mK;
     size_t mQ;
+    BloomierHash mBloomierHash;
+    size_t mByteSize;
   public:      
     BloomierFilter(size_t pHashSeed, size_t pM, size_t pK, size_t pQ) {
 

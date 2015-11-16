@@ -5,6 +5,8 @@ BloomierFilter::BloomierFilter(size_t pHashSeed, size_t pM, size_t pK, size_t pQ
 	mM = pM;;
 	mK = pK;
 	mQ = pQ;
+	mBloomierHash = new BloomierHash(pHashSeed, pM, pK, pQ);
+	m;
 }
 
 BloomierFilter::~BloomierFilter(){
