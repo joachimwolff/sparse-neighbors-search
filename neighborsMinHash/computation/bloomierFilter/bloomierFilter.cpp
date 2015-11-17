@@ -1,31 +1,37 @@
 #include "bloomierFilter.h"
 
-BloomierFilter::BloomierFilter(size_t pHashSeed, size_t pM, size_t pK, size_t pQ){
+BloomierFilter::BloomierFilter(size_t pHashSeed, std::map<size_t, size_t> pKeyDict, size_t pM, size_t pK, size_t pQ){
 	mHashSeed = pHashSeed;
 	mM = pM;;
 	mK = pK;
 	mQ = pQ;
+	mKeyDict = pKeyDict;
 	mBloomierHash = new BloomierHash(pHashSeed, pM, pK, pQ);
-	m;
+	mOrderAndMatchFinder = new OrderAndMatchFinder(pHashSeed, pKeyDict, pM, pK, pQ);
+	vsize_t orderAndMatch = mOrderAndMatchFinder.find(); // datatype?
+	mByteSize = this->getByteSize(pQ);
+	mTable = new vvsize_t(pM, vsize_t(mByteSize, 0));
+    mValueTable = new vsize_t(pM, 0);
+    this->create(pKeyDict, orderAndMatch);
 }
 
 BloomierFilter::~BloomierFilter(){
 
-};
-
-vsize_t* BloomierFilter::getTable() {
-
 }
 
-void BloomierFilter::setTable(vsize_t pTable) {
+vvsize_t* BloomierFilter::getTable() {
+	return mTable;
+}
 
+void BloomierFilter::setTable(vvsize_t* pTable) {
+	mTable = pTable;
 }
 
 vsize_t* BloomierFilter::getValueTable() {
-
+	return mValueTablel
 }
 void BloomierFilter::setValueTable(vsize_t* pTable) {
-
+	mValueTable = pTable;
 } 
 
 size_t BloomierFilter::xorOperation(size_t pValue, size_t pM, vsize_t pNeighbors) {
@@ -48,3 +54,14 @@ std::string BloomierFilter::tableToString() {
 std::pair<vsize_t, vsize_t > stringToTable(std::string pString) {
 
 } 
+
+size_t BloomierFilter::getByteSize(size_t pQ) {
+	
+}
+
+void BloomierFilter::byteArrayXor(vsize_t* pResult, vsize_t pInput) {
+	size_t length = min(pResult->size(), pInput->size());
+	for (size_t i = 0; i < length; ++i) {
+		(*pResult)[i] = (*pResult)[i] ^ (*pInput)[i];
+	}
+}
