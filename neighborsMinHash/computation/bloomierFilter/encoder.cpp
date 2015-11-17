@@ -1,6 +1,6 @@
-#include "encode.h"
+#include "encoder.h"
 
-vsize_t* Encode::encode(size_t value, size_t width=1) {
+vsize_t* Encoder::encode(size_t value, size_t width=1) {
 	vsize_t result = this->size_tToByteArray(value);
 	vsize_t* val;
 	if width < 4:
@@ -16,11 +16,11 @@ vsize_t* Encode::encode(size_t value, size_t width=1) {
 	}
 	return val;
 }
-size_t Encode::decode(size_t value) {
+size_t Encoder::decode(size_t value) {
 	return this->byteArrayToSize_t(value);
 }
 
-vsize_t* Encode::size_tToByteArray(size_t pValue) {
+vsize_t* Encoder::size_tToByteArray(size_t pValue) {
 	vsize_t* byteArray = new vsize_t(4);
 	(*byteArray)[0] = value >> 24 & 0x000000FF;
 	(*byteArray)[1] = value >> 16 & 0x000000FF;
@@ -29,7 +29,7 @@ vsize_t* Encode::size_tToByteArray(size_t pValue) {
 	return byteArray;
 }
 
-size_t Encode::byteArrayToSize_t(vsize_t* pArray) {
+size_t Encoder::byteArrayToSize_t(vsize_t* pArray) {
 	vsize_t* val;
 	if (pArray->size() < 4) {
 		val = new vsize_t(4, 0);
