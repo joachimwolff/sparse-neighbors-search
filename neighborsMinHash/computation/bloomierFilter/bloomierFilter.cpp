@@ -41,8 +41,21 @@ vsize_t* BloomierFilter::xorOperation(vsize_t* pValue, vsize_t* pM, vsize_t* pNe
 	}
 	return pValue;
 }
-vsize_t BloomierFilter::get(size_t pKey) {
+size_t BloomierFilter::get(size_t pKey) {
+	vsize_t* neighbors = mBloomierHash.getNeighborhood(pKey);
+	vsize_t* mask = mBloomierHash.getM(pKey);
 
+	vsize_t* valueToGet = new vsize_t(mByteSize, 0);
+	this->xorOperation(valueToGet, mask, neighbors);
+
+	size_t h = mEncoder.decode(valueToGet);
+	if (h < neighbors->size()) {
+		size_t L = (*neighbors)[h];
+		if (L < mValueTable.size()) {
+			return mValueTable[L];
+		}
+	}
+	return MAX_VALUE;
 }
 void BloomierFilter::set(size_t pKey, size_t pValue) {
 
