@@ -1,6 +1,7 @@
 #include "../typeDefinitions.h"
 #include "bloomierHash.h"
 #include "orderAndMatchFinder.h"
+#include "encoder.h"
 #ifndef BLOOMIER_FILTER_H
 #define BLOOMIER_FILTER_H
 class BloomierFilter {
@@ -15,6 +16,8 @@ class BloomierFilter {
     size_t mByteSize;
     OrderAndMatchFinder mOrderAndMatchFinder;
     std::map<size_t, size_t> mKeyDict;
+    Encoder mEncoder;
+
   public:      
     BloomierFilter(size_t pHashSeed, std::map<size_t, size_t> pKeyDict, size_t pM, size_t pK, size_t pQ) {
 
