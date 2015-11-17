@@ -4,8 +4,8 @@
 #define BLOOMIER_FILTER_H
 class BloomierFilter {
   private:
-    vint mTable1;
-    vint mTable2;
+    vsize_t mTable1;
+    vsize_t mTable2;
     size_t mHashSeed;
     size_t mM;
     size_t mK;
@@ -19,10 +19,16 @@ class BloomierFilter {
     ~BloomierFilter() {
 
     };
-    vint* lookup(size_t pKey);
-    void setValue(size_t pKey, size_t pValue);
-    vint* findMatch(size_t pHashSeed, vint* pSubset);
-    void create(std::map<size_t, size_t> pAssignment);
+    vsize_t* getTable();
+    void setTable(vint pTable);
+    size_t getValueTable();
+    void setValueTable(vint pTable);
 
+    size_t xorOperation(size_t pValue, size_t pM, vsize_t pNeighbors);
+    vsize_t get(size_t pKey);
+    void set(size_t pKey, size_t pValue);
+    void create(std::map<size_t, size_t> pAssignment, OrderAndMatchFinder pPiTau);
+    std::string tableToString();
+    std::pair<vsize_t, vsize_t> stringToTable(std::string pString);
 };
 #endif // BLOOMIER_FILTER_H
