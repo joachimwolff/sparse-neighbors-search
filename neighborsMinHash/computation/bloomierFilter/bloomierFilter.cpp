@@ -76,6 +76,29 @@ bool BloomierFilter::set(size_t pKey, size_t pValue) {
 }
 
 void BloomierFilter::create(std::map<size_t, size_t> pAssignment, OrderAndMatchFinder pPiTau) {
+	vsize_t* piVector = pPiTau.getPiVector();
+	vsize_t* tauVector = pPiTau.getPiVector();
+
+	for (size_t i = 0; i < piVector->size(); ++i) {
+		size_t key = (*piList)[i];
+		size_t value = pAssignment[key];
+		vsize_t* neighbors = mBloomierHash.getNeighborhood(key);
+		vsize_t* mask = mBloomierHash.getM(key);
+		size_t l = (*tauVector)[i];
+		size_t L = (*neighbors)[l];
+
+		vsize_t* encodeValue = mEncoder.encode(l, mByteSize);
+		vsize_t* valueToStore = new vsize_t(mByteSize, 0);
+		this->byteArrayXor(valueToStore, encodeValue);
+		this->byteArrayXor(valueToStore, mask);
+		for (size_t j = 0; j < neighbors->size(); ++j) {
+			if (j != l) {
+				this->byteArrayXor(valueToStore, mTable[(*neighbors)[i]]);
+			}
+		}
+		mTable[L] = valueToStore;
+		mValueTable[L] = value;
+	}
 
 }
 
