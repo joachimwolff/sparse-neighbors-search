@@ -20,9 +20,9 @@ class BloomierFilter {
 
     };
     vsize_t* getTable();
-    void setTable(vint pTable);
+    void setTable(vsize_t pTable);
     size_t getValueTable();
-    void setValueTable(vint pTable);
+    void setValueTable(vsize_t pTable);
 
     size_t xorOperation(size_t pValue, size_t pM, vsize_t pNeighbors);
     vsize_t get(size_t pKey);
