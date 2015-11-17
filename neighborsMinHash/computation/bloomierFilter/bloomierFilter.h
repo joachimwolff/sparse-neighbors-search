@@ -33,7 +33,7 @@ class BloomierFilter {
     void byteArrayXor(vsize_t* pResult, vsize_t* pInput);
     size_t xorOperation(vsize_t* pValue, vsize_t* pM, vsize_t* pNeighbors);
     vsize_t get(size_t pKey);
-    void set(size_t pKey, size_t pValue);
+    bool set(size_t pKey, size_t pValue);
     void create(std::map<size_t, size_t> pAssignment, OrderAndMatchFinder pPiTau);
     std::string tableToString();
     std::pair<vsize_t, vsize_t> stringToTable(std::string pString);
