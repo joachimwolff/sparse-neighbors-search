@@ -21,7 +21,8 @@ class BloomierHash {
     };
     size_t getHashValue(size_t pKey);
     size_t getM(size_t pKey);
-
+    vsize_t* getNeighborhood(size_t pKey);
+    vsize_t* getM(size_t pKey);
 
 };
 #endif // BLOOMIER_HASH_H
