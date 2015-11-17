@@ -27,8 +27,8 @@ class BloomierFilter {
     void setTable(vsize_t pTable);
     size_t getValueTable();
     void setValueTable(vsize_t pTable);
-
-    size_t xorOperation(size_t pValue, size_t pM, vsize_t pNeighbors);
+    void byteArrayXor(vsize_t* pResult, vsize_t* pInput);
+    size_t xorOperation(vsize_t* pValue, vsize_t* pM, vsize_t* pNeighbors);
     vsize_t get(size_t pKey);
     void set(size_t pKey, size_t pValue);
     void create(std::map<size_t, size_t> pAssignment, OrderAndMatchFinder pPiTau);
