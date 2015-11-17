@@ -14,5 +14,5 @@ vsize_t* BloomierHash::getNeighborhood(size_t pKey){
 
 }
 vsize_t* BloomierHash::getM(size_t pKey){
-	
+	 
 }
