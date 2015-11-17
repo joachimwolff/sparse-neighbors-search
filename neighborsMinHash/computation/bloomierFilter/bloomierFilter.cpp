@@ -34,8 +34,12 @@ void BloomierFilter::setValueTable(vsize_t* pTable) {
 	mValueTable = pTable;
 } 
 
-size_t BloomierFilter::xorOperation(size_t pValue, size_t pM, vsize_t pNeighbors) {
-
+vsize_t* BloomierFilter::xorOperation(vsize_t* pValue, vsize_t* pM, vsize_t* pNeighbors) {
+	this->byteArrayXor(pValue, pM);
+	for (auto it = pNeighbors->begin(); it != pNeighbors->end(); ++it) {
+		this->byteArrayXor(pValue, mTable[(*it)]);
+	}
+	return pValue;
 }
 vsize_t BloomierFilter::get(size_t pKey) {
 
@@ -59,7 +63,7 @@ size_t BloomierFilter::getByteSize(size_t pQ) {
 	
 }
 
-void BloomierFilter::byteArrayXor(vsize_t* pResult, vsize_t pInput) {
+void BloomierFilter::byteArrayXor(vsize_t* pResult, vsize_t* pInput) {
 	size_t length = min(pResult->size(), pInput->size());
 	for (size_t i = 0; i < length; ++i) {
 		(*pResult)[i] = (*pResult)[i] ^ (*pInput)[i];
