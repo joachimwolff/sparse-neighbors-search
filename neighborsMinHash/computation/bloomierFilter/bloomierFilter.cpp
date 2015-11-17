@@ -57,8 +57,22 @@ size_t BloomierFilter::get(size_t pKey) {
 	}
 	return MAX_VALUE;
 }
-void BloomierFilter::set(size_t pKey, size_t pValue) {
+bool BloomierFilter::set(size_t pKey, size_t pValue) {
+	vsize_t* neighbors = mBloomierHash.getNeighborhood(pKey);
+	vsize_t* mask = mBloomierHash.getM(pKey);
 
+	vsize_t* valueToGet = new vsize_t(mByteSize, 0);
+	this->xorOperation(valueToGet, mask, neighbors);
+
+	size_t h = mEncoder.decode(valueToGet);
+	if (h < neighbors->size()) {
+		size_t L = (*neighbors)[h];
+		if (L < mValueTable.size()) {
+			mValueTable[L] = pValue;
+			return true;
+		}
+	}
+	return false;
 }
 
 void BloomierFilter::create(std::map<size_t, size_t> pAssignment, OrderAndMatchFinder pPiTau) {
