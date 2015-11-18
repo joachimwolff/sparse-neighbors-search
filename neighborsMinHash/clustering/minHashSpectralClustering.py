@@ -16,7 +16,7 @@ import numpy as np
 class MinHashSpectralClustering():
     def __init__(self, n_clusters=8, eigen_solver=None, 
                 random_state=None, n_init=10, gamma=1.0, 
-                n_neighbors=10, eigen_tol=0.0, 
+                n_neighbors=5, eigen_tol=0.0, 
                 assign_labels='kmeans', degree=3, coef0=1, 
                 kernel_params=None, 
                 radius=1.0, fast=False, 
@@ -56,7 +56,7 @@ class MinHashSpectralClustering():
                                                 degree = self.degree,
                                                 coef0 = self.coef0 ,
                                                 kernel_params = self.kernel_params)
-        # only for comptible issues
+        # only for compatible issues
         self.labels_ = None
     def fit(self, X, y=None):
         minHashNeighbors = MinHash(n_neighbors = self.n_neighbors, 
