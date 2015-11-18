@@ -204,7 +204,7 @@ class MinHash():
         else:
             X_csr = csr_matrix(X)
             instances, features = X_csr.nonzero()
-            maxFeatures = int(max(X_.getnnz(1)))
+            maxFeatures = int(max(X_csr.getnnz(1)))
             data = X_csr.data
             max_number_of_instances = X_csr.shape[0]
             # max_number_of_features = X_.shape[1]
