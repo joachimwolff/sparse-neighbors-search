@@ -37,7 +37,7 @@ void BloomierFilter::setValueTable(vsize_t* pTable) {
 vsize_t* BloomierFilter::xorOperation(vsize_t* pValue, vsize_t* pM, vsize_t* pNeighbors) {
 	this->byteArrayXor(pValue, pM);
 	for (auto it = pNeighbors->begin(); it != pNeighbors->end(); ++it) {
-		this->byteArrayXor(pValue, mTable[(*it)]);
+		this->byteArrayXor(pValue, (*mTable)[(*it)]);
 	}
 	return pValue;
 }
@@ -51,8 +51,8 @@ size_t BloomierFilter::get(size_t pKey) {
 	size_t h = mEncoder.decode(valueToGet);
 	if (h < neighbors->size()) {
 		size_t L = (*neighbors)[h];
-		if (L < mValueTable.size()) {
-			return mValueTable[L];
+		if (L < mValueTable->size()) {
+			return (*mValueTable)[L];
 		}
 	}
 	return MAX_VALUE;
@@ -67,8 +67,8 @@ bool BloomierFilter::set(size_t pKey, size_t pValue) {
 	size_t h = mEncoder.decode(valueToGet);
 	if (h < neighbors->size()) {
 		size_t L = (*neighbors)[h];
-		if (L < mValueTable.size()) {
-			mValueTable[L] = pValue;
+		if (L < mValueTable->size()) {
+			(*mValueTable)[L] = pValue;
 			return true;
 		}
 	}
@@ -93,17 +93,17 @@ void BloomierFilter::create(std::map<size_t, size_t> pAssignment, OrderAndMatchF
 		this->byteArrayXor(valueToStore, mask);
 		for (size_t j = 0; j < neighbors->size(); ++j) {
 			if (j != l) {
-				this->byteArrayXor(valueToStore, mTable[(*neighbors)[i]]);
+				this->byteArrayXor(valueToStore, (*mTable)[(*neighbors)[i]]);
 			}
 		}
-		mTable[L] = valueToStore;
-		mValueTable[L] = value;
+		(*mTable)[L] = valueToStore;
+		(*mValueTable)[L] = value;
 	}
-
 }
 
 std::string BloomierFilter::tableToString() {
-
+	// char* result = new char();
+	// std::string result = 
 }
 std::pair<vsize_t, vsize_t > stringToTable(std::string pString) {
 
