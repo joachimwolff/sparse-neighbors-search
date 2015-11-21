@@ -1,1 +1,2 @@
 from minHashSpectralClustering import MinHashSpectralClustering
+from minHashDBSCAN import MinHashDBSCAN
