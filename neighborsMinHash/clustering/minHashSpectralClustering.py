@@ -71,7 +71,7 @@ class MinHashSpectralClustering():
         # print "71"
         minHashNeighbors.fit(X, y)
         # print "73"
-        graph_result = minHashNeighbors.kneighbors_graph()
+        graph_result = minHashNeighbors.kneighbors_graph(mode='distance')
         # print "75"
         # graph_result.data = np.array(np.exp(np.divide(np.multiply(np.power(graph_result.data, 2), -1), 2*1**2)))
         # print "77"
@@ -79,6 +79,8 @@ class MinHashSpectralClustering():
         # np.exp(- graph_result ** 2 / (2. * 1 ** 2))
         self._spectralClustering.fit(graph_result)
         self.labels_ = self._spectralClustering.labels_
+        print "Labels: ", self.labels_
     def fit_predict(self, X, y=None):
         self.fit(X, y)
+
         return self._spectralClustering.labels_
