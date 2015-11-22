@@ -50,6 +50,10 @@ struct sortMapFloat {
     float val;
 };
 
+typedef std::vector<char> bitVector;
+
+typedef std::vector<bitVector> bloomierTable;
+
 static bool mapSortDescByValueFloat(const sortMapFloat& a, const sortMapFloat& b) {
         return a.val > b.val;
 };
