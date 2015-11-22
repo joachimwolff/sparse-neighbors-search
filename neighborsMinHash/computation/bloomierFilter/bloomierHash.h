@@ -1,7 +1,8 @@
 #include <climits>
 #include <functional>
 #include <cmath>
-#include <random>
+
+#include <stdlib.h>
 #include "../typeDefinitions.h"
 #include "../hash.h"
 
@@ -22,22 +23,24 @@ class BloomierHash {
         mP = pK;
         mQ = pQ;
         mHash = new Hash();
-        // mBitVectorSize = ceil(pQ / static_cast<float>(CHAR_BIT));
+        mBitVectorSize = ceil(pQ / static_cast<float>(CHAR_BIT));
     };
     ~BloomierHash() {
 
     };
-    // bitVector* getM() {
-    //     bitVector* mask = new bitVector(mBitVectorSize);
-    //     for (size_t i = 0; i < mBitVectorSize; ++i) {
-    //         mask[i] = 
-    //     }
-    // };
-    vsize_t* getKNeighbors(size_t pT, size_t pK, size_t pModulo) {
+    bitVector* getMask(size_t pKey) {
+        bitVector* mask = new bitVector(mBitVectorSize);
+        std::seed_seq
+        for (size_t i = 0; i < mBitVectorSize; ++i) {
+            mask[i] =  static_cast<char>(rand(pKey) % 255);
+        }
+        return mask;
+    };
+    vsize_t* getKNeighbors(size_t pElement, size_t pK, size_t pModulo) {
         
         vsize_t* kNeighbors = new vsize_t(pK);
         for (size_t i = 0; i < pK; ++i) {
-            (*kNeighbors)[i] = mHash->hash(pT+1, pModulo, i+1);
+            (*kNeighbors)[i] = mHash->hash(pElement+1, pModulo, i+1);
         }
         return kNeighbors;
     };
