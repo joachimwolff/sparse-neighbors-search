@@ -1,6 +1,6 @@
 # Copyright 2015 Joachim Wolff
 # Master Thesis
-# Tutors: Fabrizio Costa
+# Tutor: Fabrizio Costa
 # Winter semester 2015/2016
 #
 # Chair of Bioinformatics
