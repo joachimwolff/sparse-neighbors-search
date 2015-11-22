@@ -1,6 +1,6 @@
 #include "bloomierFilter.h"
 
-BloomierFilter::BloomierFilter(size_t pHashSeed, std::map<size_t, size_t> pKeyDict, size_t pM, size_t pK, size_t pQ){
+BloomierFilter::BloomierFilter(std::map<size_t, size_t> pKeyDict, size_t pM, size_t pK, size_t pQ){
 	mHashSeed = pHashSeed;
 	mM = pM;;
 	mK = pK;
@@ -8,10 +8,11 @@ BloomierFilter::BloomierFilter(size_t pHashSeed, std::map<size_t, size_t> pKeyDi
 	mKeyDict = pKeyDict;
 	mBloomierHash = new BloomierHash(pHashSeed, pM, pK, pQ);
 	mOrderAndMatchFinder = new OrderAndMatchFinder(pHashSeed, pKeyDict, pM, pK, pQ);
-	vsize_t orderAndMatch = mOrderAndMatchFinder.find(); // datatype?
-	mByteSize = this->getByteSize(pQ);
-	mTable = new vvsize_t(pM, vsize_t(mByteSize, 0));
+	// vsize_t orderAndMatch = mOrderAndMatchFinder.find(); // datatype?
+	// mByteSize = this->getByteSize(pQ);
+	mTable = new bloomierTable(pM, bitVector(mByteSize, 0));
     mValueTable = new vsize_t(pM, 0);
+    mEncoder = new Encoder();
     this->create(pKeyDict, orderAndMatch);
 }
 
@@ -19,11 +20,11 @@ BloomierFilter::~BloomierFilter(){
 
 }
 
-vvsize_t* BloomierFilter::getTable() {
+bloomierTable* BloomierFilter::getTable() {
 	return mTable;
 }
 
-void BloomierFilter::setTable(vvsize_t* pTable) {
+void BloomierFilter::setTable(bloomierTable* pTable) {
 	mTable = pTable;
 }
 
@@ -34,8 +35,8 @@ void BloomierFilter::setValueTable(vsize_t* pTable) {
 	mValueTable = pTable;
 } 
 
-vsize_t* BloomierFilter::xorOperation(vsize_t* pValue, vsize_t* pM, vsize_t* pNeighbors) {
-	this->byteArrayXor(pValue, pM);
+vsize_t* BloomierFilter::xorOperation(vsize_t* pValue, bitVector* pMask, vsize_t* pNeighbors) {
+	this->byteArrayXor(pValue, pMask);
 	for (auto it = pNeighbors->begin(); it != pNeighbors->end(); ++it) {
 		this->byteArrayXor(pValue, (*mTable)[(*it)]);
 	}
@@ -75,15 +76,16 @@ bool BloomierFilter::set(size_t pKey, size_t pValue) {
 	return false;
 }
 
-void BloomierFilter::create(std::map<size_t, size_t> pAssignment, OrderAndMatchFinder pPiTau) {
-	vsize_t* piVector = pPiTau.getPiVector();
-	vsize_t* tauVector = pPiTau.getPiVector();
+void BloomierFilter::create(std::map<size_t, size_t> pAssignment) {
+	mOrderAndMatchFinder.find();
+    vsize_t* piVector = mOrderAndMatchFinder->getPiVector();
+	vsize_t* tauVector = mOrderAndMatchFinder->getTauVector();
 
 	for (size_t i = 0; i < piVector->size(); ++i) {
 		size_t key = (*piList)[i];
 		size_t value = pAssignment[key];
 		vsize_t* neighbors = mBloomierHash.getNeighborhood(key);
-		vsize_t* mask = mBloomierHash.getM(key);
+		vsize_t* mask = mBloomierHash.getMask(key);
 		size_t l = (*tauVector)[i];
 		size_t L = (*neighbors)[l];
 
