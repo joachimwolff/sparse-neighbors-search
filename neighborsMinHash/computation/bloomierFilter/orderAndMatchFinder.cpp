@@ -1,15 +1,17 @@
 #include <unordered_map>
-#include "orderAndMatchFinder.h"
+// #include "orderAndMatchFinder.h"
 
-OrderAndMatchFinder::OrderAndMatchFinder(size_t pM, size_t pK, size_t pQ) {
+OrderAndMatchFinder::OrderAndMatchFinder(size_t pM, size_t pK, size_t pQ, BloomierHash* pBloomierHash) {
     mM = pM;
     mK = pK;
     mQ = pQ;
-    piVector = new vsize_t();
-    tauVector = new vsize_t();
+    mPiVector = new vsize_t();
+    mTauVector = new vsize_t();
+    mBloomierHash = pBloomierHash;
 }
 OrderAndMatchFinder::~OrderAndMatchFinder() {
-    
+    delete mPiVector;
+    delete mTauVector;
 }
 
 bool OrderAndMatchFinder::findMatch(vsize_t* pSubset) {
@@ -22,6 +24,7 @@ bool OrderAndMatchFinder::findMatch(vsize_t* pSubset) {
     vsize_t* subsetNextRecursion = new vsize_t();
     int singeltonValue;
     for (size_t i = 0; i < pSubset->size(); ++i) {
+        
         singeltonValue = tweak((*pSubset)[i], pSubset);
         if (singeltonValue != -1) {
             piVector->push_back((*pSubset)[i]);
@@ -60,6 +63,28 @@ vsize_t* OrderAndMatchFinder::getTauVector() {
     return mTauVector;
 }
 int OrderAndMatchFinder::tweak (size_t pKey, vsize_t* pSubset) {
-    
-    return 0;
+    size_t i = 0;
+    this->computeNonSingeltons(pSubset);
+    vsize_t*  neighbors = mBloomierHash->getKNeighbors(pKey, mK, mM);
+    for (auto it = neighbors->begin(); it != neighbors->end(); ++it) {
+        if (mNonSingeltons->find((*it)) == mNonSingeltons->end()) {
+            return i;
+        }
+        ++i;
+    } 
+    return -1;
+}
+
+void OrderAndMatchFinder::computeNonSingeltons(vsize_t* pKeyValues) {
+    for (auto it = pKeyValues->begin(); it != pKeyValues->end(); ++i) {
+        vsize_t* neighbors = mBloomierHash->getKNeighbors((*it), mK, mM);
+        for (auto itNeighbors = neighbors->begin(); itNeighbors != neighbors->end(); ++itNeighbors){
+            if (mHashesSeen->find((*itNeighbors)) != mHashesSeen->end()) {
+                mNonSingeltons->push_back((*itNeighbors));
+            }
+        }
+        for (auto itNeighbors = neighbors->begin(); itNeighbors != neighbors->end(); ++itNeighbors){
+            mHashesSeen->push_back((*itNeighbors));
+        }
+    }
 }
