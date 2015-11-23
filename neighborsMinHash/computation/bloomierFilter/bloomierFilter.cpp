@@ -12,7 +12,7 @@ BloomierFilter::BloomierFilter(std::map<size_t, size_t> pKeyDict, size_t pM, siz
 	// vsize_t orderAndMatch = mOrderAndMatchFinder.find(); // datatype?
 	// mByteSize = this->getByteSize(pQ);
 	mTable = new bloomierTable(pM, bitVector(mBitVectorSize, 0));
-    mValueTable = new vsize_t(pM, 0);
+    mValueTable = new vvsize_t_p(pM);
     mEncoder = new Encoder(mBitVectorSize);
     this->create(pKeyDict, orderAndMatch);
 }
@@ -29,10 +29,10 @@ void BloomierFilter::setTable(bloomierTable* pTable) {
 	mTable = pTable;
 }
 
-vsize_t* BloomierFilter::getValueTable() {
+vvsize_t_p* BloomierFilter::getValueTable() {
 	return mValueTablel
 }
-void BloomierFilter::setValueTable(vsize_t* pTable) {
+void BloomierFilter::setValueTable(vvsize_t_p* pTable) {
 	mValueTable = pTable;
 } 
 
@@ -43,7 +43,7 @@ void BloomierFilter::xorOperation(bitVector* pValue, bitVector* pMask, vsize_t* 
 	}
 	return pValue;
 }
-size_t BloomierFilter::get(size_t pKey) {
+vsize_t* BloomierFilter::get(size_t pKey) {
 	vsize_t* neighbors = mBloomierHash.getNeighborhood(pKey);
 	bitVector* mask = mBloomierHash.getM(pKey);
 
@@ -57,9 +57,9 @@ size_t BloomierFilter::get(size_t pKey) {
 			return (*mValueTable)[L];
 		}
 	}
-	return MAX_VALUE;
+	return ;
 }
-bool BloomierFilter::set(size_t pKey, size_t pValue) {
+bool BloomierFilter::set(size_t pKey, vsize_t* pValue) {
 	vsize_t* neighbors = mBloomierHash.getNeighborhood(pKey);
 	bitVector* mask = mBloomierHash.getM(pKey);
 
@@ -77,16 +77,17 @@ bool BloomierFilter::set(size_t pKey, size_t pValue) {
 	return false;
 }
 
-void BloomierFilter::create(std::map<size_t, size_t> pAssignment) {
-	mOrderAndMatchFinder.find();
+void BloomierFilter::create(vsize_t* pKeys, vvsize_t_p* pValues) {
+	
+	mOrderAndMatchFinder.find(pKeys);
     vsize_t* piVector = mOrderAndMatchFinder->getPiVector();
 	vsize_t* tauVector = mOrderAndMatchFinder->getTauVector();
 
 	for (size_t i = 0; i < piVector->size(); ++i) {
-		size_t key = (*piList)[i];
-		size_t value = pAssignment[key];
-		vsize_t* neighbors = mBloomierHash.getNeighborhood(key);
-		bitVector* mask = mBloomierHash.getMask(key);
+		// size_t key = (*piList)[i];
+		// size_t value = pAssignment[key];
+		vsize_t* neighbors = mBloomierHash.getNeighborhood((*pKeys)[i]);
+		bitVector* mask = mBloomierHash.getMask((*pKeys)[i]);
 		size_t l = (*tauVector)[i];
 		size_t L = (*neighbors)[l];
 
@@ -100,7 +101,7 @@ void BloomierFilter::create(std::map<size_t, size_t> pAssignment) {
 			}
 		}
 		(*mTable)[L] = valueToStore;
-		(*mValueTable)[L] = value;
+		(*mValueTable)[L] = (*pValues)[i];
 	}
 }
 
