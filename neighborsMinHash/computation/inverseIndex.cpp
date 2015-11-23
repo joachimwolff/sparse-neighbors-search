@@ -49,6 +49,8 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pBlockSize,
     mSignatureStorage = new umap_uniqueElement();
     size_t inverseIndexSize = ceil(((float) mNumberOfHashFunctions / (float) mBlockSize)+1);
     mInverseIndexUmapVector->resize(inverseIndexSize);
+    mHash = new Hash();
+    
 }
  
 InverseIndex::~InverseIndex() {
@@ -71,7 +73,8 @@ vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const
     for(size_t j = 0; j < mNumberOfHashFunctions; ++j) {
         size_t minHashValue = MAX_VALUE;
         for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); ++i) {
-            size_t hashValue = _size_tHashSimple((pRawData->getNextElement(pInstance, i) +1) * (j+1) * A, MAX_VALUE);
+            //  hash(size_t pKey, size_t pModulo, size_t pSeed)
+            size_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), (j+1) * A, MAX_VALUE);
             if (hashValue < minHashValue) {
                 minHashValue = hashValue;
             }
@@ -86,7 +89,7 @@ vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const
         // use computed hash value as a seed for the next computation
         size_t signatureBlockValue = signatureHash[k];
         for (size_t j = 0; j < mBlockSize; ++j) {
-            signatureBlockValue = _size_tHashSimple((signatureHash[k+j]) * signatureBlockValue * A, MAX_VALUE);
+            signatureBlockValue = mHash->hash((signatureHash[k+j]),  signatureBlockValue * A, MAX_VALUE);
         }
         signature->push_back(signatureBlockValue);
         k += mBlockSize; 
@@ -115,7 +118,7 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
         // compute unique id
         size_t signatureId = 0;
         for (size_t j = 0; j < pRawData->getSizeOfInstance(index); ++j) {
-                signatureId = _size_tHashSimple((pRawData->getNextElement(index, j) +1) * (signatureId+1) * A, MAX_VALUE);
+                signatureId = mHash->hash((pRawData->getNextElement(index, j) +1), (signatureId+1) * A, MAX_VALUE);
         }
         // signature is in storage && 
         auto signatureIt = (*mSignatureStorage).find(signatureId);
@@ -173,7 +176,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
         size_t signatureId = 0;
 
         for (size_t j = 0; j < pRawData->getSizeOfInstance(index); ++j) {
-            signatureId = _size_tHashSimple((pRawData->getNextElement(index, j) +1) * (signatureId+1) * A, MAX_VALUE);
+            signatureId = mHash->hash((pRawData->getNextElement(index, j) +1), (signatureId+1) * A, MAX_VALUE);
         }
         vsize_t* signature;
         auto itSignatureStorage = mSignatureStorage->find(signatureId);
