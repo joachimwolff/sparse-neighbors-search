@@ -12,6 +12,7 @@
 
 #include <functional>
 #include "bloomierFilter/bloomierFilter.h" 
+#include "hash.h"
 
 
 #include "typeDefinitions.h"
@@ -39,18 +40,20 @@ class InverseIndex {
   	umap_uniqueElement* mSignatureStorage;
   	std::vector<umapVector >* mInverseIndexUmapVector;
   	std::vector<BloomierFilter>* mInverseIndexBloomierFilter;
+    
+    Hash* mHash;
 
-  	size_t _size_tHashSimple(size_t key, size_t aModulo) {
-        // std::hash<size_t> hash;
-        // return hash(key);
-  	    key = ~key + (key << 15);
-  	    key = key ^ (key >> 12);
-  	    key = key + (key << 2);
-  	    key = key ^ (key >> 4);
-  	    key = key * 2057;
-  	    key = key ^ (key >> 16);
-  	    return key % aModulo;
-  	};
+  	// size_t _size_tHashSimple(size_t key, size_t aModulo) {
+    //     // std::hash<size_t> hash;
+    //     // return hash(key);
+  	//     key = ~key + (key << 15);
+  	//     key = key ^ (key >> 12);
+  	//     key = key + (key << 2);
+  	//     key = key ^ (key >> 4);
+  	//     key = key * 2057;
+  	//     key = key ^ (key >> 16);
+  	//     return key % aModulo;
+  	// };
 
   public:
   	InverseIndex(size_t pNumberOfHashFunctions, size_t pBlockSize,
