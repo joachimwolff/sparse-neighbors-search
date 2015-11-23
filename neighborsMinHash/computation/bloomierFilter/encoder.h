@@ -3,9 +3,8 @@
 #define ENCODER_H
 class Encoder {
   public:
-  	vsize_t* encode(size_t value, size_t width=1);
-  	size_t decode(size_t value);
-  	vsize_t* size_tToByteArray(size_t pValue);
-  	size_t byteArrayToSize_t(vsize_t* pArray);
+  	bitVector* encode(size_t value);
+  	size_t decode(bitVector value);
+  	
 };
 #endif // ENCODER_H
