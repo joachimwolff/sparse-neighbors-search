@@ -1,4 +1,4 @@
-#include "typeDefintions.h"
+#include "typeDefinitions.h"
 #ifndef HASH_H
 #define HASH_H
 class Hash {
