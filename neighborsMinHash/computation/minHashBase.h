@@ -13,8 +13,7 @@
 #include <Python.h>
 
 #include "inverseIndex.h"
-#include "inverseIndexUnorderedMap.h"
-#include "inverseIndexBloomierFilter.h"
+
 
 #ifndef MIN_HASH_BASE_H
 #define MIN_HASH_BASE_H
