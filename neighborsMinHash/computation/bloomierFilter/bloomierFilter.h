@@ -2,8 +2,8 @@
 #include "../typeDefinitions.h"
 #include "bloomierHash.h"
 // #include "bloomierHash.h"
-// #include "orderAndMatchFinder.h"
-// #include "encoder.h"
+#include "orderAndMatchFinder.h"
+#include "encoder.h"
 #ifndef BLOOMIER_FILTER_H
 #define BLOOMIER_FILTER_H
 class BloomierFilter {
