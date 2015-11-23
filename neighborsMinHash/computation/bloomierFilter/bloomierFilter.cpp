@@ -11,7 +11,7 @@ BloomierFilter::BloomierFilter(std::map<size_t, size_t> pKeyDict, size_t pM, siz
 	mOrderAndMatchFinder = new OrderAndMatchFinder(pHashSeed, pKeyDict, pM, pK, pQ);
 	// vsize_t orderAndMatch = mOrderAndMatchFinder.find(); // datatype?
 	// mByteSize = this->getByteSize(pQ);
-	mTable = new bloomierTable(pM, bitVector(mByteSize, 0));
+	mTable = new bloomierTable(pM, bitVector(mBitVectorSize, 0));
     mValueTable = new vsize_t(pM, 0);
     mEncoder = new Encoder(mBitVectorSize);
     this->create(pKeyDict, orderAndMatch);
@@ -36,10 +36,10 @@ void BloomierFilter::setValueTable(vsize_t* pTable) {
 	mValueTable = pTable;
 } 
 
-vsize_t* BloomierFilter::xorOperation(vsize_t* pValue, bitVector* pMask, vsize_t* pNeighbors) {
-	this->byteArrayXor(pValue, pMask);
+void BloomierFilter::xorOperation(bitVector* pValue, bitVector* pMask, vsize_t* pNeighbors) {
+	this->xor(pValue, pMask);
 	for (auto it = pNeighbors->begin(); it != pNeighbors->end(); ++it) {
-		this->byteArrayXor(pValue, (*mTable)[(*it)]);
+		this->xor(pValue, (*mTable)[(*it)]);
 	}
 	return pValue;
 }
@@ -47,7 +47,7 @@ size_t BloomierFilter::get(size_t pKey) {
 	vsize_t* neighbors = mBloomierHash.getNeighborhood(pKey);
 	bitVector* mask = mBloomierHash.getM(pKey);
 
-	vsize_t* valueToGet = new vsize_t(mByteSize, 0);
+	bitVector* valueToGet = new bitVector(mBitVectorSize, 0);
 	this->xorOperation(valueToGet, mask, neighbors);
 
 	size_t h = mEncoder.decode(valueToGet);
@@ -63,7 +63,7 @@ bool BloomierFilter::set(size_t pKey, size_t pValue) {
 	vsize_t* neighbors = mBloomierHash.getNeighborhood(pKey);
 	bitVector* mask = mBloomierHash.getM(pKey);
 
-	vsize_t* valueToGet = new vsize_t(mByteSize, 0);
+	bitVector* valueToGet = new bitVector(mBitVectorSize, 0);
 	this->xorOperation(valueToGet, mask, neighbors);
 
 	size_t h = mEncoder.decode(valueToGet);
@@ -96,7 +96,7 @@ void BloomierFilter::create(std::map<size_t, size_t> pAssignment) {
 		this->xor(valueToStore, mask);
 		for (size_t j = 0; j < neighbors->size(); ++j) {
 			if (j != l) {
-				this->byteArrayXor(valueToStore, (*mTable)[(*neighbors)[i]]);
+				this->xor(valueToStore, (*mTable)[(*neighbors)[i]]);
 			}
 		}
 		(*mTable)[L] = valueToStore;
