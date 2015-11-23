@@ -29,7 +29,6 @@ class BloomierHash {
     };
     bitVector* getMask(size_t pKey) {
         bitVector* mask = new bitVector(mBitVectorSize);
-        std::seed_seq
         for (size_t i = 0; i < mBitVectorSize; ++i) {
             mask[i] =  static_cast<char>(rand(pKey) % 255);
         }
