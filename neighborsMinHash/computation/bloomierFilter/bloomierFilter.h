@@ -31,7 +31,7 @@ class BloomierFilter {
     void setTable(bloomierTable* pTable);
     vvsize_t_p* getValueTable();
     void setValueTable(vvsize_t_p* pTable);
-    void xor(vsize_t* pResult, vsize_t* pInput);
+    void xorBitVector(bitVector* pResult, bitVector* pInput);
     void xorOperation(bitVector* pValue, bitVector* pM, vsize_t* pNeighbors);
     vsize_t* get(size_t pKey);
     bool set(size_t pKey, size_t pValue);

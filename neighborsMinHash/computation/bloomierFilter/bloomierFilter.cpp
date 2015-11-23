@@ -105,7 +105,7 @@ void BloomierFilter::create(vsize_t* pKeys, vvsize_t_p* pValues) {
 	}
 }
 
-void BloomierFilter::xor(bitVector* pResult, bitVector* pInput) {
+void BloomierFilter::xorBitVector(bitVector* pResult, bitVector* pInput) {
 	size_t length = min(pResult->size(), pInput->size());
 	for (size_t i = 0; i < length; ++i) {
 		(*pResult)[i] = (*pResult)[i] ^ (*pInput)[i];
