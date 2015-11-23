@@ -23,30 +23,23 @@ from distutils.core import Extension
 import platform
 import sys
 
-
+sources_list = ['neighborsMinHash/computation/interface/minHash_PythonInterface.cpp', 'neighborsMinHash/computation/minHash.cpp', 
+                'neighborsMinHash/computation/minHashBase.cpp', 'neighborsMinHash/computation/inverseIndexUnorderedMap.cpp', 'neighborsMinHash/computation/inverseIndexBloomierFilter.cpp' ]
+depends_list = ['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/computation/minHashBase.h', 'neighborsMinHash/computation/inverseIndex.h'
+        , 'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h', 'neighborsMinHash/computation/sparseMatrix.h']
 if "--openmp" in sys.argv:
-    module1 = Extension('_minHash', sources = ['neighborsMinHash/computation/interface/minHash_PythonInterface.cpp', 'neighborsMinHash/computation/minHash.cpp', 
-                                                    'neighborsMinHash/computation/minHashBase.cpp', 'neighborsMinHash/computation/inverseIndex.cpp' ], 
-        depends=['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/computation/minHashBase.h', 'neighborsMinHash/computation/inverseIndex.h'
-                , 'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h', 'neighborsMinHash/computation/sparseMatrix.h'],
+    module1 = Extension('_minHash', sources = sources_list, depends = depends_list,
          define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
-        extra_compile_args=["-fopenmp", "-g", "-std=c++11"])#, include_dirs=['/home/wolffj/Software/boost_1_59_0', '/home/wolffj/Software/mtl4'])
+        extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])#, include_dirs=['/home/wolffj/Software/boost_1_59_0', '/home/wolffj/Software/mtl4'])
 
 elif platform.system() == 'Darwin' or "--noopenmp" in sys.argv:
-    module1 = Extension('_minHash', sources = ['neighborsMinHash/computation/interface/minHash_PythonInterface.cpp', 'neighborsMinHash/computation/minHash.cpp', 
-                                                    'neighborsMinHash/computation/minHashBase.cpp', 'neighborsMinHash/computation/inverseIndex.cpp' ], 
-        depends=['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/computation/minHashBase.h', 'neighborsMinHash/computation/inverseIndex.h'
-        , 'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h', 'neighborsMinHash/computation/sparseMatrix.h'], 
-        extra_compile_args=["-g", "-std=c++11"], include_dirs=['/Users/joachimwolff/Software/boost_1_59_0'])
+    module1 = Extension('_minHash', sources = sources_list, depends = depends_list, 
+        extra_compile_args=["-O3", "-std=c++11"])
 
 else:
-    module1 = Extension('_minHash', sources = ['neighborsMinHash/computation/interface/minHash_PythonInterface.cpp', 'neighborsMinHash/computation/minHash.cpp', 
-                                                    'neighborsMinHash/computation/minHashBase.cpp', 'neighborsMinHash/computation/inverseIndex.cpp' ], 
-        depends=['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/computation/minHashBase.h', 'neighborsMinHash/computation/inverseIndex.h'
-        , 'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h', 'neighborsMinHash/computation/sparseMatrix.h'],
+    module1 = Extension('_minHash', sources = sources_list, depends = depends_list,
         define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"],
-         extra_compile_args=["-fopenmp", "-O3", "-std=c++11"]) #, include_dirs=['/home/wolffj/Software/boost_1_59_0', '/home/wolffj/Software/mtl4'])
-
+         extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])
 if "--openmp" in sys.argv:
     sys.argv.remove("--openmp")
 if "--noopenmp" in sys.argv:
@@ -67,9 +60,8 @@ setup (name = 'neighborsMinHash',
         ext_modules = [module1],
         packages=['neighborsMinHash',
                     'neighborsMinHash.neighbors',
-                    'neighborsMinHash.computation',
-		    'neighborsMinHash.util',
-            'neighborsMinHash.clustering',
+                    'neighborsMinHash.util',
+                    'neighborsMinHash.clustering',
                 ],
         platforms = "Linux, Mac OS X",
         version = '0.1.dev'
