@@ -24,12 +24,19 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pBlockSize,
                     size_t pMaxBinSize,
                     size_t pSizeOfNeighborhood, size_t pMinimalBlocksInCommon,
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions,
-                    int pFast, int pSimilarity) {
+                    int pFast, int pSimilarity, int pBloomierFilter) {
 
-        mInverseIndex = new InverseIndex(pNumberOfHashFunctions, pBlockSize,
+        if (pBloomierFilter) {
+            mInverseIndex = new InverseIndexUnorderedMap(pNumberOfHashFunctions, pBlockSize,
                                         pNumberOfCores, pChunkSize,
                                         pMaxBinSize, pMinimalBlocksInCommon, 
                                         pExcessFactor, pMaximalNumberOfHashCollisions);
+        } else {
+            mInverseIndex = new InverseIndexBloomierFilter(pNumberOfHashFunctions, pBlockSize,
+                                        pNumberOfCores, pChunkSize,
+                                        pMaxBinSize, pMinimalBlocksInCommon, 
+                                        pExcessFactor, pMaximalNumberOfHashCollisions);
+        }
         mNneighbors = pSizeOfNeighborhood;
         mFast = pFast;
         mNumberOfCores = pNumberOfCores;
