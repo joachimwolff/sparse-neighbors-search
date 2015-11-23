@@ -85,7 +85,7 @@ class MinHash():
         http://bioinformatics.oxfordjournals.org/content/28/12/i224.full.pdf+html"""
     def __init__(self, n_neighbors=5, radius=1.0, fast=False, number_of_hash_functions=400,
                  max_bin_size = 50, minimal_blocks_in_common = 1, block_size = 4, excess_factor = 5,
-                 similarity=False, number_of_cores=None, chunk_size=None):
+                 similarity=False, bloomierFilter=False, number_of_cores=None, chunk_size=None):
         if number_of_cores is None:
             number_of_cores = mp.cpu_count()
         if chunk_size is None:
@@ -96,7 +96,8 @@ class MinHash():
                                                     block_size, number_of_cores, chunk_size, n_neighbors,
                                                     minimal_blocks_in_common, max_bin_size, 
                                                     maximal_number_of_hash_collisions, excess_factor,
-                                                    1 if fast else 0, 1 if similarity else 0)
+                                                    1 if fast else 0, 1 if similarity else 0,
+                                                    1 if bloomierFilter else 0)
 
     def __del__(self):
         if _minHash.delete_object(self._pointer_address_of_minHash_object) != 0:
