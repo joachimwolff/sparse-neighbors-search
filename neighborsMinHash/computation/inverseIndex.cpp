@@ -194,26 +194,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
                  mDoubleElementsStorageCount += 1;
             }
             for (size_t j = 0; j < signature->size(); ++j) {
-                    auto itHashValue_InstanceVector = mInverseIndexUmapVector->operator[](j).find((*signature)[j]);
-                // if for hash function h_i() the given hash values is already stored
-                if (itHashValue_InstanceVector != mInverseIndexUmapVector->operator[](j).end()) {
-                    // insert the instance id if not too many collisions (maxBinSize)
-                    if (itHashValue_InstanceVector->second.size() < mMaxBinSize) {
-                        // insert only if there wasn't any collisions in the past
-                        if (itHashValue_InstanceVector->second.size() > 0) {
-                            itHashValue_InstanceVector->second.push_back(index);
-                        }
-                    } else { 
-                        // too many collisions: delete stored ids. empty vector is interpreted as an error code 
-                        // for too many collisions
-                        itHashValue_InstanceVector->second.clear();
-                    }
-                } else {
-                    // given hash value for the specific hash function was not avaible: insert new hash value
-                    vsize_t instanceIdVector;
-                    instanceIdVector.push_back(index);
-                    mInverseIndexUmapVector->operator[](j)[(*signature)[j]] = instanceIdVector;
-                }
+                 mInverseIndexStorage->insert(j, (*signature)[j], index);
             }
         }
     }
