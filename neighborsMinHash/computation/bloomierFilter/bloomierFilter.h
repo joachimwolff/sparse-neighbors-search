@@ -1,3 +1,4 @@
+#include <climits>
 #include "../typeDefinitions.h"
 #include "bloomierHash.h"
 // #include "bloomierHash.h"
@@ -13,6 +14,7 @@ class BloomierFilter {
     size_t mK;
     size_t mQ;
     BloomierHash mBloomierHash;
+    size_t mBitVectorSize;
     // BloomierHash mBloomierHash;
     // size_t mByteSize;
     OrderAndMatchFinder mOrderAndMatchFinder;
@@ -34,7 +36,7 @@ class BloomierFilter {
     vsize_t get(size_t pKey);
     bool set(size_t pKey, size_t pValue);
     void create(std::map<size_t, size_t> pAssignment);
-    std::string tableToString();
-    std::pair<vsize_t, vsize_t> stringToTable(std::string pString);
+    // std::string tableToString();
+    // std::pair<vsize_t, vsize_t> stringToTable(std::string pString);
 };
 #endif // BLOOMIER_FILTER_H
