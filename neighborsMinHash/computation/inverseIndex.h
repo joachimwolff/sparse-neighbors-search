@@ -11,7 +11,6 @@
 **/
 
 #include <functional>
-#include "bloomierFilter/bloomierFilter.h" 
 #include "hash.h"
 
 
@@ -56,11 +55,13 @@ class InverseIndex {
           mSignatureStorage = new umap_uniqueElement();
           mHash = new Hash();
     };
-  	~InverseIndex();
-  	vsize_t* computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance);
-  	umap_uniqueElement* computeSignatureMap(const SparseMatrixFloat* pRawData);
-  	void fit(const SparseMatrixFloat* pRawData);
-  	neighborhood* kneighbors(const umap_uniqueElement* signaturesMap, const int pNneighborhood, const bool pDoubleElementsStorageCount);
-  	umap_uniqueElement* getSignatureStorage(){return mSignatureStorage;};
+  	virtual ~InverseIndex();
+  	virtual vsize_t* computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance);
+  	virtual umap_uniqueElement* computeSignatureMap(const SparseMatrixFloat* pRawData);
+  	virtual void fit(const SparseMatrixFloat* pRawData);
+  	virtual neighborhood* kneighbors(const umap_uniqueElement* signaturesMap, const int pNneighborhood, const bool pDoubleElementsStorageCount);
+  	virtual umap_uniqueElement* getSignatureStorage() { 
+      return mSignatureStorage;
+    };
 };
 #endif // INVERSE_INDEX_H
