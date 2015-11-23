@@ -12,7 +12,9 @@
 
 #include <functional>
 #include "hash.h"
-
+#include "inverseIndexStorage.h"
+#include "inverseIndexStorageBloomierFilter.h"
+#include "inverseIndexStorageUnorderedMap.h"
 
 #include "typeDefinitions.h"
 
@@ -35,7 +37,7 @@ class InverseIndex {
     size_t mDoubleElementsStorageCount = 0;
     size_t mDoubleElementsQueryCount = 0;
 
-  	umap_uniqueElement* mSignatureStorage;
+    InverseIndexStorage mInverseIndexStorage;
   	  
     Hash* mHash;
 
@@ -43,24 +45,13 @@ class InverseIndex {
   	InverseIndex(size_t pNumberOfHashFunctions, size_t pBlockSize,
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize, size_t pMinimalBlocksInCommon,
-                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions) {
-          mNumberOfHashFunctions = pNumberOfHashFunctions;
-          mBlockSize = pBlockSize;
-          mNumberOfCores = pNumberOfCores;
-          mChunkSize = pChunkSize;
-          mMaxBinSize = pMaxBinSize;
-          mMinimalBlocksInCommon = pMinimalBlocksInCommon;
-          mExcessFactor = pExcessFactor;
-          mMaximalNumberOfHashCollisions = pMaximalNumberOfHashCollisions;
-          mSignatureStorage = new umap_uniqueElement();
-          mHash = new Hash();
-    };
-  	virtual ~InverseIndex();
-  	virtual vsize_t* computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance);
-  	virtual umap_uniqueElement* computeSignatureMap(const SparseMatrixFloat* pRawData);
-  	virtual void fit(const SparseMatrixFloat* pRawData);
-  	virtual neighborhood* kneighbors(const umap_uniqueElement* signaturesMap, const int pNneighborhood, const bool pDoubleElementsStorageCount);
-  	virtual umap_uniqueElement* getSignatureStorage() { 
+                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, size_t pBloomierFilter);
+    InverseIndex();
+  	vsize_t* computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance);
+  	umap_uniqueElement* computeSignatureMap(const SparseMatrixFloat* pRawData);
+  	void fit(const SparseMatrixFloat* pRawData);
+  	neighborhood* kneighbors(const umap_uniqueElement* signaturesMap, const int pNneighborhood, const bool pDoubleElementsStorageCount);
+  	umap_uniqueElement* getSignatureStorage() { 
       return mSignatureStorage;
     };
 };
