@@ -24,7 +24,7 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pBlockSize,
                     size_t pMaxBinSize,
                     size_t pSizeOfNeighborhood, size_t pMinimalBlocksInCommon,
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions,
-                    int pFast, int pSimilarity, int pBloomierFilter) {
+                    int pFast, int pSimilarity, size_t pBloomierFilter) {
 
         if (pBloomierFilter) {
             mInverseIndex = new InverseIndexUnorderedMap(pNumberOfHashFunctions, pBlockSize,
