@@ -10,7 +10,7 @@ class InverseIndexStorageBloomierFilter : public InverseIndexStorage {
     InverseIndexStorageBloomierFilter(size_t pSizeOfInverseIndex);
 	~InverseIndexStorageBloomierFilter();
   	size_t size();
-	vsize_t getElement(size_t pVectorId, size_t pHashValue);
+	vsize_t* getElement(size_t pVectorId, size_t pHashValue);
 	void insert(size_t pVectorId, size_t pHashValue);
 };
 #endif // INVERSE_INDEX_STORAGE_BLOOMIER_FILTER_H
