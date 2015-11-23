@@ -22,7 +22,7 @@ class MinHash : public MinHashBase {
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize,
                     size_t pSizeOfNeighborhood, size_t pMinimalBlocksInCommon,
-                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, int pFast, int pSimilarity);
+                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, int pFast, int pSimilarity, size_t pBloomierFilter);
   	~MinHash();
     // Calculate the neighbors inside a given radius.
     neighborhood radiusNeighbors();
