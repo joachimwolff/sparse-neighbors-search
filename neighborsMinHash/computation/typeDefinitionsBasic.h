@@ -24,6 +24,8 @@ typedef std::vector< int > vint;
 typedef std::vector< float > vfloat;
 
 typedef std::vector< vsize_t > vvsize_t;
+typedef std::vector< vsize_t* > vvsize_t_p;
+
 typedef std::vector< vint > vvint;
 typedef std::vector< vfloat > vvfloat;
 
