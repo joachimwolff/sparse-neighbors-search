@@ -13,6 +13,8 @@
 #include <Python.h>
 
 #include "inverseIndex.h"
+#include "inverseIndexUnorderedMap.h"
+#include "inverseIndexBloomierFilter.h"
 
 #ifndef MIN_HASH_BASE_H
 #define MIN_HASH_BASE_H
@@ -38,7 +40,8 @@ class MinHashBase {
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize,
                     size_t pSizeOfNeighborhood, size_t pMinimalBlocksInCommon,
-                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, int pFast, int pSimilarity, int pBloomierFilter);
+                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, 
+                    int pFast, int pSimilarity, size_t pBloomierFilter);
 
   	~MinHashBase();
     // Calculate the inverse index for the given instances.
