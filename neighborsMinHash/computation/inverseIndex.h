@@ -1,7 +1,7 @@
 /**
  Copyright 2015 Joachim Wolff
  Master Thesis
- Tutors: Milad Miladi, Fabrizio Costa
+ Tutor: Fabrizio Costa
  Winter semester 2015/2016
 
  Chair of Bioinformatics
@@ -22,9 +22,8 @@
 #define INVERSE_INDEX_H
 class InverseIndex {
 
-  private: 
+  protected: 
   	const double A = sqrt(2) - 1;
-	  //const size_t MAX_VALUE = 2147483647;
     size_t mNumberOfHashFunctions;
     size_t mBlockSize;
     size_t mNumberOfCores;
@@ -38,28 +37,25 @@ class InverseIndex {
     size_t mDoubleElementsQueryCount = 0;
 
   	umap_uniqueElement* mSignatureStorage;
-  	std::vector<umapVector >* mInverseIndexUmapVector;
-  	std::vector<BloomierFilter>* mInverseIndexBloomierFilter;
-    
+  	  
     Hash* mHash;
-
-  	// size_t _size_tHashSimple(size_t key, size_t aModulo) {
-    //     // std::hash<size_t> hash;
-    //     // return hash(key);
-  	//     key = ~key + (key << 15);
-  	//     key = key ^ (key >> 12);
-  	//     key = key + (key << 2);
-  	//     key = key ^ (key >> 4);
-  	//     key = key * 2057;
-  	//     key = key ^ (key >> 16);
-  	//     return key % aModulo;
-  	// };
 
   public:
   	InverseIndex(size_t pNumberOfHashFunctions, size_t pBlockSize,
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize, size_t pMinimalBlocksInCommon,
-                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions);
+                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions) {
+          mNumberOfHashFunctions = pNumberOfHashFunctions;
+          mBlockSize = pBlockSize;
+          mNumberOfCores = pNumberOfCores;
+          mChunkSize = pChunkSize;
+          mMaxBinSize = pMaxBinSize;
+          mMinimalBlocksInCommon = pMinimalBlocksInCommon;
+          mExcessFactor = pExcessFactor;
+          mMaximalNumberOfHashCollisions = pMaximalNumberOfHashCollisions;
+          mSignatureStorage = new umap_uniqueElement();
+          mHash = new Hash();
+    };
   	~InverseIndex();
   	vsize_t* computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance);
   	umap_uniqueElement* computeSignatureMap(const SparseMatrixFloat* pRawData);
