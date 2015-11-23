@@ -1,4 +1,4 @@
-#include "inverIndexBloomierFilter.h"
+#include "inverseIndexBloomierFilter.h"
 
 InverseIndexBloomierFilter::InverseIndexBloomierFilter(size_t pNumberOfHashFunctions, size_t pBlockSize,
                     size_t pNumberOfCores, size_t pChunkSize,
