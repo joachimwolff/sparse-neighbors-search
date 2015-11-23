@@ -19,7 +19,7 @@
 #include <omp.h>
 #endif
 
-#include "inverseIndex.h"
+#include "inverseIndexUnorderedMap.h"
 
 class sort_map {
   public:
@@ -55,7 +55,7 @@ InverseIndexUnorderedMap::~InverseIndexUnorderedMap() {
     delete mInverseIndexUmapVector;
 }
  // compute the signature for one instance
-vsize_t* InverseIndexUnorderedMap::InverseIndexUnorderedMap(const SparseMatrixFloat* pRawData, const size_t pInstance) {
+vsize_t* InverseIndexUnorderedMap::computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance) {
 
     vsize_t signatureHash;
     signatureHash.reserve(mNumberOfHashFunctions);
