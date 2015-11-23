@@ -1,6 +1,6 @@
 #include "../typeDefinitions.h"
 #include <set>
-#include "bloomierHash.py"
+#include "bloomierHash.h"
 
 #ifndef ORDER_AND_MATCH_FINDER_H
 #define ORDER_AND_MATCH_FINDER_H
@@ -8,7 +8,7 @@ class OrderAndMatchFinder {
   private:
     size_t mM;
     size_t mK;
-    size_t mQ
+    size_t mQ;
     vsize_t* mPiVector;
     vsize_t* mTauVector;
     std::set<size_t> mHashesSeen;
