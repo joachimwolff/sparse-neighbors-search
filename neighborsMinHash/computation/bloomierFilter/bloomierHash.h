@@ -1,4 +1,3 @@
-#include <climits>
 #include <functional>
 #include <cmath>
 
@@ -18,12 +17,12 @@ class BloomierHash {
     size_t mBitVectorSize;
 
   public:      
-    BloomierHash(size_t pM, size_t pK, size_t pQ) {
+    BloomierHash(size_t pM, size_t pK, size_t pBitVectorSize) {
         mM = pM;
         mP = pK;
         mQ = pQ;
         mHash = new Hash();
-        mBitVectorSize = ceil(pQ / static_cast<float>(CHAR_BIT));
+        mBitVectorSize = pBitVectorSize;
     };
     ~BloomierHash() {
 
