@@ -25,9 +25,9 @@ vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, size_t pH
     //                 if (itHashValue_InstanceVector->second.size()
 }
 void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue, size_t pInstance) {
-	 auto itHashValue_InstanceVector = mSignatureStorage->operator[](j).find((*signature)[j]);
+	 auto itHashValue_InstanceVector = (*mSignatureStorage)[j].find((*signature)[j]);
 	// if for hash function h_i() the given hash values is already stored
-	if (itHashValue_InstanceVector != mSignatureStorage->operator[](j).end()) {
+	if (itHashValue_InstanceVector != (*mSignatureStorage)[j].end()) {
 		// insert the instance id if not too many collisions (maxBinSize)
 		if (itHashValue_InstanceVector->second.size() < mMaxBinSize) {
 			// insert only if there wasn't any collisions in the past
@@ -43,6 +43,6 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
 		// given hash value for the specific hash function was not avaible: insert new hash value
 		vsize_t instanceIdVector;
 		instanceIdVector.push_back(index);
-		mSignatureStorage->operator[](j)[(*signature)[j]] = instanceIdVector;
+		(*mSignatureStorage)[j][(*signature)[j]] = instanceIdVector;
 	}
 }
