@@ -37,8 +37,8 @@ class InverseIndex {
     size_t mDoubleElementsStorageCount = 0;
     size_t mDoubleElementsQueryCount = 0;
 
-    InverseIndexStorage mInverseIndexStorage;
-  	  
+    InverseIndexStorage* mInverseIndexStorage;
+  	umap_uniqueElement* mSignatureStorage;
     Hash* mHash;
 
   public:
@@ -46,7 +46,7 @@ class InverseIndex {
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize, size_t pMinimalBlocksInCommon,
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, size_t pBloomierFilter);
-    InverseIndex();
+    ~InverseIndex();
   	vsize_t* computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance);
   	umap_uniqueElement* computeSignatureMap(const SparseMatrixFloat* pRawData);
   	void fit(const SparseMatrixFloat* pRawData);
