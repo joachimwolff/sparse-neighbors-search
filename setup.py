@@ -24,9 +24,12 @@ import platform
 import sys
 
 sources_list = ['neighborsMinHash/computation/interface/minHash_PythonInterface.cpp', 'neighborsMinHash/computation/minHash.cpp', 
-                'neighborsMinHash/computation/minHashBase.cpp', 'neighborsMinHash/computation/inverseIndexUnorderedMap.cpp', 'neighborsMinHash/computation/inverseIndexBloomierFilter.cpp' ]
-depends_list = ['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/computation/minHashBase.h', 'neighborsMinHash/computation/inverseIndex.h'
-        , 'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h', 'neighborsMinHash/computation/sparseMatrix.h']
+                'neighborsMinHash/computation/minHashBase.cpp', 'neighborsMinHash/computation/inverseIndex.cpp',
+                 'neighborsMinHash/computation/inverseIndexStorageBloomierFilter.cpp' , 'neighborsMinHash/computation/inverseIndexStorageUnorderedMap.cpp']
+depends_list = ['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/computation/minHashBase.h', 'neighborsMinHash/computation/inverseIndex.h',
+         'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h', 'neighborsMinHash/computation/sparseMatrix.h',
+          'neighborsMinHash/computation/inverseIndexStorage.h',
+                 'neighborsMinHash/computation/inverseIndexStorageBloomierFilter.h' , 'neighborsMinHash/computation/inverseIndexStorageUnorderedMap.h']
 if "--openmp" in sys.argv:
     module1 = Extension('_minHash', sources = sources_list, depends = depends_list,
          define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
