@@ -20,6 +20,7 @@ class BloomierFilter {
     OrderAndMatchFinder mOrderAndMatchFinder;
     // std::map<size_t, size_t> mKeyDict;
     Encoder mEncoder;
+    size_t mPiIndex;
 
   public:      
     BloomierFilter(size_t pM, size_t pK, size_t pQ);
@@ -35,7 +36,7 @@ class BloomierFilter {
     void xorOperation(bitVector* pValue, bitVector* pM, vsize_t* pNeighbors);
     vsize_t* get(size_t pKey);
     bool set(size_t pKey, size_t pValue);
-    void create(vsize_t* pKeys, vvsize_t_p* pValues);
+    void create(vsize_t* pKeys, vvsize_t* pValues, size_t piIndex = 0);
     // std::string tableToString();
     // std::pair<vsize_t, vsize_t> stringToTable(std::string pString);
 };
