@@ -49,9 +49,9 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pBlockSize,
     
     size_t inverseIndexSize = ceil(((float) mNumberOfHashFunctions / (float) mBlockSize)+1);
     if (pBloomierFilter) {
-        mInverseIndexStorage = new InverseIndexStorageBloomierFilter(inverseIndexSize);
+        mInverseIndexStorage = new InverseIndexStorageBloomierFilter(inverseIndexSize, mMaxBinSize);
     } else {
-        mInverseIndexStorage = new InverseIndexStorageUnorderedMap(inverseIndexSize);
+        mInverseIndexStorage = new InverseIndexStorageUnorderedMap(inverseIndexSize, mMaxBinSize);
     }
     // mInverseIndexUmapVector = new vector__umapVector(inverseIndexSize);
     // mInverseIndexUmapVector->resize(inverseIndexSize);
@@ -199,6 +199,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
             }
         }
     }
+    // mInverseIndexStorage->create();
 }
 
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
