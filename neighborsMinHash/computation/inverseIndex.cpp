@@ -66,7 +66,7 @@ InverseIndex::~InverseIndex() {
 
     }
     delete mSignatureStorage;
-    delete mInverseIndexUmapVector;
+    // delete mInverseIndexUmapVector;
 }
  // compute the signature for one instance
 vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance) {
@@ -156,8 +156,9 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     mDoubleElementsStorageCount = 0;
-    size_t inverseIndexSize = ceil(((float) mNumberOfHashFunctions / (float) mBlockSize)+1);
-    mInverseIndexUmapVector->resize(inverseIndexSize);
+    // size_t inverseIndexSize = ceil(((float) mNumberOfHashFunctions / (float) mBlockSize)+1);
+    // mInverseIndexUmapVector->resize(inverseIndexSize);
+    // mInverseIndexStorage->
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
@@ -216,7 +217,10 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
     neighbors->resize(pSignaturesMap->size()+doubleElements);
     distances->resize(pSignaturesMap->size()+doubleElements);
     if (mChunkSize <= 0) {
-        mChunkSize = ceil(mInverseIndexUmapVector->size() / static_cast<float>(mNumberOfCores));
+        // mChunkSize = ceil(mInverseIndexUmapVector->size() / static_cast<float>(mNumberOfCores));
+        mChunkSize = ceil(mInverseIndexStorage->size() / static_cast<float>(mNumberOfCores));
+        
+        // mInverseIndexStorage
     }
 
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
@@ -230,16 +234,18 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             size_t hashID = (*signature)[j];
             if (hashID != 0 && hashID != MAX_VALUE) {
                 size_t collisionSize = 0;
-                umapVector::const_iterator instances = mInverseIndexUmapVector->at(j).find(hashID);
-                if (instances != mInverseIndexUmapVector->at(j).end()) {
-                    collisionSize = instances->second.size();
+                vsize_t* instances =  mInverseIndexStorage->getElement(j, hashID);
+                // umapVector::const_iterator instances = mInverseIndexUmapVector->at(j).find(hashID);
+                
+                if (instances->size() != 0) {
+                    collisionSize = instances->size();
                 } else { 
                     continue;
                 }
 
                 if (collisionSize < mMaxBinSize && collisionSize > 0) {
-                    for (size_t k = 0; k < instances->second.size(); ++k) {
-                        neighborhood[instances->second.at(k)] += 1;
+                    for (size_t k = 0; k < instances->size(); ++k) {
+                        neighborhood[instances->at(k)] += 1;
                     }
                 }
             }
