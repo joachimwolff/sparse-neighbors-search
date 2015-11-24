@@ -25,16 +25,20 @@ import sys
 
 sources_list = ['neighborsMinHash/computation/interface/minHash_PythonInterface.cpp', 'neighborsMinHash/computation/minHash.cpp', 
                 'neighborsMinHash/computation/minHashBase.cpp', 'neighborsMinHash/computation/inverseIndex.cpp',
-                 'neighborsMinHash/computation/inverseIndexStorageBloomierFilter.cpp' , 'neighborsMinHash/computation/inverseIndexStorageUnorderedMap.cpp']
+                 'neighborsMinHash/computation/inverseIndexStorageBloomierFilter.cpp' , 'neighborsMinHash/computation/inverseIndexStorageUnorderedMap.cpp',
+                 'neighborsMinHash/computation/bloomierFilter/bloomierFilter.cpp', 'neighborsMinHash/computation/bloomierFilter/bloomierHash.cpp',
+                 'neighborsMinHash/computation/bloomierFilter/encoder.cpp','neighborsMinHash/computation/bloomierFilter/orderAndMatchFinder.cpp']
 depends_list = ['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/computation/minHashBase.h', 'neighborsMinHash/computation/inverseIndex.h',
          'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h', 'neighborsMinHash/computation/sparseMatrix.h',
           'neighborsMinHash/computation/inverseIndexStorage.h',
-                 'neighborsMinHash/computation/inverseIndexStorageBloomierFilter.h' , 'neighborsMinHash/computation/inverseIndexStorageUnorderedMap.h']
+                 'neighborsMinHash/computation/inverseIndexStorageBloomierFilter.h' , 'neighborsMinHash/computation/inverseIndexStorageUnorderedMap.h',
+                 'neighborsMinHash/computation/bloomierFilter/bloomierFilter.h', 'neighborsMinHash/computation/bloomierFilter/bloomierHash.h',
+                 'neighborsMinHash/computation/bloomierFilter/encoder.h','neighborsMinHash/computation/bloomierFilter/orderAndMatchFinder.h']
 if "--openmp" in sys.argv:
     module1 = Extension('_minHash', sources = sources_list, depends = depends_list,
          define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
         extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])#, include_dirs=['/home/wolffj/Software/boost_1_59_0', '/home/wolffj/Software/mtl4'])
-
+# extra_link_args=(['-Wl,--no-undefined'])
 elif platform.system() == 'Darwin' or "--noopenmp" in sys.argv:
     module1 = Extension('_minHash', sources = sources_list, depends = depends_list, 
         extra_compile_args=["-O3", "-std=c++11"])
@@ -65,6 +69,7 @@ setup (name = 'neighborsMinHash',
                     'neighborsMinHash.neighbors',
                     'neighborsMinHash.util',
                     'neighborsMinHash.clustering',
+                    #  'neighborsMinHash.computation',
                 ],
         platforms = "Linux, Mac OS X",
         version = '0.1.dev'

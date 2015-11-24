@@ -11,12 +11,12 @@ class OrderAndMatchFinder {
     size_t mQ;
     vsize_t* mPiVector;
     vsize_t* mTauVector;
-    std::set<size_t> mHashesSeen;
-    std::set<size_t> mNonSingeltons;
+    std::set<size_t>* mHashesSeen;
+    std::set<size_t>* mNonSingeltons;
     BloomierHash* mBloomierHash;
     bool findMatch(vsize_t* pSubset);
-    void computeNonSingeltons(std::map<size_t, size_t> pKeyValue);
-    int tweak(size_t pKey, vsize_t pSubset);
+    void computeNonSingeltons(vsize_t* pKeyValues);
+    int tweak(size_t pKey, vsize_t* pSubset);
   public:
   	OrderAndMatchFinder(size_t pM, size_t pK, size_t pQ, BloomierHash* pBloomierHash);
     ~OrderAndMatchFinder();

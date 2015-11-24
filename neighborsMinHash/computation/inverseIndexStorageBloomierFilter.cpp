@@ -5,9 +5,9 @@ InverseIndexStorageBloomierFilter::InverseIndexStorageBloomierFilter(size_t pSiz
 	mMaxBinSize = pMaxBinSize;
 	mKeys = new vvsize_t(pSizeOfInverseIndex, vsize_t());
 	mValues = new vvsize_t(pSizeOfInverseIndex, vsize_t());
-	size_t mM = 100;
-	size_t mK = 100;
-	size_t mQ = 100;
+	mM = 100;
+	mK = 100;
+	mQ = 100;
 	
 }
 InverseIndexStorageBloomierFilter::~InverseIndexStorageBloomierFilter() {

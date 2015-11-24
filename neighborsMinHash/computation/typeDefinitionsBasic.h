@@ -54,7 +54,7 @@ struct sortMapFloat {
 
 typedef std::vector<char> bitVector;
 
-typedef std::vector<bitVector> bloomierTable;
+typedef std::vector<bitVector*> bloomierTable;
 
 static bool mapSortDescByValueFloat(const sortMapFloat& a, const sortMapFloat& b) {
         return a.val > b.val;

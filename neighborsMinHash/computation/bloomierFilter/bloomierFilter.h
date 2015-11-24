@@ -13,13 +13,13 @@ class BloomierFilter {
     size_t mM;
     size_t mK;
     size_t mQ;
-    BloomierHash mBloomierHash;
+    BloomierHash* mBloomierHash;
     size_t mBitVectorSize;
     // BloomierHash mBloomierHash;
     // size_t mByteSize;
-    OrderAndMatchFinder mOrderAndMatchFinder;
+    OrderAndMatchFinder* mOrderAndMatchFinder;
     // std::map<size_t, size_t> mKeyDict;
-    Encoder mEncoder;
+    Encoder* mEncoder;
     size_t mPiIndex;
 
   public:      

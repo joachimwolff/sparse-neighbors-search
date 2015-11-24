@@ -1,5 +1,5 @@
 #include <unordered_map>
-// #include "orderAndMatchFinder.h"
+#include "orderAndMatchFinder.h"
 
 OrderAndMatchFinder::OrderAndMatchFinder(size_t pM, size_t pK, size_t pQ, BloomierHash* pBloomierHash) {
     mM = pM;
@@ -8,6 +8,8 @@ OrderAndMatchFinder::OrderAndMatchFinder(size_t pM, size_t pK, size_t pQ, Bloomi
     mPiVector = new vsize_t();
     mTauVector = new vsize_t();
     mBloomierHash = pBloomierHash;
+    mHashesSeen = new std::set<size_t>();
+    mNonSingeltons = new std::set<size_t>();
 }
 OrderAndMatchFinder::~OrderAndMatchFinder() {
     delete mPiVector;
@@ -37,7 +39,7 @@ bool OrderAndMatchFinder::findMatch(vsize_t* pSubset) {
         return false;
     }
     if (subsetNextRecursion->size() != 0) {
-         if (this->find(subsetNextRecursion) == false) {
+         if (this->findMatch(subsetNextRecursion) == false) {
              return false;
          }
     }
@@ -76,15 +78,15 @@ int OrderAndMatchFinder::tweak (size_t pKey, vsize_t* pSubset) {
 }
 
 void OrderAndMatchFinder::computeNonSingeltons(vsize_t* pKeyValues) {
-    for (auto it = pKeyValues->begin(); it != pKeyValues->end(); ++i) {
+    for (auto it = pKeyValues->begin(); it != pKeyValues->end(); ++it) {
         vsize_t* neighbors = mBloomierHash->getKNeighbors((*it), mK, mM);
         for (auto itNeighbors = neighbors->begin(); itNeighbors != neighbors->end(); ++itNeighbors){
             if (mHashesSeen->find((*itNeighbors)) != mHashesSeen->end()) {
-                mNonSingeltons->push_back((*itNeighbors));
+                mNonSingeltons->insert((*itNeighbors));
             }
         }
         for (auto itNeighbors = neighbors->begin(); itNeighbors != neighbors->end(); ++itNeighbors){
-            mHashesSeen->push_back((*itNeighbors));
+            mHashesSeen->insert((*itNeighbors));
         }
     }
 }
