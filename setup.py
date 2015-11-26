@@ -33,7 +33,7 @@ depends_list = ['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/comp
           'neighborsMinHash/computation/inverseIndexStorage.h',
                  'neighborsMinHash/computation/inverseIndexStorageBloomierFilter.h' , 'neighborsMinHash/computation/inverseIndexStorageUnorderedMap.h',
                  'neighborsMinHash/computation/bloomierFilter/bloomierFilter.h', 'neighborsMinHash/computation/bloomierFilter/bloomierHash.h',
-                 'neighborsMinHash/computation/bloomierFilter/encoder.h','neighborsMinHash/computation/bloomierFilter/orderAndMatchFinder.h']
+                 'neighborsMinHash/computation/bloomierFilter/encoder.h','neighborsMinHash/computation/bloomierFilter/orderAndMatchFinder.h', 'neighborsMinHash/computation/hash.h']
 if "--openmp" in sys.argv:
     module1 = Extension('_minHash', sources = sources_list, depends = depends_list,
          define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
