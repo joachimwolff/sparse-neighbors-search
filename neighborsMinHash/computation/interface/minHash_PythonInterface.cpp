@@ -46,6 +46,7 @@ static neighborhood* fitNeighborhoodComputation(size_t pMinHashAddress, PyObject
 }
 
 static PyObject* createObject(PyObject* self, PyObject* args) {
+    std::cout << "create" << std::endl;
     size_t numberOfHashFunctions, blockSize, numberOfCores, chunkSize,
     nNeighbors, minimalBlocksInCommon, maxBinSize,
     maximalNumberOfHashCollisions, excessFactor, bloomierFilter;
@@ -76,6 +77,8 @@ static PyObject* deleteObject(PyObject* self, PyObject* args) {
 }
 
 static PyObject* fit(PyObject* self, PyObject* args) {
+    std::cout << "fit" << std::endl;
+    
     size_t addressMinHashObject, maxNumberOfInstances, maxNumberOfFeatures;
     PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
@@ -90,19 +93,24 @@ static PyObject* fit(PyObject* self, PyObject* args) {
     // std::cout << "86" << std::endl;
     // parse from python list to a c++ map<size_t, vector<size_t> >
     // where key == instance id and vector<size_t> == non null feature ids
+    std::cout << "96" << std::endl;
     SparseMatrixFloat* originalDataMatrix = parseRawData(instancesListObj, featuresListObj, dataListObj, 
                                                     maxNumberOfInstances, maxNumberOfFeatures);
     // std::cout << "91" << std::endl;
 
     // get pointer to the minhash object
     // std::cout << "94" << std::endl;
-
+    std::cout << "103" << std::endl;
     MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
+    std::cout << "105" << std::endl;
+    
     minHash->set_mOriginalData(originalDataMatrix);
     // std::cout << "98" << std::endl;
+    std::cout << "109" << std::endl;
 
     minHash->fit(originalDataMatrix);
     // std::cout << "101" << std::endl;
+    std::cout << "113" << std::endl;
 
     addressMinHashObject = reinterpret_cast<size_t>(minHash);
     PyObject * pointerToInverseIndex = Py_BuildValue("k", addressMinHashObject);
@@ -112,6 +120,8 @@ static PyObject* partialFit(PyObject* self, PyObject* args) {
     return fit(self, args);
 }
 static PyObject* kneighbors(PyObject* self, PyObject* args) {
+    std::cout << "kneighbors" << std::endl;
+    
     size_t addressMinHashObject, nNeighbors, maxNumberOfInstances,
             maxNumberOfFeatures, returnDistance;
     int fast, similarity;
