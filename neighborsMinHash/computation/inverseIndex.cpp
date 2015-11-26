@@ -49,8 +49,11 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pBlockSize,
     
     size_t inverseIndexSize = ceil(((float) mNumberOfHashFunctions / (float) mBlockSize)+1);
     if (pBloomierFilter) {
+        std::cout << "Using bloomier filter. " << std::endl;
         mInverseIndexStorage = new InverseIndexStorageBloomierFilter(inverseIndexSize, mMaxBinSize);
     } else {
+        std::cout << "Using unorderedMap. " << std::endl;
+        
         mInverseIndexStorage = new InverseIndexStorageUnorderedMap(inverseIndexSize, mMaxBinSize);
     }
     // mInverseIndexUmapVector = new vector__umapVector(inverseIndexSize);
@@ -78,7 +81,7 @@ vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const
         size_t minHashValue = MAX_VALUE;
         for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); ++i) {
             //  hash(size_t pKey, size_t pModulo, size_t pSeed)
-            size_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), (j+1) * A, MAX_VALUE);
+            size_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), (j+1), MAX_VALUE);
             if (hashValue < minHashValue) {
                 minHashValue = hashValue;
             }
@@ -93,7 +96,7 @@ vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const
         // use computed hash value as a seed for the next computation
         size_t signatureBlockValue = signatureHash[k];
         for (size_t j = 0; j < mBlockSize; ++j) {
-            signatureBlockValue = mHash->hash((signatureHash[k+j]),  signatureBlockValue * A, MAX_VALUE);
+            signatureBlockValue = mHash->hash((signatureHash[k+j]),  signatureBlockValue, MAX_VALUE);
         }
         signature->push_back(signatureBlockValue);
         k += mBlockSize; 
@@ -120,7 +123,7 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
         // compute unique id
         size_t signatureId = 0;
         for (size_t j = 0; j < pRawData->getSizeOfInstance(index); ++j) {
-                signatureId = mHash->hash((pRawData->getNextElement(index, j) +1), (signatureId+1) * A, MAX_VALUE);
+                signatureId = mHash->hash((pRawData->getNextElement(index, j) +1), (signatureId+1), MAX_VALUE);
         }
         // signature is in storage && 
         auto signatureIt = (*mSignatureStorage).find(signatureId);
@@ -155,6 +158,8 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     return instanceSignature;
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
+        // std::cout << "158" << std::endl;
+
     mDoubleElementsStorageCount = 0;
     // size_t inverseIndexSize = ceil(((float) mNumberOfHashFunctions / (float) mBlockSize)+1);
     // mInverseIndexUmapVector->resize(inverseIndexSize);
@@ -165,22 +170,38 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
+    // std::cout << "170" << std::endl;
 
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
 
     for (size_t index = 0; index < pRawData->size(); ++index) {
         size_t signatureId = 0;
+    // std::cout << "176" << std::endl;
 
         for (size_t j = 0; j < pRawData->getSizeOfInstance(index); ++j) {
-            signatureId = mHash->hash((pRawData->getNextElement(index, j) +1), (signatureId+1) * A, MAX_VALUE);
+                // std::cout << "179" << std::endl;
+
+            signatureId = mHash->hash((pRawData->getNextElement(index, j) +1), (signatureId+1), MAX_VALUE);
+                // std::cout << "182" << std::endl;
+
         }
+            // std::cout << "185" << std::endl;
+
         vsize_t* signature;
         auto itSignatureStorage = mSignatureStorage->find(signatureId);
+            // std::cout << "189" << std::endl;
+
         if (itSignatureStorage == mSignatureStorage->end()) {
+                // std::cout << "192" << std::endl;
+
             signature = computeSignature(pRawData, index);
         } else {
+                // std::cout << "196" << std::endl;
+
             signature = itSignatureStorage->second->signature;
         }
+            // std::cout << "200" << std::endl;
+
 #pragma omp critical
         {    
             if (itSignatureStorage == mSignatureStorage->end()) {
@@ -195,10 +216,16 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
                  mDoubleElementsStorageCount += 1;
             }
             for (size_t j = 0; j < signature->size(); ++j) {
+                    std::cout << "203" << std::endl;
+                    
                  mInverseIndexStorage->insert(j, (*signature)[j], index);
+                     std::cout << "206" << std::endl;
+
             }
         }
     }
+        std::cout << "227" << std::endl;
+
     // mInverseIndexStorage->create();
 }
 
