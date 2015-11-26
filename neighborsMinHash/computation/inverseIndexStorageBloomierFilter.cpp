@@ -23,7 +23,10 @@ void InverseIndexStorageBloomierFilter::insert(size_t pVectorId, size_t pHashVal
 	if ((*mInverseIndex)[pVectorId] == NULL) {
 		(*mInverseIndex)[pVectorId] = new BloomierFilter(mM, mK, mQ);
 	}
+	std::cout << "26" << std::endl;
 	(*mInverseIndex)[pVectorId]->set(pHashValue, pInstance);
+	std::cout << "28" << std::endl;
+	
 	// (*mKeys)[pVectorId].push_back(pHashValue);
 	// (*mValues)[pVectorId].push_back(pInstance);
 }
