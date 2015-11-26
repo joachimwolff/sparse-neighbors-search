@@ -5,9 +5,10 @@ class Hash {
   private:
     const double A = sqrt(2) - 1;
     
-    size_t _size_tHashSimple(size_t key, size_t aModulo) {
+    size_t size_tHashSimple(size_t key, size_t aModulo) {
           // std::hash<size_t> hash;
           // return hash(key);
+          key = key * A;
           key = ~key + (key << 15);
           key = key ^ (key >> 12);
           key = key + (key << 2);
@@ -17,8 +18,8 @@ class Hash {
           return key % aModulo;
     };
   public:      
-    size_t hash(size_t pKey, size_t pModulo, size_t pSeed) {
-        return _size_tHashSimple(pKey * pSeed * A, pModulo);
-    }
+    size_t hash(size_t pKey, size_t pSeed, size_t pModulo) {
+        return size_tHashSimple(pKey * pSeed, pModulo);
+    };
 };
 #endif // HASH_H
