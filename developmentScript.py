@@ -52,7 +52,7 @@ def test(data):
     # if not os.path.exists("inverse_index.approx"):
     print "Build inverse index for approximate..."
     time_build_approx_start = time.time()
-    minHash = MinHash(number_of_hash_functions=400, similarity=True)
+    minHash = MinHash(number_of_hash_functions=400, similarity=True, bloomierFilter=True)
     # minHash.fit(data[0])
     minHash.fit(datasetBursi)
 
@@ -70,7 +70,7 @@ def test(data):
 
 
     time_comp_approx = time.time()
-    approx1 = minHash.kneighbors(fast=True,return_distance=True)
+    approx1 = minHash.kneighbors(fast=True,return_distance=False)
     print "Approx solution, distance=False: ", approx1
     # print "Approx solution, distance=True: ", minHash_approximate.kneighbors(centroids_neighborhood,return_distance=True)
 
@@ -79,7 +79,7 @@ def test(data):
     print "\n\n"
 
     time_comp_approx = time.time()
-    exact1 = minHash.kneighbors(fast=False,return_distance=True)
+    exact1 = minHash.kneighbors(fast=False,return_distance=False)
     print "Exact solution, distance=False: ", exact1
     # print "Approx solution, distance=True: ", minHash_approximate.kneighbors(centroids_neighborhood,return_distance=True)
 
