@@ -27,6 +27,7 @@ vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, size_t pH
     //                 if (itHashValue_InstanceVector->second.size()
 }
 void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue, size_t pInstance) {
+	// std::cout << "insert" << std::endl;
 	auto itHashValue_InstanceVector = (*mSignatureStorage)[pVectorId].find(pHashValue);
 	// if for hash function h_i() the given hash values is already stored
 	if (itHashValue_InstanceVector != (*mSignatureStorage)[pVectorId].end()) {
