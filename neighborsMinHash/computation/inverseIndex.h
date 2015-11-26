@@ -24,7 +24,7 @@
 class InverseIndex {
 
   protected: 
-  	const double A = sqrt(2) - 1;
+  	// const double A = sqrt(2) - 1;
     size_t mNumberOfHashFunctions;
     size_t mBlockSize;
     size_t mNumberOfCores;
