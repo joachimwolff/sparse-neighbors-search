@@ -216,15 +216,15 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
                  mDoubleElementsStorageCount += 1;
             }
             for (size_t j = 0; j < signature->size(); ++j) {
-                    std::cout << "203" << std::endl;
+                    // std::cout << "203" << std::endl;
                     
                  mInverseIndexStorage->insert(j, (*signature)[j], index);
-                     std::cout << "206" << std::endl;
+                    //  std::cout << "206" << std::endl;
 
             }
         }
     }
-        std::cout << "227" << std::endl;
+        // std::cout << "227" << std::endl;
 
     // mInverseIndexStorage->create();
 }
