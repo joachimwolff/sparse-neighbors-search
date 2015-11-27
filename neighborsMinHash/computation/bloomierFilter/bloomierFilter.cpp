@@ -112,9 +112,9 @@ bool BloomierFilter::set(size_t pKey, size_t pValue) {
 		size_t L = (*neighbors)[h];
 		if (L < mValueTable->size()) {
 				vsize_t* v = ((*mValueTable)[L]);
-			if (v == NULL) {
-				v = new vsize_t();
-			}
+			// if (v == NULL) {
+			// 	v = new vsize_t();
+			// }
 	std::cout << __LINE__ << std::endl;
 			v->push_back(pValue);
 	std::cout << __LINE__ << std::endl;
