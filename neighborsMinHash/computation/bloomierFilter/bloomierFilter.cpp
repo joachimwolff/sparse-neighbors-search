@@ -198,15 +198,15 @@ void BloomierFilter::create(vsize_t* pKeys, vvsize_t_p* pValues, size_t piIndex)
 		size_t L = (*neighbors)[l];
 
 		bitVector* encodeValue = mEncoder->encode(l);
-		bitVector* valueToStore = new bitVector(mBitVectorSize, 0);
-		this->xorBitVector(valueToStore, encodeValue);
-		this->xorBitVector(valueToStore, mask);
+		// bitVector* valueToStore = new bitVector(mBitVectorSize, 0);
+		this->xorBitVector((*mTable)[L], encodeValue);
+		this->xorBitVector((*mTable)[L], mask);
 		for (size_t j = 0; j < neighbors->size(); ++j) {
 			if (j != l) {
-				this->xorBitVector(valueToStore, (*mTable)[(*neighbors)[i]]);
+				this->xorBitVector((*mTable)[L], (*mTable)[(*neighbors)[j]]);
 			}
 		}
-		(*mTable)[L] = valueToStore;
+		// (*mTable)[L] = valueToStore;
 		// std::cout << "size of piVector: " << piVector->size() << std::endl;
 		// std::cout << "i: " << i << std::endl;
 		// std::cout << "size of pvalues: " <<  pValues->size() << std::endl;
