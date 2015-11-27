@@ -37,6 +37,7 @@ class BloomierFilter {
     vsize_t* get(size_t pKey);
     bool set(size_t pKey, size_t pValue);
     void create(vsize_t* pKeys, vvsize_t_p* pValues, size_t piIndex = 0);
+    void check();
     // std::string tableToString();
     // std::pair<vsize_t, vsize_t> stringToTable(std::string pString);
 };
