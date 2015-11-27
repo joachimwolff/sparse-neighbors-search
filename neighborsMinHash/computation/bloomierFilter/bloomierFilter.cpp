@@ -27,7 +27,20 @@ BloomierFilter::BloomierFilter(size_t pM, size_t pK, size_t pQ){
 BloomierFilter::~BloomierFilter(){
 
 }
-
+void BloomierFilter::check() {
+	std::cout << __LINE__ << std::endl;
+	
+	for(size_t i = 0; i < mTable->size(); ++i) {
+		(*mTable)[i]->size();
+	}
+	std::cout << __LINE__ << std::endl;
+	
+	for(size_t i = 0; i < mValueTable->size(); ++i) {
+		(*mValueTable)[i]->size();
+	}
+	std::cout << __LINE__ << std::endl;
+	
+}
 bloomierTable* BloomierFilter::getTable() {
 	return mTable;
 }
@@ -59,6 +72,11 @@ void BloomierFilter::xorOperation(bitVector* pValue, bitVector* pMask, vsize_t* 
 	// return pValue;
 }
 vsize_t* BloomierFilter::get(size_t pKey) {
+	std::cout << __LINE__ << std::endl;
+	
+	check();
+	std::cout << __LINE__ << std::endl;
+
 	vsize_t* neighbors = mBloomierHash->getKNeighbors(pKey, mK, mM);
 	bitVector* mask = mBloomierHash->getMask(pKey);
 
@@ -72,73 +90,67 @@ vsize_t* BloomierFilter::get(size_t pKey) {
 			return (*mValueTable)[L];
 		}
 	}
+	std::cout << __LINE__ << std::endl;
+
+	check();
+	std::cout << __LINE__ << std::endl;
+
 	return new vsize_t();
 }
 bool BloomierFilter::set(size_t pKey, size_t pValue) {
-	std::cout << "64" << std::endl;
+	std::cout << __LINE__ << std::endl;
+	check();
+	std::cout << __LINE__ << std::endl;
+	
 	vsize_t* neighbors = mBloomierHash->getKNeighbors(pKey, mK, mM);
-	// std::cout << "66" << std::endl;
-	
 	bitVector* mask = mBloomierHash->getMask(pKey);
-	// std::cout << "69" << std::endl;
-	
-
 	bitVector* valueToGet = new bitVector(mBitVectorSize, 0);
-	// std::cout << "73" << std::endl;
-	
 	this->xorOperation(valueToGet, mask, neighbors);
-	// std::cout << "76" << std::endl;
-	
-
 	size_t h = mEncoder->decode(valueToGet);
-	std::cout << "80" << std::endl;
-	
+	std::cout << __LINE__ << std::endl;
 	if (h < neighbors->size()) {
-	// std::cout << "83" << std::endl;
-	// std::cout << "h: " << h << std::endl;	
 		size_t L = (*neighbors)[h];
-	// std::cout << "100" << std::endl;
-	// std::cout << "L: " << L << std::endl;	
-
 		if (L < mValueTable->size()) {
-	// std::cout << "103" << std::endl;
-			
-			vsize_t* v = ((*mValueTable)[L]);
-	// std::cout << "107" << std::endl;
+				vsize_t* v = ((*mValueTable)[L]);
 			if (v == NULL) {
-	// std::cout << "109" << std::endl;
-				
 				v = new vsize_t();
 			}
-	std::cout << "113" << std::endl;
-
+	std::cout << __LINE__ << std::endl;
 			v->push_back(pValue);
-	std::cout << "116" << std::endl;
-			
-			(*mValueTable)[L] = v;
-	std::cout << "117" << std::endl;
-			
+	std::cout << __LINE__ << std::endl;
+			// (*mValueTable)[L] = v;
+	std::cout << __LINE__ << std::endl;
 			return true;
 		}
-	std::cout << "90" << std::endl;
-		
+	std::cout << __LINE__ << std::endl;
 	} else {
-	std::cout << "93" << std::endl;
-		
+	std::cout << __LINE__ << std::endl;
 		vsize_t* keys = new vsize_t (1, pKey);
 		vvsize_t_p* values = new vvsize_t_p (1);
 		(*values)[0] = new vsize_t(1, pValue);
 		this->create(keys, values, mPiIndex);
-	std::cout << "131" << std::endl;
-		
+	std::cout << __LINE__ << std::endl;
+
+		check();
+	std::cout << __LINE__ << std::endl;
+
 		return true;
 	}
+	std::cout << __LINE__ << std::endl;
+
+
+	check();
+	std::cout << __LINE__ << std::endl;
+
 	return false;
 }
 
 void BloomierFilter::create(vsize_t* pKeys, vvsize_t_p* pValues, size_t piIndex) {
-	std::cout << "139" << std::endl;
-	
+	std::cout << __LINE__ << std::endl;
+
+	check();
+	std::cout << __LINE__ << std::endl;
+
 	mOrderAndMatchFinder->find(pKeys);
 	// std::cout << "120" << std::endl;
 	
@@ -169,8 +181,11 @@ void BloomierFilter::create(vsize_t* pKeys, vvsize_t_p* pValues, size_t piIndex)
 		(*mValueTable)[L] = (*pValues)[i];
 	}
 	mPiIndex = mPiIndex + pKeys->size();
-	std::cout << "171" << std::endl;
-	
+	std::cout << __LINE__ << std::endl;
+
+	check();
+	std::cout << __LINE__ << std::endl;
+
 }
 
 void BloomierFilter::xorBitVector(bitVector* pResult, bitVector* pInput) {
