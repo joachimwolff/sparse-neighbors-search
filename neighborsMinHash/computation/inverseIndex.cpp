@@ -56,8 +56,6 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pBlockSize,
         
         mInverseIndexStorage = new InverseIndexStorageUnorderedMap(inverseIndexSize, mMaxBinSize);
     }
-    // mInverseIndexUmapVector = new vector__umapVector(inverseIndexSize);
-    // mInverseIndexUmapVector->resize(inverseIndexSize);
 }
  
 InverseIndex::~InverseIndex() {
@@ -69,7 +67,6 @@ InverseIndex::~InverseIndex() {
 
     }
     delete mSignatureStorage;
-    // delete mInverseIndexUmapVector;
 }
  // compute the signature for one instance
 vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance) {
@@ -158,50 +155,28 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     return instanceSignature;
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
-        // std::cout << "158" << std::endl;
-
     mDoubleElementsStorageCount = 0;
-    // size_t inverseIndexSize = ceil(((float) mNumberOfHashFunctions / (float) mBlockSize)+1);
-    // mInverseIndexUmapVector->resize(inverseIndexSize);
-    // mInverseIndexStorage->
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
-    // std::cout << "170" << std::endl;
 
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
 
     for (size_t index = 0; index < pRawData->size(); ++index) {
         size_t signatureId = 0;
-    // std::cout << "176" << std::endl;
-
         for (size_t j = 0; j < pRawData->getSizeOfInstance(index); ++j) {
-                // std::cout << "179" << std::endl;
-
             signatureId = mHash->hash((pRawData->getNextElement(index, j) +1), (signatureId+1), MAX_VALUE);
-                // std::cout << "182" << std::endl;
-
         }
-            // std::cout << "185" << std::endl;
-
         vsize_t* signature;
         auto itSignatureStorage = mSignatureStorage->find(signatureId);
-            // std::cout << "189" << std::endl;
-
         if (itSignatureStorage == mSignatureStorage->end()) {
-                // std::cout << "192" << std::endl;
-
             signature = computeSignature(pRawData, index);
         } else {
-                // std::cout << "196" << std::endl;
-
             signature = itSignatureStorage->second->signature;
         }
-            // std::cout << "200" << std::endl;
-
 #pragma omp critical
         {    
             if (itSignatureStorage == mSignatureStorage->end()) {
@@ -216,17 +191,10 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
                  mDoubleElementsStorageCount += 1;
             }
             for (size_t j = 0; j < signature->size(); ++j) {
-                    // std::cout << "203" << std::endl;
-                    
                  mInverseIndexStorage->insert(j, (*signature)[j], index);
-                    //  std::cout << "206" << std::endl;
-
             }
         }
     }
-        // std::cout << "227" << std::endl;
-
-    // mInverseIndexStorage->create();
 }
 
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
@@ -245,10 +213,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
     neighbors->resize(pSignaturesMap->size()+doubleElements);
     distances->resize(pSignaturesMap->size()+doubleElements);
     if (mChunkSize <= 0) {
-        // mChunkSize = ceil(mInverseIndexUmapVector->size() / static_cast<float>(mNumberOfCores));
         mChunkSize = ceil(mInverseIndexStorage->size() / static_cast<float>(mNumberOfCores));
-        
-        // mInverseIndexStorage
     }
 
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
@@ -263,8 +228,6 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             if (hashID != 0 && hashID != MAX_VALUE) {
                 size_t collisionSize = 0;
                 vsize_t* instances =  mInverseIndexStorage->getElement(j, hashID);
-                // umapVector::const_iterator instances = mInverseIndexUmapVector->at(j).find(hashID);
-                
                 if (instances->size() != 0) {
                     collisionSize = instances->size();
                 } else { 
@@ -278,8 +241,18 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 }
             }
         }
+        if (neighborhood.size() == 0) {
+            vint emptyVectorInt;
+            emptyVectorInt.push_back(1);
+            vfloat emptyVectorFloat;
+            emptyVectorFloat.push_back(1);
+            for (size_t j = 0; j < instanceId->second->instances->size(); ++j) {
+                (*neighbors)[instanceId->second->instances->operator[](j)] = emptyVectorInt;
+                (*distances)[instanceId->second->instances->operator[](j)] = emptyVectorFloat;
+            }
+            continue;
+        }
         std::vector< sort_map > neighborhoodVectorForSorting;
-        
         for (auto it = neighborhood.begin(); it != neighborhood.end(); ++it) {
             sort_map mapForSorting;
             mapForSorting.key = (*it).first;
@@ -306,9 +279,9 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             vint neighborhoodVector;
             std::vector<float> distanceVector;
             if (neighborhoodVectorForSorting[0].key != instanceId->second->instances->operator[](j)) {
-            neighborhoodVector.push_back(instanceId->second->instances->operator[](j));
-            distanceVector.push_back(0);
-            ++count;
+                neighborhoodVector.push_back(instanceId->second->instances->operator[](j));
+                distanceVector.push_back(0);
+                ++count;
             }
             for (auto it = neighborhoodVectorForSorting.begin();
                     it != neighborhoodVectorForSorting.end(); ++it) {
@@ -322,9 +295,9 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 }
             }
         }
-        
+
 #pragma omp critical
-        { 
+        {     
             for (size_t j = 0; j < instanceId->second->instances->size(); ++j) {
                 (*neighbors)[instanceId->second->instances->operator[](j)] = (*neighborsForThisInstance)[j];
                 (*distances)[instanceId->second->instances->operator[](j)] = (*distancesForThisInstance)[j];
