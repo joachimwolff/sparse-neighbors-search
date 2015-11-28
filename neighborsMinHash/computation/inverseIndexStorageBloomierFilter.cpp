@@ -17,24 +17,11 @@ size_t InverseIndexStorageBloomierFilter::size() {
 	return mInverseIndex->size();
 }
 vsize_t* InverseIndexStorageBloomierFilter::getElement(size_t pVectorId, size_t pHashValue) {
-	return (*mInverseIndex)[pVectorId]->get(pHashValue);
+    return (*mInverseIndex)[pVectorId]->get(pHashValue); 
 }
 void InverseIndexStorageBloomierFilter::insert(size_t pVectorId, size_t pHashValue, size_t pInstance) {
 	if ((*mInverseIndex)[pVectorId] == NULL) {
 		(*mInverseIndex)[pVectorId] = new BloomierFilter(mM, mK, mQ);
 	}
-	// std::cout << "26" << std::endl;
 	(*mInverseIndex)[pVectorId]->set(pHashValue, pInstance);
-	// std::cout << "28" << std::endl;
-	
-	// (*mKeys)[pVectorId].push_back(pHashValue);
-	// (*mValues)[pVectorId].push_back(pInstance);
 }
-// void InverseIndexStorageBloomierFilter::create() {
-		
-// 	for (size_t i = 0; i < mKeys->size(); ++i) {
-// 		BloomierFilter* bloomierFilter = new BloomierFilter(m, k, q);
-// 		bloomierFilter->create((*mKeys)[i], &(*mValues)[i]);
-// 		(*mInverseIndex)[i] = bloomierFilter;
-// 	}
-// }
