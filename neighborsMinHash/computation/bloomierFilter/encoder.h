@@ -9,6 +9,7 @@ class Encoder {
   	Encoder(size_t pBitVectorSize);
   	bitVector* encode(size_t value);
   	size_t decode(bitVector* value);
+    vsize_t* getMaskingValues();
   	
 };
 #endif // ENCODER_H
