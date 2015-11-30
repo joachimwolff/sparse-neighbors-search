@@ -11,7 +11,7 @@ Encoder::Encoder(size_t pBitVectorSize) {
 bitVector* Encoder::encode(size_t pValue) {
 	bitVector* value = new bitVector(mBitVectorSize, 0);
 	for (size_t i = 0; i < mBitVectorSize; ++i) {
-		(*value)[i] = pValue & (*mMaskingValues)[i];
+		(*value)[i] = (pValue & (*mMaskingValues)[i]) >> (8*i);
 	}
 	return value;
 }
@@ -23,4 +23,7 @@ size_t Encoder::decode(bitVector* pValue) {
 		value = value | (castValue << (8*i));
 	}
 	return value;
+}
+vsize_t* Encoder::getMaskingValues() {
+	return mMaskingValues;
 }
