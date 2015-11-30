@@ -12,9 +12,10 @@ BloomierHash::~BloomierHash() {
 };
 bitVector* BloomierHash::getMask(size_t pKey) {
 	bitVector* mask = new bitVector(mBitVectorSize);
+	srand(pKey);
+	size_t randValue = rand();
 	for (size_t i = 0; i < mBitVectorSize; ++i) {
-		srand(pKey);
-		(*mask)[i] =  static_cast<char>(rand() % 255);
+		(*mask)[i] = randValue >> (i*8);
 	}
 	return mask;
 };
