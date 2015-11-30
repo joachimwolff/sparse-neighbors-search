@@ -1,5 +1,6 @@
 #include "../typeDefinitions.h"
 #include <set>
+#include <gtest/gtest_prod.h>
 #include "bloomierHash.h"
 
 #ifndef ORDER_AND_MATCH_FINDER_H
@@ -15,7 +16,9 @@ class OrderAndMatchFinder {
     std::set<size_t>* mNonSingeltons;
     BloomierHash* mBloomierHash;
     bool findMatch(vsize_t* pSubset);
+    FRIEND_TEST(OrderAndMatchFinderTest, computeNonSingeltonsTest);
     void computeNonSingeltons(vsize_t* pKeyValues);
+    FRIEND_TEST(OrderAndMatchFinderTest, tweakTest);
     int tweak(size_t pKey, vsize_t* pSubset);
   public:
   	OrderAndMatchFinder(size_t pM, size_t pK, size_t pQ, BloomierHash* pBloomierHash);
