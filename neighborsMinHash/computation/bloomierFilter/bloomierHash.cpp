@@ -20,11 +20,8 @@ bitVector* BloomierHash::getMask(size_t pKey) {
 	return mask;
 };
 vsize_t* BloomierHash::getKNeighbors(size_t pElement) {
-	// std::cout << "22" << std::endl;
 	vsize_t* kNeighbors = new vsize_t(mNumberOfElements);
-	for (size_t i = 0; i < mModulo; ++i) {
-			// std::cout << "i: "<< i << std::endl;
-
+	for (size_t i = 0; i < mNumberOfElements; ++i) {
 		(*kNeighbors)[i] = mHash->hash(pElement+1, i+1, mModulo);
 	}
 	return kNeighbors;
