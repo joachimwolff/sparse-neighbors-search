@@ -1,10 +1,10 @@
 #include <unordered_map>
 #include "orderAndMatchFinder.h"
 
-OrderAndMatchFinder::OrderAndMatchFinder(size_t pM, size_t pK, size_t pQ, BloomierHash* pBloomierHash) {
-    mM = pM;
-    mK = pK;
-    mQ = pQ;
+OrderAndMatchFinder::OrderAndMatchFinder(size_t pModulo, size_t pNumberOfElements, BloomierHash* pBloomierHash) {
+    mModulo = pModulo;
+    mNumberOfElements = pNumberOfElements;
+    // mQ = pQ;
     mPiVector = new vsize_t();
     mTauVector = new vsize_t();
     mBloomierHash = pBloomierHash;
@@ -69,7 +69,7 @@ vsize_t* OrderAndMatchFinder::getTauVector() {
 int OrderAndMatchFinder::tweak (size_t pKey, vsize_t* pSubset) {
     size_t i = 0;
     this->computeNonSingeltons(pSubset);
-    vsize_t*  neighbors = mBloomierHash->getKNeighbors(pKey, mK, mM);
+    vsize_t*  neighbors = mBloomierHash->getKNeighbors(pKey);
     for (auto it = neighbors->begin(); it != neighbors->end(); ++it) {
         if (mNonSingeltons->find((*it)) == mNonSingeltons->end()) {
             return i;
@@ -81,7 +81,7 @@ int OrderAndMatchFinder::tweak (size_t pKey, vsize_t* pSubset) {
 
 void OrderAndMatchFinder::computeNonSingeltons(vsize_t* pKeyValues) {
     for (auto it = pKeyValues->begin(); it != pKeyValues->end(); ++it) {
-        vsize_t* neighbors = mBloomierHash->getKNeighbors((*it), mK, mM);
+        vsize_t* neighbors = mBloomierHash->getKNeighbors((*it));
         for (auto itNeighbors = neighbors->begin(); itNeighbors != neighbors->end(); ++itNeighbors){
             if (mHashesSeen->find((*itNeighbors)) != mHashesSeen->end()) {
                 mNonSingeltons->insert((*itNeighbors));
@@ -90,5 +90,5 @@ void OrderAndMatchFinder::computeNonSingeltons(vsize_t* pKeyValues) {
         for (auto itNeighbors = neighbors->begin(); itNeighbors != neighbors->end(); ++itNeighbors){
             mHashesSeen->insert((*itNeighbors));
         }
-    }
+    } 
 }
