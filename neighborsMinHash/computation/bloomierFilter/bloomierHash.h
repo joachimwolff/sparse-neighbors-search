@@ -9,17 +9,15 @@
 #define BLOOMIER_HASH_H
 class BloomierHash {
   private:
-    size_t mHashSeed;
-    size_t mM;
-    size_t mK;
-    size_t mQ;
+    size_t mModulo;
+    size_t mNumberOfElements;
     Hash* mHash;
     size_t mBitVectorSize;
 
   public:      
-    BloomierHash(size_t pM, size_t pK, size_t pBitVectorSize);
+    BloomierHash(size_t pModulo, size_t pNumberOfElements, size_t pBitVectorSize);
     ~BloomierHash();
     bitVector* getMask(size_t pKey);
-    vsize_t* getKNeighbors(size_t pElement, size_t pK, size_t pModulo);
+    vsize_t* getKNeighbors(size_t pElement);
 };
 #endif // BLOOMIER_HASH_H
