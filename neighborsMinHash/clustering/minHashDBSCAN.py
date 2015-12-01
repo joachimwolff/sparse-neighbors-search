@@ -66,8 +66,9 @@ class MinHashDBSCAN():
         # X = np.exp(graph_result.multiply(graph_result).multiply(1/(2*1**2)).multiply(-1))
         # np.exp(- graph_result ** 2 / (2. * 1 ** 2))
         # self._dbscan.fit(graph_result)
-        self.labels_ = self._dbscan.fit(graph_result)
-        print "Labels: ", self.labels_
+        self._dbscan.fit(graph_result)
+        self.labels_ = self._dbscan.labels_
+        # print "Labels: ", self.labels_
         # return self
     def fit_predict(self, X, y=None):
         self.fit(X, y)
