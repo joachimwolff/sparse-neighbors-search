@@ -1,5 +1,5 @@
 #include "bloomierHash.h"
-
+#include <set>
 BloomierHash::BloomierHash(size_t pModulo,size_t pNumberOfElements, size_t pBitVectorSize) {
 	mModulo = pModulo;
 	mNumberOfElements = pNumberOfElements;
@@ -21,8 +21,11 @@ bitVector* BloomierHash::getMask(size_t pKey) {
 };
 vsize_t* BloomierHash::getKNeighbors(size_t pElement) {
 	vsize_t* kNeighbors = new vsize_t(mNumberOfElements);
+	std::set<size_t>* setOfNeighbors = new std::set<size_t>();
 	for (size_t i = 0; i < mNumberOfElements; ++i) {
-		(*kNeighbors)[i] = mHash->hash(pElement+1, i+1, mModulo);
+		size_t neighbor = mHash->hash(pElement+1, rand(), mModulo);
+		(*kNeighbors)[i] = neighbor;
 	}
+	delete setOfNeighbors;
 	return kNeighbors;
 };
