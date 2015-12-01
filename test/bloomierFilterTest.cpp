@@ -2,6 +2,19 @@
 #include "../neighborsMinHash/computation/bloomierFilter/bloomierFilter.h"
 #include "../neighborsMinHash/computation/bloomierFilter/encoder.h"
 
+::testing::AssertionResult IsInRange(int value, int low, int high) {
+  if (value < low)
+    return ::testing::AssertionFailure()
+        << value << " < lower bound " << low;
+  else if (value > high)
+    return ::testing::AssertionFailure()
+        << value << " > upper bound " << high;
+  else
+    return ::testing::AssertionSuccess()
+        << value << " is in range [" 
+        << low << ", " << high << "]";
+};
+
 TEST(BloomierFilterTest, setAndGetTest) {
     BloomierFilter* bloomierFilter = new BloomierFilter(10, 3, 8);
     bloomierFilter->set(1, 10);
@@ -65,6 +78,7 @@ TEST(EncoderTest, decodeTest) {
     EXPECT_EQ(encodeObj->decode(encodedValue), 1024);
     
     delete encodeObj;
+    delete encodedValue;
 }
 
 TEST(BloomierHashTest, getMaskTest) {
@@ -73,22 +87,25 @@ TEST(BloomierHashTest, getMaskTest) {
     EXPECT_EQ(mask->at(0), 103);
     EXPECT_EQ(mask->at(1), 69);
     delete bloomierHash;
+    delete mask;
 }
 
 TEST(BloomierHashTest, getKNeighborsTest) {
-    BloomierHash* bloomierHash = new BloomierHash(19, 3, 2);
-    vsize_t* neighbors = bloomierHash->getKNeighbors(1, 3, 255);
+    size_t numberOfElements = 100;
+    BloomierHash* bloomierHash = new BloomierHash(10, numberOfElements, 2);
+    vsize_t* neighbors = bloomierHash->getKNeighbors(1);
 
-    EXPECT_EQ(neighbors->size(), 3);
-    EXPECT_EQ(neighbors->at(0), 220);
-    EXPECT_EQ(neighbors->at(1), 234);
-    EXPECT_EQ(neighbors->at(2), 214);
+    EXPECT_EQ(neighbors->size(), numberOfElements);
+    for (size_t i = 0; i < numberOfElements; ++i) {
+        EXPECT_TRUE(IsInRange(neighbors->at(i), 0, 10));
+    }
     delete bloomierHash;
+    delete neighbors;
 }
 
 TEST(OrderAndMatchFinderTest, findTest) {
     BloomierHash* bloomierHash = new BloomierHash(19, 3, 2);
-    OrderAndMatchFinder* orderAndMatchFinder = new OrderAndMatchFinder(19, 3, 8, bloomierHash);
+    OrderAndMatchFinder* orderAndMatchFinder = new OrderAndMatchFinder(19, 3, bloomierHash);
     vsize_t* pSubset = new vsize_t();
     pSubset->push_back(3);
     pSubset->push_back(4);
@@ -97,6 +114,7 @@ TEST(OrderAndMatchFinderTest, findTest) {
     orderAndMatchFinder->find(pSubset);
     vsize_t* piVector = orderAndMatchFinder->getPiVector();
     vsize_t* tauVector = orderAndMatchFinder->getTauVector();
+    
     for (size_t i = 0; i < piVector->size(); ++i) {
         std::cout << "piVector: " << piVector->at(i) << std::endl;
     }
@@ -107,13 +125,27 @@ TEST(OrderAndMatchFinderTest, findTest) {
 
 TEST(OrderAndMatchFinderTest, tweakTest) {
     BloomierHash* bloomierHash = new BloomierHash(10, 3, 2);
-    OrderAndMatchFinder* orderAndMatchFinder = new OrderAndMatchFinder(19, 3, 8, bloomierHash);
-    
+    OrderAndMatchFinder* orderAndMatchFinder = new OrderAndMatchFinder(10, 3, bloomierHash);
+    vsize_t* subset = new vsize_t(3);
+    (*subset)[0] = 0;
+    (*subset)[1] = 1;
+    (*subset)[2] = 2;    
+    std::cout << "index: " << orderAndMatchFinder->tweak(0, subset) << std::endl;
+    std::cout << "index: " << orderAndMatchFinder->tweak(1, subset) << std::endl;
+    std::cout << "index: " << orderAndMatchFinder->tweak(2, subset) << std::endl;
+//    orderAndMatchFinder->tweak(0, subset);   
+  //  orderAndMatchFinder->tweak(0, subset);   
+     
+    // 0:10, 1:20, 2:30
+    // 0 --> 8, 9, 7
+    // 1 --> 0, 1, 2
+    // 2 --> 8, 2, 3
+    // EXPECT_TRUE(IsInRange(SomeFunction(), low, high))
 }
 
 TEST(OrderAndMatchFinderTest, computeNonSingeltonsTest) {
     BloomierHash* bloomierHash = new BloomierHash(19, 3, 2);
-    OrderAndMatchFinder* orderAndMatchFinder = new OrderAndMatchFinder(19, 3, 8, bloomierHash);
+    OrderAndMatchFinder* orderAndMatchFinder = new OrderAndMatchFinder(19, 3, bloomierHash);
 }
 int main (int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
