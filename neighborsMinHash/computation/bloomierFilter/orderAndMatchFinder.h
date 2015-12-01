@@ -7,9 +7,9 @@
 #define ORDER_AND_MATCH_FINDER_H
 class OrderAndMatchFinder {
   private:
-    size_t mM;
-    size_t mK;
-    size_t mQ;
+    size_t mModulo;
+    size_t mNumberOfElements;
+    
     vsize_t* mPiVector;
     vsize_t* mTauVector;
     std::set<size_t>* mHashesSeen;
@@ -21,7 +21,7 @@ class OrderAndMatchFinder {
     FRIEND_TEST(OrderAndMatchFinderTest, tweakTest);
     int tweak(size_t pKey, vsize_t* pSubset);
   public:
-  	OrderAndMatchFinder(size_t pM, size_t pK, size_t pQ, BloomierHash* pBloomierHash);
+  	OrderAndMatchFinder(size_t pModulo, size_t pNumberOfElements, BloomierHash* pBloomierHash);
     ~OrderAndMatchFinder();
     void find(vsize_t* pSubset);
     vsize_t* getPiVector();
