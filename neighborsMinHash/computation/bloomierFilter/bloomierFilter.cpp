@@ -6,7 +6,7 @@ BloomierFilter::BloomierFilter(size_t pM, size_t pK, size_t pQ){
 	mQ = pQ;
 	mBitVectorSize = ceil(pQ / static_cast<float>(CHAR_BIT));
 	mBloomierHash = new BloomierHash(pM, pK, mBitVectorSize);
-	mOrderAndMatchFinder = new OrderAndMatchFinder(pM, pK, pQ, mBloomierHash);
+	mOrderAndMatchFinder = new OrderAndMatchFinder(pM, pK, mBloomierHash);
 	mTable = new bloomierTable(pM);
 	mValueTable = new vvsize_t_p(pM);
 	for (size_t i = 0; i < pM; ++i) {
@@ -74,7 +74,7 @@ void BloomierFilter::xorOperation(bitVector* pValue, bitVector* pMask, vsize_t* 
 }
 vsize_t* BloomierFilter::get(size_t pKey) {
     // std::cout << __LINE__ << std::endl;
-	vsize_t* neighbors = mBloomierHash->getKNeighbors(pKey, mK, mM);
+	vsize_t* neighbors = mBloomierHash->getKNeighbors(pKey);
 	bitVector* mask = mBloomierHash->getMask(pKey);
 	bitVector* valueToGet = new bitVector(mBitVectorSize, 0);
 	this->xorOperation(valueToGet, mask, neighbors);
@@ -100,7 +100,7 @@ vsize_t* BloomierFilter::get(size_t pKey) {
 	return new vsize_t();
 }
 bool BloomierFilter::set(size_t pKey, size_t pValue) {
-	vsize_t* neighbors = mBloomierHash->getKNeighbors(pKey, mK, mM);
+	vsize_t* neighbors = mBloomierHash->getKNeighbors(pKey);
 	bitVector* mask = mBloomierHash->getMask(pKey);
 	bitVector* valueToGet = new bitVector(mBitVectorSize, 0);
 	this->xorOperation(valueToGet, mask, neighbors);
@@ -127,7 +127,7 @@ void BloomierFilter::create(vsize_t* pKeys, vvsize_t_p* pValues, size_t piIndex)
     vsize_t* piVector = mOrderAndMatchFinder->getPiVector();
 	vsize_t* tauVector = mOrderAndMatchFinder->getTauVector();
 	for (size_t i = piIndex; i < piVector->size(); ++i) {
-		vsize_t* neighbors = mBloomierHash->getKNeighbors((*pKeys)[i], mK, mM);
+		vsize_t* neighbors = mBloomierHash->getKNeighbors((*pKeys)[i]);
 		bitVector* mask = mBloomierHash->getMask((*pKeys)[i]);
 		size_t l = (*tauVector)[i];
 		size_t L = (*neighbors)[l];
