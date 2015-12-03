@@ -6,9 +6,9 @@
 class InverseIndexStorageBloomierFilter : public InverseIndexStorage {
   private:
 	std::vector<BloomierFilter* >* mInverseIndex;
-	vvsize_t* mKeys;
-	vvsize_t* mValues;
-	size_t mMaxBinSize;
+	// vvsize_t* mKeys;
+	// vvsize_t* mValues;
+	// size_t mMaxBinSize;
 	size_t mM;
 	size_t mK;
 	size_t mQ;
