@@ -16,6 +16,8 @@ BloomierFilter::BloomierFilter(size_t pM, size_t pK, size_t pQ, size_t pHashSeed
 	
     mEncoder = new Encoder(mBitVectorSize);
 	mPiIndex = 0;
+	// mOrderAndMatchFinder->find(pKeys);
+	
 }
 
 BloomierFilter::~BloomierFilter(){
@@ -147,7 +149,7 @@ void BloomierFilter::create(vsize_t* pKeys, vvsize_t_p* pValues, size_t piIndex)
 		delete mask;
 		delete encodeValue;
 	}
-	mPiIndex += pKeys->size();
+	// mPiIndex += pKeys->size();
 	delete pKeys;
 	for (size_t i = 0; i < pValues->size(); ++i) {
 		delete (*pValues)[i];

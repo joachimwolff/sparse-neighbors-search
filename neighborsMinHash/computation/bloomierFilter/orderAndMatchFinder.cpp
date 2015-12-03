@@ -1,7 +1,7 @@
 #include <unordered_map>
 #include "orderAndMatchFinder.h"
 
-OrderAndMatchFinder::OrderAndMatchFinder(size_t pModulo, size_t pNumberOfElements, BloomierHash* pBloomierHash) {
+OrderAndMatchFinder::OrderAndMatchFinder(size_t pModulo, size_t pNumberOfElements, vsize_t* pSubset, BloomierHash* pBloomierHash) {
     mModulo = pModulo;
     mNumberOfElements = pNumberOfElements;
     // mQ = pQ;
@@ -10,6 +10,8 @@ OrderAndMatchFinder::OrderAndMatchFinder(size_t pModulo, size_t pNumberOfElement
     mBloomierHash = pBloomierHash;
     mHashesSeen = new std::set<size_t>();
     mNonSingeltons = new std::set<size_t>();
+    this->computeNonSingeltons(pSubset);
+    
 }
 OrderAndMatchFinder::~OrderAndMatchFinder() {
     delete mPiVector;
@@ -26,6 +28,7 @@ bool OrderAndMatchFinder::findMatch(vsize_t* pSubset) {
     int singeltonValue;
     for (size_t i = 0; i < pSubset->size(); ++i) {
         singeltonValue = tweak((*pSubset)[i], pSubset);
+        
         if (singeltonValue != -1) {
             piVector->push_back((*pSubset)[i]);
             tauVector->push_back(singeltonValue);
@@ -74,13 +77,25 @@ vsize_t* OrderAndMatchFinder::getTauVector() {
 }
 int OrderAndMatchFinder::tweak (size_t pKey, vsize_t* pSubset) {
     size_t i = 0;
-    this->computeNonSingeltons(pSubset);
+    // this->computeNonSingeltons(pSubset);
     vsize_t*  neighbors = mBloomierHash->getKNeighbors(pKey);
+    // std::cout << "Size of neighbors: " << neighbors->size() << std::endl;
+    // std::cout << "non singeltons list: ";
+    // for (auto it = mNonSingeltons->begin(); it != mNonSingeltons->end(); ++it) {
+        // std::cout << *it << " ";
+    // }
+    // std::cout << std::endl;
     for (auto it = neighbors->begin(); it != neighbors->end(); ++it) {
+        // std::cout << "it: " << *it << std::endl;
         if (mNonSingeltons->find((*it)) == mNonSingeltons->end()) {
+            // mHashesSeen->insert((*it));
+            // mNonSingeltons->insert(*it);
             delete neighbors;
             return i;
-        }
+        } // else if (mNonSingeltons->size() == 0) {
+        //     delete neighbors;
+        //     return i;
+        // }
         ++i;
     } 
     delete neighbors;   

@@ -16,7 +16,7 @@
 };
 
 TEST(BloomierFilterTest, setAndGetTest) {
-    BloomierFilter* bloomierFilter = new BloomierFilter(10, 3, 8);
+    BloomierFilter* bloomierFilter = new BloomierFilter(10, 5, 8, 0);
     bloomierFilter->set(1, 10);
     bloomierFilter->set(2, 20);
     bloomierFilter->set(3, 30);
@@ -82,7 +82,7 @@ TEST(EncoderTest, decodeTest) {
 }
 
 TEST(BloomierHashTest, getMaskTest) {
-    BloomierHash* bloomierHash = new BloomierHash(19, 3, 2);
+    BloomierHash* bloomierHash = new BloomierHash(19, 3, 2, 0);
     bitVector* mask = bloomierHash->getMask(1);
     EXPECT_EQ(mask->at(0), 103);
     EXPECT_EQ(mask->at(1), 69);
@@ -92,7 +92,7 @@ TEST(BloomierHashTest, getMaskTest) {
 
 TEST(BloomierHashTest, getKNeighborsTest) {
     size_t numberOfElements = 100;
-    BloomierHash* bloomierHash = new BloomierHash(10, numberOfElements, 2);
+    BloomierHash* bloomierHash = new BloomierHash(10, numberOfElements, 2, 0);
     vsize_t* neighbors = bloomierHash->getKNeighbors(1);
 
     EXPECT_EQ(neighbors->size(), numberOfElements);
@@ -104,8 +104,8 @@ TEST(BloomierHashTest, getKNeighborsTest) {
 }
 
 TEST(OrderAndMatchFinderTest, findTest) {
-    BloomierHash* bloomierHash = new BloomierHash(19, 3, 2);
-    OrderAndMatchFinder* orderAndMatchFinder = new OrderAndMatchFinder(19, 3, bloomierHash);
+    BloomierHash* bloomierHash = new BloomierHash(10, 5, 5, 10);
+    OrderAndMatchFinder* orderAndMatchFinder = new OrderAndMatchFinder(10, 5, bloomierHash);
     vsize_t* pSubset = new vsize_t();
     pSubset->push_back(3);
     pSubset->push_back(4);
@@ -124,15 +124,15 @@ TEST(OrderAndMatchFinderTest, findTest) {
 }
 
 TEST(OrderAndMatchFinderTest, tweakTest) {
-    BloomierHash* bloomierHash = new BloomierHash(10, 3, 2);
+    BloomierHash* bloomierHash = new BloomierHash(10, 3, 2, 1);
     OrderAndMatchFinder* orderAndMatchFinder = new OrderAndMatchFinder(10, 3, bloomierHash);
     vsize_t* subset = new vsize_t(3);
-    (*subset)[0] = 0;
-    (*subset)[1] = 1;
-    (*subset)[2] = 2;    
-    std::cout << "index: " << orderAndMatchFinder->tweak(0, subset) << std::endl;
-    std::cout << "index: " << orderAndMatchFinder->tweak(1, subset) << std::endl;
-    std::cout << "index: " << orderAndMatchFinder->tweak(2, subset) << std::endl;
+    (*subset)[0] = 10;
+    (*subset)[1] = 20;
+    (*subset)[2] = 30;    
+    std::cout << "index: " << orderAndMatchFinder->tweak(10, subset) << std::endl;
+    std::cout << "index: " << orderAndMatchFinder->tweak(20, subset) << std::endl;
+    std::cout << "index: " << orderAndMatchFinder->tweak(30, subset) << std::endl;
 //    orderAndMatchFinder->tweak(0, subset);   
   //  orderAndMatchFinder->tweak(0, subset);   
      
@@ -144,7 +144,7 @@ TEST(OrderAndMatchFinderTest, tweakTest) {
 }
 
 TEST(OrderAndMatchFinderTest, computeNonSingeltonsTest) {
-    BloomierHash* bloomierHash = new BloomierHash(19, 3, 2);
+    BloomierHash* bloomierHash = new BloomierHash(19, 3, 2, 0);
     OrderAndMatchFinder* orderAndMatchFinder = new OrderAndMatchFinder(19, 3, bloomierHash);
 }
 int main (int argc, char** argv) {

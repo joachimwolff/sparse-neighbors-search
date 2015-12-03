@@ -21,7 +21,7 @@ class OrderAndMatchFinder {
     FRIEND_TEST(OrderAndMatchFinderTest, tweakTest);
     int tweak(size_t pKey, vsize_t* pSubset);
   public:
-  	OrderAndMatchFinder(size_t pModulo, size_t pNumberOfElements, BloomierHash* pBloomierHash);
+  	OrderAndMatchFinder(size_t pModulo, size_t pNumberOfElements, vsize_t* pSubset, BloomierHash* pBloomierHash);
     ~OrderAndMatchFinder();
     void find(vsize_t* pSubset);
     vsize_t* getPiVector();
