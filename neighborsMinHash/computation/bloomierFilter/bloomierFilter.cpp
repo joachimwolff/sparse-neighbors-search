@@ -124,15 +124,22 @@ bool BloomierFilter::set(size_t pKey, size_t pValue) {
 	return false;
 }
 
-void BloomierFilter::create(vsize_t* pKeys, vvsize_t_p* pValues, size_t piIndex) {
-	mOrderAndMatchFinder->find(pKeys);
+void BloomierFilter::create( std::unordered_map<size_t, vsize_t >* pKeyValue, size_t piIndex) {
+	vsize_t* keys = new vsize_t(pKeyValue->size());
+    for (auto it = pKeyValue->begin(); it != pKeyValue->end(); ++it) {
+        (*keys)[i] = it->first;
+    }
+    mOrderAndMatchFinder->find(keys);
     vsize_t* piVector = mOrderAndMatchFinder->getPiVector();
 	vsize_t* tauVector = mOrderAndMatchFinder->getTauVector();
-	for (size_t i = piIndex; i < piVector->size(); ++i) {
-		vsize_t* neighbors = mBloomierHash->getKNeighbors((*pKeys)[i]);
-		bitVector* mask = mBloomierHash->getMask((*pKeys)[i]);
-		size_t l = (*tauVector)[i];
-		size_t L = (*neighbors)[l];
+	for (size_t i = 0; i < piVector->size(); ++i) {
+        size_t key = (*piVector)[i];
+		vsize_t* neighbors = mBloomierHash->getKNeighbors(key);
+		bitVector* mask = mBloomierHash->getMask(key);
+        
+        
+		// size_t l = (*tauVector)[i];
+		// size_t L = (*neighbors)[l];
 
 		bitVector* encodeValue = mEncoder->encode(l);
 		this->xorBitVector((*mTable)[L], encodeValue);
@@ -142,9 +149,10 @@ void BloomierFilter::create(vsize_t* pKeys, vvsize_t_p* pValues, size_t piIndex)
 				this->xorBitVector((*mTable)[L], (*mTable)[(*neighbors)[j]]);
 			}
 		}
-        for (size_t j = 0; j < (*pValues)[i-piIndex]->size(); ++j) {
-            (*mValueTable)[L]->push_back((*pValues)[i-piIndex]->operator[](j));
-        }
+        // for (size_t j = 0; j < (*pValues)[i-piIndex]->size(); ++j) {
+        (*mValueTable)[L]->push_back((*pKeyValue)[key])
+            // (*mValueTable)[L]->push_back((*pValues)[i-piIndex]->operator[](j));
+        // }
 		delete neighbors;
 		delete mask;
 		delete encodeValue;

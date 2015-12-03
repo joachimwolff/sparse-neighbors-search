@@ -7,7 +7,8 @@ class InverseIndexStorageBloomierFilter : public InverseIndexStorage {
   private:
 	std::vector<BloomierFilter* >* mInverseIndex;
 	vvsize_t* mKeys;
-	vvsize_t* mValues;
+    std::vector< std::unordered_map<size_t, vsize_t> >* mValues;
+    // std::vector<vvsize_t >* mValues;
 	// size_t mMaxBinSize;
 	size_t mM;
 	size_t mK;
