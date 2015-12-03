@@ -5,8 +5,8 @@ InverseIndexStorageBloomierFilter::InverseIndexStorageBloomierFilter(size_t pSiz
 	// mMaxBinSize = pMaxBinSize;
 	// mKeys = new vvsize_t(pSizeOfInverseIndex, vsize_t());
 	// mValues = new vvsize_t(pSizeOfInverseIndex, vsize_t());
-	mM = 10;
-	mK = 3;
+	mM = 100;
+	mK = 5;
 	mQ = 13;
 	
 }
@@ -21,7 +21,7 @@ vsize_t* InverseIndexStorageBloomierFilter::getElement(size_t pVectorId, size_t 
 }
 void InverseIndexStorageBloomierFilter::insert(size_t pVectorId, size_t pHashValue, size_t pInstance) {
 	if ((*mInverseIndex)[pVectorId] == NULL) {
-		(*mInverseIndex)[pVectorId] = new BloomierFilter(mM, mK, mQ);
+		(*mInverseIndex)[pVectorId] = new BloomierFilter(mM, mK, mQ, 0);
 	}
 	(*mInverseIndex)[pVectorId]->set(pHashValue, pInstance);
 }
