@@ -23,7 +23,7 @@ class BloomierFilter {
     size_t mPiIndex;
 
   public:      
-    BloomierFilter(size_t pM, size_t pK, size_t pQ);
+    BloomierFilter(size_t pM, size_t pK, size_t pQ, size_t pHashSeed);
     
     ~BloomierFilter();
     
