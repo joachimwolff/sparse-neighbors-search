@@ -2,12 +2,12 @@
 
 InverseIndexStorageBloomierFilter::InverseIndexStorageBloomierFilter(size_t pSizeOfInverseIndex, size_t pMaxBinSize) {
 	mInverseIndex = new std::vector<BloomierFilter* > (pSizeOfInverseIndex);
-	mMaxBinSize = pMaxBinSize;
-	mKeys = new vvsize_t(pSizeOfInverseIndex, vsize_t());
-	mValues = new vvsize_t(pSizeOfInverseIndex, vsize_t());
-	mM = 100;
-	mK = 100;
-	mQ = 100;
+	// mMaxBinSize = pMaxBinSize;
+	// mKeys = new vvsize_t(pSizeOfInverseIndex, vsize_t());
+	// mValues = new vvsize_t(pSizeOfInverseIndex, vsize_t());
+	mM = 10;
+	mK = 3;
+	mQ = 13;
 	
 }
 InverseIndexStorageBloomierFilter::~InverseIndexStorageBloomierFilter() {
