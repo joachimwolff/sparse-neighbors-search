@@ -21,11 +21,12 @@ bitVector* BloomierHash::getMask(size_t pKey) {
 };
 vsize_t* BloomierHash::getKNeighbors(size_t pElement) {
 	vsize_t* kNeighbors = new vsize_t(mNumberOfElements);
-	std::set<size_t>* setOfNeighbors = new std::set<size_t>();
+	// std::set<size_t>* setOfNeighbors = new std::set<size_t>();
+	// srand(pElement);
 	for (size_t i = 0; i < mNumberOfElements; ++i) {
 		size_t neighbor = mHash->hash(pElement+1, rand(), mModulo);
 		(*kNeighbors)[i] = neighbor;
 	}
-	delete setOfNeighbors;
+	// delete setOfNeighbors;
 	return kNeighbors;
 };
