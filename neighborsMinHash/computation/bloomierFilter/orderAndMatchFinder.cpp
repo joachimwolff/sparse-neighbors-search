@@ -34,11 +34,17 @@ bool OrderAndMatchFinder::findMatch(vsize_t* pSubset) {
         }
     }
     if (piVector->size() == 0) {
+        delete piVector;
+        delete tauVector;
+        delete subsetNextRecursion;
         return false;
     }
     if (subsetNextRecursion->size() != 0) {
          if (this->findMatch(subsetNextRecursion) == false) {
-             return false;
+            delete piVector;
+            delete tauVector;
+            delete subsetNextRecursion;
+            return false;
          }
     }
     for (size_t i = 0; i < piVector->size(); ++i) {
@@ -55,7 +61,10 @@ bool OrderAndMatchFinder::findMatch(vsize_t* pSubset) {
 
 void OrderAndMatchFinder::find(vsize_t* pSubset) {
     size_t i = 0;
-    while (!(this->findMatch(pSubset)) && i < 5) ++i;
+    while (!(this->findMatch(pSubset)) && i < 5) {
+        ++i;
+        mBloomierHash->setHashSeed(mBloomierHash->getHashSeed() + i);
+    } 
 }
 vsize_t* OrderAndMatchFinder::getPiVector() {
     return mPiVector;
