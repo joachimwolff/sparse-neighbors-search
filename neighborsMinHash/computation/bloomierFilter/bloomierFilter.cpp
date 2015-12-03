@@ -78,25 +78,20 @@ vsize_t* BloomierFilter::get(size_t pKey) {
 	bitVector* mask = mBloomierHash->getMask(pKey);
 	bitVector* valueToGet = new bitVector(mBitVectorSize, 0);
 	this->xorOperation(valueToGet, mask, neighbors);
-    // std::cout << __LINE__ << std::endl;
 
 	size_t h = mEncoder->decode(valueToGet);
-    // std::cout << __LINE__ << std::endl;
-	
 	if (h < neighbors->size()) {
-    // std::cout << __LINE__ << std::endl;
-        
 		size_t L = (*neighbors)[h];
-    // std::cout << __LINE__ << std::endl;
-        
 		if (L < mValueTable->size()) {
-    // std::cout << __LINE__ << std::endl;
-            
+            delete neighbors;
+			delete mask;
+			delete valueToGet;
 			return (*mValueTable)[L];
 		}
 	}
-    // std::cout << __LINE__ << std::endl;
-    
+    delete neighbors;
+	delete mask;
+	delete valueToGet;
 	return new vsize_t();
 }
 bool BloomierFilter::set(size_t pKey, size_t pValue) {
@@ -105,14 +100,19 @@ bool BloomierFilter::set(size_t pKey, size_t pValue) {
 	bitVector* valueToGet = new bitVector(mBitVectorSize, 0);
 	this->xorOperation(valueToGet, mask, neighbors);
 	size_t h = mEncoder->decode(valueToGet);
+	
+	delete mask;
+	delete valueToGet;
 	if (h < neighbors->size()) {
 		size_t L = (*neighbors)[h];
+		delete neighbors;
 		if (L < mValueTable->size()) {
 			vsize_t* v = ((*mValueTable)[L]);
 			v->push_back(pValue);
 			return true;
 		}
 	} else {
+		delete neighbors;
 		vsize_t* keys = new vsize_t (1, pKey);
 		vvsize_t_p* values = new vvsize_t_p (1);
 		(*values)[0] = new vsize_t(1, pValue);
@@ -143,8 +143,20 @@ void BloomierFilter::create(vsize_t* pKeys, vvsize_t_p* pValues, size_t piIndex)
         for (size_t j = 0; j < (*pValues)[i-piIndex]->size(); ++j) {
             (*mValueTable)[L]->push_back((*pValues)[i-piIndex]->operator[](j));
         }
+		delete neighbors;
+		delete mask;
+		delete encodeValue;
 	}
 	mPiIndex += pKeys->size();
+	delete pKeys;
+	for (size_t i = 0; i < pValues->size(); ++i) {
+		delete (*pValues)[i];
+	}
+	delete pValues;
+	// delete piVector;
+	// delete tauVector;
+	
+	
 }
 
 void BloomierFilter::xorBitVector(bitVector* pResult, bitVector* pInput) {
