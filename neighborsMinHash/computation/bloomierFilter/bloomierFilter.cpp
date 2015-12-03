@@ -1,11 +1,11 @@
 #include "bloomierFilter.h"
 
-BloomierFilter::BloomierFilter(size_t pM, size_t pK, size_t pQ){
+BloomierFilter::BloomierFilter(size_t pM, size_t pK, size_t pQ, size_t pHashSeed){
 	mM = pM;;
 	mK = pK;
 	mQ = pQ;
 	mBitVectorSize = ceil(pQ / static_cast<float>(CHAR_BIT));
-	mBloomierHash = new BloomierHash(pM, pK, mBitVectorSize);
+	mBloomierHash = new BloomierHash(pM, pK, mBitVectorSize, pHashSeed);
 	mOrderAndMatchFinder = new OrderAndMatchFinder(pM, pK, mBloomierHash);
 	mTable = new bloomierTable(pM);
 	mValueTable = new vvsize_t_p(pM);
