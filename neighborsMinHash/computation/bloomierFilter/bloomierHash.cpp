@@ -13,11 +13,14 @@ BloomierHash::~BloomierHash() {
 };
 bitVector* BloomierHash::getMask(size_t pKey) {
 	bitVector* mask = new bitVector(mBitVectorSize);
-	srand(mHashSeed);
-	size_t randValue = rand();
+	srand(mHashSeed*pKey);
+	size_t randValue = rand() % (255*mBitVectorSize);
+	std::cout << "randValue: " << randValue << std::endl;
 	for (size_t i = 0; i < mBitVectorSize; ++i) {
-		(*mask)[i] = randValue >> (i*8);
+		(*mask)[i] =  randValue >> (8*;
+		std::cout << "randValue2: " << static_cast<size_t>((*mask)[i]) << std::endl;
 	}
+	
 	return mask;
 };
 vsize_t* BloomierHash::getKNeighbors(size_t pElement) {

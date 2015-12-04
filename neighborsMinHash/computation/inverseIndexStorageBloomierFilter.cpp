@@ -8,9 +8,9 @@ InverseIndexStorageBloomierFilter::InverseIndexStorageBloomierFilter(size_t pSiz
 
 
 	// mValues = new std::vector< vvsize_t>(pSizeOfInverseIndex, vvsize_t());
-	mM = 50;
+	mM = 100;
 	mK = 5;
-	mQ = 13;
+	mQ = 14;
 }
 InverseIndexStorageBloomierFilter::~InverseIndexStorageBloomierFilter() {
 	

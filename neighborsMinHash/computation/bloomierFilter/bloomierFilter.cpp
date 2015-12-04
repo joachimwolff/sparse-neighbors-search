@@ -67,30 +67,62 @@ void BloomierFilter::setValueTable(vvsize_t* pTable) {
 
 void BloomierFilter::xorOperation(bitVector* pValue, bitVector* pMask, vsize_t* pNeighbors) {
 	this->xorBitVector(pValue, pMask);
-
+	std::cout << "value to get: ";
+	for (size_t i = 0; i < pValue->size(); ++i) {
+		std::cout << static_cast<size_t>((*pValue)[i]);
+	}
+	std::cout << std::endl;
 	for (auto it = pNeighbors->begin(); it != pNeighbors->end(); ++it) {
 		if (*it < mTable->size()) {
+			for (size_t i = 0; i < (*mTable)[(*it)]->size(); ++i) {
+				std::cout << "table value: " << static_cast<size_t>((*(*mTable)[(*it)])[i]) << std::endl;
+			}
 			this->xorBitVector(pValue, (*mTable)[(*it)]);
+			std::cout << "value to get: ";
+			for (size_t i = 0; i < pValue->size(); ++i) {
+				std::cout << static_cast<size_t>((*pValue)[i]);
+			}
+			std::cout << std::endl;
 		}
 	}
 }
 vsize_t* BloomierFilter::get(size_t pKey) {
     // std::cout << __LINE__ << std::endl;
+	std::cout << "\nGET"<< std::endl;		
+	std::cout << "instance: " << pKey << " hashSeed: " << mBloomierHash->getHashSeed() <<" neighbors: ";
 	vsize_t* neighbors = mBloomierHash->getKNeighbors(pKey);
+	for (size_t i = 0; i < neighbors->size(); ++i) {
+		std::cout << (*neighbors)[i] << " ";
+	}
+	std::cout << std::endl;
 	bitVector* mask = mBloomierHash->getMask(pKey);
+		
+	std::cout << "\tmask: ";
+	for (size_t i = 0; i < mask->size(); ++i) {
+		std::cout << static_cast<size_t>((*mask)[i]) << " ffoo";
+	}
+	std::cout << std::endl;
+	std::cout << "size of mBitVectorSize: " << mBitVectorSize << std::endl; 
 	bitVector* valueToGet = new bitVector(mBitVectorSize, 0);
 	this->xorOperation(valueToGet, mask, neighbors);
 
 	size_t h = mEncoder->decode(valueToGet);
+	std::cout << "encoded h: " << h;
 	if (h < neighbors->size()) {
 		size_t L = (*neighbors)[h];
+		std::cout << " Values stored at: " << L << std::endl;
+		
 		if (L < mValueTable->size()) {
+			
             delete neighbors;
 			delete mask;
 			delete valueToGet;
 			return &(*mValueTable)[L];
 		}
 	}
+	std::cout << std::endl;
+	std::cout << std::endl;
+	
     delete neighbors;
 	delete mask;
 	delete valueToGet;
@@ -137,15 +169,24 @@ void BloomierFilter::create( std::unordered_map<size_t, vsize_t >* pKeyValue, si
     mOrderAndMatchFinder->find(keys);
     vsize_t* piVector = mOrderAndMatchFinder->getPiVector();
 	vsize_t* tauVector = mOrderAndMatchFinder->getTauVector();
+		std::cout << "size of piVector: " << piVector->size() << std::endl; 
+	
 	for (size_t i = 0; i < piVector->size(); ++i) {
+		std::cout << "pi element: " << (*piVector)[i] << std::endl;
+		std::cout << "tau element: " << (*tauVector)[i] << std::endl;
+
         size_t key = (*piVector)[i];
 		vsize_t* neighbors = mBloomierHash->getKNeighbors(key);
 		bitVector* mask = mBloomierHash->getMask(key);
-        
+        std::cout << "\tmask: ";
+		for (size_t i = 0; i < mask->size(); ++i) {
+			std::cout << static_cast<size_t>((*mask)[i]) << " foo";
+		}
+		std::cout << std::endl;
         
 		size_t l = (*tauVector)[i];
 		size_t L = (*neighbors)[l];
-
+		std::cout << "neighbor: " << (*neighbors)[l] << std::endl;
 		bitVector* encodeValue = mEncoder->encode(l);
 		this->xorBitVector((*mTable)[L], encodeValue);
 		this->xorBitVector((*mTable)[L], mask);
@@ -170,7 +211,7 @@ void BloomierFilter::create( std::unordered_map<size_t, vsize_t >* pKeyValue, si
 	// delete pValues;
 	// delete piVector;
 	// delete tauVector;
-	
+	// delete pKeyValue;
 	
 }
 

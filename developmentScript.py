@@ -91,7 +91,7 @@ def test(data):
     
     time_comp_exact = time.time()
     # print "Exact solution, distance=True: ", minHash_exact.kneighbors( centroids_neighborhood,return_distance=True)
-    approx_fit = minHash2.fit_kneighbors(X=data[0], fast=True, return_distance=False)
+    approx_fit = minHash2.fit_kneighbors(X=datasetBursi, fast=True, return_distance=False)
     print "Approx solution, distance=False: ", approx_fit
 
     time_comp_exact_end = time.time()
@@ -100,7 +100,7 @@ def test(data):
     minHash3 = MinHash(number_of_hash_functions=400)
 
     time_comp_exact = time.time()
-    exact_fit = minHash3.fit_kneighbors(X=data[0], fast=False, return_distance=False)
+    exact_fit = minHash3.fit_kneighbors(X=datasetBursi, fast=False, return_distance=False)
     # print "Exact solution, distance=True: ", minHash_exact.kneighbors( centroids_neighborhood,return_distance=True)
     print "Exact solution, distance=False: ", exact_fit
 
@@ -113,7 +113,7 @@ def test(data):
     time_exact_fit = time.time()
     # nearest_Neighbors = KNeighborsClassifier()
     nearest_Neighbors = NearestNeighbors()
-    nearest_Neighbors.fit(data[0])
+    nearest_Neighbors.fit(datasetBursi)
     time_exact_fit_end = time.time()
     print "Time to build index exact: ", time_exact_fit_end - time_exact_fit
     #print data.getrow(1)
