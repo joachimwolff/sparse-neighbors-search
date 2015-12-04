@@ -50,6 +50,6 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
 	}
 }
 
-// void InverseIndexStorageUnorderedMap::create() {
+void InverseIndexStorageUnorderedMap::create() {
 
-// }
+}

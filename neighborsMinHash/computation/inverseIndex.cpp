@@ -195,6 +195,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
             }
         }
     }
+    mInverseIndexStorage->create();
 }
 
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 

@@ -8,6 +8,6 @@ class InverseIndexStorage {
 	virtual size_t size() = 0;
 	virtual vsize_t* getElement(size_t pVectorId, size_t pHashValue) = 0;
 	virtual void insert(size_t pVectorId, size_t pHashValue, size_t pInstance) = 0;
-	// virtual void create();
+	virtual void create() = 0;
 };
 #endif // INVERSE_INDEX_STORAGE_H
