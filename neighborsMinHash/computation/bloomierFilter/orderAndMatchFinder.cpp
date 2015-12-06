@@ -28,7 +28,7 @@ bool OrderAndMatchFinder::findMatch(vsize_t* pSubset) {
     int singeltonValue;
     for (size_t i = 0; i < pSubset->size(); ++i) {
         singeltonValue = tweak((*pSubset)[i], pSubset);
-        std::cout << "instance: " << (*pSubset)[i] << " singeltonValue: " << singeltonValue << std::endl;
+        // std::cout << "instance: " << (*pSubset)[i] << " singeltonValue: " << singeltonValue << std::endl;
         if (singeltonValue != -1) {
             piVector->push_back((*pSubset)[i]);
             tauVector->push_back(singeltonValue);
@@ -65,7 +65,7 @@ bool OrderAndMatchFinder::findMatch(vsize_t* pSubset) {
 void OrderAndMatchFinder::find(vsize_t* pSubset) {
     size_t i = 0;
     // this->findMatch(pSubset);
-    while (!(this->findMatch(pSubset)) && i < 5) {
+    while (!(this->findMatch(pSubset)) && i < 10) {
         ++i;
         delete mPiVector;
         delete mTauVector;
@@ -96,11 +96,11 @@ int OrderAndMatchFinder::tweak (size_t pKey, vsize_t* pSubset) {
         // std::cout << *it << " ";
     // }
     // std::cout << std::endl;
-    std::cout << "instance: " << pKey << " hashSeed: " << mBloomierHash->getHashSeed() << "\tneighbors: ";
+    // std::cout << "instance: " << pKey << " hashSeed: " << mBloomierHash->getHashSeed() << "\tneighbors: ";
     
     for (auto it = neighbors->begin(); it != neighbors->end(); ++it) {
         // std::cout << "it: " << *it << std::endl;
-            std::cout << *it << " ";
+            // std::cout << *it << " ";
         
         if (mNonSingeltons->find((*it)) == mNonSingeltons->end()) {
             // mHashesSeen->insert((*it));
@@ -108,7 +108,7 @@ int OrderAndMatchFinder::tweak (size_t pKey, vsize_t* pSubset) {
             mNonSingeltons->insert((*it));
             
             delete neighbors;
-        std::cout << std::endl;
+        // std::cout << std::endl;
             
             return i;
         } // else if (mNonSingeltons->size() == 0) {
@@ -117,7 +117,7 @@ int OrderAndMatchFinder::tweak (size_t pKey, vsize_t* pSubset) {
         // }
         ++i;
     } 
-        std::cout << std::endl;
+        // std::cout << std::endl;
     
     delete neighbors;   
     return -1;
@@ -126,17 +126,17 @@ int OrderAndMatchFinder::tweak (size_t pKey, vsize_t* pSubset) {
 void OrderAndMatchFinder::computeNonSingeltons(vsize_t* pKeyValues) {
     for (auto it = pKeyValues->begin(); it != pKeyValues->end(); ++it) {
         vsize_t* neighbors = mBloomierHash->getKNeighbors((*it));
-        std::cout << "instance: " << *it << " hashSeed: " << mBloomierHash->getHashSeed() << "\tneighbors: ";
+        // std::cout << "instance: " << *it << " hashSeed: " << mBloomierHash->getHashSeed() << "\tneighbors: ";
         for (auto itNeighbors = neighbors->begin(); itNeighbors != neighbors->end(); ++itNeighbors){
-            std::cout << *itNeighbors << " ";
+            // std::cout << *itNeighbors << " ";
             if (mHashesSeen->find((*itNeighbors)) != mHashesSeen->end()) {
                 mNonSingeltons->insert((*itNeighbors));
             }
         }
-        std::cout << std::endl;
-        for (auto itNeighbors = neighbors->begin(); itNeighbors != neighbors->end(); ++itNeighbors){
-            mHashesSeen->insert((*itNeighbors));
-        }
+        // std::cout << std::endl;
+        // for (auto itNeighbors = neighbors->begin(); itNeighbors != neighbors->end(); ++itNeighbors){
+        //     mHashesSeen->insert((*itNeighbors));
+        // }
         delete neighbors;
     } 
 }

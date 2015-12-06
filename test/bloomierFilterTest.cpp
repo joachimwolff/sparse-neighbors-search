@@ -19,8 +19,8 @@ TEST(BloomierFilterTest, setAndGetTest) {
     vsize_t* keys = new vsize_t(3);
     (*keys)[0] = 123;
     (*keys)[1] = 231;
-    (*keys)[2] = 311;
-    BloomierFilter* bloomierFilter = new BloomierFilter(10, 5, 8, keys, 0);
+    (*keys)[2] = 236;
+    BloomierFilter* bloomierFilter = new BloomierFilter(10, 2, 8, keys, 0);
     
     std::unordered_map<size_t, vsize_t >* pKeyValue = new std::unordered_map<size_t, vsize_t >();
     vsize_t first;
@@ -52,13 +52,13 @@ TEST(BloomierFilterTest, setAndGetTest) {
     
     (*pKeyValue)[123] = first;
     (*pKeyValue)[231] = second;
-    (*pKeyValue)[311] = third;
+    (*pKeyValue)[236] = third;
     
     bloomierFilter->create(pKeyValue, 0);
     
     vsize_t* vectorFirst = bloomierFilter->get(123);
     vsize_t* vectorSecond = bloomierFilter->get(231);
-    vsize_t* vectorThird = bloomierFilter->get(311);
+    vsize_t* vectorThird = bloomierFilter->get(236);
     EXPECT_EQ(vectorFirst->size(), 1000);
     EXPECT_EQ(vectorSecond->size(), 300);
     EXPECT_EQ(vectorThird->size(), 12);
@@ -99,7 +99,7 @@ TEST(EncoderTest, encodeTest) {
     EXPECT_EQ(encodeObj->encode(1024)->at(0), 0);
     EXPECT_EQ(encodeObj->encode(1024)->at(1), 4);
     EXPECT_EQ(encodeObj->encode(1024)->at(2), 0);
-    char value = 255;
+    unsigned char value = 255;
     EXPECT_EQ(encodeObj->encode(255)->size(), 3);
     EXPECT_EQ(encodeObj->encode(255)->at(0), value);
     EXPECT_EQ(encodeObj->encode(255)->at(1), 0);
