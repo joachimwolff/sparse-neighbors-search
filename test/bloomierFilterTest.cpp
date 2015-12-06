@@ -16,14 +16,19 @@
 };
 
 TEST(BloomierFilterTest, setAndGetTest) {
-    vsize_t* keys = new vsize_t(3);
-    (*keys)[0] = 123;
-    (*keys)[1] = 231;
-    (*keys)[2] = 236;
-    BloomierFilter* bloomierFilter = new BloomierFilter(10, 2, 8, keys, 0);
+    size_t numberOfInstances = 300;
+    size_t numberOfElements = 10;
+    vsize_t* keys = new vsize_t(numberOfInstances);
+    for (size_t i = 0; i < numberOfInstances; ++i) {
+        srand((i+10000)*300);
+        (*keys)[i] = rand();// % 200000000;
+        std::cout << "Keys: " <<  (*keys)[i] << std::endl;
+    }
+    
+    BloomierFilter* bloomierFilter = new BloomierFilter(1000, 1, 8, keys, 0);
     
     std::unordered_map<size_t, vsize_t >* pKeyValue = new std::unordered_map<size_t, vsize_t >();
-    vsize_t first;
+    // vsize_t first;
     // vvsize_t allInstances;
     // for (size_t i = 0; i < 300; ++i) {
     //     vsize_t p
@@ -32,49 +37,53 @@ TEST(BloomierFilterTest, setAndGetTest) {
     //     }
 
     // }
-     for (size_t i = 0; i < 1000; ++i) {
-        first.push_back(rand());
-    }
-    vsize_t second;
-     for (size_t i = 0; i < 300; ++i) {
-        second.push_back(rand());
-    }
-     vsize_t third;
-     for (size_t i = 0; i < 12; ++i) {
-        third.push_back(rand());
-    }
-    // first.push_back(10);
     
-    // second.push_back(20);
-   
-    // third.push_back(30);
-    // third.push_back(40);
+    vvsize_t allInstances;
+    for (size_t i = 0; i < numberOfInstances; ++i) {
+        vsize_t vector;
+        for (size_t j = 0; j < numberOfElements; ++j) {
+            
+            // srand(i);
+            vector.push_back(rand());
+        }
+        allInstances.push_back(vector);
+    }
     
-    (*pKeyValue)[123] = first;
-    (*pKeyValue)[231] = second;
-    (*pKeyValue)[236] = third;
+    for (size_t i = 0; i < numberOfInstances; ++i) {
+        (*pKeyValue)[(*keys)[i]] = allInstances[i];
+    }
     
+    std::cout << "size pKeyValue: " << pKeyValue->size() << "size instances: " << allInstances.size();
+    std::cout << " size keys:" << keys->size() << std::endl; 
     bloomierFilter->create(pKeyValue, 0);
     
-    vsize_t* vectorFirst = bloomierFilter->get(123);
-    vsize_t* vectorSecond = bloomierFilter->get(231);
-    vsize_t* vectorThird = bloomierFilter->get(236);
-    EXPECT_EQ(vectorFirst->size(), 1000);
-    EXPECT_EQ(vectorSecond->size(), 300);
-    EXPECT_EQ(vectorThird->size(), 12);
-    for (size_t i = 0; i < 1000; ++i) {
-        EXPECT_EQ(vectorFirst->at(i), first[i]);
+    for (size_t i = 0; i < numberOfInstances; ++i) {
+       vsize_t* vectorFirst = bloomierFilter->get((*keys)[i]); 
+       std::cout << "i: " << i << std::endl;
+       EXPECT_EQ(vectorFirst->size(), numberOfElements);
+       for (size_t j = 0; j < numberOfElements; ++j) {
+            EXPECT_EQ(vectorFirst->at(j), allInstances[i][j]);
+       }
     }
-    for (size_t i = 0; i < 300; ++i) {
-        EXPECT_EQ(vectorSecond->at(i), second[i]);
-    }
-    for (size_t i = 0; i < 12; ++i) {
-        EXPECT_EQ(vectorThird->at(i), third[i]);
-    }
-    // EXPECT_EQ(bloomierFilter->get(2)->at(0), 20);
-    // EXPECT_EQ(bloomierFilter->get(3)->at(0), 30);
-    // EXPECT_EQ(bloomierFilter->get(3)->at(1), 40);
-    delete bloomierFilter;
+    // vsize_t* vectorFirst = bloomierFilter->get(123);
+    // vsize_t* vectorSecond = bloomierFilter->get(231);
+    // vsize_t* vectorThird = bloomierFilter->get(236);
+    // EXPECT_EQ(vectorFirst->size(), 1000);
+    // EXPECT_EQ(vectorSecond->size(), 300);
+    // EXPECT_EQ(vectorThird->size(), 12);
+    // for (size_t i = 0; i < 1000; ++i) {
+    //     EXPECT_EQ(vectorFirst->at(i), first[i]);
+    // }
+    // for (size_t i = 0; i < 300; ++i) {
+    //     EXPECT_EQ(vectorSecond->at(i), second[i]);
+    // }
+    // for (size_t i = 0; i < 12; ++i) {
+    //     EXPECT_EQ(vectorThird->at(i), third[i]);
+    // }
+    // // EXPECT_EQ(bloomierFilter->get(2)->at(0), 20);
+    // // EXPECT_EQ(bloomierFilter->get(3)->at(0), 30);
+    // // EXPECT_EQ(bloomierFilter->get(3)->at(1), 40);
+    // delete bloomierFilter;
 }
 TEST(EncoderTest, encodeTest) {
     Encoder* encodeObj = new Encoder(4);

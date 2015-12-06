@@ -99,7 +99,7 @@ vsize_t* BloomierFilter::get(size_t pKey) {
     // std::cout << __LINE__ << std::endl;
 	// std::cout << "\nGET"<< std::endl;		
 	// std::cout << "instance: " << pKey << " hashSeed: " << mBloomierHash->getHashSeed() <<" neighbors: ";
-	vsize_t* neighbors = mBloomierHash->getKNeighbors(pKey);
+	vsize_t* neighbors = mBloomierHash->getKNeighbors(pKey, mOrderAndMatchFinder->getSeed(pKey));
 	// for (size_t i = 0; i < neighbors->size(); ++i) {
 		// std::cout << (*neighbors)[i] << " ";
 	// }
@@ -138,7 +138,7 @@ vsize_t* BloomierFilter::get(size_t pKey) {
 	return new vsize_t();
 }
 bool BloomierFilter::set(size_t pKey, size_t pValue) {
-	vsize_t* neighbors = mBloomierHash->getKNeighbors(pKey);
+	vsize_t* neighbors = mBloomierHash->getKNeighbors(pKey, mOrderAndMatchFinder->getSeed(pKey));
 	bitVector* mask = mBloomierHash->getMask(pKey);
 	bitVector* valueToGet = new bitVector(mBitVectorSize, 0);
 	this->xorOperation(valueToGet, mask, neighbors);
@@ -178,24 +178,25 @@ void BloomierFilter::create( std::unordered_map<size_t, vsize_t >* pKeyValue, si
     mOrderAndMatchFinder->find(keys);
     vsize_t* piVector = mOrderAndMatchFinder->getPiVector();
 	vsize_t* tauVector = mOrderAndMatchFinder->getTauVector();
+    // std::cout << "size if inout vector: " << pKeyValue->size() << std::endl;
 		std::cout << "size of piVector: " << piVector->size() << std::endl; 
 	
 	for (size_t i = 0; i < piVector->size(); ++i) {
-		std::cout << "pi element: " << (*piVector)[i] << std::endl;
-		std::cout << "tau element: " << (*tauVector)[i] << std::endl;
+		// std::cout << "pi element: " << (*piVector)[i] << std::endl;
+		// std::cout << "tau element: " << (*tauVector)[i] << std::endl;
 
         size_t key = (*piVector)[i];
-		vsize_t* neighbors = mBloomierHash->getKNeighbors(key);
+		vsize_t* neighbors = mBloomierHash->getKNeighbors(key, mOrderAndMatchFinder->getSeed(key));
 		bitVector* mask = mBloomierHash->getMask(key);
-        std::cout << "\tmask: ";
-		for (size_t i = 0; i < mask->size(); ++i) {
-			std::cout << static_cast<size_t>((*mask)[i]) << " foo";
-		}
-		std::cout << std::endl;
+        // std::cout << "\tmask: ";
+		// for (size_t i = 0; i < mask->size(); ++i) {
+			// std::cout << static_cast<size_t>((*mask)[i]) << " foo";
+		// }
+		// std::cout << std::endl;
         
 		size_t l = (*tauVector)[i];
 		size_t L = (*neighbors)[l];
-		std::cout << "neighbor: " << (*neighbors)[l] << std::endl << std::endl;
+		// std::cout << "neighbor: " << (*neighbors)[l] << std::endl << std::endl;
 		bitVector* encodeValue = mEncoder->encode(l);
         // this->xorOperation(encodeValue, mask, neighbors);
 		this->xorBitVector((*mTable)[L], encodeValue);

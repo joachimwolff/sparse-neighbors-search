@@ -19,7 +19,7 @@ class BloomierHash {
     BloomierHash(size_t pModulo, size_t pNumberOfElements, size_t pBitVectorSize, size_t pHashSeed);
     ~BloomierHash();
     bitVector* getMask(size_t pKey);
-    vsize_t* getKNeighbors(size_t pElement);
+    vsize_t* getKNeighbors(size_t pElement, size_t pSeed = 0);
     size_t getHashSeed();
     void setHashSeed(size_t pHashSeed);
 };

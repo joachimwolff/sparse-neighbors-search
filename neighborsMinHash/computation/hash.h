@@ -1,4 +1,5 @@
 #include "typeDefinitions.h"
+#include <functional>
 #ifndef HASH_H
 #define HASH_H
 class Hash {
@@ -16,10 +17,16 @@ class Hash {
           key = key * 2057;
           key = key ^ (key >> 16);
           return key % aModulo;
-    };
+    }; 
   public:      
     size_t hash(size_t pKey, size_t pSeed, size_t pModulo) {
         return size_tHashSimple(pKey * pSeed, pModulo);
     };
+    
+    size_t hash_cpp_lib(size_t pKey, size_t pSeed, size_t pModulo) {
+        std::hash<size_t> hash_function;
+        
+        return hash_function(pKey*pSeed) % pModulo;
+    }
 };
 #endif // HASH_H
