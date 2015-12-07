@@ -1,12 +1,12 @@
-# minHashNearestNeighbors
+# Approximate nearest neighbors search on sprase datasets
 ========
 With minHashNearestNeighbors it is possible to search the k-nearest neighbors 
 inside a sparse data structure. 
 
 To use it:
 
-    from neighborsMinHash import MinHashNearestNeighbors
-    minHash = MinHashNearestNeighbors()
+    from neighborsMinHash import MinHash
+    minHash = MinHash()
     minHash.fit(X)
     minHash.kneighbors(return_distance=False)
 
@@ -39,16 +39,6 @@ Instead of cloning the repository via git clone and than running the installatio
 	
 	pip install git+https://github.com/joachimwolff/minHashNearestNeighbors.git
 
-Dependencies
-------------
-
-This software has the following dependecies:
-	- boost
-	- mtl4
-	- numpy
-	- scipy
-
-Please consider that numpy and scipy are having dependencies like libblas, liblapack and gfortan.	
 
 
 Uninstall
@@ -57,9 +47,9 @@ To delete neighborsMinHash run the following command:
 
 	pip uninstall neighborsMinHash
 
-The version number can differ.
+If you have run the uninstall command and want to make sure everything is gone, look at your python installation directory.
+If you have used the --user flag the path in Ubuntu 14.04 is:
 
-The path of the packages if you used the --user flag is in Ubuntu:
 	~/.local/lib/python2.7/site-packages
 
 
@@ -71,6 +61,6 @@ Contribute
 Support
 -------
 
-If you are having issues, please let us know.
+If you are having issues, please let me know.
 Mail adress: wolffj@informatik.uni-freiburg.de
 
