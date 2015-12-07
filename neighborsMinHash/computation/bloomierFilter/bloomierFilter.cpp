@@ -1,12 +1,14 @@
 #include "bloomierFilter.h"
 
-BloomierFilter::BloomierFilter(size_t pM, size_t pK, size_t pQ, vsize_t* keys, size_t pHashSeed){
+BloomierFilter::BloomierFilter(size_t pM, size_t pK, size_t pQ, size_t pHashSeed){
 	mM = pM;;
 	mK = pK;
 	mQ = pQ;
+    mHashSeed = pHashSeed;
 	mBitVectorSize = ceil(pQ / static_cast<float>(CHAR_BIT));
 	mBloomierHash = new BloomierHash(pM, pK, mBitVectorSize, pHashSeed);
-	mOrderAndMatchFinder = new OrderAndMatchFinder(pM, pK, keys, mBloomierHash);
+    
+	mOrderAndMatchFinder = new OrderAndMatchFinder(pM, pK, mBloomierHash);
 	mTable = new bloomierTable(pM);
 	mValueTable = new vvsize_t(pM);
 	for (size_t i = 0; i < pM; ++i) {
@@ -66,61 +68,31 @@ void BloomierFilter::setValueTable(vvsize_t* pTable) {
 } 
 
 void BloomierFilter::xorOperation(bitVector* pValue, bitVector* pMask, vsize_t* pNeighbors) {
-	// std::cout << "value to get: ";
-	// for (size_t i = 0; i < pValue->size(); ++i) {
-		// std::cout << static_cast<size_t>((*pValue)[i]);
-	// }
-    
-    // std::cout << "mask to get: ";
-	// for (size_t i = 0; i < pMask->size(); ++i) {
-		// std::cout << static_cast<size_t>((*pMask)[i]);
-	// }
     this->xorBitVector(pValue, pMask);
-	// std::cout << "value to get: ";
-	// for (size_t i = 0; i < pValue->size(); ++i) {
-		// std::cout << static_cast<size_t>((*pValue)[i]);
-	// }
-	// std::cout << std::endl;
 	for (auto it = pNeighbors->begin(); it != pNeighbors->end(); ++it) {
 		if (*it < mTable->size()) {
-			// for (size_t i = 0; i < (*mTable)[(*it)]->size(); ++i) {
-				// std::cout << "table value: " <<  (*it) << ": " << static_cast<size_t>((*(*mTable)[(*it)])[i]) << std::endl;
-			// }
 			this->xorBitVector(pValue, (*mTable)[(*it)]);
-			// std::cout << "value to get: ";
-			// for (size_t i = 0; i < pValue->size(); ++i) {
-				// std::cout << static_cast<size_t>((*pValue)[i]);
-			// }
-			// std::cout << std::endl;
 		}
 	}
 }
 vsize_t* BloomierFilter::get(size_t pKey) {
-    // std::cout << __LINE__ << std::endl;
-	// std::cout << "\nGET"<< std::endl;		
-	// std::cout << "instance: " << pKey << " hashSeed: " << mBloomierHash->getHashSeed() <<" neighbors: ";
-	vsize_t* neighbors = mBloomierHash->getKNeighbors(pKey, mOrderAndMatchFinder->getSeed(pKey));
-	// for (size_t i = 0; i < neighbors->size(); ++i) {
-		// std::cout << (*neighbors)[i] << " ";
-	// }
-	// std::cout << std::endl;
+    
+    size_t valueSeed = mOrderAndMatchFinder->getSeed(pKey);
+    if (valueSeed == MAX_VALUE) {
+        return new vsize_t();
+    } else if (valueSeed == MAX_VALUE - 1) {
+        valueSeed = mHashSeed;
+    }
+    
+	vsize_t* neighbors = mBloomierHash->getKNeighbors(pKey, valueSeed);
 	bitVector* mask = mBloomierHash->getMask(pKey);
 		
-	// std::cout << "\tmask: ";
-	// for (size_t i = 0; i < mask->size(); ++i) {
-	// 	std::cout << static_cast<size_t>((*mask)[i]) << " ffoo";
-	// }
-	// std::cout << std::endl;
-	// std::cout << "size of mBitVectorSize: " << mBitVectorSize << std::endl; 
 	bitVector* valueToGet = new bitVector(mBitVectorSize, 0);
 	this->xorOperation(valueToGet, mask, neighbors);
 
 	size_t h = mEncoder->decode(valueToGet);
-	// std::cout << "encoded h: " << h;
 	if (h < neighbors->size()) {
 		size_t L = (*neighbors)[h];
-		// std::cout << " Values stored at: " << L << std::endl;
-		
 		if (L < mValueTable->size()) {
 			
             delete neighbors;
@@ -129,8 +101,6 @@ vsize_t* BloomierFilter::get(size_t pKey) {
 			return &(*mValueTable)[L];
 		}
 	}
-	// std::cout << std::endl;
-	// std::cout << std::endl;
 	
     delete neighbors;
 	delete mask;
@@ -138,7 +108,20 @@ vsize_t* BloomierFilter::get(size_t pKey) {
 	return new vsize_t();
 }
 bool BloomierFilter::set(size_t pKey, size_t pValue) {
-	vsize_t* neighbors = mBloomierHash->getKNeighbors(pKey, mOrderAndMatchFinder->getSeed(pKey));
+    // size_t seed = 0;
+    size_t valueSeed = mOrderAndMatchFinder->getSeed(pKey);
+    if (valueSeed == MAX_VALUE) {
+        std::unordered_map<size_t, vsize_t >* keyValue = new std::unordered_map<size_t, vsize_t >();
+        vsize_t value;
+        value.push_back(pValue);
+        (*keyValue)[pKey] = value;
+		this->create(keyValue, mPiIndex);
+		return true;
+    } else if (valueSeed == MAX_VALUE - 1) {
+        valueSeed = mHashSeed;
+    }
+    
+	vsize_t* neighbors = mBloomierHash->getKNeighbors(pKey, valueSeed);
 	bitVector* mask = mBloomierHash->getMask(pKey);
 	bitVector* valueToGet = new bitVector(mBitVectorSize, 0);
 	this->xorOperation(valueToGet, mask, neighbors);
@@ -154,14 +137,6 @@ bool BloomierFilter::set(size_t pKey, size_t pValue) {
 			v->push_back(pValue);
 			return true;
 		}
-	} else {
-		return false;
-		// delete neighbors;
-		// vsize_t* keys = new vsize_t (1, pKey);
-		// vvsize_t_p* values = new vvsize_t_p (1);
-		// (*values)[0] = new vsize_t(1, pValue);
-		// this->create(keys, values, mPiIndex);
-		// return true;
 	}
 	return false;
 }
@@ -179,9 +154,9 @@ void BloomierFilter::create( std::unordered_map<size_t, vsize_t >* pKeyValue, si
     vsize_t* piVector = mOrderAndMatchFinder->getPiVector();
 	vsize_t* tauVector = mOrderAndMatchFinder->getTauVector();
     // std::cout << "size if inout vector: " << pKeyValue->size() << std::endl;
-		std::cout << "size of piVector: " << piVector->size() << std::endl; 
+		// std::cout << "size of piVector: " << piVector->size() << std::endl; 
 	
-	for (size_t i = 0; i < piVector->size(); ++i) {
+	for (size_t i = mPiIndex; i < piVector->size(); ++i) {
 		// std::cout << "pi element: " << (*piVector)[i] << std::endl;
 		// std::cout << "tau element: " << (*tauVector)[i] << std::endl;
 
@@ -214,7 +189,7 @@ void BloomierFilter::create( std::unordered_map<size_t, vsize_t >* pKeyValue, si
 		delete mask;
 		delete encodeValue;
 	}
-	// mPiIndex += pKeys->size();
+	mPiIndex += pKeyValue->size();
 	// delete pKeys;
 	// for (size_t i = 0; i < pValues->size(); ++i) {
 	// 	delete (*pValues)[i];
