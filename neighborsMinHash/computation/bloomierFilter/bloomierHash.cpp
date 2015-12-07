@@ -7,7 +7,7 @@ BloomierHash::BloomierHash(size_t pModulo,size_t pNumberOfElements, size_t pBitV
 	// mQ = pQ;
 	mHash = new Hash();
 	mBitVectorSize = pBitVectorSize;
-	mHashSeed = pHashSeed + 5;
+	mHashSeed = pHashSeed;
     
 };
 BloomierHash::~BloomierHash() {
@@ -46,12 +46,12 @@ vsize_t* BloomierHash::getKNeighbors(size_t pElement, size_t pSeed) {
     size_t seedChange = 1;
 	for (size_t i = 0; i < mNumberOfElements; ++i) {
         // size_t neighbor = mHash->hash_cpp_lib(pElement+1, mHashSeed*seedValue, mModulo);
-		size_t neighbor = mHash->hash(pElement+1, mHashSeed+seedValue, mModulo);
+		size_t neighbor = mHash->hash(pElement+1, seedValue+seedChange, mModulo);
         size_t size = setOfNeighbors->size();
         setOfNeighbors->insert(neighbor);
         while (size == setOfNeighbors->size()) {
             // std::cout << "neighbor: " << neighbor << std::endl;
-            neighbor = mHash->hash(pElement+1, (mHashSeed+seedChange)*(mHashSeed+seedChange), mModulo);
+            neighbor = mHash->hash(pElement+1, (seedValue+seedChange)*(seedValue+seedChange), mModulo);
             setOfNeighbors->insert(neighbor);
             // std::cout << "neighbor2: " << neighbor << std::endl;
             
