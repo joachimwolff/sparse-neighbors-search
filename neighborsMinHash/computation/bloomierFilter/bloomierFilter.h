@@ -13,6 +13,7 @@ class BloomierFilter {
     size_t mM;
     size_t mK;
     size_t mQ;
+    size_t mHashSeed;
     BloomierHash* mBloomierHash;
     size_t mBitVectorSize;
     // BloomierHash mBloomierHash;
@@ -23,7 +24,7 @@ class BloomierFilter {
     size_t mPiIndex;
 
   public:      
-    BloomierFilter(size_t pM, size_t pK, size_t pQ, vsize_t* keys, size_t pHashSeed);
+    BloomierFilter(size_t pM, size_t pK, size_t pQ, size_t pHashSeed);
     
     ~BloomierFilter();
     
