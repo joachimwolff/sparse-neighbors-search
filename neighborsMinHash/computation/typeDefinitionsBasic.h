@@ -16,8 +16,9 @@
 #include <map> 
 #include <unordered_map>
 #include <utility>
+#include <limits>
 
-#define MAX_VALUE 2147483647
+#define MAX_VALUE std::numeric_limits<int>::max()
 
 typedef std::vector< size_t > vsize_t;
 typedef std::vector< int > vint;
