@@ -1,12 +1,12 @@
 # Copyright 2015 Joachim Wolff
-# Master Project
+# Master Thesis
 # Tutors: Milad Miladi, Fabrizio Costa
-# Summer semester 2015
+# Winter semester 2015/2016
 #
 # Chair of Bioinformatics
 # Department of Computer Science
 # Faculty of Engineering
-# Albert-Ludwig-University Freiburg im Breisgau
+# Albert-Ludwigs-University Freiburg im Breisgau
 
 from ..neighbors import MinHash
 
@@ -68,18 +68,10 @@ class MinHashSpectralClustering():
         excess_factor = self.excess_factor,
         number_of_cores = self.number_of_cores,
         chunk_size = self.chunk_size, similarity=True)
-        # print "71"
         minHashNeighbors.fit(X, y)
-        # print "73"
         graph_result = minHashNeighbors.kneighbors_graph(mode='distance')
-        # print "75"
-        # graph_result.data = np.array(np.exp(np.divide(np.multiply(np.power(graph_result.data, 2), -1), 2*1**2)))
-        # print "77"
-        # X = np.exp(graph_result.multiply(graph_result).multiply(1/(2*1**2)).multiply(-1))
-        # np.exp(- graph_result ** 2 / (2. * 1 ** 2))
         self._spectralClustering.fit(graph_result)
         self.labels_ = self._spectralClustering.labels_
-        print "Labels: ", self.labels_
     def fit_predict(self, X, y=None):
         self.fit(X, y)
 
