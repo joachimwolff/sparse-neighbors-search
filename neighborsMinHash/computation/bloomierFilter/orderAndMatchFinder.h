@@ -20,15 +20,15 @@ class OrderAndMatchFinder {
     BloomierHash* mBloomierHash;
     std::unordered_map<size_t, size_t>* mSeeds;
     Hash* mHash;
-    void findMatch(vsize_t* pSubset);
+    void findMatch(size_t pKey, vsize_t* pNeighbors);
     FRIEND_TEST(OrderAndMatchFinderTest, computeNonSingeltonsTest);
-    void computeNonSingeltons(vsize_t* pKeyValues, size_t pSeed = 0);
+    void computeNonSingeltons(vsize_t* pNeighbors);
     FRIEND_TEST(OrderAndMatchFinderTest, tweakTest);
-    int tweak(size_t pKey, vsize_t* pSubset, size_t pSeed = 0);
+    int tweak(size_t pKey, size_t pSeed, vsize_t* pNeighbors);
   public:
   	OrderAndMatchFinder(size_t pModulo, size_t pNumberOfElements, BloomierHash* pBloomierHash);
     ~OrderAndMatchFinder();
-    void find(vsize_t* pSubset);
+    vsize_t* findIndexAndReturnNeighborhood(size_t key);
     vsize_t* getPiVector();
     vsize_t* getTauVector();
     size_t getSeed(size_t pKey);
