@@ -9,10 +9,10 @@ class OrderAndMatchFinder {
   private:
     size_t mModulo;
     size_t mNumberOfElements;
-    size_t mBloomFilterInstance;
-    size_t mBloomFilterInstanceDifferentSeed;
-    size_t mBloomFilterHashesSeen;
-    size_t mBloomFilterNonSingeltons;
+    bitVector* mBloomFilterInstance;
+    bitVector* mBloomFilterInstanceDifferentSeed;
+    bitVector* mBloomFilterHashesSeen;
+    bitVector* mBloomFilterNonSingeltons;
     size_t mBloomFilterSeed;
     vsize_t* mPiVector;
     vsize_t* mTauVector;
@@ -20,7 +20,7 @@ class OrderAndMatchFinder {
     BloomierHash* mBloomierHash;
     std::unordered_map<size_t, size_t>* mSeeds;
     Hash* mHash;
-    bool findMatch(vsize_t* pSubset);
+    void findMatch(vsize_t* pSubset);
     FRIEND_TEST(OrderAndMatchFinderTest, computeNonSingeltonsTest);
     void computeNonSingeltons(vsize_t* pKeyValues, size_t pSeed = 0);
     FRIEND_TEST(OrderAndMatchFinderTest, tweakTest);
