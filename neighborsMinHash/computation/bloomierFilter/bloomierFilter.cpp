@@ -1,6 +1,6 @@
 #include "bloomierFilter.h"
 
-BloomierFilter::BloomierFilter(size_t pM, size_t pK, size_t pQ, size_t pHashSeed){
+BloomierFilter::BloomierFilter(size_t pM, size_t pK, size_t pQ, size_t pHashSeed, size_t pMaxBinSize){
 	mM = pM;;
 	mK = pK;
 	mQ = pQ;
@@ -15,6 +15,7 @@ BloomierFilter::BloomierFilter(size_t pM, size_t pK, size_t pQ, size_t pHashSeed
 	}
     mEncoder = new Encoder(mBitVectorSize);
 	mPiIndex = 0;
+    mMaxBinSize = pMaxBinSize;
 }
 
 BloomierFilter::~BloomierFilter(){
@@ -104,7 +105,6 @@ bool BloomierFilter::set(size_t pKey, size_t pValue) {
 		return true;
     } else if (valueSeed == MAX_VALUE - 1) {
         // value was before there, used default hash seed
-        
         valueSeed = mHashSeed;
     }
     // else: a different hash seed was used
@@ -121,7 +121,14 @@ bool BloomierFilter::set(size_t pKey, size_t pValue) {
 		delete neighbors;
 		if (L < mValueTable->size()) {
 			vsize_t* v = &((*mValueTable)[L]);
-			v->push_back(pValue);
+            if (v->size() < mMaxBinSize) {
+                if (v->size() > 0) {
+                    v->push_back(pValue);
+                }
+            } else {
+                v->clear();
+            }
+			
 			return true;
 		}
 	}
