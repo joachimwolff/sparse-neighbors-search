@@ -6,9 +6,6 @@
 class InverseIndexStorageBloomierFilter : public InverseIndexStorage {
   private:
 	std::vector<BloomierFilter* >* mInverseIndex;
-	// vvsize_t* mKeys;
-    vector__umapVector* mValues;
-    // std::vector<vvsize_t >* mValues;
 	size_t mMaxBinSize;
 	size_t mM;
 	size_t mK;
@@ -19,6 +16,5 @@ class InverseIndexStorageBloomierFilter : public InverseIndexStorage {
   	size_t size();
 	vsize_t* getElement(size_t pVectorId, size_t pHashValue);
 	void insert(size_t pVectorId, size_t pHashValue, size_t pInstance);
-	void create();
 };
 #endif // INVERSE_INDEX_STORAGE_BLOOMIER_FILTER_H
