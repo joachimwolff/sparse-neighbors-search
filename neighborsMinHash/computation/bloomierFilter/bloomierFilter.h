@@ -19,9 +19,10 @@ class BloomierFilter {
     OrderAndMatchFinder* mOrderAndMatchFinder;
     Encoder* mEncoder; 
     size_t mPiIndex;
+    size_t mMaxBinSize;
 
   public:      
-    BloomierFilter(size_t pM, size_t pK, size_t pQ, size_t pHashSeed);
+    BloomierFilter(size_t pM, size_t pK, size_t pQ, size_t pHashSeed, size_t pMaxBinSize);
     
     ~BloomierFilter();
     
