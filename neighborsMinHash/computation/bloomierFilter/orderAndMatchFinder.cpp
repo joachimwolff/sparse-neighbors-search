@@ -1,36 +1,41 @@
 #include <unordered_map>
+#include <cmath>
 #include "orderAndMatchFinder.h"
 
 OrderAndMatchFinder::OrderAndMatchFinder(size_t pModulo, size_t pNumberOfElements, BloomierHash* pBloomierHash) {
     mModulo = pModulo;
     mNumberOfElements = pNumberOfElements;
-    // mQ = pQ;
     mPiVector = new vsize_t();
     mTauVector = new vsize_t();
     mBloomierHash = pBloomierHash;
-    mBloomFilterHashesSeen = 0;
-    mBloomFilterNonSingeltons = 0;
-    // this->computeNonSingeltons(pSubset);
+    size_t sizeOfBloomFilter = ceil(mModulo/ 8.0);
+    mBloomFilterHashesSeen = new bitVector(sizeOfBloomFilter);
+    mBloomFilterNonSingeltons = new bitVector(sizeOfBloomFilter);
+    mBloomFilterInstance = new bitVector(sizeOfBloomFilter);
+    mBloomFilterInstanceDifferentSeed = new bitVector(sizeOfBloomFilter);
     mSeeds = new std::unordered_map<size_t, size_t>;
-    mBloomFilterInstance = 0;
-    mBloomFilterInstanceDifferentSeed = 0;
     mBloomFilterSeed = 42;
-
     mHash = new Hash();
 }
 OrderAndMatchFinder::~OrderAndMatchFinder() {
     delete mPiVector;
     delete mTauVector;
     delete mSeeds;
+    delete mHash;
+    delete mBloomFilterHashesSeen;
+    delete mBloomFilterNonSingeltons;
+    delete mBloomFilterInstance;
+    delete mBloomFilterInstanceDifferentSeed;
 }
 
 size_t OrderAndMatchFinder::getSeed(size_t pKey) {
-    
-    size_t value = mHash->hash(pKey+1, mBloomFilterSeed, MAX_VALUE);
-    size_t valueSeenBefor = mBloomFilterInstance & value;
+    unsigned char index = floor(pKey / 8.0);
+    unsigned char value = 1 << (pKey % 8);
+    // std::cout << "value: " << value << std::endl;
+    unsigned char valueSeenBefor = (*mBloomFilterInstance)[index] & value;
     if (valueSeenBefor == value) {
         // value seen and not using default seed
-        size_t differentSeed = mBloomFilterInstanceDifferentSeed & value;
+        unsigned char differentSeed = (*mBloomFilterInstanceDifferentSeed)[index] & value;
         if (differentSeed == value) {
             return (*mSeeds)[pKey];
         }
@@ -41,42 +46,33 @@ size_t OrderAndMatchFinder::getSeed(size_t pKey) {
     return MAX_VALUE;
 
 }
-bool OrderAndMatchFinder::findMatch(vsize_t* pSubset) {
-    if (pSubset->size() == 0) {
-        return true;
-    }
+void OrderAndMatchFinder::findMatch(vsize_t* pSubset) {
     vsize_t* piVector = new vsize_t();
     vsize_t* tauVector = new vsize_t();
-    vsize_t* subsetNextRecursion = new vsize_t();
     int singeltonValue;
+    unsigned char index = 0;
+    unsigned char value = 0;
     for (size_t i = 0; i < pSubset->size(); ++i) {
         singeltonValue = tweak((*pSubset)[i], pSubset, mBloomierHash->getHashSeed());
-        mBloomFilterInstance = mBloomFilterInstance | mHash->hash((*pSubset)[i]+1, mBloomFilterSeed, MAX_VALUE);
+        index = floor((*pSubset)[i] / 8.0);
+        value = 1 << ((*pSubset)[i] % 8);
+        (*mBloomFilterInstance)[index] = (*mBloomFilterInstance)[index] | value;
         if (singeltonValue != -1) {
             piVector->push_back((*pSubset)[i]);
             tauVector->push_back(singeltonValue);
         }
     }
-    if (piVector->size() == 0) {
-        delete piVector;
-        delete tauVector;
-        delete subsetNextRecursion;
-        return false;
-    }
-    for (size_t i = 0; i < piVector->size(); ++i) {
-        mPiVector->push_back((*piVector)[i]);
-    }
-    for (size_t i = 0; i < tauVector->size(); ++i) {
-        mTauVector->push_back((*tauVector)[i]);
+    if (piVector->size() == tauVector->size()) {
+        for (size_t i = 0; i < piVector->size(); ++i) {
+            mPiVector->push_back((*piVector)[i]);
+            mTauVector->push_back((*tauVector)[i]);        
+        }
     }
     delete piVector;
     delete tauVector;
-    delete subsetNextRecursion;
-    return true;
 }
 
 void OrderAndMatchFinder::find(vsize_t* pSubset) {
-    size_t i = 0;
     this->computeNonSingeltons(pSubset);
     this->findMatch(pSubset);
 }
@@ -87,48 +83,60 @@ vsize_t* OrderAndMatchFinder::getTauVector() {
     return mTauVector;
 }
 int OrderAndMatchFinder::tweak (size_t pKey, vsize_t* pSubset, size_t pSeed) {
-    
     int singelton = -1;
     size_t i = 0;
+    size_t j = 0;
+    unsigned char value = 0;
+    unsigned char valueSeen = 0;
+    unsigned char index = 0;
+    vsize_t* neighbors;
+    
     while (singelton == -1) {
         pSeed = pSeed+i;
-        vsize_t*  neighbors = mBloomierHash->getKNeighbors(pKey, pSeed);
-        size_t j = 0;
+        neighbors = mBloomierHash->getKNeighbors(pKey, pSeed);
+        j = 0;
         for (auto it = neighbors->begin(); it != neighbors->end(); ++it) {
-            size_t value = mHash->hash((*it) + 1, mBloomFilterSeed, MAX_VALUE);
-            size_t valueSeen = mBloomFilterNonSingeltons & value;
+            index = floor((*it) / 8.0);
+            value = 1 << ((*it) % 8);
+            valueSeen = (*mBloomFilterHashesSeen)[index] & value;
             if (value != valueSeen) {
-                mBloomFilterNonSingeltons = mBloomFilterNonSingeltons | value;
-                delete neighbors;
+                (*mBloomFilterNonSingeltons)[index] = (*mBloomFilterNonSingeltons)[index] | value;
                 if (mBloomierHash->getHashSeed() != pSeed) {
-                    mBloomFilterInstanceDifferentSeed = mBloomFilterInstanceDifferentSeed | mHash->hash(pKey + 1, mBloomFilterSeed, MAX_VALUE);
+                    index = floor(pKey / 8.0);
+                    value = 1 << (pKey % 8);
+                    (*mBloomFilterInstanceDifferentSeed)[index] = (*mBloomFilterInstanceDifferentSeed)[index] | value;
                     (*mSeeds)[pKey] = pSeed;
                 }
-                return j;
+                singelton = j;
+                break;
             }
             ++j;
         }
         delete neighbors;
         ++i;
     }
-    return -1;
+    return singelton;
 }
 
 void OrderAndMatchFinder::computeNonSingeltons(vsize_t* pKeyValues, size_t pSeed) {
+    vsize_t* neighbors;
+    unsigned char value;
+    unsigned char valueSeen;
+    unsigned char index;
     for (auto it = pKeyValues->begin(); it != pKeyValues->end(); ++it) {
-        vsize_t* neighbors = mBloomierHash->getKNeighbors((*it), pSeed);
+        neighbors = mBloomierHash->getKNeighbors((*it), pSeed);
         for (auto itNeighbors = neighbors->begin(); itNeighbors != neighbors->end(); ++itNeighbors) {
-            size_t value = mHash->hash((*itNeighbors) + 1, mBloomFilterSeed, MAX_VALUE);
-            size_t valueSeen = mBloomFilterHashesSeen & value;
+            index = floor((*itNeighbors) / 8.0);
+            value = 1 << ((*itNeighbors) % 8);
+            valueSeen = (*mBloomFilterHashesSeen)[index] & value;
             if (valueSeen != value) {
-                mBloomFilterNonSingeltons = mBloomFilterNonSingeltons & value;
+                (*mBloomFilterNonSingeltons)[index] = (*mBloomFilterNonSingeltons)[index] | value;
             }
-            // if (mHashesSeen->find((*itNeighbors)) != mHashesSeen->end()) {
-            //     mNonSingeltons->insert((*itNeighbors));
-            // }
         }
         for (auto itNeighbors = neighbors->begin(); itNeighbors != neighbors->end(); ++itNeighbors){
-            mBloomFilterHashesSeen = mBloomFilterHashesSeen | mHash->hash((*itNeighbors) + 1, mBloomFilterSeed, MAX_VALUE);
+            index = floor((*itNeighbors) / 8.0);
+            value = 1 << ((*itNeighbors) % 8);
+            (*mBloomFilterHashesSeen)[index] = (*mBloomFilterHashesSeen)[index] | value;
         }
         delete neighbors;
     } 
