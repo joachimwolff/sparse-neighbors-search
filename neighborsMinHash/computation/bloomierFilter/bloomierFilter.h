@@ -16,11 +16,8 @@ class BloomierFilter {
     size_t mHashSeed;
     BloomierHash* mBloomierHash;
     size_t mBitVectorSize;
-    // BloomierHash mBloomierHash;
-    // size_t mByteSize;
     OrderAndMatchFinder* mOrderAndMatchFinder;
-    // std::map<size_t, size_t> mKeyDict;
-    Encoder* mEncoder;
+    Encoder* mEncoder; 
     size_t mPiIndex;
 
   public:      
@@ -38,8 +35,5 @@ class BloomierFilter {
     vsize_t* get(size_t pKey);
     bool set(size_t pKey, size_t pValue);
     void create( std::unordered_map<size_t, vsize_t >* pKeyValue, size_t piIndex = 0);
-    void check();
-    // std::string tableToString();
-    // std::pair<vsize_t, vsize_t> stringToTable(std::string pString);
 };
 #endif // BLOOMIER_FILTER_H
