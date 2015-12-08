@@ -52,7 +52,7 @@ def test(data):
     # if not os.path.exists("inverse_index.approx"):
     print "Build inverse index for approximate..."
     time_build_approx_start = time.time()
-    minHash = MinHash(number_of_hash_functions=400, similarity=True, bloomierFilter=True)
+    minHash = MinHash(number_of_hash_functions=400,block_size = 4, similarity=True, bloomierFilter=True)
     # minHash.fit(data[0])
     minHash.fit(datasetBursi)
 
