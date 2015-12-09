@@ -52,10 +52,10 @@ def test(data):
     # if not os.path.exists("inverse_index.approx"):
     print "Build inverse index for approximate..."
     time_build_approx_start = time.time()
-    minHash = MinHash(number_of_hash_functions=400,block_size = 4, similarity=True, bloomierFilter=True)
+    minHash = MinHash(number_of_hash_functions=400,block_size = 4, similarity=True, bloomierFilter=True, number_of_cores=4)
     # minHash.fit(data[0])
     minHash.fit(datasetBursi)
-
+    print "Fitting time: ",  time.time() - time_build_approx_start
     # time_build_approx_end = time.time()
     # print "Build inverse index for approximate... Done!"
     # print "Time: ", time_build_approx_end - time_build_approx_start
@@ -87,20 +87,22 @@ def test(data):
     print "Time: ", time_comp_approx_end  - time_comp_approx
     print "\n\n"
 
-    minHash2 = MinHash(number_of_hash_functions=400)
-    
+    minHash2 = MinHash(number_of_hash_functions=400,block_size = 4, similarity=True, bloomierFilter=False, number_of_cores=4)
+    # minHash.fit(data[0])
+    time_fit = time.time()
+    minHash2.fit(datasetBursi)
+    print "Fitting: ", time.time() - time_fit
     time_comp_exact = time.time()
     # print "Exact solution, distance=True: ", minHash_exact.kneighbors( centroids_neighborhood,return_distance=True)
-    approx_fit = minHash2.fit_kneighbors(X=datasetBursi, fast=True, return_distance=False)
+    approx_fit = minHash2.kneighbors(fast=True, return_distance=False)
     print "Approx solution, distance=False: ", approx_fit
 
     time_comp_exact_end = time.time()
     print "Time: ", time_comp_exact_end  - time_comp_exact
     print "\n\n"
-    minHash3 = MinHash(number_of_hash_functions=400)
 
     time_comp_exact = time.time()
-    exact_fit = minHash3.fit_kneighbors(X=datasetBursi, fast=False, return_distance=False)
+    exact_fit = minHash2.kneighbors(fast=False, return_distance=False)
     # print "Exact solution, distance=True: ", minHash_exact.kneighbors( centroids_neighborhood,return_distance=True)
     print "Exact solution, distance=False: ", exact_fit
 
@@ -112,7 +114,7 @@ def test(data):
     # dataY = self.create_dataset(seed+1, 1,  1, data_instances)
     time_exact_fit = time.time()
     # nearest_Neighbors = KNeighborsClassifier()
-    nearest_Neighbors = NearestNeighbors()
+    nearest_Neighbors = NearestNeighbors(n_jobs=4)
     nearest_Neighbors.fit(datasetBursi)
     time_exact_fit_end = time.time()
     print "Time to build index exact: ", time_exact_fit_end - time_exact_fit
