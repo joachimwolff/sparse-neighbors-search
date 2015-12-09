@@ -24,18 +24,18 @@ class BloomierFilter {
     void create( size_t pKey, size_t pValue);
     
   public:      
-    BloomierFilter(size_t pM, size_t pK, size_t pQ, size_t pHashSeed, size_t pMaxBinSize);
+    BloomierFilter(const size_t pM, const size_t pK, const size_t pQ, const size_t pHashSeed, const size_t pMaxBinSize);
     
     ~BloomierFilter();
     
-    size_t getByteSize(size_t pQ);
+    size_t getByteSize(const size_t pQ);
     // bloomierTable* getTable();
     // void setTable(bloomierTable* pTable);
     // vvsize_t* getValueTable();
     // void setValueTable(vvsize_t* pTable);
-    void xorBitVector(bitVector* pResult, bitVector* pInput);
-    void xorOperation(bitVector* pValue, bitVector* pM, vsize_t* pNeighbors);
-    vsize_t* get(size_t pKey);
-    bool set(size_t pKey, size_t pValue);
+    void xorBitVector(bitVector* pResult, const bitVector* pInput);
+    void xorOperation(bitVector* pValue, const bitVector* pM, const vsize_t* pNeighbors);
+    vsize_t* get(const size_t pKey);
+    bool set(const size_t pKey, const size_t pValue);
 };
 #endif // BLOOMIER_FILTER_H

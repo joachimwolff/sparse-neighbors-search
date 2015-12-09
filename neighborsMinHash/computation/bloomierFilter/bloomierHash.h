@@ -16,11 +16,11 @@ class BloomierHash {
     size_t mHashSeed;
 
   public:      
-    BloomierHash(size_t pModulo, size_t pNumberOfElements, size_t pBitVectorSize, size_t pHashSeed);
+    BloomierHash(const size_t pModulo, const size_t pNumberOfElements, const size_t pBitVectorSize, const size_t pHashSeed);
     ~BloomierHash();
-    bitVector* getMask(size_t pKey);
-    void getKNeighbors(size_t pElement, size_t pSeed, vsize_t* pNeighbors);
-    size_t getHashSeed();
-    void setHashSeed(size_t pHashSeed);
+    bitVector* getMask(const size_t pKey);
+    void getKNeighbors(const size_t pElement, const size_t pSeed, vsize_t* pNeighbors);
+    size_t getHashSeed() const;
+    void setHashSeed(const size_t pHashSeed);
 };
 #endif // BLOOMIER_HASH_H

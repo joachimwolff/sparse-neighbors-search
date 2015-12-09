@@ -7,7 +7,7 @@
  Chair of Bioinformatics
  Department of Computer Science
  Faculty of Engineering
- Albert-Ludwig-University Freiburg im Breisgau
+ Albert-Ludwigs-University Freiburg im Breisgau
 **/
 
 #include <iostream>
@@ -38,7 +38,7 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pBlockSize,
         mSimilarity = pSimilarity;
 }
 
-MinHashBase::~MinHashBase(){
+MinHashBase::~MinHashBase() {
     delete mInverseIndex;
     delete mOriginalData;
 }
@@ -52,7 +52,6 @@ void MinHashBase::partialFit() {
 
 }
 neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast, int pSimilarity) {
-    // std::cout << "53M" << std::endl;
     if (pFast == -1) {
         pFast = mFast;
     } 
@@ -62,7 +61,6 @@ neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t 
     if (pSimilarity == -1) {
         pSimilarity = mSimilarity;
     }
-    // std::cout << "61M" << std::endl;
 
     umap_uniqueElement* X;
     bool doubleElementsStorageCount = false;

@@ -46,13 +46,14 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pBlockSize,
     mMaximalNumberOfHashCollisions = pMaximalNumberOfHashCollisions;
     mSignatureStorage = new umap_uniqueElement();
     mHash = new Hash();
+    size_t maximalFeatures = 5000;
     
     size_t inverseIndexSize = ceil(((float) mNumberOfHashFunctions / (float) mBlockSize)+1);
     if (pBloomierFilter) {
-        std::cout << "Using bloomier filter. " << std::endl;
-        mInverseIndexStorage = new InverseIndexStorageBloomierFilter(inverseIndexSize, mMaxBinSize);
+        // std::cout << "Using bloomier filter. " << std::endl;
+        mInverseIndexStorage = new InverseIndexStorageBloomierFilter(inverseIndexSize, mMaxBinSize, maximalFeatures);
     } else {
-        std::cout << "Using unorderedMap. " << std::endl;
+        // std::cout << "Using unorderedMap. " << std::endl;
         
         mInverseIndexStorage = new InverseIndexStorageUnorderedMap(inverseIndexSize, mMaxBinSize);
     }
@@ -190,10 +191,12 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
                  mSignatureStorage->operator[](signatureId)->instances->push_back(index);
                  mDoubleElementsStorageCount += 1;
             }
-            for (size_t j = 0; j < signature->size(); ++j) {
-                 mInverseIndexStorage->insert(j, (*signature)[j], index);
-            }
         }
+        for (size_t j = 0; j < signature->size(); ++j) {
+            mInverseIndexStorage->insert(j, (*signature)[j], index);
+        }
+  
+        
     }
 }
 
@@ -228,7 +231,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             if (hashID != 0 && hashID != MAX_VALUE) {
                 size_t collisionSize = 0;
                 vsize_t* instances =  mInverseIndexStorage->getElement(j, hashID);
-                if (instances->size() != 0) {
+                if (instances != NULL && instances->size() != 0) {
                     collisionSize = instances->size();
                 } else { 
                     continue;
@@ -295,7 +298,6 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 }
             }
         }
-
 #pragma omp critical
         {     
             for (size_t j = 0; j < instanceId->second->instances->size(); ++j) {
