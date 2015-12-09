@@ -1,4 +1,4 @@
-# Approximate nearest neighbors search on sprase datasets
+# Approximate nearest neighbors search on sparse datasets
 ========
 With minHashNearestNeighbors it is possible to search the k-nearest neighbors 
 inside a sparse data structure. 
