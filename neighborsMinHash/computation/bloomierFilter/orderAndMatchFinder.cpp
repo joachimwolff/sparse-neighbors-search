@@ -28,7 +28,7 @@ OrderAndMatchFinder::~OrderAndMatchFinder() {
     delete mBloomFilterInstance;
     delete mBloomFilterInstanceDifferentSeed;
 }
-size_t OrderAndMatchFinder::deleteValueInBloomFilterInstance(const size_t pKey) {
+void OrderAndMatchFinder::deleteValueInBloomFilterInstance(const size_t pKey) {
     const unsigned char index = floor(pKey / 8.0);
     const unsigned char value = 1 << (pKey % 8);
     (*mBloomFilterInstance)[index] = (*mBloomFilterInstance)[index] ^ value;
@@ -86,7 +86,9 @@ int OrderAndMatchFinder::tweak(const size_t pKey, vsize_t* pNeighbors) {
             
             index = floor((*it) / 8.0);
             value = 1 << ((*it) % 8);
+#ifdef OPENMP
 #pragma omp critical
+#endif
             {
                 valueSeen = (*mBloomFilterHashesSeen)[index] & value;
                 if (value != valueSeen) {
