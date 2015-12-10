@@ -4,7 +4,7 @@ InverseIndexStorageBloomierFilter::InverseIndexStorageBloomierFilter(const size_
 	mInverseIndex = new std::vector<BloomierFilter* > (pSizeOfInverseIndex);
 	mMaxBinSize = pMaxBinSize;
 	mM = 3500;
-	mK = 2;
+	mK = 3;
 	mQ = 8;
 }
 InverseIndexStorageBloomierFilter::~InverseIndexStorageBloomierFilter() {
