@@ -4,19 +4,16 @@
 BloomierHash::BloomierHash(const size_t pModulo, const size_t pNumberOfElements, const size_t pBitVectorSize, const size_t pHashSeed) {
 	mModulo = pModulo;
 	mNumberOfElements = pNumberOfElements;
-	// mQ = pQ;
 	mHash = new Hash();
 	mBitVectorSize = pBitVectorSize;
 	mHashSeed = pHashSeed;
-    
 };
 BloomierHash::~BloomierHash() {
 
 };
 bitVector* BloomierHash::getMask(const size_t pKey) {
 	bitVector* mask = new bitVector(mBitVectorSize);
-	srand(mHashSeed*pKey);
-	size_t randValue = rand();
+	size_t randValue = mHash->hash(pKey+1, mHashSeed, mModulo);
 	for (size_t i = 0; i < mBitVectorSize; ++i) {
 		(*mask)[i] =  static_cast<unsigned char>((randValue >> (8*i))& 0b00000000000000000000000011111111);
 	} 
