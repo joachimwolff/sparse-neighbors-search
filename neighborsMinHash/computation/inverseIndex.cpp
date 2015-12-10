@@ -68,11 +68,12 @@ InverseIndex::~InverseIndex() {
 
     }
     delete mSignatureStorage;
+    delete mHash;
 }
  // compute the signature for one instance
 vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance) {
 
-    vsize_t signatureHash;
+    vsize_t signatureHash; 
     signatureHash.reserve(mNumberOfHashFunctions);
 
     for(size_t j = 0; j < mNumberOfHashFunctions; ++j) {
@@ -114,8 +115,9 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     omp_set_dynamic(0);
 #endif
 
-
+#ifdef OPENMP
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+#endif
     for(size_t index = 0; index < pRawData->size(); ++index) {
         // vsize_t* features = pRawData->getFeatureRow(index);
         // compute unique id
@@ -126,7 +128,9 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
         // signature is in storage && 
         auto signatureIt = (*mSignatureStorage).find(signatureId);
         if (signatureIt != (*mSignatureStorage).end() && (instanceSignature->find(signatureId) != instanceSignature->end())) {
+#ifdef OPENMP
 #pragma omp critical
+#endif
             {
                 instanceSignature->operator[](signatureId) = (*mSignatureStorage)[signatureId];
                 instanceSignature->operator[](signatureId)->instances->push_back(index);
@@ -138,7 +142,9 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
         // for every hash function: compute the hash values of all features and take the minimum of these
         // as the hash value for one hash function --> h_j(x) = argmin (x_i of x) f_j(x_i)
         vsize_t* signature = computeSignature(pRawData, index);
+#ifdef OPENMP
 #pragma omp critical
+#endif
         {
             if (instanceSignature->find(signatureId) == instanceSignature->end()) {
                 vsize_t* doubleInstanceVector = new vsize_t(1);
@@ -163,8 +169,9 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
-
+#ifdef OPENMP
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+#endif
 
     for (size_t index = 0; index < pRawData->size(); ++index) {
         size_t signatureId = 0;
@@ -178,7 +185,9 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
         } else {
             signature = itSignatureStorage->second->signature;
         }
+#ifdef OPENMP
 #pragma omp critical
+#endif
         {    
             if (itSignatureStorage == mSignatureStorage->end()) {
                 vsize_t* doubleInstanceVector = new vsize_t(1);
@@ -195,8 +204,6 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
         for (size_t j = 0; j < signature->size(); ++j) {
             mInverseIndexStorage->insert(j, (*signature)[j], index);
         }
-  
-        
     }
 }
 
@@ -218,8 +225,9 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
     if (mChunkSize <= 0) {
         mChunkSize = ceil(mInverseIndexStorage->size() / static_cast<float>(mNumberOfCores));
     }
-
+#ifdef OPENMP
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+#endif 
     for (size_t i = 0; i < pSignaturesMap->size(); ++i) {
         umap_uniqueElement::const_iterator instanceId = pSignaturesMap->begin();
         std::advance(instanceId, i); 
@@ -298,7 +306,9 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 }
             }
         }
+#ifdef OPENMP
 #pragma omp critical
+#endif
         {     
             for (size_t j = 0; j < instanceId->second->instances->size(); ++j) {
                 (*neighbors)[instanceId->second->instances->operator[](j)] = (*neighborsForThisInstance)[j];
