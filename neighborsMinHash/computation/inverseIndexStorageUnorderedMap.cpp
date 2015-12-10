@@ -1,5 +1,7 @@
 #include "inverseIndexStorageUnorderedMap.h"
-
+#ifdef OPENMP
+#include <omp.h>
+#endif
  
 InverseIndexStorageUnorderedMap::InverseIndexStorageUnorderedMap(size_t pSizeOfInverseIndex, size_t pMaxBinSize) {
 	mSignatureStorage = new vector__umapVector(pSizeOfInverseIndex);
@@ -18,11 +20,13 @@ vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, size_t pH
 	if (iterator != (*mSignatureStorage)[pVectorId].end()) {
 		return &(iterator->second);
 	}
-	return new vsize_t(0);
+	return NULL;
 	
 }
 void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue, size_t pInstance) {
+#ifdef OPENMP
 #pragma omp critical
+#endif
     {	
         auto itHashValue_InstanceVector = (*mSignatureStorage)[pVectorId].find(pHashValue);
         // if for hash function h_i() the given hash values is already stored
