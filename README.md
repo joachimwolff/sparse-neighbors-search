@@ -62,5 +62,5 @@ Support
 -------
 
 If you are having issues, please let me know.
-Mail adress: wolffj@informatik.uni-freiburg.de
+Mail adress: wolffj[at]informatik[dot]uni-freiburg[dot]de
 
