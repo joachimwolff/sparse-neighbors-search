@@ -14,10 +14,10 @@ BloomierFilter::BloomierFilter(const size_t pModulo, const size_t pNumberOfEleme
 	mValueTable = new vvsize_t_p(pModulo);
 	for (size_t i = 0; i < pModulo; ++i) {
 		(*mTable)[i] = new bitVector(mBitVectorSize, 0);
-        (*mValueTable)[i] = new vsize_t();
+        // (*mValueTable)[i] = new vsize_t();
 	}
     mEncoder = new Encoder(mBitVectorSize);
-	mPiIndex = 0;
+	mPiIndex = 0; 
     mMaxBinSize = pMaxBinSize;
 }
 
@@ -74,7 +74,12 @@ bool BloomierFilter::set(const size_t pKey, const size_t pValue) {
     size_t valueSeed = mOrderAndMatchFinder->getSeed(pKey);
     if (valueSeed == MAX_VALUE) {
         // new value
+        #ifdef OPENMP
+#pragma omp critical
+#endif
+            {
 		this->create(pKey, pValue);
+            }
 		return true;
     } else if (valueSeed == MAX_VALUE - 1) {
         // value was before there, used default hash seed
@@ -93,22 +98,26 @@ bool BloomierFilter::set(const size_t pKey, const size_t pValue) {
 	delete valueToGet;
 	if (h < neighbors->size()) {
 		const size_t L = (*neighbors)[h];
-		delete neighbors;
 		if (L < mValueTable->size()) {
+#ifdef OPENMP
 #pragma omp critical
+#endif
             {
                 vsize_t* v = (*mValueTable)[L];
-                if (v != NULL && v->size() < mMaxBinSize) {
-                    if (v->size() > 0) {
-                        v->push_back(pValue);
+                if (v != NULL) {
+                    if (v->size() < mMaxBinSize) {
+                        if (v->size() > 0) {
+                            v->push_back(pValue);
+                        }
+                    } else {
+                        mOrderAndMatchFinder->deleteValueInBloomFilterInstance(pKey);
+                        v->clear();
+                        // delete v;
                     }
-                } else {
-                    // mOrderAndMatchFinder->deleteValueInBloomFilterInstance(pKey);
-                    v->clear();
                 }
             }
+    		delete neighbors;
             return true;
-            
 		}
 	}
     delete neighbors;
@@ -120,12 +129,16 @@ void BloomierFilter::create(const size_t pKey, const size_t pValue) {
     const vsize_t* neighbors = mOrderAndMatchFinder->findIndexAndReturnNeighborhood(pKey);
     const vsize_t* piVector = mOrderAndMatchFinder->getPiVector();
 	const vsize_t* tauVector = mOrderAndMatchFinder->getTauVector();
-
+// #ifdef OPENMP
+// #pragma omp critical
+// #endif
+    {
     const size_t key = (*piVector)[mPiIndex];
     const bitVector* mask = mBloomierHash->getMask(key);
     
     const size_t l = (*tauVector)[mPiIndex];
     const size_t L = (*neighbors)[l];
+
     const bitVector* encodeValue = mEncoder->encode(l);
     this->xorBitVector((*mTable)[L], encodeValue);
     this->xorBitVector((*mTable)[L], mask);
@@ -134,16 +147,19 @@ void BloomierFilter::create(const size_t pKey, const size_t pValue) {
             this->xorBitVector((*mTable)[L], (*mTable)[(*neighbors)[j]]);
         }
     }
-    vsize_t* valueVector = new vsize_t(1);
-    (*valueVector)[0] = pValue;
-#pragma omp critical
-    {
-        (*mValueTable)[L] = valueVector;
+    // vsize_t* valueVector = new vsize_t(1);
+    // (*valueVector)[0] = pValue;
+    if ((*mValueTable)[L] == NULL) {
+            (*mValueTable)[L] = new vsize_t(1);
+            (*mValueTable)[L]->operator[](0) = pValue;
     }
+        // (*mValueTable)[L] = valueVector;
+    
     delete neighbors;
     delete mask;
     delete encodeValue;
 	++mPiIndex;
+    }
 }
 
 void BloomierFilter::xorBitVector(bitVector* pResult, const bitVector* pInput) {
