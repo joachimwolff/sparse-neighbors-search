@@ -32,6 +32,6 @@ class OrderAndMatchFinder {
     vsize_t* getPiVector() const;
     vsize_t* getTauVector() const;
     size_t getSeed(const size_t pKey) const;
-    size_t deleteValueInBloomFilterInstance(const size_t pKey);
+    void deleteValueInBloomFilterInstance(const size_t pKey);
 };
 #endif // ORDER_AND_MATCH_FINDER_H
