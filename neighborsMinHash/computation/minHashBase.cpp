@@ -87,8 +87,9 @@ if (mChunkSize <= 0) {
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
-
+#ifdef OPENMP
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+#endif
     for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
 
         if (neighborhood_->neighbors->operator[](i).size() != 1) {
@@ -108,14 +109,17 @@ if (mChunkSize <= 0) {
                 neighborsVector[j] = (*exactNeighbors)[j].key;
                 distancesVector[j] = (*exactNeighbors)[j].val;
             }
-
+#ifdef OPENMP
 #pragma omp critical
+#endif
             {
                 neighborhoodExact->neighbors->operator[](i) = neighborsVector;
                 neighborhoodExact->distances->operator[](i) = distancesVector;
             }
         } else {
+#ifdef OPENMP
 #pragma omp critical
+#endif
             {
                 neighborhoodExact->neighbors->operator[](i) = neighborhood_->neighbors->operator[](i);
                 neighborhoodExact->distances->operator[](i) = neighborhood_->distances->operator[](i);
