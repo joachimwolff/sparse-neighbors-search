@@ -14,7 +14,7 @@ BloomierFilter::BloomierFilter(const size_t pModulo, const size_t pNumberOfEleme
 	mValueTable = new vvsize_t_p(pModulo);
 	for (size_t i = 0; i < pModulo; ++i) {
 		(*mTable)[i] = new bitVector(mBitVectorSize, 0);
-        // (*mValueTable)[i] = new vsize_t();
+        (*mValueTable)[i] = new vsize_t();
 	}
     mEncoder = new Encoder(mBitVectorSize);
 	mPiIndex = 0;
