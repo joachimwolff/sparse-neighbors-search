@@ -15,8 +15,8 @@ OrderAndMatchFinder::OrderAndMatchFinder(const size_t pModulo, const size_t pNum
     mBloomFilterHashesSeen = new bitVector(sizeOfBloomFilter);
     mBloomFilterNonSingeltons = new bitVector(sizeOfBloomFilter);
     mBloomFilterInstance = new bitVector(sizeOfBloomFilter);
-    mBloomFilterInstanceDifferentSeed = new bitVector(sizeOfBloomFilter);
-    mSeeds = new std::unordered_map<size_t, size_t>;
+    // mBloomFilterInstanceDifferentSeed = new bitVector(sizeOfBloomFilter);
+    // mSeeds = new std::unordered_map<size_t, size_t>;
     mBloomFilterSeed = 42;
 }
 OrderAndMatchFinder::~OrderAndMatchFinder() {
@@ -33,21 +33,12 @@ void OrderAndMatchFinder::deleteValueInBloomFilterInstance(const size_t pKey) {
     const unsigned char value = 1 << (pKey % 8);
     (*mBloomFilterInstance)[index] = (*mBloomFilterInstance)[index] ^ value;
 }
-size_t OrderAndMatchFinder::getSeed(const size_t pKey) const{
+bool OrderAndMatchFinder::getValueSeenBefor(const size_t pKey) const{
     const unsigned char index = floor(pKey / 8.0);
     const unsigned char value = 1 << (pKey % 8);
     const unsigned char valueSeenBefor = (*mBloomFilterInstance)[index] & value;
-    if (valueSeenBefor == value) {
-        // value seen and not using default seed
-        const unsigned char differentSeed = (*mBloomFilterInstanceDifferentSeed)[index] & value;
-        if (differentSeed == value) {
-            return (*mSeeds)[pKey];
-        }
-        // value seen using default seed
-        return MAX_VALUE - 1;
-    }
-    // value never seen
-    return MAX_VALUE;
+    if (valueSeenBefor == value) return true;
+    return false;
 }
 void OrderAndMatchFinder::findMatch(const size_t pKey, vsize_t* pNeighbors) {
     const int singeltonValue = this->tweak(pKey, pNeighbors);
@@ -94,15 +85,15 @@ int OrderAndMatchFinder::tweak(const size_t pKey, vsize_t* pNeighbors) {
                 if (value != valueSeen) {
     
                     (*mBloomFilterNonSingeltons)[index] = (*mBloomFilterNonSingeltons)[index] | value;
-                    if (mBloomierHash->getHashSeed() != seed) {
-                        index = floor(pKey / 8.0);
-                        value = 1 << (pKey % 8);
+                    // if (mBloomierHash->getHashSeed() != seed) {
+                        // index = floor(pKey / 8.0);
+                        // value = 1 << (pKey % 8);
     
-                        {
-                            (*mBloomFilterInstanceDifferentSeed)[index] = (*mBloomFilterInstanceDifferentSeed)[index] | value;
-                            (*mSeeds)[pKey] = seed;
-                        }
-                    }
+                        // {
+                            // (*mBloomFilterInstanceDifferentSeed)[index] = (*mBloomFilterInstanceDifferentSeed)[index] | value;
+                            // (*mSeeds)[pKey] = seed;
+                        // }
+                    // } 
                     singelton = j;
                     breakForOpenMp = false;
                     // it = pNeighbors->end();
