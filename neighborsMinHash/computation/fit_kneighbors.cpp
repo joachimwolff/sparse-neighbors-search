@@ -101,7 +101,7 @@ int main( int argc, const char* argv[] ) {
     size_t excessFactor = 5;
     int fast = 0;
     int similarity = 0;
-    size_t bloomierFilter = 1;
+    size_t bloomierFilter = 0;
 
     MinHash* minHash = createMinHashObj(numberOfHashFunctions, blockSize, numberOfCores, chunkSize, nNeighbors,
     					minimalBlocksInCommon, maxBinSize, maximalNumberOfHashCollisions,
