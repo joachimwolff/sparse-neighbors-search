@@ -9,6 +9,7 @@ class OrderAndMatchFinder {
   private:
     size_t mModulo;
     size_t mNumberOfElements;
+    size_t mSizeOfBloomFilter;
     bitVector* mBloomFilterInstance;
     bitVector* mBloomFilterInstanceDifferentSeed;
     bitVector* mBloomFilterHashesSeen;
