@@ -9,11 +9,12 @@ BloomierHash::BloomierHash(const size_t pModulo, const size_t pNumberOfElements,
 BloomierHash::~BloomierHash() {
     delete mHash;
 };
-bitVector* BloomierHash::getMask(const size_t pKey) {
-	bitVector* mask = new bitVector(mBitVectorSize);
+bitVector BloomierHash::getMask(const size_t pKey) {
+	// bitVector* mask = new bitVector(mBitVectorSize);
+    bitVector mask(mBitVectorSize);
 	size_t randValue = mHash->hash(pKey+1, mHashSeed, mModulo);
 	for (size_t i = 0; i < mBitVectorSize; ++i) {
-		(*mask)[i] =  static_cast<unsigned char>((randValue >> (8*i)) & 0b00000000000000000000000011111111);
+		mask[i] =  static_cast<unsigned char>((randValue >> (8*i)) & 0b00000000000000000000000011111111);
 	}
 	return mask;
 };
