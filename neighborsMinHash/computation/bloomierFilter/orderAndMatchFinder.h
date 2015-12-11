@@ -31,7 +31,7 @@ class OrderAndMatchFinder {
     vsize_t* findIndexAndReturnNeighborhood(const size_t key);
     vsize_t* getPiVector() const;
     vsize_t* getTauVector() const;
-    size_t getSeed(const size_t pKey) const;
+    bool getValueSeenBefor(const size_t pKey) const;
     void deleteValueInBloomFilterInstance(const size_t pKey);
 };
 #endif // ORDER_AND_MATCH_FINDER_H
