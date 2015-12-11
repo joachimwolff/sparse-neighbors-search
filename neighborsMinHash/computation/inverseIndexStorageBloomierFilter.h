@@ -14,7 +14,7 @@ class InverseIndexStorageBloomierFilter : public InverseIndexStorage {
     InverseIndexStorageBloomierFilter(const size_t pSizeOfInverseIndex, const size_t pMaxBinSize, const size_t pMaximalFeatures);
 	~InverseIndexStorageBloomierFilter();
   	size_t size() const;
-	vsize_t* getElement(size_t pVectorId, size_t pHashValue);
+	const vsize_t* getElement(size_t pVectorId, size_t pHashValue);
 	void insert(size_t pVectorId, size_t pHashValue, size_t pInstance);
 };
 #endif // INVERSE_INDEX_STORAGE_BLOOMIER_FILTER_H
