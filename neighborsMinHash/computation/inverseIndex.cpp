@@ -208,7 +208,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
 }
 
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
-                                        const int pNneighborhood, const bool pDoubleElementsStorageCount) {
+                                        const size_t pNneighborhood, const bool pDoubleElementsStorageCount) {
     size_t doubleElements = 0;
     if (pDoubleElementsStorageCount) {
         doubleElements = mDoubleElementsStorageCount;
@@ -238,7 +238,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             size_t hashID = (*signature)[j];
             if (hashID != 0 && hashID != MAX_VALUE) {
                 size_t collisionSize = 0;
-                vsize_t* instances =  mInverseIndexStorage->getElement(j, hashID);
+                const vsize_t* instances =  mInverseIndexStorage->getElement(j, hashID);
                 if (instances != NULL && instances->size() != 0) {
                     collisionSize = instances->size();
                 } else { 
