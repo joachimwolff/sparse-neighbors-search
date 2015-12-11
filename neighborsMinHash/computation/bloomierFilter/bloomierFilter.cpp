@@ -16,7 +16,6 @@ BloomierFilter::BloomierFilter(const size_t pModulo, const size_t pNumberOfEleme
 	mPiIndex = 0; 
     mMaxBinSize = pMaxBinSize;
     mStoredNeighbors = new std::unordered_map<size_t, vsize_t* >();
-    // mStoredMasks = new std::unordered_map<size_t, bitVector*>();
 }
 
 BloomierFilter::~BloomierFilter() {
@@ -28,7 +27,7 @@ BloomierFilter::~BloomierFilter() {
     delete mValueTable;
     delete mOrderAndMatchFinder;
     delete mBloomierHash;
-    delete mStoredNeighbors;
+    delete mStoredNeighbors; 
 }
 void BloomierFilter::xorOperation(bitVector* pValue, const bitVector* pMask, const vsize_t* pNeighbors) {
     this->xorBitVector(pValue, pMask);
@@ -38,30 +37,26 @@ void BloomierFilter::xorOperation(bitVector* pValue, const bitVector* pMask, con
 		}
 	}
 }
-vsize_t* BloomierFilter::get(const size_t pKey) {
+const vsize_t* BloomierFilter::get(const size_t pKey) {
     
     bool valueSeenBefor = mOrderAndMatchFinder->getValueSeenBefor(pKey);
     if (!valueSeenBefor) return NULL;
     vsize_t* neighbors = (*mStoredNeighbors)[pKey];
     
     if (neighbors == NULL) return NULL;
-	// const bitVector* mask = (*mStoredMasks)[pKey];
-    const bitVector* mask = mBloomierHash->getMask(pKey);
+    const bitVector mask = mBloomierHash->getMask(pKey);
     
      
-	bitVector valueToGet(mBitVectorSize, 0);// = new bitVector(mBitVectorSize, 0);
-	this->xorOperation(&valueToGet, mask, neighbors);
-    delete mask;
+	bitVector valueToGet(mBitVectorSize, 0);
+	this->xorOperation(&valueToGet, &mask, neighbors);
 	const size_t h = mEncoder->decode(&valueToGet);
 	if (h < neighbors->size()) {
 		const size_t L = (*neighbors)[h];
 		if (L < mValueTable->size()) {
-			// delete valueToGet;
             if ((*mValueTable)[L] != NULL) return (*mValueTable)[L];
             return NULL;
 		}
 	}
-	// delete valueToGet;
 	return NULL;
 }
 bool BloomierFilter::set(const size_t pKey, const size_t pValue) {
@@ -73,15 +68,12 @@ bool BloomierFilter::set(const size_t pKey, const size_t pValue) {
     vsize_t* neighbors = (*mStoredNeighbors)[pKey];
     if (neighbors == NULL) return false;
     
-	// const bitVector* mask = (*mStoredMasks)[pKey];
-    const bitVector* mask = mBloomierHash->getMask(pKey);
+    const bitVector mask = mBloomierHash->getMask(pKey);
     
-	bitVector valueToGet(mBitVectorSize, 0);// = new bitVector(mBitVectorSize, 0);
-	this->xorOperation(&valueToGet, mask, neighbors);
+	bitVector valueToGet(mBitVectorSize, 0);
+	this->xorOperation(&valueToGet, &mask, neighbors);
 	const size_t h = mEncoder->decode(&valueToGet);
-    delete mask;
-	
-	// delete valueToGet;
+
 	if (h < neighbors->size()) {
 		const size_t L = (*neighbors)[h];
 		if (L < mValueTable->size()) {
@@ -108,17 +100,14 @@ void BloomierFilter::create(const size_t pKey, const size_t pValue) {
     const vsize_t* piVector = mOrderAndMatchFinder->getPiVector();
 	const vsize_t* tauVector = mOrderAndMatchFinder->getTauVector();
     (*mStoredNeighbors)[pKey] = neighbors;
-    const size_t key = (*piVector)[mPiIndex];
-    // (*mStoredMasks)[pKey] = mBloomierHash->getMask(key);
-    const bitVector* mask = mBloomierHash->getMask(pKey);
+    // const size_t key = (*piVector)[mPiIndex];
+    const bitVector mask = mBloomierHash->getMask(pKey);
     const size_t l = (*tauVector)[mPiIndex];
     const size_t L = (*neighbors)[l];
 
     const bitVector* encodeValue = mEncoder->encode(l);
     this->xorBitVector((*mTable)[L], encodeValue);
-    // this->xorBitVector((*mTable)[L], (*mStoredMasks)[pKey]);
-    this->xorBitVector((*mTable)[L], mask);
-    delete mask;
+    this->xorBitVector((*mTable)[L], &mask);
     
     for (size_t j = 0; j < neighbors->size(); ++j) {
         if (j != l) {
