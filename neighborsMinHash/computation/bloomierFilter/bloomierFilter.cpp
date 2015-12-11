@@ -100,7 +100,6 @@ void BloomierFilter::create(const size_t pKey, const size_t pValue) {
     const vsize_t* piVector = mOrderAndMatchFinder->getPiVector();
 	const vsize_t* tauVector = mOrderAndMatchFinder->getTauVector();
     (*mStoredNeighbors)[pKey] = neighbors;
-    // const size_t key = (*piVector)[mPiIndex];
     const bitVector mask = mBloomierHash->getMask(pKey);
     const size_t l = (*tauVector)[mPiIndex];
     const size_t L = (*neighbors)[l];
