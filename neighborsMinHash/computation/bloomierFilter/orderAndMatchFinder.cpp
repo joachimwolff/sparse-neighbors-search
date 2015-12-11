@@ -1,22 +1,16 @@
-#include <unordered_map>
 #include <cmath>
 #include "orderAndMatchFinder.h"
 
-#ifdef OPENMP
-#include <omp.h>
-#endif
 OrderAndMatchFinder::OrderAndMatchFinder(const size_t pModulo, const size_t pNumberOfElements, BloomierHash* pBloomierHash) {
     mModulo = pModulo;
     mNumberOfElements = pNumberOfElements;
     mPiVector = new vsize_t();
     mTauVector = new vsize_t();
-    mBloomierHash = pBloomierHash;
+    mBloomierHash = pBloomierHash; 
     const size_t sizeOfBloomFilter = ceil(mModulo/ 8.0);
     mBloomFilterHashesSeen = new bitVector(sizeOfBloomFilter);
     mBloomFilterNonSingeltons = new bitVector(sizeOfBloomFilter);
     mBloomFilterInstance = new bitVector(sizeOfBloomFilter);
-    // mBloomFilterInstanceDifferentSeed = new bitVector(sizeOfBloomFilter);
-    // mSeeds = new std::unordered_map<size_t, size_t>;
     mBloomFilterSeed = 42;
 }
 OrderAndMatchFinder::~OrderAndMatchFinder() {
@@ -69,7 +63,6 @@ int OrderAndMatchFinder::tweak(const size_t pKey, vsize_t* pNeighbors) {
     unsigned char index = 0;
     size_t seed = mBloomierHash->getHashSeed();
     while (singelton == -1) {
-        // std::cout << "tweak i:" << i << std::endl;
         mBloomierHash->getKNeighbors(pKey, seed, pNeighbors);
         j = 0;
         bool breakForOpenMp = true;
@@ -77,28 +70,12 @@ int OrderAndMatchFinder::tweak(const size_t pKey, vsize_t* pNeighbors) {
             
             index = floor((*it) / 8.0);
             value = 1 << ((*it) % 8);
-#ifdef OPENMP
-#pragma omp critical
-#endif
-            {
                 valueSeen = (*mBloomFilterHashesSeen)[index] & value;
                 if (value != valueSeen) {
     
                     (*mBloomFilterNonSingeltons)[index] = (*mBloomFilterNonSingeltons)[index] | value;
-                    // if (mBloomierHash->getHashSeed() != seed) {
-                        // index = floor(pKey / 8.0);
-                        // value = 1 << (pKey % 8);
-    
-                        // {
-                            // (*mBloomFilterInstanceDifferentSeed)[index] = (*mBloomFilterInstanceDifferentSeed)[index] | value;
-                            // (*mSeeds)[pKey] = seed;
-                        // }
-                    // } 
                     singelton = j;
                     breakForOpenMp = false;
-                    // it = pNeighbors->end();
-                    // break; 
-                }
             }
             ++j;
         }
@@ -111,7 +88,6 @@ void OrderAndMatchFinder::computeNonSingeltons(const vsize_t* pNeighbors) {
     unsigned char value;
     unsigned char valueSeen;
     unsigned char index;
-    // std::cout << "size if neighbors: " << pNeighbors->size() << std::endl;
     for (auto itNeighbors = pNeighbors->begin(); itNeighbors != pNeighbors->end(); ++itNeighbors) {
         index = floor((*itNeighbors) / 8.0);
         value = 1 << ((*itNeighbors) % 8);
