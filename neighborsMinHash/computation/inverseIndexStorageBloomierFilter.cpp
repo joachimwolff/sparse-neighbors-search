@@ -15,7 +15,7 @@ InverseIndexStorageBloomierFilter::~InverseIndexStorageBloomierFilter() {
 size_t InverseIndexStorageBloomierFilter::size() const{
 	return mInverseIndex->size();
 }
-vsize_t* InverseIndexStorageBloomierFilter::getElement(size_t pVectorId, size_t pHashValue) {
+const vsize_t* InverseIndexStorageBloomierFilter::getElement(size_t pVectorId, size_t pHashValue) {
     return (*mInverseIndex)[pVectorId]->get(pHashValue); 
 }
 void InverseIndexStorageBloomierFilter::insert(size_t pVectorId, size_t pHashValue, size_t pInstance) {
