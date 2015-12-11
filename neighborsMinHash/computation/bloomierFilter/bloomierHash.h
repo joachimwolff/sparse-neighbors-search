@@ -18,7 +18,7 @@ class BloomierHash {
   public:      
     BloomierHash(const size_t pModulo, const size_t pNumberOfElements, const size_t pBitVectorSize, const size_t pHashSeed);
     ~BloomierHash();
-    bitVector* getMask(const size_t pKey);
+    bitVector getMask(const size_t pKey);
     void getKNeighbors(const size_t pElement, const size_t pSeed, vsize_t* pNeighbors);
     size_t getHashSeed() const;
     void setHashSeed(const size_t pHashSeed);
