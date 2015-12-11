@@ -1,6 +1,4 @@
 #include "bloomierHash.h"
-// #include <set>
-// #include <bitset>
 BloomierHash::BloomierHash(const size_t pModulo, const size_t pNumberOfElements, const size_t pBitVectorSize, const size_t pHashSeed) {
 	mModulo = pModulo;
 	mNumberOfElements = pNumberOfElements;
@@ -42,8 +40,6 @@ void BloomierHash::getKNeighbors(const size_t pElement, const size_t pSeed, vsiz
         
         seedChange = 1;
 		(*pNeighbors)[i] = neighbor;
-		// ++pElement;
-		
 	}
     delete bloomFilterValueSeen;
 };
