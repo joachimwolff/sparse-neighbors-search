@@ -1,5 +1,7 @@
 #include "inverseIndexStorageBloomierFilter.h"
-
+#ifdef OPENMP
+#include <omp.h>
+#endif
 InverseIndexStorageBloomierFilter::InverseIndexStorageBloomierFilter(const size_t pSizeOfInverseIndex, const size_t pMaxBinSize, const size_t pMaximalFeatures) {
 	mInverseIndex = new std::vector<BloomierFilter* > (pSizeOfInverseIndex);
 	mMaxBinSize = pMaxBinSize;
@@ -20,5 +22,8 @@ void InverseIndexStorageBloomierFilter::insert(size_t pVectorId, size_t pHashVal
     if ((*mInverseIndex)[pVectorId] == NULL) {
         (*mInverseIndex)[pVectorId] = new BloomierFilter(mM, mK, mQ, 100, mMaxBinSize);
     }
+#ifdef OPENMP
+#pragma omp critical
+#endif
     (*mInverseIndex)[pVectorId]->set(pHashValue, pInstance);
 }
