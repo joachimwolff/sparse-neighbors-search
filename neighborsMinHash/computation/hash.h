@@ -18,9 +18,23 @@ class Hash {
           key = key ^ (key >> 16);
           return key % aModulo;
     }; 
+    
+    short unsigned int shortHashSimple(short unsigned int key, short unsigned int aModulo) {
+          key = key * A;
+          key = ~key + (key << 7);
+          key = key ^ (key >> 6);
+          key = key + (key << 1);
+          key = key ^ (key >> 2);
+          key = key * 1027;
+          key = key ^ (key >> 8);
+          return key % aModulo;
+    };
   public:      
     size_t hash(size_t pKey, size_t pSeed, size_t pModulo) {
         return size_tHashSimple(pKey * pSeed, pModulo);
+    };
+    short unsigned int hashShort(short unsigned int pKey, short unsigned int pSeed, short unsigned int pModulo) {
+        return shortHashSimple(pKey * pSeed, pModulo);
     };
     
     size_t hash_cpp_lib(size_t pKey, size_t pSeed, size_t pModulo) {
