@@ -94,14 +94,15 @@ if (mChunkSize <= 0) {
 
         if (neighborhood_->neighbors->operator[](i).size() != 1) {
             std::vector<sortMapFloat>* exactNeighbors;
-            if (pSimilarity) {
-                exactNeighbors = 
-                    mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), neighborhood_->neighbors->operator[](i)[0], pNneighbors, pRawData);
-            } else {
-                exactNeighbors = 
-                    mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), neighborhood_->neighbors->operator[](i)[0], pNneighbors, pRawData);
-            }
-            
+            if (neighborhood_->neighbors->operator[](i).size() != 0) {
+                if (pSimilarity) {
+                    exactNeighbors = 
+                        mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), neighborhood_->neighbors->operator[](i)[0], pNneighbors, pRawData);
+                } else {
+                    exactNeighbors = 
+                        mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), neighborhood_->neighbors->operator[](i)[0], pNneighbors, pRawData);
+                }
+            } 
             std::vector<int> neighborsVector(exactNeighbors->size());
             std::vector<float> distancesVector(exactNeighbors->size());
 
