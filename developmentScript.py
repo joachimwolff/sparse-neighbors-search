@@ -41,18 +41,40 @@ from eden.graph import Vectorizer
 
 from sklearn.metrics import accuracy_score
 from neighborsMinHash.util import accuracy
+import os.path
 
+def parameter_optimization():
+    fileObject = open("bursiDataset",'r')
+    datasetBursi = pickle.load(fileObject)  
+    # number_of_hash_functions = 10000
+    # max_bin_size = 500 
+    # minimal_blocks_in_common = 100
+    # block_size = 100
+    # excess_factor = 100
+    # for hash_functions in xrange(number_of_hash_functions):
+    #     for bin_sizes in xrange(max_bin_size):
+    #         for blocks_in_common in xrange(minimal_blocks_in_common):
+    #             for block_size_ in xrange(block_size):
+    #                 for excess_factor_ in xrange(excess_factor):
+    #                     minHash = MinHash(number_of_hash_functions=hash_functions, block_size = 4, similarity=True, bloomierFilter=True, number_of_cores=4)
+                        
+    
 def test(data):
 
-
-    graphs = gspan_to_eden( 'http://www.bioinf.uni-freiburg.de/~costa/bursi.gspan' )
-    vectorizer = Vectorizer( r=2,d=5 )
-    datasetBursi = vectorizer.transform( graphs )
-
+    if not os.path.isfile("bursiDataset"):
+        graphs = gspan_to_eden( 'http://www.bioinf.uni-freiburg.de/~costa/bursi.gspan' )
+        vectorizer = Vectorizer( r=2,d=5 )
+        datasetBursi = vectorizer.transform( graphs )
+        fileObject = open("bursiDataset",'wb')
+        pickle.dump(datasetBursi,fileObject)
+        fileObject.close()
+    else:
+        fileObject = open("bursiDataset",'r')
+        datasetBursi = pickle.load(fileObject)  
     # if not os.path.exists("inverse_index.approx"):
     print "Build inverse index for approximate..."
     time_build_approx_start = time.time()
-    minHash = MinHash(number_of_hash_functions=400,block_size = 4, similarity=True, bloomierFilter=True, number_of_cores=4)
+    minHash = MinHash(number_of_hash_functions=400, block_size = 1, similarity=True, bloomierFilter=True, number_of_cores=4)
     # minHash.fit(data[0])
     minHash.fit(datasetBursi)
     print "Fitting time: ",  time.time() - time_build_approx_start
@@ -87,7 +109,7 @@ def test(data):
     print "Time: ", time_comp_approx_end  - time_comp_approx
     print "\n\n"
 
-    minHash2 = MinHash(number_of_hash_functions=400,block_size = 4, similarity=True, bloomierFilter=False, number_of_cores=4)
+    minHash2 = MinHash(number_of_hash_functions=400,block_size = 1, similarity=True, bloomierFilter=False, number_of_cores=4)
     # minHash.fit(data[0])
     time_fit = time.time()
     minHash2.fit(datasetBursi)
@@ -125,7 +147,12 @@ def test(data):
     # print "Exact solution with nearestNeighborsClassifier, distance=True: \n\t" ,nearest_Neighbors.kneighbors(return_distance=True)
     time_comp_end = time.time()
     print "Time: ", time_comp_end - time_comp
-
+    time_comp = time.time()
+    sklearn_10 = nearest_Neighbors.kneighbors(n_neighbors=10, return_distance=False)
+    print "Exact solution with nearestNeighborsClassifier n=10, distance=False: \n\t", sklearn_
+    # print "Exact solution with nearestNeighborsClassifier, distance=True: \n\t" ,nearest_Neighbors.kneighbors(return_distance=True)
+    time_comp_end = time.time()
+    print "Time: ", time_comp_end - time_comp
     
     accuracy_score_ = 0.0
     for x, y in zip(approx1, sklearn_):
@@ -148,9 +175,25 @@ def test(data):
     print "Accuracy_exact: ", accuracy_score_ / float(len(exact_fit))
 
     exact_a, approx_a, exacr_approx = accuracy(exact1, approx1, sklearn_)
-    print "Accuracy neighborhood: "
+    print "Accuracy neighborhood bloomier: "
     print "Accuracy_approx: ", approx_a
     print "Accuracy_exact: ", exact_a
+    
+    exact_a, approx_a, exacr_approx = accuracy(exact_fit, approx_fit, sklearn_)
+    print "Accuracy neighborhood unordered_map: "
+    print "Accuracy_approx: ", approx_a
+    print "Accuracy_exact: ", exact_a
+    
+    exact_a, approx_a, exacr_approx = accuracy(exact1, approx1, sklearn_10)
+    print "Accuracy neighborhood bloomier 5 out of 10: "
+    print "Accuracy_approx: ", approx_a
+    print "Accuracy_exact: ", exact_a
+    
+    exact_a, approx_a, exacr_approx = accuracy(exact_fit, approx_fit, sklearn_10)
+    print "Accuracy neighborhood unordered_map 5 out of 10: "
+    print "Accuracy_approx: ", approx_a
+    print "Accuracy_exact: ", exact_a
+   
 def create_dataset(seed=None,
                    number_of_centroids=None,
                    number_of_instances=None,
