@@ -8,10 +8,13 @@ OrderAndMatchFinder::OrderAndMatchFinder(const size_t pModulo, const size_t pNum
     mTauVector = new vsize_t();
     mBloomierHash = pBloomierHash; 
     mSizeOfBloomFilter = ceil(mModulo/ 8.0);
-    mBloomFilterHashesSeen = new bitVector(mSizeOfBloomFilter);
-    mBloomFilterNonSingeltons = new bitVector(mSizeOfBloomFilter);
-    mBloomFilterInstance = new bitVector(mSizeOfBloomFilter);
+    mBloomFilterHashesSeen = new bitVector[mSizeOfBloomFilter];
+    mBloomFilterNonSingeltons = new bitVector[mSizeOfBloomFilter];
+    mBloomFilterInstance = new bitVector[mSizeOfBloomFilter];
+    mBloomFilterDifferentHashSeed = new bitVector[mSizeOfBloomFilter];
     mBloomFilterSeed = 42;
+    mSeeds = new std::unordered_map<size_t, size_t>();
+
 }
 OrderAndMatchFinder::~OrderAndMatchFinder() {
     delete mPiVector;
@@ -33,6 +36,13 @@ bool OrderAndMatchFinder::getValueSeenBefor(const size_t pKey) const{
     const unsigned char valueSeenBefor = (*mBloomFilterInstance)[index] & value;
     if (valueSeenBefor == value) return true;
     return false;
+}
+size_t OrderAndMatchFinder::getHashSeed(size_t pKey) {
+    const unsigned char index = pKey / mSizeOfBloomFilter;
+    const unsigned char value = 1 << (pKey % 8);
+    const unsigned char valueSeenBefor = (*mBloomFilterDifferentHashSeed)[index] & value;
+    if (valueSeenBefor == value) return (*mSeeds)[pKey];
+    return MAX_VALUE;
 }
 void OrderAndMatchFinder::findMatch(const size_t pKey, vsize_t* pNeighbors) {
     const int singeltonValue = this->tweak(pKey, pNeighbors);
@@ -76,6 +86,12 @@ int OrderAndMatchFinder::tweak(const size_t pKey, vsize_t* pNeighbors) {
                     (*mBloomFilterNonSingeltons)[index] = (*mBloomFilterNonSingeltons)[index] | value;
                     singelton = j;
                     breakForOpenMp = false;
+                    if (seed != mBloomierHash->getHashSeed()) {
+                        (*mSeeds)[pKey] = seed;
+                        index = pKey / mSizeOfBloomFilter;
+                        value = 1 << (pKey % 8);
+                        (*mBloomFilterDifferentHashSeed)[index] = (*mBloomFilterDifferentHashSeed)[index] | value;
+                    }
             }
             ++j;
         }

@@ -53,7 +53,7 @@ struct sortMapFloat {
     float val;
 };
 
-typedef std::vector<unsigned char> bitVector;
+typedef unsigned char* bitVector;
 
 typedef std::vector<bitVector*> bloomierTable;
 

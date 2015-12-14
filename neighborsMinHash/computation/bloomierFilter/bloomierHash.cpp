@@ -11,7 +11,7 @@ BloomierHash::~BloomierHash() {
 };
 bitVector BloomierHash::getMask(const size_t pKey) {
 	// bitVector* mask = new bitVector(mBitVectorSize);
-    bitVector mask(mBitVectorSize);
+    bitVector mask = new bitVector [mBitVectorSize];
 	size_t randValue = mHash->hash(pKey+1, mHashSeed, mModulo);
 	for (size_t i = 0; i < mBitVectorSize; ++i) {
 		mask[i] =  static_cast<unsigned char>((randValue >> (8*i)) & 0b00000000000000000000000011111111);
@@ -24,20 +24,20 @@ void BloomierHash::getKNeighbors(const size_t pElement, const size_t pSeed, vsiz
         seedValue = mHashSeed;
     }
     size_t seedChange = 1;
-    bitVector* bloomFilterValueSeen = new bitVector(ceil(mModulo/8.0));
+    bitVector bloomFilterValueSeen = new bitVector[ceil(mModulo/8.0)];
 	for (size_t i = 0; i < pNeighbors->size(); ++i) {
 		size_t neighbor = mHash->hash(pElement+i, seedValue+seedChange, mModulo);
         unsigned char index = floor(neighbor / 8.0);
         unsigned char value = 1 << (neighbor % 8);
-        unsigned char valueSeen = (*bloomFilterValueSeen)[index] & value;
+        unsigned char valueSeen = bloomFilterValueSeen[index] & value;
         while (value == valueSeen) {
             ++seedChange;
             neighbor = mHash->hash(pElement+1, (seedValue+seedChange), mModulo);
             index = floor(neighbor / 8.0);
             value = 1 << (neighbor % 8);
-            valueSeen = (*bloomFilterValueSeen)[index] & value;
+            valueSeen = bloomFilterValueSeen[index] & value;
         }
-        (*bloomFilterValueSeen)[index] = (*bloomFilterValueSeen)[index] | value;
+        bloomFilterValueSeen[index] = bloomFilterValueSeen[index] | value;
         
         seedChange = 1;
 		(*pNeighbors)[i] = neighbor;
