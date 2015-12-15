@@ -14,8 +14,6 @@ class OrderAndMatchFinder {
     bitVector* mBloomFilterInstanceDifferentSeed;
     bitVector* mBloomFilterHashesSeen;
     bitVector* mBloomFilterNonSingeltons;
-    bitVector* mBloomFilterDifferentHashSeed;
-
     size_t mBloomFilterSeed;
     vsize_t* mPiVector;
     vsize_t* mTauVector;
@@ -36,6 +34,5 @@ class OrderAndMatchFinder {
     vsize_t* getTauVector() const;
     bool getValueSeenBefor(const size_t pKey) const;
     void deleteValueInBloomFilterInstance(const size_t pKey);
-    size_t getHashSeed(size_t pKey);
 };
 #endif // ORDER_AND_MATCH_FINDER_H
