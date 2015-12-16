@@ -8,38 +8,53 @@ OrderAndMatchFinder::OrderAndMatchFinder(const size_t pModulo, const size_t pNum
     mTauVector = new vsize_t();
     mBloomierHash = pBloomierHash; 
     mSizeOfBloomFilter = ceil(mModulo/ 8.0);
-    mBloomFilterHashesSeen = new bitVector(mSizeOfBloomFilter);
-    mBloomFilterNonSingeltons = new bitVector(mSizeOfBloomFilter);
-    mBloomFilterInstance = new bitVector(mSizeOfBloomFilter);
+    mBloomFilterHashesSeen = new bitVector[mSizeOfBloomFilter];
+    mBloomFilterNonSingeltons = new bitVector[mSizeOfBloomFilter];
+    mBloomFilterInstance = new bitVector[mSizeOfBloomFilter];
+    mBloomFilterInstanceDifferentSeed = new bitVector[mSizeOfBloomFilter];
+    for (size_t i = 0; i < mSizeOfBloomFilter; ++i) {
+        mBloomFilterHashesSeen[i] = 0;
+        mBloomFilterNonSingeltons[i] = 0;
+        mBloomFilterInstance[i] = 0;
+        mBloomFilterInstanceDifferentSeed[i] = 0;
+    }
     mBloomFilterSeed = 42;
+    mSeeds = new std::unordered_map<size_t, size_t>();
 }
 OrderAndMatchFinder::~OrderAndMatchFinder() {
     delete mPiVector;
     delete mTauVector;
     delete mSeeds;
-    delete mBloomFilterHashesSeen;
-    delete mBloomFilterNonSingeltons;
-    delete mBloomFilterInstance;
-    delete mBloomFilterInstanceDifferentSeed;
+    delete [] mBloomFilterHashesSeen;
+    delete [] mBloomFilterNonSingeltons;
+    delete [] mBloomFilterInstance;
+    delete [] mBloomFilterInstanceDifferentSeed;
 }
 void OrderAndMatchFinder::deleteValueInBloomFilterInstance(const size_t pKey) {
     const unsigned char index = pKey / mSizeOfBloomFilter;
     const unsigned char value = 1 << (pKey % 8);
-    (*mBloomFilterInstance)[index] = (*mBloomFilterInstance)[index] ^ value;
+    mBloomFilterInstance[index] = mBloomFilterInstance[index] ^ value;
 }
-bool OrderAndMatchFinder::getValueSeenBefor(const size_t pKey) const{
+bool OrderAndMatchFinder::getValueSeenBefor(const size_t pKey) const {
     const unsigned char index = pKey / mSizeOfBloomFilter;
     const unsigned char value = 1 << (pKey % 8);
-    const unsigned char valueSeenBefor = (*mBloomFilterInstance)[index] & value;
+    const unsigned char valueSeenBefor = mBloomFilterInstance[index] & value;
     if (valueSeenBefor == value) return true;
     return false;
+}
+size_t OrderAndMatchFinder::getSeed(const size_t pKey) const {
+    const unsigned char index = pKey / mSizeOfBloomFilter;
+    const unsigned char value = 1 << (pKey % 8);
+    const unsigned char valueSeenBefor = mBloomFilterInstanceDifferentSeed[index] & value;
+    if (valueSeenBefor == value) return (*mSeeds)[pKey];
+    return mBloomierHash->getHashSeed();
 }
 void OrderAndMatchFinder::findMatch(const size_t pKey, vsize_t* pNeighbors) {
     const int singeltonValue = this->tweak(pKey, pNeighbors);
     this->computeNonSingeltons(pNeighbors);
     const unsigned char index = pKey / mSizeOfBloomFilter;
     const unsigned char value = 1 << (pKey % 8);
-    (*mBloomFilterInstance)[index] = (*mBloomFilterInstance)[index] | value;
+    mBloomFilterInstance[index] = mBloomFilterInstance[index] | value;
     mPiVector->push_back(pKey);
     mTauVector->push_back(singeltonValue);
 }
@@ -70,12 +85,18 @@ int OrderAndMatchFinder::tweak(const size_t pKey, vsize_t* pNeighbors) {
             
             index = (*it) / mSizeOfBloomFilter;
             value = 1 << ((*it) % 8);
-                valueSeen = (*mBloomFilterHashesSeen)[index] & value;
-                if (value != valueSeen) {
-    
-                    (*mBloomFilterNonSingeltons)[index] = (*mBloomFilterNonSingeltons)[index] | value;
-                    singelton = j;
-                    breakForOpenMp = false;
+            valueSeen = mBloomFilterHashesSeen[index] & value;
+            if (value != valueSeen) {
+
+                mBloomFilterNonSingeltons[index] = mBloomFilterNonSingeltons[index] | value;
+                singelton = j;
+                breakForOpenMp = false;
+                if (seed != mBloomierHash->getHashSeed()) {
+                    (*mSeeds)[pKey] = seed;
+                    index = pKey / mSizeOfBloomFilter;
+                    value = 1 << (pKey % 8);
+                    mBloomFilterInstanceDifferentSeed[index] = mBloomFilterInstanceDifferentSeed[index] | value;
+                }
             }
             ++j;
         }
@@ -91,9 +112,9 @@ void OrderAndMatchFinder::computeNonSingeltons(const vsize_t* pNeighbors) {
     for (auto itNeighbors = pNeighbors->begin(); itNeighbors != pNeighbors->end(); ++itNeighbors) {
         index = (*itNeighbors) / mSizeOfBloomFilter;
         value = 1 << ((*itNeighbors) % 8);
-        valueSeen = (*mBloomFilterHashesSeen)[index] & value;
+        valueSeen = mBloomFilterHashesSeen[index] & value;
         if (valueSeen == value) {
-            (*mBloomFilterNonSingeltons)[index] = (*mBloomFilterNonSingeltons)[index] | value;
+            mBloomFilterNonSingeltons[index] = mBloomFilterNonSingeltons[index] | value;
         }
     }
     // for (auto itNeighbors = pNeighbors->begin(); itNeighbors != pNeighbors->end(); ++itNeighbors){

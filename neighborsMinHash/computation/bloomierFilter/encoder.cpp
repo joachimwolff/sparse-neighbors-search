@@ -9,17 +9,17 @@ Encoder::Encoder(size_t pBitVectorSize) {
 	}
 }
 bitVector* Encoder::encode(size_t pValue) {
-	bitVector* value = new bitVector(mBitVectorSize, 0);
+	bitVector* value = new bitVector(mBitVectorSize);
 	for (size_t i = 0; i < mBitVectorSize; ++i) {
-		(*value)[i] = (pValue & (*mMaskingValues)[i]) >> (8*i);
+		value[i] = (pValue & (*mMaskingValues)[i]) >> (8*i);
 	}
 	return value;
 }
-size_t Encoder::decode(bitVector* pValue) {
+size_t Encoder::decode(bitVector* pValue, size_t pSizeOfValue) {
 	size_t value = 0;
 	size_t castValue = 0;
-	for (size_t i = 0; i < pValue->size(); ++i) {
-		castValue = (*pValue)[i];
+	for (size_t i = 0; i < pSizeOfValue; ++i) {
+		castValue = pValue[i];
 		value = value | (castValue << (8*i));
 	}
 	return value;

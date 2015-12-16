@@ -19,7 +19,7 @@ class BloomierFilter {
     Encoder* mEncoder; 
     size_t mPiIndex;
     size_t mMaxBinSize;
-    std::unordered_map<size_t, vsize_t* >* mStoredNeighbors;
+    // std::unordered_map<size_t, vsize_t* >* mStoredNeighbors;
     void create( size_t pKey, size_t pValue);
     
   public:      

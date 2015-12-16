@@ -34,5 +34,6 @@ class OrderAndMatchFinder {
     vsize_t* getTauVector() const;
     bool getValueSeenBefor(const size_t pKey) const;
     void deleteValueInBloomFilterInstance(const size_t pKey);
+    size_t getSeed(const size_t pKey) const;
 };
 #endif // ORDER_AND_MATCH_FINDER_H
