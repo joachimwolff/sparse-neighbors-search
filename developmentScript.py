@@ -154,45 +154,49 @@ def test(data):
     time_comp_end = time.time()
     print "Time: ", time_comp_end - time_comp
     
+    print "\n\nAccuracy per position: "
     accuracy_score_ = 0.0
     for x, y in zip(approx1, sklearn_):
         accuracy_score_ += accuracy_score(x, y)
-    print "Accuracy_approx: ", accuracy_score_ / float(len(approx1))
+    print "\tBloomier filter:"
+    print "\t\tfast: ", accuracy_score_ / float(len(approx1))
 
     accuracy_score_ = 0.0
     for x, y in zip(exact1, sklearn_):
         accuracy_score_ += accuracy_score(x, y)
-    print "Accuracy_exact: ", accuracy_score_ / float(len(exact1))
-
+    print "\t\tnon fast: ", accuracy_score_ / float(len(exact1))
+    print "\tUnordered_map:"
     accuracy_score_ = 0.0
     for x, y in zip(approx_fit, sklearn_):
         accuracy_score_ += accuracy_score(x, y)
-    print "Accuracy_approx: ", accuracy_score_ / float(len(approx_fit))
+    print "\t\tfast: ", accuracy_score_ / float(len(approx_fit))
 
     accuracy_score_ = 0.0
     for x, y in zip(exact_fit, sklearn_):
         accuracy_score_ += accuracy_score(x, y)
-    print "Accuracy_exact: ", accuracy_score_ / float(len(exact_fit))
+    print "\t\tnon fast: ", accuracy_score_ / float(len(exact_fit))
 
     exact_a, approx_a, exacr_approx = accuracy(exact1, approx1, sklearn_)
-    print "Accuracy neighborhood bloomier: "
-    print "Accuracy_approx: ", approx_a
-    print "Accuracy_exact: ", exact_a
+    print "\nAccuracy neighborhood:"
+    print "\tBloomier filter:"
+    print "\t\tfast: ", approx_a
+    print "\t\tnon fast: ", exact_a
     
     exact_a, approx_a, exacr_approx = accuracy(exact_fit, approx_fit, sklearn_)
-    print "Accuracy neighborhood unordered_map: "
-    print "Accuracy_approx: ", approx_a
-    print "Accuracy_exact: ", exact_a
+    print "\tUnordered map:"
+    print "\t\tfast: ", approx_a
+    print "\t\tnon fast: ", exact_a
     
     exact_a, approx_a, exacr_approx = accuracy(exact1, approx1, sklearn_10)
-    print "Accuracy neighborhood bloomier 5 out of 10: "
-    print "Accuracy_approx: ", approx_a
-    print "Accuracy_exact: ", exact_a
+    print "\nAccuracy neighborhood 5 out of 10: "
+    print "\tBloomier filter:"
+    print "\t\tfast: ", approx_a
+    print "\t\tnon fast: ", exact_a
     
     exact_a, approx_a, exacr_approx = accuracy(exact_fit, approx_fit, sklearn_10)
-    print "Accuracy neighborhood unordered_map 5 out of 10: "
-    print "Accuracy_approx: ", approx_a
-    print "Accuracy_exact: ", exact_a
+    print "\tUnordered map:"
+    print "\t\tfast: ", approx_a
+    print "\t\tnon fast: ", exact_a
    
 def create_dataset(seed=None,
                    number_of_centroids=None,
