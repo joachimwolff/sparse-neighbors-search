@@ -43,6 +43,7 @@ const vsize_t* BloomierFilter::get(const size_t pKey) {
     if (!valueSeenBefor) return NULL;
     
     vsize_t* neighbors = new vsize_t(mNumberOfElements);
+    // std::cout << "Seed: " <<  mOrderAndMatchFinder->getSeed(pKey) << std::endl;
     mBloomierHash->getKNeighbors(pKey, mOrderAndMatchFinder->getSeed(pKey), neighbors);
     // std::cout << "KEY: " << pKey << std::endl;
     
@@ -51,7 +52,7 @@ const vsize_t* BloomierFilter::get(const size_t pKey) {
     const bitVector* mask = mBloomierHash->getMask(pKey);
     
     // std::cout << "LINE: " << __LINE__ << std::endl;
-     
+    //  
 	bitVector* valueToGet = new bitVector[mBitVectorSize];
 	this->xorOperation(valueToGet, mask, neighbors);
 	const size_t h = mEncoder->decode(valueToGet, mBitVectorSize);
