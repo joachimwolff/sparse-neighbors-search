@@ -7,8 +7,8 @@ class Hash {
     const double A = sqrt(2) - 1;
     
     size_t size_tHashSimple(size_t key, size_t aModulo) {
-          // std::hash<size_t> hash;
-          // return hash(key);
+          // source:  Thomas Wang: Integer Hash Functions, 1997 / 2007 
+          // https://gist.github.com/badboy/6267743
           key = key * A;
           key = ~key + (key << 15);
           key = key ^ (key >> 12);
