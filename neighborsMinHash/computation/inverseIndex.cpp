@@ -234,12 +234,10 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         
         std::unordered_map<size_t, size_t> neighborhood;
         const vsize_t* signature = instanceId->second->signature;
-        // std::cout << __LINE__ <<  std::endl;
         for (size_t j = 0; j < signature->size(); ++j) {
             size_t hashID = (*signature)[j];
             if (hashID != 0 && hashID != MAX_VALUE) {
                 size_t collisionSize = 0;
-                    // std::cout << "LINE: " << __LINE__ << std::endl;
 
                 const vsize_t* instances = mInverseIndexStorage->getElement(j, hashID);
                 if (instances != NULL && instances->size() != 0) {
@@ -247,7 +245,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 } else { 
                     continue;
                 }
-
+                
                 if (collisionSize < mMaxBinSize && collisionSize > 0) {
                     for (size_t k = 0; k < instances->size(); ++k) {
                         neighborhood[instances->at(k)] += 1;
