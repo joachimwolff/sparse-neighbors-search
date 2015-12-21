@@ -10,12 +10,12 @@ class OrderAndMatchFinder {
     size_t mModulo;
     size_t mNumberOfElements;
     size_t mSizeOfBloomFilter;
-    bitVector* mBloomFilterInstance;
-    bitVector* mBloomFilterInstanceDifferentSeed;
+    // bitVector* mBloomFilterInstance;
+    // bitVector* mBloomFilterInstanceDifferentSeed;
     bitVector* mBloomFilterHashesSeen;
-    bitVector* mBloomFilterNonSingeltons;
+    // bitVector* mBloomFilterNonSingeltons;
     size_t mBloomFilterSeed;
-    vsize_t* mPiVector;
+    // vsize_t* mPiVector;
     vsize_t* mTauVector;
     
     BloomierHash* mBloomierHash;
@@ -30,10 +30,10 @@ class OrderAndMatchFinder {
   	OrderAndMatchFinder(const size_t pModulo, const size_t pNumberOfElements, BloomierHash* pBloomierHash);
     ~OrderAndMatchFinder();
     vsize_t* findIndexAndReturnNeighborhood(const size_t key);
-    vsize_t* getPiVector() const;
+    // vsize_t* getPiVector() const;
     vsize_t* getTauVector() const;
-    bool getValueSeenBefor(const size_t pKey) const;
-    void deleteValueInBloomFilterInstance(const size_t pKey);
-    size_t getSeed(const size_t pKey) const;
+    // bool getValueSeenBefor(const size_t pKey) const;
+    // void deleteValueInBloomFilterInstance(const size_t pKey);
+    // size_t getSeed(const size_t pKey) const;
 };
 #endif // ORDER_AND_MATCH_FINDER_H
