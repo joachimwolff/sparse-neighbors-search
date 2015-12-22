@@ -31,6 +31,7 @@ class BloomierFilter {
     void xorBitVector(bitVector* pResult, const bitVector* pInput);
     void xorOperation(bitVector* pValue, const bitVector* pM, const vsize_t* pNeighbors);
     const vsize_t* get(const size_t pKey);
-    bool set(const size_t pKey, const size_t pValue);
+    void set(const size_t pKey, const size_t pValue);
+    // bool singelton(const size_t pIndex) const;
 };
 #endif // BLOOMIER_FILTER_H

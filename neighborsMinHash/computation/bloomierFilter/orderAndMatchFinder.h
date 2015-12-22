@@ -17,23 +17,23 @@ class OrderAndMatchFinder {
     size_t mBloomFilterSeed;
     // vsize_t* mPiVector;
     vsize_t* mTauVector;
-    
+    std::set<size_t>* mDifferentSeed;
     BloomierHash* mBloomierHash;
     std::unordered_map<size_t, size_t>* mSeeds;
     const Hash* mHash;
-    void findMatch(const size_t pKey, vsize_t* pNeighbors);
+    void findMatch(const size_t pKey, vsize_t* pNeighbors, const vvsize_t_p* pValueTable);
     FRIEND_TEST(OrderAndMatchFinderTest, computeNonSingeltonsTest);
     void computeNonSingeltons(const vsize_t* pNeighbors);
     FRIEND_TEST(OrderAndMatchFinderTest, tweakTest);
-    int tweak(const size_t pKey, vsize_t* pNeighbors);
+    int tweak(const size_t pKey, vsize_t* pNeighbors, const vvsize_t_p* pValueTable);
   public:
   	OrderAndMatchFinder(const size_t pModulo, const size_t pNumberOfElements, BloomierHash* pBloomierHash);
     ~OrderAndMatchFinder();
-    vsize_t* findIndexAndReturnNeighborhood(const size_t key);
+    vsize_t* findIndexAndReturnNeighborhood(const size_t key, const vvsize_t_p* pValueTable);
     // vsize_t* getPiVector() const;
     vsize_t* getTauVector() const;
     // bool getValueSeenBefor(const size_t pKey) const;
     // void deleteValueInBloomFilterInstance(const size_t pKey);
-    // size_t getSeed(const size_t pKey) const;
+    size_t getSeed(const size_t pKey) const;
 };
 #endif // ORDER_AND_MATCH_FINDER_H

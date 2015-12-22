@@ -201,10 +201,14 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
                  mDoubleElementsStorageCount += 1;
             }
         }
+    std::cout << "insert value: ";
+        
         for (size_t j = 0; j < signature->size(); ++j) {
+            std::cout << "vector number: " << j << " signature: " << (*signature)[j] << std::endl;
             mInverseIndexStorage->insert(j, (*signature)[j], index);
         }
     }
+    std::cout << "Fitting done! " << std::endl;
 }
 
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
