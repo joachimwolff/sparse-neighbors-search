@@ -324,5 +324,11 @@ static PyObject* radiusNeighborhoodGraph(const neighborhood* pNeighborhood, cons
     PyList_SetItem(graph, 2, dataList);
     return graph;
 }
-
+static PyObject* parseDistributionOfInverseIndex(std::map<size_t, size_t>* distribution) {
+    PyObject* distributionVector = PyDict_New();
+    for (auto it = distribution->begin(); it != distribution->end(); ++it) {
+        PyDict_SetItem(distributionVector, Py_BuildValue("i", it->first), Py_BuildValue("i", it->second));
+    }
+    return distributionVector;
+}
 #endif // PARSE_H
