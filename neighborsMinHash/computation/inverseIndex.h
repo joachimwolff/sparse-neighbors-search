@@ -36,7 +36,8 @@ class InverseIndex {
     
     size_t mDoubleElementsStorageCount = 0;
     size_t mDoubleElementsQueryCount = 0;
-
+    int mPruneInverseIndex;
+    float mPruneInverseIndexAfterInstance;
     InverseIndexStorage* mInverseIndexStorage;
   	umap_uniqueElement* mSignatureStorage;
     Hash* mHash;
@@ -45,7 +46,8 @@ class InverseIndex {
   	InverseIndex(size_t pNumberOfHashFunctions, size_t pBlockSize,
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize, size_t pMinimalBlocksInCommon,
-                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, size_t pBloomierFilter);
+                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, size_t pBloomierFilter,
+                    int pPruneInverseIndex, float pPruneInverseIndexAfterInstance);
     ~InverseIndex();
   	vsize_t* computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance);
   	umap_uniqueElement* computeSignatureMap(const SparseMatrixFloat* pRawData);
@@ -54,5 +56,6 @@ class InverseIndex {
   	umap_uniqueElement* getSignatureStorage() { 
       return mSignatureStorage;
     };
+    std::map<size_t, size_t>* getDistribution();
 };
 #endif // INVERSE_INDEX_H

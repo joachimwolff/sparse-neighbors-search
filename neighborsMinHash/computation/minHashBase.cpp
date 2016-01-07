@@ -24,12 +24,14 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pBlockSize,
                     size_t pMaxBinSize,
                     size_t pSizeOfNeighborhood, size_t pMinimalBlocksInCommon,
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions,
-                    int pFast, int pSimilarity, size_t pBloomierFilter) {
+                    int pFast, int pSimilarity, size_t pBloomierFilter,
+                    int pPruneInverseIndex, float pPruneInverseIndexAfterInstance) {
 
         mInverseIndex = new InverseIndex(pNumberOfHashFunctions, pBlockSize,
                                     pNumberOfCores, pChunkSize,
                                     pMaxBinSize, pMinimalBlocksInCommon, 
-                                    pExcessFactor, pMaximalNumberOfHashCollisions, pBloomierFilter);
+                                    pExcessFactor, pMaximalNumberOfHashCollisions, pBloomierFilter,
+                                    pPruneInverseIndex, pPruneInverseIndexAfterInstance);
     
         mNneighbors = pSizeOfNeighborhood;
         mFast = pFast;
@@ -132,4 +134,8 @@ if (mChunkSize <= 0) {
     delete neighborhood_;
 
     return neighborhoodExact;
+}
+
+std::map<size_t, size_t>* MinHashBase::getDistributionOfInverseIndex() {
+    return mInverseIndex->getDistribution();
 }

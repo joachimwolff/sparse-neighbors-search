@@ -40,7 +40,8 @@ class MinHashBase {
                     size_t pMaxBinSize,
                     size_t pSizeOfNeighborhood, size_t pMinimalBlocksInCommon,
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, 
-                    int pFast, int pSimilarity, size_t pBloomierFilter);
+                    int pFast, int pSimilarity, size_t pBloomierFilter,
+                    int pPruneInverseIndex, float pPruneInverseIndexAfterInstance);
 
   	~MinHashBase();
     // Calculate the inverse index for the given instances.
@@ -56,5 +57,6 @@ class MinHashBase {
       return;
     }
     size_t getNneighbors() { return mNneighbors; };
+    std::map<size_t, size_t>* getDistributionOfInverseIndex();
 };
 #endif // MIN_HASH_BASE_H

@@ -12,6 +12,12 @@ InverseIndexStorageBloomierFilter::InverseIndexStorageBloomierFilter(const size_
 InverseIndexStorageBloomierFilter::~InverseIndexStorageBloomierFilter() {
 	
 }
+std::map<size_t, size_t>* InverseIndexStorageBloomierFilter::getDistribution(){
+    
+}
+void InverseIndexStorageBloomierFilter::prune(int pValue) {
+    
+}
 size_t InverseIndexStorageBloomierFilter::size() const {
 	return mInverseIndex->size();
 }

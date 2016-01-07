@@ -34,7 +34,8 @@ bool mapSortDescByValue(const sort_map& a, const sort_map& b) {
 InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pBlockSize,
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize, size_t pMinimalBlocksInCommon,
-                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, size_t pBloomierFilter) {   
+                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, size_t pBloomierFilter,
+                    int pPruneInverseIndex, float pPruneInverseIndexAfterInstance) {   
                         
     mNumberOfHashFunctions = pNumberOfHashFunctions;
     mBlockSize = pBlockSize;
@@ -44,6 +45,9 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pBlockSize,
     mMinimalBlocksInCommon = pMinimalBlocksInCommon;
     mExcessFactor = pExcessFactor;
     mMaximalNumberOfHashCollisions = pMaximalNumberOfHashCollisions;
+    mPruneInverseIndex = pPruneInverseIndex;
+    mPruneInverseIndexAfterInstance = pPruneInverseIndexAfterInstance;
+    
     mSignatureStorage = new umap_uniqueElement();
     mHash = new Hash();
     size_t maximalFeatures = 5000;
@@ -70,6 +74,11 @@ InverseIndex::~InverseIndex() {
     delete mSignatureStorage;
     delete mHash;
 }
+
+std::map<size_t, size_t>* InverseIndex::getDistribution() {
+    return mInverseIndexStorage->getDistribution();
+}
+
  // compute the signature for one instance
 vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance) {
 
@@ -162,6 +171,8 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     return instanceSignature;
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
+    size_t pruneEveryNInterations = pRawData->size() * mPruneInverseIndexAfterInstance;
+    size_t pruneCount = 0;
     mDoubleElementsStorageCount = 0;
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
@@ -188,7 +199,8 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
 #ifdef OPENMP
 #pragma omp critical
 #endif
-        {    
+        {   
+            ++pruneCount;
             if (itSignatureStorage == mSignatureStorage->end()) {
                 vsize_t* doubleInstanceVector = new vsize_t(1);
                 (*doubleInstanceVector)[0] = index;
@@ -201,14 +213,25 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
                  mDoubleElementsStorageCount += 1;
             }
         }
-    std::cout << "insert value: ";
         
         for (size_t j = 0; j < signature->size(); ++j) {
-            std::cout << "vector number: " << j << " signature: " << (*signature)[j] << std::endl;
             mInverseIndexStorage->insert(j, (*signature)[j], index);
         }
+        if (mPruneInverseIndexAfterInstance > 0) {
+#ifdef OPENMP
+#pragma omp critical
+#endif
+            {
+                if (pruneCount >= pruneEveryNInterations) {
+                    pruneCount = 0;
+                    mInverseIndexStorage->prune(mPruneInverseIndex);
+                }
+            }           
+        }
     }
-    std::cout << "Fitting done! " << std::endl;
+    if (mPruneInverseIndex > 0) {
+        mInverseIndexStorage->prune(mPruneInverseIndex);
+    }
 }
 
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 

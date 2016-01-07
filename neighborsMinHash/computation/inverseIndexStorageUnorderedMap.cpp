@@ -50,3 +50,33 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
         }
     }
 }
+
+std::map<size_t, size_t>* InverseIndexStorageUnorderedMap::getDistribution() {
+    std::cout << __LINE__ << std::endl;
+    std::map<size_t, size_t>* distribution = new std::map<size_t, size_t>();
+    std::cout << __LINE__ << std::endl;
+    
+    for (auto it = mSignatureStorage->begin(); it != mSignatureStorage->end(); ++it) {
+        for (auto itMap = it->begin(); itMap != it->end(); ++itMap) {
+            (*distribution)[itMap->second.size()] += 1;
+        }
+    }
+    std::cout << __LINE__ << std::endl;
+
+    return distribution;
+}
+void InverseIndexStorageUnorderedMap::prune(int pValue) {
+    for (auto it = mSignatureStorage->begin(); it != mSignatureStorage->end(); ++it) {
+        vsize_t elementsToDelete;
+        for (auto itMap = it->begin(); itMap != it->end(); ++itMap) {
+            if (itMap->second.size() <= pValue) {
+                elementsToDelete.push_back(itMap->first);
+            }
+            // (*distribution)[itMap->second.size()] += 1;
+        }
+        for (size_t i = 0; i < elementsToDelete.size(); ++i) {
+            it->erase(elementsToDelete[i]);
+        }
+        elementsToDelete.clear();
+    }
+}
