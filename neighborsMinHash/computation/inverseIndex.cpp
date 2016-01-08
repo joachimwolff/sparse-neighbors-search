@@ -226,7 +226,13 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
             {
                 if (pruneCount >= pruneEveryNInterations) {
                     pruneCount = 0;
-                    mInverseIndexStorage->prune(mPruneInverseIndex);
+                    
+                    if (mPruneInverseIndex > 0) {
+                        mInverseIndexStorage->prune(mPruneInverseIndex);
+                    }
+                    if (mRemoveHashFunctionWithLessEntriesAs >= 0) {
+                        mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
+                    }
                 }
             }           
         }
@@ -234,7 +240,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     if (mPruneInverseIndex > 0) {
         mInverseIndexStorage->prune(mPruneInverseIndex);
     }
-    if (mRemoveHashFunctionWithLessEntriesAs > 0) {
+    if (mRemoveHashFunctionWithLessEntriesAs >= 0) {
         mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
     }
 }
