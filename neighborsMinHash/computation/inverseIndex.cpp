@@ -35,7 +35,7 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize, size_t pMinimalBlocksInCommon,
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, size_t pBloomierFilter,
-                    int pPruneInverseIndex, float pPruneInverseIndexAfterInstance) {   
+                    int pPruneInverseIndex, float pPruneInverseIndexAfterInstance, int pRemoveHashFunctionWithLessEntriesAs) {   
                         
     mNumberOfHashFunctions = pNumberOfHashFunctions;
     mShingleSize = pShingleSize;
@@ -47,7 +47,7 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
     mMaximalNumberOfHashCollisions = pMaximalNumberOfHashCollisions;
     mPruneInverseIndex = pPruneInverseIndex;
     mPruneInverseIndexAfterInstance = pPruneInverseIndexAfterInstance;
-    
+    mRemoveHashFunctionWithLessEntriesAs = pRemoveHashFunctionWithLessEntriesAs;
     mSignatureStorage = new umap_uniqueElement();
     mHash = new Hash();
     size_t maximalFeatures = 5000;
@@ -109,6 +109,8 @@ vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const
         signature->push_back(signatureBlockValue);
         k += mShingleSize; 
     }
+    
+    
     return signature;
 }
 umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* pRawData) {
@@ -231,6 +233,9 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     }
     if (mPruneInverseIndex > 0) {
         mInverseIndexStorage->prune(mPruneInverseIndex);
+    }
+    if (mRemoveHashFunctionWithLessEntriesAs > 0) {
+        mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
     }
 }
 

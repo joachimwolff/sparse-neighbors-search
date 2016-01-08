@@ -18,6 +18,9 @@ std::map<size_t, size_t>* InverseIndexStorageBloomierFilter::getDistribution(){
 void InverseIndexStorageBloomierFilter::prune(int pValue) {
     
 }
+void InverseIndexStorageBloomierFilter::removeHashFunctionWithLessEntriesAs(int pRemoveHashFunctionWithLessEntriesAs) {
+    
+}
 size_t InverseIndexStorageBloomierFilter::size() const {
 	return mInverseIndex->size();
 }

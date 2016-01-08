@@ -80,3 +80,33 @@ void InverseIndexStorageUnorderedMap::prune(int pValue) {
         elementsToDelete.clear();
     }
 }
+
+// if pRemoveHashFunctionWithLessEntriesAs == 0 remove every hash function 
+// which has less entries than mean+standard deviation
+// else: remove every hash function which has less entries than pRemoveHashFunctionWithLessEntriesAs
+void InverseIndexStorageUnorderedMap::removeHashFunctionWithLessEntriesAs(int pRemoveHashFunctionWithLessEntriesAs) {
+    if (pRemoveHashFunctionWithLessEntriesAs == 0) {
+        int mean = 0;
+        int variance = 0;
+        for (size_t i = 0; i < mSignatureStorage->size(); ++i) {
+            mean += (*mSignatureStorage)[i].size();
+        }
+        mean = mean / mSignatureStorage->size();
+        for (size_t i = 0; i < mSignatureStorage->size(); ++i) {
+            variance += pow(static_cast<int>((*mSignatureStorage)[i].size()) - mean, 2);
+        }
+        variance = variance / mSignatureStorage->size();
+        int standardDeviation = sqrt(variance);
+        for (size_t i = 0; i < mSignatureStorage->size(); ++i) {
+            if ((*mSignatureStorage)[i].size() < mean + standardDeviation) {
+                    (*mSignatureStorage)[i].clear();
+            }
+        }
+    } else {
+        for (size_t i = 0; i < mSignatureStorage->size(); ++i) {
+            if ((*mSignatureStorage)[i].size() < pRemoveHashFunctionWithLessEntriesAs) {
+                (*mSignatureStorage)[i].clear();
+            }
+        }
+    }
+}

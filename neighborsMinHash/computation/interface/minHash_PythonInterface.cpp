@@ -49,19 +49,19 @@ static PyObject* createObject(PyObject* self, PyObject* args) {
     size_t numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
     nNeighbors, minimalBlocksInCommon, maxBinSize,
     maximalNumberOfHashCollisions, excessFactor, bloomierFilter;
-    int fast, similarity, pruneInverseIndex;
+    int fast, similarity, pruneInverseIndex, removeHashFunctionWithLessEntriesAs;
     float pruneInverseIndexAfterInstance;
 
-    if (!PyArg_ParseTuple(args, "kkkkkkkkkiikif", &numberOfHashFunctions,
+    if (!PyArg_ParseTuple(args, "kkkkkkkkkiikifi", &numberOfHashFunctions,
                         &shingleSize, &numberOfCores, &chunkSize, &nNeighbors,
                         &minimalBlocksInCommon, &maxBinSize,
                         &maximalNumberOfHashCollisions, &excessFactor, &fast, &similarity, &bloomierFilter,
-                        &pruneInverseIndex,&pruneInverseIndexAfterInstance))
+                        &pruneInverseIndex,&pruneInverseIndexAfterInstance, &removeHashFunctionWithLessEntriesAs))
         return NULL;
     MinHash* minHash = new MinHash (numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
                     maxBinSize, nNeighbors, minimalBlocksInCommon, 
                     excessFactor, maximalNumberOfHashCollisions, fast, similarity, bloomierFilter, pruneInverseIndex,
-                    pruneInverseIndexAfterInstance);
+                    pruneInverseIndexAfterInstance, removeHashFunctionWithLessEntriesAs);
     
     size_t adressMinHashObject = reinterpret_cast<size_t>(minHash);
     PyObject* pointerToInverseIndex = Py_BuildValue("k", adressMinHashObject);

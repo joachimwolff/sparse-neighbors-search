@@ -8,5 +8,6 @@ class InverseIndexStorage {
 	virtual void insert(size_t pVectorId, size_t pHashValue, size_t pInstance) = 0;
     virtual std::map<size_t, size_t>* getDistribution() = 0;
     virtual void prune(int pValue) = 0;
+    virtual void removeHashFunctionWithLessEntriesAs(int pRemoveHashFunctionWithLessEntriesAs) = 0;
 };
 #endif // INVERSE_INDEX_STORAGE_H

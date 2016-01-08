@@ -24,7 +24,8 @@ class MinHash : public MinHashBase {
                     size_t pSizeOfNeighborhood, size_t pMinimalBlocksInCommon,
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, 
                     int pFast, int pSimilarity, size_t pBloomierFilter,
-                    int pPruneInverseIndex, float pPruneInverseIndexAfterInstance);
+                    int pPruneInverseIndex, float pPruneInverseIndexAfterInstance,
+                    int pRemoveHashFunctionWithLessEntriesAs);
   	~MinHash();
     // Calculate the neighbors inside a given radius.
     neighborhood radiusNeighbors();
