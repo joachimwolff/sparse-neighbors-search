@@ -75,7 +75,7 @@ def test(data):
     print "Build inverse index for approximate..."
     time_build_approx_start = time.time()
     minHash = MinHash(number_of_hash_functions=400, shingle_size = 2, similarity=True, bloomierFilter=False, number_of_cores=2, prune_inverse_index=-1, 
-                    prune_inverse_index_after_instance=-1, removeHashFunctionWithLessEntriesAs=1)
+                    prune_inverse_index_after_instance=0.2, removeHashFunctionWithLessEntriesAs=0)
     # minHash.fit(data[0])
     minHash.fit(datasetBursi)
     print "Fitting time: ",  time.time() - time_build_approx_start
