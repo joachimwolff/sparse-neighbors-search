@@ -49,14 +49,14 @@ def parameter_optimization():
     # number_of_hash_functions = 10000
     # max_bin_size = 500 
     # minimal_blocks_in_common = 100
-    # block_size = 100
+    # shingle_size = 100
     # excess_factor = 100
     # for hash_functions in xrange(number_of_hash_functions):
     #     for bin_sizes in xrange(max_bin_size):
     #         for blocks_in_common in xrange(minimal_blocks_in_common):
-    #             for block_size_ in xrange(block_size):
+    #             for shingle_size_ in xrange(shingle_size):
     #                 for excess_factor_ in xrange(excess_factor):
-    #                     minHash = MinHash(number_of_hash_functions=hash_functions, block_size = 4, similarity=True, bloomierFilter=True, number_of_cores=4)
+    #                     minHash = MinHash(number_of_hash_functions=hash_functions, shingle_size = 4, similarity=True, bloomierFilter=True, number_of_cores=4)
                         
     
 def test(data):
@@ -74,10 +74,22 @@ def test(data):
     # if not os.path.exists("inverse_index.approx"):
     print "Build inverse index for approximate..."
     time_build_approx_start = time.time()
-    minHash = MinHash(number_of_hash_functions=400, block_size = 2, similarity=True, bloomierFilter=True, number_of_cores=2)
+    minHash = MinHash(number_of_hash_functions=400, shingle_size = 2, similarity=True, bloomierFilter=False, number_of_cores=2, prune_inverse_index=2, 
+                    prune_inverse_index_after_instance=0.1)
     # minHash.fit(data[0])
     minHash.fit(datasetBursi)
     print "Fitting time: ",  time.time() - time_build_approx_start
+    
+    print "distribution of inverse index: "
+    distribution =  minHash.get_distribution_of_inverse_index()
+    print distribution
+    dist_count = 0;
+    for key in distribution:
+        if key < 2:
+            continue;
+        else:
+            dist_count += distribution[key]
+    print "dist count: ", dist_count
     # time_build_approx_end = time.time()
     # print "Build inverse index for approximate... Done!"
     # print "Time: ", time_build_approx_end - time_build_approx_start
@@ -109,7 +121,7 @@ def test(data):
     print "Time: ", time_comp_approx_end  - time_comp_approx
     print "\n\n"
 
-    minHash2 = MinHash(number_of_hash_functions=400,block_size = 2, similarity=True, bloomierFilter=False, number_of_cores=2)
+    minHash2 = MinHash(number_of_hash_functions=400,shingle_size = 2, similarity=True, bloomierFilter=False, number_of_cores=2)
     # minHash.fit(data[0])
     time_fit = time.time()
     minHash2.fit(datasetBursi)

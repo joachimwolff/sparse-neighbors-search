@@ -51,16 +51,16 @@ umapVector _parseInstancesFeatures(PyObject * instancesListObj, PyObject * featu
 
 static PyObject* createObject(PyObject* self, PyObject* args) {
 
-    size_t numberOfHashFunctions, blockSize, numberOfCores, chunkSize,
+    size_t numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
     sizeOfNeighborhood, minimalBlocksInCommon, maxBinSize,
     maximalNumberOfHashCollisions, excessFactor;
 
     if (!PyArg_ParseTuple(args, "kkkkkkkkk", &numberOfHashFunctions,
-                        &blockSize, &numberOfCores, &chunkSize, &sizeOfNeighborhood,
+                        &shingleSize, &numberOfCores, &chunkSize, &sizeOfNeighborhood,
                         &minimalBlocksInCommon, &maxBinSize,
                         &maximalNumberOfHashCollisions, &excessFactor))
         return NULL;
-    MinHash* minHash = new MinHash (numberOfHashFunctions, blockSize, numberOfCores, chunkSize,
+    MinHash* minHash = new MinHash (numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
                     maxBinSize, sizeOfNeighborhood, minimalBlocksInCommon, 
                     excessFactor, maximalNumberOfHashCollisions);
     

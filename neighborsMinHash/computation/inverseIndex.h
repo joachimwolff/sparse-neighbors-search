@@ -26,7 +26,7 @@ class InverseIndex {
   protected: 
   	// const double A = sqrt(2) - 1;
     size_t mNumberOfHashFunctions;
-    size_t mBlockSize;
+    size_t mShingleSize;
     size_t mNumberOfCores;
     size_t mChunkSize;
     size_t mMaxBinSize;
@@ -43,7 +43,7 @@ class InverseIndex {
     Hash* mHash;
 
   public:
-  	InverseIndex(size_t pNumberOfHashFunctions, size_t pBlockSize,
+  	InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize, size_t pMinimalBlocksInCommon,
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, size_t pBloomierFilter,

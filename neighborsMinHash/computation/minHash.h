@@ -18,7 +18,7 @@ class MinHash : public MinHashBase {
   private:
 
   public:
-  	MinHash(size_t pNumberOfHashFunctions, size_t pBlockSize,
+  	MinHash(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize,
                     size_t pSizeOfNeighborhood, size_t pMinimalBlocksInCommon,

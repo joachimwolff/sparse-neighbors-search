@@ -46,19 +46,19 @@ static neighborhood* fitNeighborhoodComputation(size_t pMinHashAddress, PyObject
 }
 
 static PyObject* createObject(PyObject* self, PyObject* args) {
-    size_t numberOfHashFunctions, blockSize, numberOfCores, chunkSize,
+    size_t numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
     nNeighbors, minimalBlocksInCommon, maxBinSize,
     maximalNumberOfHashCollisions, excessFactor, bloomierFilter;
     int fast, similarity, pruneInverseIndex;
     float pruneInverseIndexAfterInstance;
 
     if (!PyArg_ParseTuple(args, "kkkkkkkkkiikif", &numberOfHashFunctions,
-                        &blockSize, &numberOfCores, &chunkSize, &nNeighbors,
+                        &shingleSize, &numberOfCores, &chunkSize, &nNeighbors,
                         &minimalBlocksInCommon, &maxBinSize,
                         &maximalNumberOfHashCollisions, &excessFactor, &fast, &similarity, &bloomierFilter,
                         &pruneInverseIndex,&pruneInverseIndexAfterInstance))
         return NULL;
-    MinHash* minHash = new MinHash (numberOfHashFunctions, blockSize, numberOfCores, chunkSize,
+    MinHash* minHash = new MinHash (numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
                     maxBinSize, nNeighbors, minimalBlocksInCommon, 
                     excessFactor, maximalNumberOfHashCollisions, fast, similarity, bloomierFilter, pruneInverseIndex,
                     pruneInverseIndexAfterInstance);

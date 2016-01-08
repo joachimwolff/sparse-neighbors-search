@@ -37,11 +37,11 @@ SparseMatrixFloat* parseRawData(std::vector<size_t>* pInstances, std::vector<siz
     return originalData;
 }
 
-MinHash* createMinHashObj(size_t pNumberOfHashFunctions, size_t pBlockSize, size_t pNumberOfCores, 
+MinHash* createMinHashObj(size_t pNumberOfHashFunctions, size_t pShingleSize, size_t pNumberOfCores, 
 							size_t pChunkSize, size_t pNneighbors, size_t pMinimalBlocksInCommon, 
 							size_t pMaxBinSize,  size_t pMaximalNumberOfHashCollisions, 
 							size_t pExcessFactor, int pFast) {
-	MinHash* minHashObj = new MinHash (pNumberOfHashFunctions, pBlockSize, pNumberOfCores, pChunkSize,
+	MinHash* minHashObj = new MinHash (pNumberOfHashFunctions, pShingleSize, pNumberOfCores, pChunkSize,
                     pMaxBinSize, pNneighbors, pMinimalBlocksInCommon, 
                     pExcessFactor, pMaximalNumberOfHashCollisions, pFast);
 	return minHashObj;
@@ -91,17 +91,17 @@ int main( int argc, const char* argv[] ) {
     std::copy(begin_addInfo, end_addInfo, std::back_inserter(addInfo));
 
     size_t numberOfHashFunctions = 400;
-    size_t blockSize = 4;
+    size_t shingleSize = 4;
     size_t numberOfCores = 4; 
     size_t chunkSize = 0;
     size_t nNeighbors = 5;
     size_t minimalBlocksInCommon = 1; 
     size_t maxBinSize = 50;
-    size_t maximalNumberOfHashCollisions = ceil(numberOfHashFunctions / static_cast<float>(blockSize));
+    size_t maximalNumberOfHashCollisions = ceil(numberOfHashFunctions / static_cast<float>(shingleSize));
     size_t excessFactor = 5;
     int fast = 0;
 
-    MinHash* minHash = createMinHashObj(numberOfHashFunctions, blockSize, numberOfCores, chunkSize, nNeighbors,
+    MinHash* minHash = createMinHashObj(numberOfHashFunctions, shingleSize, numberOfCores, chunkSize, nNeighbors,
     					minimalBlocksInCommon, maxBinSize, maximalNumberOfHashCollisions,
     					excessFactor, fast);
     fit(minHash, &instances, &features, &data, addInfo[0], addInfo[1]);

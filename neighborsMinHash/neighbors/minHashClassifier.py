@@ -41,9 +41,9 @@ class MinHashClassifier():
         minimal_blocks_in_common : int, optional (default = 1)
             The minimal number of hash collisions two instances have to be in common to be recognised. Everything less
             will be ignored.
-        block_size : int, optional (default = 4)
+        shingle_size : int, optional (default = 4)
             Reduction factor for the signature size.
-            E.g. number_of_hash_functions=400 and block_size=4 --> Size of the signature will be 100
+            E.g. number_of_hash_functions=400 and shingle_size=4 --> Size of the signature will be 100
         excess_factor : int, optional (default = 5)
             Factor to return more neighbors internally as defined with n_neighbors. Factor is useful to increase the
             precision of the :meth:`algorithm=exact` version of the implementation.
@@ -83,7 +83,7 @@ class MinHashClassifier():
         http://bioinformatics.oxfordjournals.org/content/28/12/i224.full.pdf+html"""
 
     def __init__(self, n_neighbors=5, fast=False, number_of_hash_functions=400,
-                 max_bin_size = 50, minimal_blocks_in_common = 1, block_size = 4, excess_factor = 5, number_of_cores=None,
+                 max_bin_size = 50, minimal_blocks_in_common = 1, shingle_size = 4, excess_factor = 5, number_of_cores=None,
                  chunk_size=None):
         self.n_neighbors = n_neighbors
         if fast is not None:
@@ -94,7 +94,7 @@ class MinHashClassifier():
                                                         number_of_hash_functions=number_of_hash_functions,
                                                         max_bin_size =max_bin_size,
                                                         minimal_blocks_in_common=minimal_blocks_in_common,
-                                                        block_size=block_size,
+                                                        shingle_size=shingle_size,
                                                         excess_factor=excess_factor,
                                                         number_of_cores=number_of_cores,
                                                         chunk_size=chunk_size)

@@ -31,14 +31,14 @@ bool mapSortDescByValue(const sort_map& a, const sort_map& b) {
         return a.val > b.val;
 };
 
-InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pBlockSize,
+InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize, size_t pMinimalBlocksInCommon,
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, size_t pBloomierFilter,
                     int pPruneInverseIndex, float pPruneInverseIndexAfterInstance) {   
                         
     mNumberOfHashFunctions = pNumberOfHashFunctions;
-    mBlockSize = pBlockSize;
+    mShingleSize = pShingleSize;
     mNumberOfCores = pNumberOfCores;
     mChunkSize = pChunkSize;
     mMaxBinSize = pMaxBinSize;
@@ -52,7 +52,7 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pBlockSize,
     mHash = new Hash();
     size_t maximalFeatures = 5000;
     
-    size_t inverseIndexSize = ceil(((float) mNumberOfHashFunctions / (float) mBlockSize)+1);
+    size_t inverseIndexSize = ceil(((float) mNumberOfHashFunctions / (float) mShingleSize)+1);
     if (pBloomierFilter) {
         // std::cout << "Using bloomier filter. " << std::endl;
         mInverseIndexStorage = new InverseIndexStorageBloomierFilter(inverseIndexSize, mMaxBinSize, maximalFeatures);
@@ -96,18 +96,18 @@ vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const
         }
         signatureHash[j] = minHashValue;
     }
-    // reduce number of hash values by a factor of blockSize
+    // reduce number of hash values by a factor of ShingleSize
     size_t k = 0;
     vsize_t* signature = new vsize_t();
-    signature->reserve((mNumberOfHashFunctions / mBlockSize) + 1);
+    signature->reserve((mNumberOfHashFunctions / mShingleSize) + 1);
     while (k < (mNumberOfHashFunctions)) {
         // use computed hash value as a seed for the next computation
         size_t signatureBlockValue = signatureHash[k];
-        for (size_t j = 0; j < mBlockSize; ++j) {
+        for (size_t j = 0; j < mShingleSize; ++j) {
             signatureBlockValue = mHash->hash((signatureHash[k+j]),  signatureBlockValue, MAX_VALUE);
         }
         signature->push_back(signatureBlockValue);
-        k += mBlockSize; 
+        k += mShingleSize; 
     }
     return signature;
 }

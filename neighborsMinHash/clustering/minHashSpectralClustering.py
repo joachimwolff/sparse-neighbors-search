@@ -22,7 +22,7 @@ class MinHashSpectralClustering():
                 radius=1.0, fast=False, 
                 number_of_hash_functions=400,
                 max_bin_size = 50, minimal_blocks_in_common = 1,
-                block_size = 4, excess_factor = 5,
+                shingle_size = 4, excess_factor = 5,
                 number_of_cores=None, chunk_size=None):
         self.n_clusters = n_clusters 
         self.eigen_solver = eigen_solver
@@ -40,7 +40,7 @@ class MinHashSpectralClustering():
         self.number_of_hash_functions = number_of_hash_functions
         self.max_bin_size = max_bin_size
         self.minimal_blocks_in_common = minimal_blocks_in_common
-        self.block_size = block_size
+        self.shingle_size = shingle_size
         self.excess_factor = excess_factor
         self.number_of_cores = number_of_cores
         self.chunk_size = chunk_size
@@ -64,7 +64,7 @@ class MinHashSpectralClustering():
         number_of_hash_functions = self.number_of_hash_functions,
         max_bin_size = self.max_bin_size,
         minimal_blocks_in_common = self.minimal_blocks_in_common,
-        block_size = self.block_size,
+        shingle_size = self.shingle_size,
         excess_factor = self.excess_factor,
         number_of_cores = self.number_of_cores,
         chunk_size = self.chunk_size, similarity=True)

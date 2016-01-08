@@ -19,7 +19,7 @@
 #include <omp.h>
 #endif
 
-MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pBlockSize,
+MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize,
                     size_t pSizeOfNeighborhood, size_t pMinimalBlocksInCommon,
@@ -27,7 +27,7 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pBlockSize,
                     int pFast, int pSimilarity, size_t pBloomierFilter,
                     int pPruneInverseIndex, float pPruneInverseIndexAfterInstance) {
 
-        mInverseIndex = new InverseIndex(pNumberOfHashFunctions, pBlockSize,
+        mInverseIndex = new InverseIndex(pNumberOfHashFunctions, pShingleSize,
                                     pNumberOfCores, pChunkSize,
                                     pMaxBinSize, pMinimalBlocksInCommon, 
                                     pExcessFactor, pMaximalNumberOfHashCollisions, pBloomierFilter,
