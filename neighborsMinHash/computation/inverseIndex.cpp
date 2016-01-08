@@ -173,7 +173,7 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     return instanceSignature;
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
-    size_t pruneEveryNInterations = pRawData->size() * mPruneInverseIndexAfterInstance;
+    size_t pruneEveryNIterations = pRawData->size() * mPruneInverseIndexAfterInstance;
     size_t pruneCount = 0;
     mDoubleElementsStorageCount = 0;
     if (mChunkSize <= 0) {
@@ -224,7 +224,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
 #pragma omp critical
 #endif
             {
-                if (pruneCount >= pruneEveryNInterations) {
+                if (pruneCount >= pruneEveryNIterations) {
                     pruneCount = 0;
                     
                     if (mPruneInverseIndex > 0) {
