@@ -108,8 +108,8 @@ vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const
         }
         signature->push_back(signatureBlockValue);
         k += mShingleSize; 
-    }
-    block_min = false;
+    } 
+    bool block_min = false;
     if (block_min) {
         vsize_t* signature_shingle = new vsize_t();
         signature_shingle->reserve((mNumberOfHashFunctions / mShingleSize) + 1);
