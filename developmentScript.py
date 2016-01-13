@@ -74,21 +74,22 @@ def test(data):
     # if not os.path.exists("inverse_index.approx"):
     print "Build inverse index for approximate..."
     time_build_approx_start = time.time()
-    minHash = MinHash(number_of_hash_functions=400, shingle_size = 2, similarity=True, bloomierFilter=False, number_of_cores=2, prune_inverse_index=-1, 
-                    prune_inverse_index_after_instance=0.2, removeHashFunctionWithLessEntriesAs=0)
+    minHash = MinHash(number_of_hash_functions=200, shingle_size = 1, similarity=False, bloomierFilter=False, number_of_cores=2, prune_inverse_index=-1, 
+                    prune_inverse_index_after_instance=-1, removeHashFunctionWithLessEntriesAs=-1)
     # minHash.fit(data[0])
     minHash.fit(datasetBursi)
+    # minHash.get_distribution_of_inverse_index()
     print "Fitting time: ",  time.time() - time_build_approx_start
     
     print "distribution of inverse index: "
     distribution =  minHash.get_distribution_of_inverse_index()
     print distribution
     dist_count = 0;
-    for key in distribution:
+    for key in distribution[0]:
         if key < 2:
             continue;
         else:
-            dist_count += distribution[key]
+            dist_count += distribution[0][key]
     print "dist count: ", dist_count
     # time_build_approx_end = time.time()
     # print "Build inverse index for approximate... Done!"

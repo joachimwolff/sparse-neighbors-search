@@ -137,6 +137,6 @@ if (mChunkSize <= 0) {
     return neighborhoodExact;
 }
 
-std::map<size_t, size_t>* MinHashBase::getDistributionOfInverseIndex() {
+distributionInverseIndex* MinHashBase::getDistributionOfInverseIndex() {
     return mInverseIndex->getDistribution();
 }

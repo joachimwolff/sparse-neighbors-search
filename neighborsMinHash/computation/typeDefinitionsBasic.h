@@ -57,6 +57,15 @@ typedef unsigned char bitVector;
 
 typedef std::vector<bitVector*> bloomierTable;
 
+struct distributionInverseIndex {
+    vsize_t numberOfCreatedHashValuesPerHashFunction;
+    vsize_t meanForNumberOfValuesPerHashValue;
+    vsize_t standardDeviationForNumberOfValuesPerHashValue;
+    std::map<size_t, size_t> totalCountForOccurenceOfHashValues;
+    
+    size_t mean;
+    size_t standardDeviation;
+};
 static bool mapSortDescByValueFloat(const sortMapFloat& a, const sortMapFloat& b) {
         return a.val > b.val;
 };

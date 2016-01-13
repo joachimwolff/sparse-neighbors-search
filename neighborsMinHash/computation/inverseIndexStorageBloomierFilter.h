@@ -16,7 +16,7 @@ class InverseIndexStorageBloomierFilter : public InverseIndexStorage {
   	size_t size() const;
 	const vsize_t* getElement(size_t pVectorId, size_t pHashValue);
 	void insert(size_t pVectorId, size_t pHashValue, size_t pInstance);
-    std::map<size_t, size_t>* getDistribution();
+    distributionInverseIndex* getDistribution();
     void prune(int pValue);
     void removeHashFunctionWithLessEntriesAs(int pRemoveHashFunctionWithLessEntriesAs);
 };

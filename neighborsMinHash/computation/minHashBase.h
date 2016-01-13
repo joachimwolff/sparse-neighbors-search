@@ -58,6 +58,8 @@ class MinHashBase {
       return;
     }
     size_t getNneighbors() { return mNneighbors; };
-    std::map<size_t, size_t>* getDistributionOfInverseIndex();
+    
+    distributionInverseIndex* getDistributionOfInverseIndex();
+    
 };
 #endif // MIN_HASH_BASE_H

@@ -49,14 +49,14 @@ static PyObject* createObject(PyObject* self, PyObject* args) {
     size_t numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
     nNeighbors, minimalBlocksInCommon, maxBinSize,
     maximalNumberOfHashCollisions, excessFactor, bloomierFilter;
-    int fast, similarity, pruneInverseIndex, removeHashFunctionWithLessEntriesAs;
+    int fast, similarity, pruneInverseIndex, removeHashFunctionWithLessEntriesAs, block;
     float pruneInverseIndexAfterInstance;
 
-    if (!PyArg_ParseTuple(args, "kkkkkkkkkiikifi", &numberOfHashFunctions,
+    if (!PyArg_ParseTuple(args, "kkkkkkkkkiikifii", &numberOfHashFunctions,
                         &shingleSize, &numberOfCores, &chunkSize, &nNeighbors,
                         &minimalBlocksInCommon, &maxBinSize,
                         &maximalNumberOfHashCollisions, &excessFactor, &fast, &similarity, &bloomierFilter,
-                        &pruneInverseIndex,&pruneInverseIndexAfterInstance, &removeHashFunctionWithLessEntriesAs))
+                        &pruneInverseIndex,&pruneInverseIndexAfterInstance, &removeHashFunctionWithLessEntriesAs, &block))
         return NULL;
     MinHash* minHash = new MinHash (numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
                     maxBinSize, nNeighbors, minimalBlocksInCommon, 
@@ -310,6 +310,7 @@ static PyObject* fitRadiusNeighborsGraph(PyObject* self, PyObject* args) {
     return radiusNeighborhoodGraph(neighborhood_, radius, returnDistance, symmetric); 
 }
 
+
 static PyObject* getDistributionOfInverseIndex(PyObject* self, PyObject* args) {
     size_t addressMinHashObject, maxNumberOfInstances, maxNumberOfFeatures,
             radius, returnDistance, symmetric;
@@ -318,13 +319,13 @@ static PyObject* getDistributionOfInverseIndex(PyObject* self, PyObject* args) {
 
     if (!PyArg_ParseTuple(args, "k", &addressMinHashObject))
         return NULL;
-    std::cout << __LINE__ << std::endl;
+    // std::cout << __LINE__ << std::endl;
 
     MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
-    std::cout << __LINE__ << std::endl;
+    // std::cout << __LINE__ << std::endl;
 
-    std::map<size_t, size_t>* distribution = minHash->getDistributionOfInverseIndex();
-    std::cout << __LINE__ << std::endl;
+    distributionInverseIndex* distribution = minHash->getDistributionOfInverseIndex();
+    // std::cout << __LINE__ << std::endl;
 
     return parseDistributionOfInverseIndex(distribution);
 }
@@ -343,6 +344,7 @@ static PyMethodDef minHashFunctions[] = {
     {"create_object", createObject, METH_VARARGS, "Create the c++ object."},
     {"delete_object", deleteObject, METH_VARARGS, "Delete the c++ object by calling the destructor."},
     {"get_distribution_of_inverse_index", getDistributionOfInverseIndex, METH_VARARGS, "Get the distribution of the inverse index."},
+    
     {NULL, NULL, 0, NULL}
 };
 

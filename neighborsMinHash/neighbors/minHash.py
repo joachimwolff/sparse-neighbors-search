@@ -86,7 +86,7 @@ class MinHash():
     def __init__(self, n_neighbors=5, radius=1.0, fast=False, number_of_hash_functions=400,
                  max_bin_size = 50, minimal_blocks_in_common = 1, shingle_size = 4, excess_factor = 5,
                  similarity=False, bloomierFilter=False, number_of_cores=None, chunk_size=None, prune_inverse_index=-1,
-                  prune_inverse_index_after_instance=-1.0, removeHashFunctionWithLessEntriesAs=-1):
+                  prune_inverse_index_after_instance=-1.0, removeHashFunctionWithLessEntriesAs=-1, block_min=-1):
         if number_of_cores is None:
             number_of_cores = mp.cpu_count()
         if chunk_size is None:
@@ -99,7 +99,8 @@ class MinHash():
                                                     maximal_number_of_hash_collisions, excess_factor,
                                                     1 if fast else 0, 1 if similarity else 0,
                                                     1 if bloomierFilter else 0, prune_inverse_index, 
-                                                    prune_inverse_index_after_instance, removeHashFunctionWithLessEntriesAs)
+                                                    prune_inverse_index_after_instance, removeHashFunctionWithLessEntriesAs,
+                                                    block_min)
 
     def __del__(self):
         if _minHash.delete_object(self._pointer_address_of_minHash_object) != 0:
@@ -700,5 +701,7 @@ class MinHash():
         return csr_matrix((data, (row, column)))
         
     def get_distribution_of_inverse_index(self):
-        """Returns the frequency of occurrence of hash values."""
+        """Returns the number of created hash values per hash function, 
+            the average size of elements per hash value per hash function,
+            the mean and the standard deviation."""
         return _minHash.get_distribution_of_inverse_index(self._pointer_address_of_minHash_object)

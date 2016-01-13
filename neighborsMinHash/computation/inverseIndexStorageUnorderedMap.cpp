@@ -16,14 +16,20 @@ size_t InverseIndexStorageUnorderedMap::size() const {
 	return mSignatureStorage->size();
 }
 vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, size_t pHashValue) {
+    // std::cout << __LINE__ << std::endl;
+    
 	auto iterator = (*mSignatureStorage)[pVectorId].find(pHashValue);
 	if (iterator != (*mSignatureStorage)[pVectorId].end()) {
 		return &(iterator->second);
 	}
 	return NULL;
+    // std::cout << __LINE__ << std::endl;
+    
 	
 }
 void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue, size_t pInstance) {
+    // std::cout << __LINE__ << std::endl;
+    
 #ifdef OPENMP
 #pragma omp critical
 #endif
@@ -49,23 +55,60 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
             (*mSignatureStorage)[pVectorId][pHashValue] = instanceIdVector;
         }
     }
+    // std::cout << __LINE__ << std::endl;
+    
 }
 
-std::map<size_t, size_t>* InverseIndexStorageUnorderedMap::getDistribution() {
-    std::cout << __LINE__ << std::endl;
-    std::map<size_t, size_t>* distribution = new std::map<size_t, size_t>();
-    std::cout << __LINE__ << std::endl;
+distributionInverseIndex* InverseIndexStorageUnorderedMap::getDistribution() {
+    distributionInverseIndex* retVal = new distributionInverseIndex();
+    std::map<size_t, size_t> distribution;
+    vsize_t numberOfCreatedHashValuesPerHashFunction;
+    vsize_t averageNumberOfValuesPerHashValue;
+    vsize_t standardDeviationPerNumberOfValuesPerHashValue;
+    size_t meanForNumberHashValues = 0;
     
     for (auto it = mSignatureStorage->begin(); it != mSignatureStorage->end(); ++it) {
+        numberOfCreatedHashValuesPerHashFunction.push_back(it->size());
+        meanForNumberHashValues += it->size();
+        size_t mean = 0;
+        
         for (auto itMap = it->begin(); itMap != it->end(); ++itMap) {
-            (*distribution)[itMap->second.size()] += 1;
+            distribution[itMap->second.size()] += 1;
+            mean += itMap->second.size();
         }
+        if (it->size() != 0 || mean != 0) {
+            mean = mean / it->size();       
+        }
+        averageNumberOfValuesPerHashValue.push_back(mean);
+        
+        size_t variance = 0;
+        for (auto itMap = it->begin(); itMap != it->end(); ++itMap) {
+            variance += pow(static_cast<int>(itMap->second.size()) - mean, 2);
+        }
+        
+        variance = variance / mSignatureStorage->size();
+        int standardDeviation = sqrt(variance);
+        standardDeviationPerNumberOfValuesPerHashValue.push_back(standardDeviation);
     }
-    std::cout << __LINE__ << std::endl;
-
-    return distribution;
+    
+    size_t varianceForNumberOfHashValues = 0;
+    for (auto it = mSignatureStorage->begin(); it != mSignatureStorage->end(); ++it) {
+       varianceForNumberOfHashValues += pow(it->size() - meanForNumberHashValues, 2);
+    }
+    
+    retVal->mean = meanForNumberHashValues;
+    retVal->standardDeviation = sqrt(varianceForNumberOfHashValues);
+    
+    retVal->totalCountForOccurenceOfHashValues = distribution;
+    retVal->standardDeviationForNumberOfValuesPerHashValue = standardDeviationPerNumberOfValuesPerHashValue;
+    retVal->meanForNumberOfValuesPerHashValue = averageNumberOfValuesPerHashValue;
+    
+    retVal->numberOfCreatedHashValuesPerHashFunction = numberOfCreatedHashValuesPerHashFunction;
+    
+    return retVal;
 }
 void InverseIndexStorageUnorderedMap::prune(int pValue) {
+    // std::cout << __LINE__ << std::endl;
     for (auto it = mSignatureStorage->begin(); it != mSignatureStorage->end(); ++it) {
         vsize_t elementsToDelete;
         for (auto itMap = it->begin(); itMap != it->end(); ++itMap) {
@@ -79,12 +122,16 @@ void InverseIndexStorageUnorderedMap::prune(int pValue) {
         }
         elementsToDelete.clear();
     }
+    // std::cout << __LINE__ << std::endl;
+    
 }
 
 // if pRemoveHashFunctionWithLessEntriesAs == 0 remove every hash function 
 // which has less entries than mean+standard deviation
 // else: remove every hash function which has less entries than pRemoveHashFunctionWithLessEntriesAs
 void InverseIndexStorageUnorderedMap::removeHashFunctionWithLessEntriesAs(int pRemoveHashFunctionWithLessEntriesAs) {
+    // std::cout << __LINE__ << std::endl;
+    
     if (pRemoveHashFunctionWithLessEntriesAs == 0) {
         int mean = 0;
         int variance = 0;
@@ -109,4 +156,6 @@ void InverseIndexStorageUnorderedMap::removeHashFunctionWithLessEntriesAs(int pR
             }
         }
     }
+    // std::cout << __LINE__ << std::endl;
+    
 }

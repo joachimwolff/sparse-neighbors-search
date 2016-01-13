@@ -75,7 +75,7 @@ InverseIndex::~InverseIndex() {
     delete mHash;
 }
 
-std::map<size_t, size_t>* InverseIndex::getDistribution() {
+distributionInverseIndex* InverseIndex::getDistribution() {
     return mInverseIndexStorage->getDistribution();
 }
 
@@ -109,10 +109,42 @@ vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const
         signature->push_back(signatureBlockValue);
         k += mShingleSize; 
     }
-    
-    
+    block_min = false;
+    if (block_min) {
+        vsize_t* signature_shingle = new vsize_t();
+        signature_shingle->reserve((mNumberOfHashFunctions / mShingleSize) + 1);
+        size_t index_shingle = 0;
+        size_t minValue = MAX_VALUE;
+        for (size_t i = 0; i < mNumberOfHashFunctions; ++i) {
+            for (size_t j = i; j < mShingleSize; ++j) {
+                if (signatureHash[j] < minValue) {
+                    minValue = signatureHash[j];
+                }
+            }
+            (*signature_shingle)[i] = minValue;
+            minValue = MAX_VALUE;
+        }
+        
+    }
     return signature;
 }
+
+vsize_t* InverseIndex::computeSignatureWTA(const SparseMatrixFloat* pRawData, const size_t pInstance) {
+    vsize_t signatureHash;
+    size_t sizeOfInstance = pRawData->getSizeOfInstance(pInstance);
+    size_t seed = 42;
+    size_t k = 0;
+    signatureHash.reserve(sizeOfInstance);
+    
+    for (size_t i = 0; i < sizeOfInstance; ++i) {
+        signatureHash[i] = mHash->hash((pRawData->getNextElement(pInstance, i) +1), seed, sizeOfInstance);
+    }
+    for (size_t i = 0; i < k; ++i) {
+        
+    }
+    
+}
+
 umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* pRawData) {
     mDoubleElementsQueryCount = 0;
     const size_t sizeOfInstances = pRawData->size();
@@ -173,6 +205,8 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     return instanceSignature;
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
+    // std::cout << __LINE__ << std::endl;
+    
     size_t pruneEveryNIterations = pRawData->size() * mPruneInverseIndexAfterInstance;
     size_t pruneCount = 0;
     mDoubleElementsStorageCount = 0;
@@ -243,10 +277,14 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     if (mRemoveHashFunctionWithLessEntriesAs >= 0) {
         mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
     }
+    // std::cout << __LINE__ << std::endl;
+    
 }
 
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                         const size_t pNneighborhood, const bool pDoubleElementsStorageCount) {
+    // std::cout << __LINE__ << std::endl;
+                                            
     size_t doubleElements = 0;
     if (pDoubleElementsStorageCount) {
         doubleElements = mDoubleElementsStorageCount;
@@ -256,6 +294,8 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
+    // std::cout << __LINE__ << std::endl;
+
     vvint* neighbors = new vvint();
     vvfloat* distances = new vvfloat();
     neighbors->resize(pSignaturesMap->size()+doubleElements);
@@ -266,7 +306,10 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
 #ifdef OPENMP
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
 #endif 
+
     for (size_t i = 0; i < pSignaturesMap->size(); ++i) {
+    // std::cout << __LINE__ << std::endl;
+        
         umap_uniqueElement::const_iterator instanceId = pSignaturesMap->begin();
         std::advance(instanceId, i); 
         
@@ -301,7 +344,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 (*distances)[instanceId->second->instances->operator[](j)] = emptyVectorFloat;
             }
             continue;
-        }
+        } 
         std::vector< sort_map > neighborhoodVectorForSorting;
         for (auto it = neighborhood.begin(); it != neighborhood.end(); ++it) {
             sort_map mapForSorting;
@@ -316,12 +359,16 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         }
         std::partial_sort(neighborhoodVectorForSorting.begin(), neighborhoodVectorForSorting.begin()+numberOfElementsToSort, neighborhoodVectorForSorting.end(), mapSortDescByValue);
         size_t sizeOfNeighborhoodAdjusted;
+    // std::cout << __LINE__ << std::endl;
+        
         if (pNneighborhood == MAX_VALUE) {
             sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(pNneighborhood), neighborhoodVectorForSorting.size());
         } else {
             sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(pNneighborhood * mExcessFactor), neighborhoodVectorForSorting.size());
         }
         size_t count = 0;
+    // std::cout << __LINE__ << std::endl;
+        
         vvint* neighborsForThisInstance = new vvint(instanceId->second->instances->size());
         vvfloat* distancesForThisInstance = new vvfloat(instanceId->second->instances->size());
 
@@ -348,15 +395,21 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
 #ifdef OPENMP
 #pragma omp critical
 #endif
+
         {     
+                // std::cout << __LINE__ << std::endl;
             for (size_t j = 0; j < instanceId->second->instances->size(); ++j) {
                 (*neighbors)[instanceId->second->instances->operator[](j)] = (*neighborsForThisInstance)[j];
                 (*distances)[instanceId->second->instances->operator[](j)] = (*distancesForThisInstance)[j];
             }
         }
     }
+    // std::cout << __LINE__ << std::endl;
+    
     neighborhood* neighborhood_ = new neighborhood();
     neighborhood_->neighbors = neighbors;
     neighborhood_->distances = distances;
+    // std::cout << __LINE__ << std::endl;
+      
     return neighborhood_;
 }

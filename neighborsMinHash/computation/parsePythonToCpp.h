@@ -324,11 +324,38 @@ static PyObject* radiusNeighborhoodGraph(const neighborhood* pNeighborhood, cons
     PyList_SetItem(graph, 2, dataList);
     return graph;
 }
-static PyObject* parseDistributionOfInverseIndex(std::map<size_t, size_t>* distribution) {
+static PyObject* parseDistributionOfInverseIndex(distributionInverseIndex* distribution) {
     PyObject* distributionVector = PyDict_New();
-    for (auto it = distribution->begin(); it != distribution->end(); ++it) {
+    for (auto it = distribution->totalCountForOccurenceOfHashValues.begin(); it != distribution->totalCountForOccurenceOfHashValues.end(); ++it) {
         PyDict_SetItem(distributionVector, Py_BuildValue("i", it->first), Py_BuildValue("i", it->second));
     }
-    return distributionVector;
+    
+    PyObject* numberOfCreatedHashValuesPerHashFunctionList = PyList_New(0);
+    for (auto it = distribution->numberOfCreatedHashValuesPerHashFunction.begin();
+            it != distribution->numberOfCreatedHashValuesPerHashFunction.end(); ++it) {
+       PyList_Append(numberOfCreatedHashValuesPerHashFunctionList, Py_BuildValue("i", *it));            
+    }
+     PyObject* meanForNumberOfValuesPerHashValueList = PyList_New(0);
+    for (auto it = distribution->meanForNumberOfValuesPerHashValue.begin();
+            it != distribution->meanForNumberOfValuesPerHashValue.end(); ++it) {
+       PyList_Append(meanForNumberOfValuesPerHashValueList, Py_BuildValue("i", *it));            
+    }
+     PyObject* standardDeviationForNumberOfValuesPerHashValueList = PyList_New(0);
+    for (auto it = distribution->standardDeviationForNumberOfValuesPerHashValue.begin();
+            it != distribution->standardDeviationForNumberOfValuesPerHashValue.end(); ++it) {
+       PyList_Append(standardDeviationForNumberOfValuesPerHashValueList, Py_BuildValue("i", *it));            
+    }
+    PyObject* mean = Py_BuildValue("i", distribution->mean);
+    PyObject* standardDeviation = Py_BuildValue("i", distribution->standardDeviation);
+    
+    PyObject* result = PyList_New(0);
+    PyList_Append(result, distributionVector);
+    PyList_Append(result, numberOfCreatedHashValuesPerHashFunctionList);
+    PyList_Append(result, meanForNumberOfValuesPerHashValueList);
+    PyList_Append(result, standardDeviationForNumberOfValuesPerHashValueList);
+    PyList_Append(result, mean);
+    PyList_Append(result, standardDeviation);
+    
+    return result;    
 }
 #endif // PARSE_H
