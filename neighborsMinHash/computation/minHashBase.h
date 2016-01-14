@@ -42,7 +42,8 @@ class MinHashBase {
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, 
                     int pFast, int pSimilarity, size_t pBloomierFilter,
                     int pPruneInverseIndex, float pPruneInverseIndexAfterInstance, 
-                    int pRemoveHashFunctionWithLessEntriesAs);
+                    int pRemoveHashFunctionWithLessEntriesAs,
+                    size_t pHashAlgorithm, size_t pBlockSize);
 
   	~MinHashBase();
     // Calculate the inverse index for the given instances.

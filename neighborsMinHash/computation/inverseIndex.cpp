@@ -35,7 +35,8 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize, size_t pMinimalBlocksInCommon,
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, size_t pBloomierFilter,
-                    int pPruneInverseIndex, float pPruneInverseIndexAfterInstance, int pRemoveHashFunctionWithLessEntriesAs) {   
+                    int pPruneInverseIndex, float pPruneInverseIndexAfterInstance, int pRemoveHashFunctionWithLessEntriesAs,
+                    size_t pHashAlgorithm, size_t pBlockSize) {   
                         
     mNumberOfHashFunctions = pNumberOfHashFunctions;
     mShingleSize = pShingleSize;
@@ -48,11 +49,13 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
     mPruneInverseIndex = pPruneInverseIndex;
     mPruneInverseIndexAfterInstance = pPruneInverseIndexAfterInstance;
     mRemoveHashFunctionWithLessEntriesAs = pRemoveHashFunctionWithLessEntriesAs;
+    mHashAlgorithm = pHashAlgorithm;
     mSignatureStorage = new umap_uniqueElement();
     mHash = new Hash();
+    mBlockSize = pBlockSize;
     size_t maximalFeatures = 5000;
     
-    size_t inverseIndexSize = ceil(((float) mNumberOfHashFunctions / (float) mShingleSize)+1);
+    size_t inverseIndexSize = ceil(((float) (mNumberOfHashFunctions * mBlockSize) / (float) mShingleSize)+1);
     if (pBloomierFilter) {
         // std::cout << "Using bloomier filter. " << std::endl;
         mInverseIndexStorage = new InverseIndexStorageBloomierFilter(inverseIndexSize, mMaxBinSize, maximalFeatures);
@@ -82,67 +85,99 @@ distributionInverseIndex* InverseIndex::getDistribution() {
  // compute the signature for one instance
 vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance) {
 
-    vsize_t signatureHash; 
-    signatureHash.reserve(mNumberOfHashFunctions);
+    vsize_t* signature = new vsize_t();
+    if (mBlockSize == 0) {
+        mBlockSize = 1;
+    }
+    signature->reserve(mNumberOfHashFunctions * mBlockSize);
 
     for(size_t j = 0; j < mNumberOfHashFunctions; ++j) {
         size_t minHashValue = MAX_VALUE;
-        for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); ++i) {
-            //  hash(size_t pKey, size_t pModulo, size_t pSeed)
-            size_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), (j+1), MAX_VALUE);
-            if (hashValue < minHashValue) {
-                minHashValue = hashValue;
-            }
-        }
-        signatureHash[j] = minHashValue;
-    }
-    // reduce number of hash values by a factor of ShingleSize
-    size_t k = 0;
-    vsize_t* signature = new vsize_t();
-    signature->reserve((mNumberOfHashFunctions / mShingleSize) + 1);
-    while (k < (mNumberOfHashFunctions)) {
-        // use computed hash value as a seed for the next computation
-        size_t signatureBlockValue = signatureHash[k];
-        for (size_t j = 0; j < mShingleSize; ++j) {
-            signatureBlockValue = mHash->hash((signatureHash[k+j]),  signatureBlockValue, MAX_VALUE);
-        }
-        signature->push_back(signatureBlockValue);
-        k += mShingleSize; 
-    } 
-    bool block_min = false;
-    if (block_min) {
-        vsize_t* signature_shingle = new vsize_t();
-        signature_shingle->reserve((mNumberOfHashFunctions / mShingleSize) + 1);
-        size_t index_shingle = 0;
-        size_t minValue = MAX_VALUE;
-        for (size_t i = 0; i < mNumberOfHashFunctions; ++i) {
-            for (size_t j = i; j < mShingleSize; ++j) {
-                if (signatureHash[j] < minValue) {
-                    minValue = signatureHash[j];
+        for (size_t k = 0; k < mBlockSize; ++k) {
+            for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); ++i) {
+                size_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), (j+1+k), MAX_VALUE);
+                if (hashValue < minHashValue) {
+                    minHashValue = hashValue;
                 }
             }
-            (*signature_shingle)[i] = minValue;
-            minValue = MAX_VALUE;
+            (*signature)[j+k] = minHashValue;
         }
-        
+       
+    }
+    // reduce number of hash values by a factor of block_size
+    if (mShingleSize > 0) {
+        return shingle(signature);
     }
     return signature;
+}
+
+vsize_t* InverseIndex::shingle(vsize_t* pSignature) {
+    vsize_t* signature = new vsize_t();
+    if (mShingleSize == 0) {
+        // if 0 than combine hash values inside the block to one new hash value
+        size_t k = 0;
+        while (k < mNumberOfHashFunctions*mBlockSize) {
+        // use computed hash value as a seed for the next computation
+            size_t signatureBlockValue = (*pSignature)[k];
+            for (size_t j = 0; j < mShingleSize && k+j < mNumberOfHashFunctions*mBlockSize; ++j) {
+                signatureBlockValue = mHash->hash((*pSignature)[k+j],  signatureBlockValue, MAX_VALUE);
+            }
+            signature->push_back(signatureBlockValue);
+            k += mShingleSize; 
+        }
+        
+        delete pSignature;
+        return signature; 
+    } else if (mShingleSize == 1) {
+        // if 1 than take the minimum hash values of that block as the hash value
+        size_t k = 0;
+        
+        while (k < mNumberOfHashFunctions*mBlockSize) {
+        // use computed hash value as a seed for the next computation
+            size_t minValue = MAX_VALUE;
+            for (size_t j = 0; j < mShingleSize  && k+j < mNumberOfHashFunctions*mBlockSize; ++j) {
+                if ((*pSignature)[k+j] > minValue) {
+                    minValue = (*pSignature)[k+j];
+                }
+            }
+            signature->push_back(minValue);
+            k += mShingleSize; 
+        }
+        delete pSignature;
+        return signature; 
+    }
 }
 
 vsize_t* InverseIndex::computeSignatureWTA(const SparseMatrixFloat* pRawData, const size_t pInstance) {
     vsize_t signatureHash;
     size_t sizeOfInstance = pRawData->getSizeOfInstance(pInstance);
-    size_t seed = 42;
-    size_t k = 0;
-    signatureHash.reserve(sizeOfInstance);
+    signatureHash.reserve(sizeOfInstance);    
+    size_t mSeed = 42;
+    size_t mK = 100;
     
-    for (size_t i = 0; i < sizeOfInstance; ++i) {
-        signatureHash[i] = mHash->hash((pRawData->getNextElement(pInstance, i) +1), seed, sizeOfInstance);
-    }
-    for (size_t i = 0; i < k; ++i) {
+    vsize_t* signature = new vsize_t(mNumberOfHashFunctions);
+    
+    for (size_t i = 0; i < mNumberOfHashFunctions; ++i) {
+        for (size_t j = 0; j < sizeOfInstance; ++j) {
+            signatureHash[mHash->hash((pRawData->getNextElement(pInstance, j) +1), mSeed+i, sizeOfInstance)] = pRawData->getNextElement(pInstance, j);
+        }
         
+        if (mK < sizeOfInstance) mK = sizeOfInstance;
+        size_t maxValue = 0;
+        size_t maxValueIndex = 0;
+        std::partial_sort (signatureHash.begin(), signatureHash.begin()+mK, signatureHash.end());
+        
+        for (size_t j = 0; j < mK; ++j) {
+            if (signatureHash[j] > maxValue) {
+                maxValue = signatureHash[j];
+                maxValueIndex = j;
+            } 
+        }
+        signatureHash.clear();
+        (*signature)[i] = maxValueIndex;
     }
     
+    return signature;
 }
 
 umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* pRawData) {
@@ -184,7 +219,14 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
 
         // for every hash function: compute the hash values of all features and take the minimum of these
         // as the hash value for one hash function --> h_j(x) = argmin (x_i of x) f_j(x_i)
-        vsize_t* signature = computeSignature(pRawData, index);
+        vsize_t* signature;
+        if (mHashAlgorithm == 0) {
+            // use minHash
+            signature = computeSignature(pRawData, index);
+        } else if (mHashAlgorithm == 1) {
+            // use wta hash
+            signature = computeSignatureWTA(pRawData, index);
+        }
 #ifdef OPENMP
 #pragma omp critical
 #endif
@@ -228,7 +270,13 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
         vsize_t* signature;
         auto itSignatureStorage = mSignatureStorage->find(signatureId);
         if (itSignatureStorage == mSignatureStorage->end()) {
-            signature = computeSignature(pRawData, index);
+            if (mHashAlgorithm == 0) {
+                // use minHash
+                signature = computeSignature(pRawData, index);
+            } else if (mHashAlgorithm == 1) {
+                // use wta hash
+                signature = computeSignatureWTA(pRawData, index);
+            }
         } else {
             signature = itSignatureStorage->second->signature;
         }

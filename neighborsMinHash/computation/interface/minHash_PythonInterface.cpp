@@ -48,23 +48,29 @@ static neighborhood* fitNeighborhoodComputation(size_t pMinHashAddress, PyObject
 static PyObject* createObject(PyObject* self, PyObject* args) {
     size_t numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
     nNeighbors, minimalBlocksInCommon, maxBinSize,
-    maximalNumberOfHashCollisions, excessFactor, bloomierFilter;
-    int fast, similarity, pruneInverseIndex, removeHashFunctionWithLessEntriesAs, block;
+    maximalNumberOfHashCollisions, excessFactor, bloomierFilter, hashAlgorithm, blockSize;
+    int fast, similarity, pruneInverseIndex, removeHashFunctionWithLessEntriesAs;
     float pruneInverseIndexAfterInstance;
-
-    if (!PyArg_ParseTuple(args, "kkkkkkkkkiikifii", &numberOfHashFunctions,
+    std::cout << __LINE__ << std::endl;
+    if (!PyArg_ParseTuple(args, "kkkkkkkkkiikifikk", &numberOfHashFunctions,
                         &shingleSize, &numberOfCores, &chunkSize, &nNeighbors,
                         &minimalBlocksInCommon, &maxBinSize,
                         &maximalNumberOfHashCollisions, &excessFactor, &fast, &similarity, &bloomierFilter,
-                        &pruneInverseIndex,&pruneInverseIndexAfterInstance, &removeHashFunctionWithLessEntriesAs, &block))
+                        &pruneInverseIndex,&pruneInverseIndexAfterInstance, &removeHashFunctionWithLessEntriesAs,
+                        &hashAlgorithm, &blockSize))
         return NULL;
+    std::cout << __LINE__ << std::endl;
+    
     MinHash* minHash = new MinHash (numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
                     maxBinSize, nNeighbors, minimalBlocksInCommon, 
                     excessFactor, maximalNumberOfHashCollisions, fast, similarity, bloomierFilter, pruneInverseIndex,
-                    pruneInverseIndexAfterInstance, removeHashFunctionWithLessEntriesAs);
+                    pruneInverseIndexAfterInstance, removeHashFunctionWithLessEntriesAs, hashAlgorithm, blockSize);
+    std::cout << __LINE__ << std::endl;
     
     size_t adressMinHashObject = reinterpret_cast<size_t>(minHash);
     PyObject* pointerToInverseIndex = Py_BuildValue("k", adressMinHashObject);
+    std::cout << __LINE__ << std::endl;
+    
     return pointerToInverseIndex;
 }
 static PyObject* deleteObject(PyObject* self, PyObject* args) {
@@ -111,6 +117,7 @@ static PyObject* partialFit(PyObject* self, PyObject* args) {
     return fit(self, args);
 }
 static PyObject* kneighbors(PyObject* self, PyObject* args) {
+    std::cout << __LINE__ << std::endl;
     
     size_t addressMinHashObject, nNeighbors, maxNumberOfInstances,
             maxNumberOfFeatures, returnDistance;

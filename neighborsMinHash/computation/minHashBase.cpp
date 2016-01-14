@@ -26,14 +26,18 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions,
                     int pFast, int pSimilarity, size_t pBloomierFilter,
                     int pPruneInverseIndex, float pPruneInverseIndexAfterInstance, 
-                    int pRemoveHashFunctionWithLessEntriesAs) {
+                    int pRemoveHashFunctionWithLessEntriesAs, size_t pHashAlgorithm,
+                    size_t pBlockSize) {
+    std::cout << __LINE__ << std::endl;
 
         mInverseIndex = new InverseIndex(pNumberOfHashFunctions, pShingleSize,
                                     pNumberOfCores, pChunkSize,
                                     pMaxBinSize, pMinimalBlocksInCommon, 
                                     pExcessFactor, pMaximalNumberOfHashCollisions, pBloomierFilter,
-                                    pPruneInverseIndex, pPruneInverseIndexAfterInstance, pRemoveHashFunctionWithLessEntriesAs);
-    
+                                    pPruneInverseIndex, pPruneInverseIndexAfterInstance, 
+                                    pRemoveHashFunctionWithLessEntriesAs, pHashAlgorithm, pBlockSize);
+        std::cout << __LINE__ << std::endl;
+
         mNneighbors = pSizeOfNeighborhood;
         mFast = pFast;
         mNumberOfCores = pNumberOfCores;
