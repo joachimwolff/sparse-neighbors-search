@@ -87,7 +87,7 @@ class MinHash():
                  max_bin_size = 50, minimal_blocks_in_common = 1, shingle_size = 4, excess_factor = 5,
                  similarity=False, bloomierFilter=False, number_of_cores=None, chunk_size=None, prune_inverse_index=-1,
                   prune_inverse_index_after_instance=-1.0, removeHashFunctionWithLessEntriesAs=-1, 
-                  hash_algorithm = 0, block_size = 5):
+                  hash_algorithm = 0, block_size = 5, shingle=0):
         if number_of_cores is None:
             number_of_cores = mp.cpu_count()
         if chunk_size is None:
@@ -101,7 +101,7 @@ class MinHash():
                                                     1 if fast else 0, 1 if similarity else 0,
                                                     1 if bloomierFilter else 0, prune_inverse_index, 
                                                     prune_inverse_index_after_instance, removeHashFunctionWithLessEntriesAs,
-                                                    hash_algorithm, block_size)
+                                                    hash_algorithm, block_size, shingle)
 
     def __del__(self):
         if _minHash.delete_object(self._pointer_address_of_minHash_object) != 0:

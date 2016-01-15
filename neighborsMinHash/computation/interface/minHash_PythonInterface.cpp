@@ -48,23 +48,23 @@ static neighborhood* fitNeighborhoodComputation(size_t pMinHashAddress, PyObject
 static PyObject* createObject(PyObject* self, PyObject* args) {
     size_t numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
     nNeighbors, minimalBlocksInCommon, maxBinSize,
-    maximalNumberOfHashCollisions, excessFactor, bloomierFilter, hashAlgorithm, blockSize;
+    maximalNumberOfHashCollisions, excessFactor, bloomierFilter, hashAlgorithm, blockSize, shingle;
     int fast, similarity, pruneInverseIndex, removeHashFunctionWithLessEntriesAs;
     float pruneInverseIndexAfterInstance;
     std::cout << __LINE__ << std::endl;
-    if (!PyArg_ParseTuple(args, "kkkkkkkkkiikifikk", &numberOfHashFunctions,
+    if (!PyArg_ParseTuple(args, "kkkkkkkkkiikifikkk", &numberOfHashFunctions,
                         &shingleSize, &numberOfCores, &chunkSize, &nNeighbors,
                         &minimalBlocksInCommon, &maxBinSize,
                         &maximalNumberOfHashCollisions, &excessFactor, &fast, &similarity, &bloomierFilter,
                         &pruneInverseIndex,&pruneInverseIndexAfterInstance, &removeHashFunctionWithLessEntriesAs,
-                        &hashAlgorithm, &blockSize))
+                        &hashAlgorithm, &blockSize, &shingle))
         return NULL;
     std::cout << __LINE__ << std::endl;
     
     MinHash* minHash = new MinHash (numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
                     maxBinSize, nNeighbors, minimalBlocksInCommon, 
                     excessFactor, maximalNumberOfHashCollisions, fast, similarity, bloomierFilter, pruneInverseIndex,
-                    pruneInverseIndexAfterInstance, removeHashFunctionWithLessEntriesAs, hashAlgorithm, blockSize);
+                    pruneInverseIndexAfterInstance, removeHashFunctionWithLessEntriesAs, hashAlgorithm, blockSize, shingle);
     std::cout << __LINE__ << std::endl;
     
     size_t adressMinHashObject = reinterpret_cast<size_t>(minHash);
