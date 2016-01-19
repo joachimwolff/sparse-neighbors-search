@@ -10,7 +10,9 @@ InverseIndexStorageUnorderedMap::InverseIndexStorageUnorderedMap(size_t pSizeOfI
 	mValues = new vvsize_t(pSizeOfInverseIndex, vsize_t());
 }
 InverseIndexStorageUnorderedMap::~InverseIndexStorageUnorderedMap() {
-	
+	delete mSignatureStorage;
+    delete mKeys;
+    delete mValues;
 }
 size_t InverseIndexStorageUnorderedMap::size() const {
 	return mSignatureStorage->size();

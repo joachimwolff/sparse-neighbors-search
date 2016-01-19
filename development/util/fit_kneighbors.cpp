@@ -129,5 +129,9 @@ int main( int argc, const char* argv[] ) {
  //    }
  //    std::cout << "]" << std::endl;
     delete minHash;
+    instances.clear();
+    features.clear();
+    data.clear();
+    addInfo.clear();
 	return 0;
 }

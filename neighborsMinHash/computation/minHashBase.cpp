@@ -46,6 +46,7 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pShingleSize,
 }
 
 MinHashBase::~MinHashBase() {
+    // std::cout << "Destructor of minhashBase is called!" << std::endl;
     delete mInverseIndex;
     delete mOriginalData;
 }
@@ -79,7 +80,9 @@ neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t 
         X = mInverseIndex->computeSignatureMap(pRawData);
     }
     neighborhood* neighborhood_ = mInverseIndex->kneighbors(X, pNneighbors, doubleElementsStorageCount);
-
+    if (pRawData != NULL) {
+        delete X;
+    }
     if (pFast) {     
         return neighborhood_;
     }
@@ -109,6 +112,9 @@ if (mChunkSize <= 0) {
                     exactNeighbors = 
                         mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), neighborhood_->neighbors->operator[](i)[0], pNneighbors, pRawData);
                 }
+            }
+            if (exactNeighbors == NULL) {
+                exactNeighbors = new std::vector<sortMapFloat>();
             } 
             std::vector<int> neighborsVector(exactNeighbors->size());
             std::vector<float> distancesVector(exactNeighbors->size());
@@ -117,6 +123,8 @@ if (mChunkSize <= 0) {
                 neighborsVector[j] = (*exactNeighbors)[j].key;
                 distancesVector[j] = (*exactNeighbors)[j].val;
             }
+            delete exactNeighbors;
+            
 #ifdef OPENMP
 #pragma omp critical
 #endif

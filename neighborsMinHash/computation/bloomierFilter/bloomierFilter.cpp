@@ -93,11 +93,11 @@ void BloomierFilter::set(const size_t pKey, const size_t pValue) {
             }
             if (v->size() < mMaxBinSize) {
                 if (v->size() > 0) {
-                    std::cout << __LINE__ << std::endl;
+                    // std::cout << __LINE__ << std::endl;
                     v->push_back(pValue);
                 }
             } else {
-                std::cout << __LINE__ << std::endl;
+                // std::cout << __LINE__ << std::endl;
                 
                 v->clear();
             }

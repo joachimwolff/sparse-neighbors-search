@@ -40,10 +40,16 @@ SparseMatrixFloat* parseRawData(std::vector<size_t>* pInstances, std::vector<siz
 MinHash* createMinHashObj(size_t pNumberOfHashFunctions, size_t pShingleSize, size_t pNumberOfCores, 
 							size_t pChunkSize, size_t pNneighbors, size_t pMinimalBlocksInCommon, 
 							size_t pMaxBinSize,  size_t pMaximalNumberOfHashCollisions, 
-							size_t pExcessFactor, int pFast, int pSimilarity, size_t pBloomierFilter) {
+							size_t pExcessFactor, int pFast, int pSimilarity, size_t pBloomierFilter,
+                            size_t pPrune_inverse_index, float pPrune_inverse_index_after_instance, 
+                            int pRemoveHashFunctionWithLessEntriesAs,
+                            size_t pHash_algorithm, size_t pBlock_size, size_t pShingle) {
 	MinHash* minHashObj = new MinHash (pNumberOfHashFunctions, pShingleSize, pNumberOfCores, pChunkSize,
                     pMaxBinSize, pNneighbors, pMinimalBlocksInCommon, 
-                    pExcessFactor, pMaximalNumberOfHashCollisions, pFast, pSimilarity, pBloomierFilter);
+                    pExcessFactor, pMaximalNumberOfHashCollisions, pFast, pSimilarity, pBloomierFilter,
+                    pPrune_inverse_index, pPrune_inverse_index_after_instance,
+                    pRemoveHashFunctionWithLessEntriesAs, pHash_algorithm,
+                    pBlock_size, pShingle);
 	return minHashObj;
 }
 
@@ -92,6 +98,7 @@ int main( int argc, const char* argv[] ) {
 
     size_t numberOfHashFunctions = 400;
     size_t shingleSize = 4;
+    
     size_t numberOfCores = 4; 
     size_t chunkSize = 0;
     size_t nNeighbors = 5;
@@ -102,34 +109,45 @@ int main( int argc, const char* argv[] ) {
     int fast = 0;
     int similarity = 0;
     size_t bloomierFilter = 0;
+    int prune_inverse_index=-1;
+    float prune_inverse_index_after_instance=-1.0;
+    float removeHashFunctionWithLessEntriesAs=-1.0;
+    size_t hash_algorithm = 0;
+    size_t block_size = 1;
+    size_t shingle=0;
+
+
+
 
     MinHash* minHash = createMinHashObj(numberOfHashFunctions, shingleSize, numberOfCores, chunkSize, nNeighbors,
     					minimalBlocksInCommon, maxBinSize, maximalNumberOfHashCollisions,
-    					excessFactor, fast, similarity, bloomierFilter);
+    					excessFactor, fast, similarity, bloomierFilter, prune_inverse_index, 
+                                                    prune_inverse_index_after_instance, removeHashFunctionWithLessEntriesAs,
+                                                    hash_algorithm, block_size, shingle);
     fit(minHash, &instances, &features, &data, addInfo[0], addInfo[1]);
     SparseMatrixFloat* dataSparse = parseRawData(&instances, &features, &data, 
                                                   addInfo[0], addInfo[1]);
     neighborhood* neighborhood_ = minHash->kneighbors(dataSparse, nNeighbors, fast);
 
- //    std::cout << "\n[";
- //    for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
- //    	std::cout << "[";
- //    	for (size_t j = 0; j < neighborhood_->neighbors->operator[](i).size(); ++j) {
- //    		std::cout << " " << neighborhood_->neighbors->operator[](i)[j];
- //    	}
- //    	std::cout << "]" << std::endl;
- //    }
- //    std::cout << "]" << std::endl;
+    std::cout << "\n[";
+    for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
+    	std::cout << "[";
+    	for (size_t j = 0; j < neighborhood_->neighbors->operator[](i).size(); ++j) {
+    		std::cout << " " << neighborhood_->neighbors->operator[](i)[j];
+    	}
+    	std::cout << "]" << std::endl;
+    }
+    std::cout << "]" << std::endl;
 
-	// std::cout << "\n[";
- //    for (size_t i = 0; i < neighborhood_->distances->size(); ++i) {
- //    	std::cout << "[";
- //    	for (size_t j = 0; j < neighborhood_->distances->operator[](i).size(); ++j) {
- //    		std::cout << " " << neighborhood_->distances->operator[](i)[j];
- //    	}
- //    	std::cout << "]" << std::endl;
- //    }
- //    std::cout << "]" << std::endl;
+	std::cout << "\n[";
+    for (size_t i = 0; i < neighborhood_->distances->size(); ++i) {
+    	std::cout << "[";
+    	for (size_t j = 0; j < neighborhood_->distances->operator[](i).size(); ++j) {
+    		std::cout << " " << neighborhood_->distances->operator[](i)[j];
+    	}
+    	std::cout << "]" << std::endl;
+    }
+    std::cout << "]" << std::endl;
     delete minHash;
 	return 0;
 }

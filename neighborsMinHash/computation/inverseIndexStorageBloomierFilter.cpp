@@ -10,7 +10,10 @@ InverseIndexStorageBloomierFilter::InverseIndexStorageBloomierFilter(const size_
 	mQ = 7;
 }
 InverseIndexStorageBloomierFilter::~InverseIndexStorageBloomierFilter() {
-	
+    for (auto it = mInverseIndex->begin(); it != mInverseIndex->end(); ++it) {
+        delete *it;
+    }
+	delete mInverseIndex;
 }
 distributionInverseIndex* InverseIndexStorageBloomierFilter::getDistribution(){
     return new distributionInverseIndex();

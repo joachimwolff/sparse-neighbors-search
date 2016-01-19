@@ -1,7 +1,7 @@
 /**
  Copyright 2015 Joachim Wolff
  Master Thesis
- Tutor: Fabrizio Costa
+ Tutors: Fabrizio Costa, Milad Miladi
  Winter semester 2015/2016
 
  Chair of Bioinformatics
@@ -84,6 +84,8 @@ InverseIndex::~InverseIndex() {
     }
     delete mSignatureStorage;
     delete mHash;
+    delete mInverseIndexStorage;
+     
 }
 
 distributionInverseIndex* InverseIndex::getDistribution() {
@@ -465,6 +467,8 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 (*distances)[instanceId->second->instances->operator[](j)] = (*distancesForThisInstance)[j];
             }
         }
+        delete neighborsForThisInstance;
+        delete distancesForThisInstance;
     }
     // std::cout << __LINE__ << std::endl;
     

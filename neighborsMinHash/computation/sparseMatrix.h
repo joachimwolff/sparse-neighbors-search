@@ -39,9 +39,9 @@ class SparseMatrixFloat {
         mNumberOfInstances = pNumberOfInstances;
     };
     ~SparseMatrixFloat() {
-        delete mSparseMatrix;
-        delete mSparseMatrixValues;
-        delete mSizesOfInstances;
+        delete [] mSparseMatrix;
+        delete [] mSparseMatrixValues;
+        delete [] mSizesOfInstances;
     };
     size_t getNextElement(size_t pInstance, size_t pCounter) const {
         if (pCounter < mSizesOfInstances[pInstance]) {

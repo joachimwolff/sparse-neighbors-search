@@ -104,8 +104,8 @@ class MinHash():
                                                     hash_algorithm, block_size, shingle)
 
     def __del__(self):
-        if _minHash.delete_object(self._pointer_address_of_minHash_object) != 0:
-            pass
+        _minHash.delete_object(self._pointer_address_of_minHash_object)
+           
 
     def fit(self, X, y=None):
         """Fit the model using X as training data.

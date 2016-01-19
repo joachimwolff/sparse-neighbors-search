@@ -51,7 +51,7 @@ static PyObject* createObject(PyObject* self, PyObject* args) {
     maximalNumberOfHashCollisions, excessFactor, bloomierFilter, hashAlgorithm, blockSize, shingle;
     int fast, similarity, pruneInverseIndex, removeHashFunctionWithLessEntriesAs;
     float pruneInverseIndexAfterInstance;
-    std::cout << __LINE__ << std::endl;
+    // std::cout << __LINE__ << std::endl;
     if (!PyArg_ParseTuple(args, "kkkkkkkkkiikifikkk", &numberOfHashFunctions,
                         &shingleSize, &numberOfCores, &chunkSize, &nNeighbors,
                         &minimalBlocksInCommon, &maxBinSize,
@@ -59,17 +59,17 @@ static PyObject* createObject(PyObject* self, PyObject* args) {
                         &pruneInverseIndex,&pruneInverseIndexAfterInstance, &removeHashFunctionWithLessEntriesAs,
                         &hashAlgorithm, &blockSize, &shingle))
         return NULL;
-    std::cout << __LINE__ << std::endl;
+    // std::cout << __LINE__ << std::endl;
     
     MinHash* minHash = new MinHash (numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
                     maxBinSize, nNeighbors, minimalBlocksInCommon, 
                     excessFactor, maximalNumberOfHashCollisions, fast, similarity, bloomierFilter, pruneInverseIndex,
                     pruneInverseIndexAfterInstance, removeHashFunctionWithLessEntriesAs, hashAlgorithm, blockSize, shingle);
-    std::cout << __LINE__ << std::endl;
+    // std::cout << __LINE__ << std::endl;
     
     size_t adressMinHashObject = reinterpret_cast<size_t>(minHash);
     PyObject* pointerToInverseIndex = Py_BuildValue("k", adressMinHashObject);
-    std::cout << __LINE__ << std::endl;
+    // std::cout << __LINE__ << std::endl;
     
     return pointerToInverseIndex;
 }
@@ -117,7 +117,7 @@ static PyObject* partialFit(PyObject* self, PyObject* args) {
     return fit(self, args);
 }
 static PyObject* kneighbors(PyObject* self, PyObject* args) {
-    std::cout << __LINE__ << std::endl;
+    // std::cout << __LINE__ << std::endl;
     
     size_t addressMinHashObject, nNeighbors, maxNumberOfInstances,
             maxNumberOfFeatures, returnDistance;
