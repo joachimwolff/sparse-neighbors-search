@@ -55,8 +55,15 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
     mBlockSize = pBlockSize;
     mShingle = pShingle;
     size_t maximalFeatures = 5000;
-    
-    size_t inverseIndexSize = ceil(((float) (mNumberOfHashFunctions * mBlockSize) / (float) mShingleSize)+1);
+    size_t inverseIndexSize;
+    if (mShingle == 0) {
+        if (mBlockSize == 0) {
+            mBlockSize = 1;
+        }
+        inverseIndexSize = mNumberOfHashFunctions * mBlockSize;
+    } else {
+        inverseIndexSize = ceil(((float) (mNumberOfHashFunctions * mBlockSize) / (float) mShingleSize));        
+    }
     if (pBloomierFilter) {
         // std::cout << "Using bloomier filter. " << std::endl;
         mInverseIndexStorage = new InverseIndexStorageBloomierFilter(inverseIndexSize, mMaxBinSize, maximalFeatures);
@@ -86,11 +93,8 @@ distributionInverseIndex* InverseIndex::getDistribution() {
  // compute the signature for one instance
 vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance) {
 
-    vsize_t* signature = new vsize_t();
-    if (mBlockSize == 0) {
-        mBlockSize = 1;
-    }
-    signature->reserve(mNumberOfHashFunctions * mBlockSize);
+    vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
+    // signature->resize();
 
     for(size_t j = 0; j < mNumberOfHashFunctions; ++j) {
         for (size_t k = 0; k < mBlockSize; ++k) {
@@ -101,7 +105,11 @@ vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const
                     minHashValue = hashValue;
                 }
             }
+            // std::cout << __LINE__ << std::endl;
+            // std::cout << j << " :: " << k << std::endl; 
             (*signature)[j+k] = minHashValue;
+            // std::cout << __LINE__ << std::endl;
+            
             // std::cout << "minHashValue: " << minHashValue << std::endl; 
         }
        
@@ -110,6 +118,8 @@ vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const
     if (mShingle) {
         return shingle(signature);
     }
+            // std::cout << __LINE__ << std::endl;
+    
     return signature;
 }
 
@@ -298,10 +308,13 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
                  mDoubleElementsStorageCount += 1;
             }
         }
+            // std::cout << __LINE__ << std::endl;
         
         for (size_t j = 0; j < signature->size(); ++j) {
             mInverseIndexStorage->insert(j, (*signature)[j], index);
         }
+            // std::cout << __LINE__ << std::endl;
+        
         if (mPruneInverseIndexAfterInstance > 0) {
 #ifdef OPENMP
 #pragma omp critical
