@@ -36,8 +36,6 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
 #pragma omp critical
 #endif
     {	
-        // std::cout << "size of storage: " << mSignatureStorage->size() << std::endl;
-        // std::cout << pVectorId << std::endl;
         auto itHashValue_InstanceVector = (*mSignatureStorage)[pVectorId].find(pHashValue);
         // if for hash function h_i() the given hash values is already stored
         if (itHashValue_InstanceVector != (*mSignatureStorage)[pVectorId].end()) {
@@ -59,8 +57,6 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
             (*mSignatureStorage)[pVectorId][pHashValue] = instanceIdVector;
         }
     }
-    // std::cout << __LINE__ << std::endl;
-    
 }
 
 distributionInverseIndex* InverseIndexStorageUnorderedMap::getDistribution() {

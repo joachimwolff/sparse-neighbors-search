@@ -128,7 +128,7 @@ int main( int argc, const char* argv[] ) {
     SparseMatrixFloat* dataSparse = parseRawData(&instances, &features, &data, 
                                                   addInfo[0], addInfo[1]);
     neighborhood* neighborhood_ = minHash->kneighbors(dataSparse, nNeighbors, fast);
-
+    neighborhood* neighborhood2_ = minHash->kneighbors(dataSparse, nNeighbors, fast);
     std::cout << "\n[";
     for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
     	std::cout << "[";
@@ -149,5 +149,9 @@ int main( int argc, const char* argv[] ) {
     }
     std::cout << "]" << std::endl;
     delete minHash;
+    delete dataSparse;
+    delete neighborhood_;
+    delete neighborhood2_;
+    
 	return 0;
 }

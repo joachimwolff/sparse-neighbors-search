@@ -80,7 +80,6 @@ InverseIndex::~InverseIndex() {
         delete it->second->instances;
         delete it->second->signature;
         delete it->second;
-
     }
     delete mSignatureStorage;
     delete mHash;

@@ -80,7 +80,15 @@ neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t 
         X = mInverseIndex->computeSignatureMap(pRawData);
     }
     neighborhood* neighborhood_ = mInverseIndex->kneighbors(X, pNneighbors, doubleElementsStorageCount);
-    if (pRawData != NULL) {
+    if (!doubleElementsStorageCount) {
+        for (auto it = X->begin(); it != X->end(); ++it) {
+            if (mInverseIndex->getSignatureStorage()->find(it->first) == mInverseIndex->getSignatureStorage()->end()) {
+                delete it->second->instances;
+                delete it->second->signature;
+                delete it->second;
+            }
+           
+        }
         delete X;
     }
     if (pFast) {     
@@ -101,7 +109,6 @@ if (mChunkSize <= 0) {
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
 #endif
     for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
-
         if (neighborhood_->neighbors->operator[](i).size() != 1) {
             std::vector<sortMapFloat>* exactNeighbors;
             if (neighborhood_->neighbors->operator[](i).size() != 0) {
@@ -112,19 +119,21 @@ if (mChunkSize <= 0) {
                     exactNeighbors = 
                         mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), neighborhood_->neighbors->operator[](i)[0], pNneighbors, pRawData);
                 }
+            } else {
+                exactNeighbors = NULL;
             }
-            if (exactNeighbors == NULL) {
-                exactNeighbors = new std::vector<sortMapFloat>();
-            } 
-            std::vector<int> neighborsVector(exactNeighbors->size());
-            std::vector<float> distancesVector(exactNeighbors->size());
+            size_t vectorSize = 0;
+            if (exactNeighbors != NULL) {
+                vectorSize = exactNeighbors->size();
+            }
+            std::vector<int> neighborsVector(vectorSize);
+            std::vector<float> distancesVector(vectorSize);
 
-            for (size_t j = 0; j < exactNeighbors->size(); ++j) {
+            for (size_t j = 0; j < vectorSize; ++j) {
                 neighborsVector[j] = (*exactNeighbors)[j].key;
                 distancesVector[j] = (*exactNeighbors)[j].val;
             }
             delete exactNeighbors;
-            
 #ifdef OPENMP
 #pragma omp critical
 #endif
@@ -142,6 +151,7 @@ if (mChunkSize <= 0) {
             }
         }
     }
+    
     delete neighborhood_->neighbors;
     delete neighborhood_->distances;
     delete neighborhood_;

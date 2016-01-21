@@ -163,7 +163,9 @@ static PyObject* kneighbors(PyObject* self, PyObject* args) {
     PyObject * returnList = PyList_New(2);
     PyList_SetItem(returnList, 0, outerListDistances);
     PyList_SetItem(returnList, 1, outerListNeighbors);
-
+    if (!lazyFitting) {
+        delete signatures;
+    }
     return returnList;
 }
 static PyObject* kneighborsGraph(PyObject* self, PyObject* args) {

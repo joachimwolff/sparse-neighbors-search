@@ -56,7 +56,7 @@ for value in sorted(distribution[1][0::10]):
         del neighbors
         del n_neighbors_minHash_prune
         # print "gc.garbage: ", gc.garbage
-        # gc.collect()
+        gc.collect()
         # %xdel -n neighbors
         # %xdel -n n_neighbors_minHash_prune
 #         del n_neighbors_minHash_prune
