@@ -73,12 +73,12 @@ class SparseMatrixFloat {
         mSizesOfInstances[pInstanceId] = pSizeOfInstance;
     };
 
-    std::vector<sortMapFloat>* euclidianDistance(const std::vector<int> pRowIdVector, const int pRowId, const size_t pNneighbors, const SparseMatrixFloat* pQueryData=NULL) const {
+    std::vector<sortMapFloat> euclidianDistance(const std::vector<int> pRowIdVector, const int pRowId, const size_t pNneighbors, const SparseMatrixFloat* pQueryData=NULL) const {
         const SparseMatrixFloat* queryData = this;
         if (pQueryData != NULL) {
             queryData = pQueryData;
         }
-        std::vector<sortMapFloat>* returnValue = new std::vector<sortMapFloat>(pRowIdVector.size());
+        std::vector<sortMapFloat> returnValue(pRowIdVector.size());
         size_t pointerToMatrixElement = 0;
         size_t pointerToVectorElement = 0;
         // iterate over all candidates
@@ -142,24 +142,24 @@ class SparseMatrixFloat {
             // square root of the sum
             element.val = sqrt(element.val);
             
-            (*returnValue)[i] = element;
+            returnValue[i] = element;
         }
 
         size_t numberOfElementsToSort = pNneighbors;
-        if (pNneighbors > returnValue->size()) {
-            numberOfElementsToSort = returnValue->size();
+        if (pNneighbors > returnValue.size()) {
+            numberOfElementsToSort = returnValue.size();
         }
         // sort the values by increasing order
-        std::partial_sort(returnValue->begin(), returnValue->begin()+numberOfElementsToSort, returnValue->end(), mapSortAscByValueFloat);
+        std::partial_sort(returnValue.begin(), returnValue.begin()+numberOfElementsToSort, returnValue.end(), mapSortAscByValueFloat);
         return returnValue;
     };
 
-    std::vector<sortMapFloat>* cosineSimilarity(const std::vector<int> pRowIdVector, const int pRowId, const size_t pNneighbors, const SparseMatrixFloat* pQueryData=NULL) const {
+    std::vector<sortMapFloat> cosineSimilarity(const std::vector<int> pRowIdVector, const int pRowId, const size_t pNneighbors, const SparseMatrixFloat* pQueryData=NULL) const {
         const SparseMatrixFloat* queryData = this;
         if (pQueryData != NULL) {
             queryData = pQueryData;
         }
-        std::vector<sortMapFloat>* returnValue = new std::vector<sortMapFloat>(pRowIdVector.size());
+        std::vector<sortMapFloat> returnValue(pRowIdVector.size());
         size_t pointerToMatrixElement = 0;
         size_t pointerToVectorElement = 0;
         // iterate over all candidates
@@ -221,14 +221,14 @@ class SparseMatrixFloat {
             // compute cosine similarity
             element.val = dotProduct / static_cast<float>(magnitudeFirstVector * magnitudeSecondVector);
             
-            (*returnValue)[i] = element;
+            returnValue[i] = element;
         }
         size_t numberOfElementsToSort = pNneighbors;
-        if (pNneighbors > returnValue->size()) {
-            numberOfElementsToSort = returnValue->size();
+        if (pNneighbors > returnValue.size()) {
+            numberOfElementsToSort = returnValue.size();
         }
         // sort the values by increasing order
-        std::partial_sort(returnValue->begin(), returnValue->begin()+numberOfElementsToSort, returnValue->end(), mapSortDescByValueFloat);
+        std::partial_sort(returnValue.begin(), returnValue.begin()+numberOfElementsToSort, returnValue.end(), mapSortDescByValueFloat);
         return returnValue;
     };
 };

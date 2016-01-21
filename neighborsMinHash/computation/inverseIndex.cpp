@@ -246,7 +246,7 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
             if (instanceSignature->find(signatureId) == instanceSignature->end()) {
                 vsize_t* doubleInstanceVector = new vsize_t(1);
                 (*doubleInstanceVector)[0] = index;
-                uniqueElement* element = new uniqueElement();;
+                uniqueElement* element = new uniqueElement();
                 element->instances = doubleInstanceVector;
                 element->signature = signature;
                 instanceSignature->operator[](signatureId) = element;
@@ -432,10 +432,10 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         size_t count = 0;
     // std::cout << __LINE__ << std::endl;
         
-        vvint* neighborsForThisInstance = new vvint(instanceId->second->instances->size());
-        vvfloat* distancesForThisInstance = new vvfloat(instanceId->second->instances->size());
+        vvint neighborsForThisInstance(instanceId->second->instances->size());
+        vvfloat distancesForThisInstance(instanceId->second->instances->size());
 
-        for (size_t j = 0; j < neighborsForThisInstance->size(); ++j) {
+        for (size_t j = 0; j < neighborsForThisInstance.size(); ++j) {
             vint neighborhoodVector;
             std::vector<float> distanceVector;
             if (neighborhoodVectorForSorting[0].key != instanceId->second->instances->operator[](j)) {
@@ -449,8 +449,8 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 distanceVector.push_back(1 - ((*it).val / static_cast<float>(mMaximalNumberOfHashCollisions)));
                 ++count;
                 if (count >= sizeOfNeighborhoodAdjusted) {
-                    (*neighborsForThisInstance)[j] = neighborhoodVector;
-                    (*distancesForThisInstance)[j] = distanceVector;
+                    neighborsForThisInstance[j] = neighborhoodVector;
+                    distancesForThisInstance[j] = distanceVector;
                     break;
                 }
             }
@@ -462,12 +462,12 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         {     
                 // std::cout << __LINE__ << std::endl;
             for (size_t j = 0; j < instanceId->second->instances->size(); ++j) {
-                (*neighbors)[instanceId->second->instances->operator[](j)] = (*neighborsForThisInstance)[j];
-                (*distances)[instanceId->second->instances->operator[](j)] = (*distancesForThisInstance)[j];
+                (*neighbors)[instanceId->second->instances->operator[](j)] = neighborsForThisInstance[j];
+                (*distances)[instanceId->second->instances->operator[](j)] = distancesForThisInstance[j];
             }
         }
-        delete neighborsForThisInstance;
-        delete distancesForThisInstance;
+        // delete neighborsForThisInstance;
+        // delete distancesForThisInstance;
     }
     // std::cout << __LINE__ << std::endl;
     

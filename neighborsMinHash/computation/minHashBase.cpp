@@ -110,7 +110,7 @@ if (mChunkSize <= 0) {
 #endif
     for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
         if (neighborhood_->neighbors->operator[](i).size() != 1) {
-            std::vector<sortMapFloat>* exactNeighbors;
+            std::vector<sortMapFloat> exactNeighbors;
             if (neighborhood_->neighbors->operator[](i).size() != 0) {
                 if (pSimilarity) {
                     exactNeighbors = 
@@ -119,21 +119,16 @@ if (mChunkSize <= 0) {
                     exactNeighbors = 
                         mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), neighborhood_->neighbors->operator[](i)[0], pNneighbors, pRawData);
                 }
-            } else {
-                exactNeighbors = NULL;
             }
-            size_t vectorSize = 0;
-            if (exactNeighbors != NULL) {
-                vectorSize = exactNeighbors->size();
-            }
+            size_t vectorSize = exactNeighbors.size();
+            
             std::vector<int> neighborsVector(vectorSize);
             std::vector<float> distancesVector(vectorSize);
 
             for (size_t j = 0; j < vectorSize; ++j) {
-                neighborsVector[j] = (*exactNeighbors)[j].key;
-                distancesVector[j] = (*exactNeighbors)[j].val;
+                neighborsVector[j] = exactNeighbors[j].key;
+                distancesVector[j] = exactNeighbors[j].val;
             }
-            delete exactNeighbors;
 #ifdef OPENMP
 #pragma omp critical
 #endif
