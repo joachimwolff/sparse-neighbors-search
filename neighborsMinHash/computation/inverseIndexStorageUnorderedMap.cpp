@@ -17,14 +17,15 @@ InverseIndexStorageUnorderedMap::~InverseIndexStorageUnorderedMap() {
 size_t InverseIndexStorageUnorderedMap::size() const {
 	return mSignatureStorage->size();
 }
-vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, size_t pHashValue) {
+const vsize_t InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, size_t pHashValue) {
     // std::cout << __LINE__ << std::endl;
     
 	auto iterator = (*mSignatureStorage)[pVectorId].find(pHashValue);
 	if (iterator != (*mSignatureStorage)[pVectorId].end()) {
-		return &(iterator->second);
+		return iterator->second;
 	}
-	return NULL;
+    vsize_t foo;
+	return foo;
     // std::cout << __LINE__ << std::endl;
     
 	

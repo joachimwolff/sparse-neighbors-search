@@ -36,8 +36,8 @@ typedef std::vector< std::map< size_t, size_t > > vmSize_tSize_t;
 typedef std::vector< umapVector > vector__umapVector;
 
 struct uniqueElement {
-  vsize_t* instances;
-  vsize_t* signature;
+  vsize_t instances;
+  vsize_t signature;
 };
 
 struct neighborhood {
@@ -45,7 +45,7 @@ struct neighborhood {
   vvfloat* distances;
 };
 
-typedef std::unordered_map< size_t, uniqueElement* > umap_uniqueElement;
+typedef std::unordered_map< size_t, uniqueElement > umap_uniqueElement;
 
 
 struct sortMapFloat {

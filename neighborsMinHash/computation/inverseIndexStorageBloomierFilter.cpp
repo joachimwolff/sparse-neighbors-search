@@ -27,8 +27,10 @@ void InverseIndexStorageBloomierFilter::removeHashFunctionWithLessEntriesAs(int 
 size_t InverseIndexStorageBloomierFilter::size() const {
 	return mInverseIndex->size();
 }
-const vsize_t* InverseIndexStorageBloomierFilter::getElement(size_t pVectorId, size_t pHashValue) {
-    return (*mInverseIndex)[pVectorId]->get(pHashValue); 
+const vsize_t InverseIndexStorageBloomierFilter::getElement(size_t pVectorId, size_t pHashValue) {
+    // return (*mInverseIndex)[pVectorId]->get(pHashValue); 
+    vsize_t foo;
+    return foo;
 }
 void InverseIndexStorageBloomierFilter::insert(size_t pVectorId, size_t pHashValue, size_t pInstance) {
     if ((*mInverseIndex)[pVectorId] == NULL) {

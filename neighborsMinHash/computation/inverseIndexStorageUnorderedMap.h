@@ -12,7 +12,7 @@ class InverseIndexStorageUnorderedMap : public InverseIndexStorage {
     InverseIndexStorageUnorderedMap(size_t pSizeOfInverseIndex, size_t pMaxBinSize);
 	~InverseIndexStorageUnorderedMap();
   	size_t size() const;
-	vsize_t* getElement(size_t pVectorId, size_t pHashValue);
+	const vsize_t getElement(size_t pVectorId, size_t pHashValue);
 	void insert(size_t pVectorId, size_t pHashValue, size_t pInstance);
     distributionInverseIndex* getDistribution();
     void prune(int pValue);

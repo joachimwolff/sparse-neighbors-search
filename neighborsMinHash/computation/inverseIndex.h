@@ -45,7 +45,7 @@ class InverseIndex {
     InverseIndexStorage* mInverseIndexStorage;
   	umap_uniqueElement* mSignatureStorage;
     Hash* mHash;
-    vsize_t* shingle(vsize_t* pSignature);
+    vsize_t shingle(vsize_t pSignature);
   public:
   	InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     size_t pNumberOfCores, size_t pChunkSize,
@@ -55,12 +55,12 @@ class InverseIndex {
                     int pRemoveHashFunctionWithLessEntriesAs, size_t pHashAlgorithm, 
                     size_t pBlockSize, size_t pShingle);
     ~InverseIndex();
-  	vsize_t* computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance);
-  	vsize_t* computeSignatureWTA(const SparseMatrixFloat* pRawData, const size_t pInstance);
+  	vsize_t computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance);
+  	vsize_t computeSignatureWTA(const SparseMatrixFloat* pRawData, const size_t pInstance);
       
-  	umap_uniqueElement* computeSignatureMap(const SparseMatrixFloat* pRawData);
+  	umap_uniqueElement computeSignatureMap(const SparseMatrixFloat* pRawData);
   	void fit(const SparseMatrixFloat* pRawData);
-  	neighborhood* kneighbors(const umap_uniqueElement* signaturesMap, const size_t pNneighborhood, const bool pDoubleElementsStorageCount);
+  	neighborhood* kneighbors(const umap_uniqueElement signaturesMap, const size_t pNneighborhood, const bool pDoubleElementsStorageCount);
   	umap_uniqueElement* getSignatureStorage() { 
       return mSignatureStorage;
     };
