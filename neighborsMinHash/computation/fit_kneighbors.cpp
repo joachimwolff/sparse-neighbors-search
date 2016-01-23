@@ -55,10 +55,18 @@ MinHash* createMinHashObj(size_t pNumberOfHashFunctions, size_t pShingleSize, si
 
 void fit(MinHash* minHashObj, std::vector<size_t>* pInstances, std::vector<size_t>* pFeatures, std::vector<float>* pData,
                                               size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures) {
+    // std::cout << __LINE__ << std::endl;
+                                                  
 	SparseMatrixFloat* originalDataMatrix = parseRawData(pInstances, pFeatures, pData, 
                                                     pMaxNumberOfInstances, pMaxNumberOfFeatures);
+    // std::cout << __LINE__ << std::endl;
+                                                    
 	minHashObj->set_mOriginalData(originalDataMatrix);
+    // std::cout << __LINE__ << std::endl;
+    
 	minHashObj->fit(originalDataMatrix);
+    // std::cout << __LINE__ << std::endl;
+    
 }
  
    
@@ -112,24 +120,30 @@ int main( int argc, const char* argv[] ) {
     int prune_inverse_index=-1;
     float prune_inverse_index_after_instance=-1.0;
     float removeHashFunctionWithLessEntriesAs=-1.0;
-    size_t hash_algorithm = 0;
+    size_t hash_algorithm = 1;
     size_t block_size = 1;
     size_t shingle=0;
 
 
 
-
+    // std::cout << __LINE__ << std::endl;
     MinHash* minHash = createMinHashObj(numberOfHashFunctions, shingleSize, numberOfCores, chunkSize, nNeighbors,
     					minimalBlocksInCommon, maxBinSize, maximalNumberOfHashCollisions,
     					excessFactor, fast, similarity, bloomierFilter, prune_inverse_index, 
                                                     prune_inverse_index_after_instance, removeHashFunctionWithLessEntriesAs,
                                                     hash_algorithm, block_size, shingle);
+    // std::cout << __LINE__ << std::endl;
+                                                    
     fit(minHash, &instances, &features, &data, addInfo[0], addInfo[1]);
+    // std::cout << __LINE__ << std::endl;
+    
     SparseMatrixFloat* dataSparse = parseRawData(&instances, &features, &data, 
                                                   addInfo[0], addInfo[1]);
+    // std::cout << __LINE__ << std::endl;
+                                                  
     neighborhood* neighborhood_ = minHash->kneighbors(dataSparse, nNeighbors, fast);
-    neighborhood* neighborhood2_ = minHash->kneighbors(dataSparse, nNeighbors, fast);
-    std::cout << "\n[";
+    // neighborhood* neighborhood2_ = minHash->kneighbors(dataSparse, nNeighbors, fast);
+    // std::cout << "\n[";
     for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
     	std::cout << "[";
     	for (size_t j = 0; j < neighborhood_->neighbors->operator[](i).size(); ++j) {
@@ -151,7 +165,7 @@ int main( int argc, const char* argv[] ) {
     delete minHash;
     delete dataSparse;
     delete neighborhood_;
-    delete neighborhood2_;
+    // delete neighborhood2_;
     
 	return 0;
 }

@@ -77,20 +77,20 @@ neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t 
         X = mInverseIndex->getSignatureStorage();
         doubleElementsStorageCount = true;
     } else {
-        X = &(mInverseIndex->computeSignatureMap(pRawData));
+        X = (mInverseIndex->computeSignatureMap(pRawData));
     }
     neighborhood* neighborhood_ = mInverseIndex->kneighbors(X, pNneighbors, doubleElementsStorageCount);
-    // if (!doubleElementsStorageCount) {
-    //     for (auto it = X->begin(); it != X->end(); ++it) {
-    //         if (mInverseIndex->getSignatureStorage()->find(it->first) == mInverseIndex->getSignatureStorage()->end()) {
-    //             delete it->second->instances;
-    //             delete it->second->signature;
-    //             delete it->second;
-    //         }
+    if (!doubleElementsStorageCount) {
+        // for (auto it = X->begin(); it != X->end(); ++it) {
+        //     if (mInverseIndex->getSignatureStorage()->find(it->first) == mInverseIndex->getSignatureStorage()->end()) {
+        //         delete it->second->instances;
+        //         delete it->second->signature;
+        //         delete it->second;
+        //     }
            
-    //     }
-    //     delete X;
-    // }
+        // }
+        delete X;
+    }
     if (pFast) {     
         return neighborhood_;
     }

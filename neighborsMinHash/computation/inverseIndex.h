@@ -58,9 +58,9 @@ class InverseIndex {
   	vsize_t computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance);
   	vsize_t computeSignatureWTA(const SparseMatrixFloat* pRawData, const size_t pInstance);
       
-  	umap_uniqueElement computeSignatureMap(const SparseMatrixFloat* pRawData);
+  	umap_uniqueElement* computeSignatureMap(const SparseMatrixFloat* pRawData);
   	void fit(const SparseMatrixFloat* pRawData);
-  	neighborhood* kneighbors(const umap_uniqueElement signaturesMap, const size_t pNneighborhood, const bool pDoubleElementsStorageCount);
+  	neighborhood* kneighbors(const umap_uniqueElement* signaturesMap, const size_t pNneighborhood, const bool pDoubleElementsStorageCount);
   	umap_uniqueElement* getSignatureStorage() { 
       return mSignatureStorage;
     };

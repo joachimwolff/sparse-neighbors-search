@@ -31,9 +31,12 @@ typedef std::vector< vint > vvint;
 typedef std::vector< vfloat > vvfloat;
 
 typedef std::unordered_map< size_t, vsize_t > umapVector;
+typedef std::unordered_map< size_t, vsize_t* > umapVector_ptr;
 
 typedef std::vector< std::map< size_t, size_t > > vmSize_tSize_t;
 typedef std::vector< umapVector > vector__umapVector;
+typedef std::vector< umapVector_ptr > vector__umapVector_ptr;
+
 
 struct uniqueElement {
   vsize_t instances;

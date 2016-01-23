@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 2.6)
  SET(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
  
-# add_definitions(-DOPENMP)
+#add_definitions(-DOPENMP)
 
 #find_package(OpenMP)
 #if (OPENMP_FOUND)
 #    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
- #   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+#    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 #endif()
-#set(CMAKE_BUILD_TYPE Release)
-set (CMAKE_CXX_FLAGS_DEBUG)
+set(CMAKE_BUILD_TYPE Release)
+#set (CMAKE_CXX_FLAGS_DEBUG)
 
 # Locate GTest
 #find_package(GTest REQUIRED)
