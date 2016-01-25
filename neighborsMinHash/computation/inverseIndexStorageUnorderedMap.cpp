@@ -32,7 +32,10 @@ const vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, siz
 }
 void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue, size_t pInstance) {
     // std::cout << __LINE__ << std::endl;
-    
+    size_t insertValue = pHashValue | 0b11111111111111111111111111111100;
+    if (insertValue == 0b11111111111111111111111111111100) {
+        return;
+    }
 #ifdef OPENMP
 #pragma omp critical
 #endif
