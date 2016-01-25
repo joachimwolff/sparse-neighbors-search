@@ -101,7 +101,9 @@ class MinHash():
                                                     1 if fast else 0, 1 if similarity else 0,
                                                     1 if bloomierFilter else 0, prune_inverse_index, 
                                                     prune_inverse_index_after_instance, removeHashFunctionWithLessEntriesAs,
-                                                    hash_algorithm, block_size, shingle)
+                                                    hash_algorithm,
+                                                     block_size, 
+                                                     shingle)
 
     def __del__(self):
         _minHash.delete_object(self._pointer_address_of_minHash_object)
