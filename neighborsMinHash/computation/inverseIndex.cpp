@@ -163,36 +163,38 @@ vsize_t InverseIndex::computeSignatureWTA(const SparseMatrixFloat* pRawData, con
     
     // signatureHash.reserve(sizeOfInstance);    
     size_t mSeed = 42;
-    size_t mK = 2;
-    std::unordered_map<size_t, size_t> keyValue;
+    size_t mK = 10;
+    std::unordered_map<size_t, float> keyValue;
     vsize_t signature(mNumberOfHashFunctions);
     // std::cout << "pInstance: " << pInstance << " size: " << sizeOfInstance << std::endl;
     if (sizeOfInstance < mK) {
         mK = sizeOfInstance;
     }
-    std::cout << "\nSignature: ";
-    mNumberOfHashFunctions = 10;
+    // std::cout << "\nSignature: ";
+    mNumberOfHashFunctions = 100;
     // if (sizeOfInstance > 0) {
     for (size_t i = 0; i < mNumberOfHashFunctions; ++i) {
         for (size_t j = 0; j < sizeOfInstance; ++j) {
             size_t hashIndex = mHash->hash((pRawData->getNextElement(pInstance, j) +1), mSeed+i, sizeOfInstance);
             // std::cout << hashIndex << std::endl;
             signatureHash[j] = hashIndex;
-            keyValue[hashIndex] = mHash->hash((pRawData->getNextElement(pInstance, j) +1), mSeed+i, MAX_VALUE);
+            keyValue[hashIndex] = pRawData->getNextValue(pInstance, j);
         } 
         
         std::partial_sort (signatureHash.begin(), signatureHash.begin()+mK, signatureHash.end());
-        size_t maxValue = 0;
+        float maxValue = 0.0;
         size_t maxValueIndex = 0;
         for (size_t j = 0; j < mK; ++j) {
+            // std::cout << "foo: " << keyValue[signatureHash[j]] << std::endl;
             if (keyValue[signatureHash[j]] > maxValue) {
                 maxValue = keyValue[signatureHash[j]];
                 maxValueIndex = j;
+                // std::cout << "max value: " << maxValue << " maxValueIndex: " << maxValueIndex << std::endl;
             } 
         }
         // signatureHash.clear();
         signature[i] = maxValueIndex;
-        std::cout << maxValueIndex << ", ";
+        // std::cout << maxValueIndex << ", ";
         keyValue.clear();
         signatureHash.clear();
     }
@@ -200,7 +202,7 @@ vsize_t InverseIndex::computeSignatureWTA(const SparseMatrixFloat* pRawData, con
     if (mShingle) {
         return shingle(signature);
     }
-    std::cout << std::endl;
+    // std::cout << std::endl;
     return signature;
 }
 
@@ -387,20 +389,29 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         
         umap_uniqueElement::const_iterator instanceId = pSignaturesMap->begin();
         std::advance(instanceId, i); 
+    // std::cout << __LINE__ << std::endl;
         
         std::unordered_map<size_t, size_t> neighborhood;
         const vsize_t signature = instanceId->second.signature;
+    // std::cout << __LINE__ << std::endl;
+        
         for (size_t j = 0; j < signature.size(); ++j) {
             size_t hashID = signature[j];
+    // std::cout << __LINE__ << std::endl;
+            
             if (hashID != 0 && hashID != MAX_VALUE) {
                 size_t collisionSize = 0;
+    // std::cout << __LINE__ << std::endl;
 
                 const vsize_t* instances = mInverseIndexStorage->getElement(j, hashID);
+    // std::cout << __LINE__ << std::endl;
+                if (instances == NULL) continue;
                 if (instances->size() != 0) {
                     collisionSize = instances->size();
                 } else { 
                     continue;
                 }
+    // std::cout << __LINE__ << std::endl;
                 
                 if (collisionSize < mMaxBinSize && collisionSize > 0) {
                     for (size_t k = 0; k < instances->size(); ++k) {
@@ -409,6 +420,8 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 }
             }
         }
+    // std::cout << __LINE__ << std::endl;
+        
         if (neighborhood.size() == 0) {
             vint emptyVectorInt;
             emptyVectorInt.push_back(1);
@@ -420,6 +433,8 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             }
             continue;
         } 
+    // std::cout << __LINE__ << std::endl;
+        
         std::vector< sort_map > neighborhoodVectorForSorting;
         for (auto it = neighborhood.begin(); it != neighborhood.end(); ++it) {
             sort_map mapForSorting;
@@ -427,6 +442,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             mapForSorting.val = (*it).second;
             neighborhoodVectorForSorting.push_back(mapForSorting);
         }
+    // std::cout << __LINE__ << std::endl;
 
         size_t numberOfElementsToSort = pNneighborhood;
         if (pNneighborhood > neighborhoodVectorForSorting.size()) {

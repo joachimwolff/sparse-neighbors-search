@@ -25,17 +25,17 @@ const vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, siz
 		return &(iterator->second);
 	}
     // vsize_t foo;
-	return NULL;
+	return NULL; 
     // std::cout << __LINE__ << std::endl;
     
 	
 }
 void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue, size_t pInstance) {
     // std::cout << __LINE__ << std::endl;
-    size_t insertValue = pHashValue | 0b11111111111111111111111111111100;
-    if (insertValue == 0b11111111111111111111111111111100) {
-        return;
-    }
+    // size_t insertValue = pHashValue | 0b11111111111111111111111111111100;
+    // if (insertValue == 0b11111111111111111111111111111100) {
+    //     return;
+    // }
 #ifdef OPENMP
 #pragma omp critical
 #endif
@@ -111,7 +111,7 @@ distributionInverseIndex* InverseIndexStorageUnorderedMap::getDistribution() {
     
     return retVal;
 }
-void InverseIndexStorageUnorderedMap::prune(int pValue) {
+void InverseIndexStorageUnorderedMap::prune(int pValue) { 
     // std::cout << __LINE__ << std::endl;
     for (auto it = mSignatureStorage->begin(); it != mSignatureStorage->end(); ++it) {
         vsize_t elementsToDelete;

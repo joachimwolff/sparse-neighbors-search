@@ -46,6 +46,11 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     file_name = args.file_name
+    # print args.n_neighbors
+    # print args.radius
+    # print args.fast
+    # print args.number_of_hash_functions
+    # print args.max_bin_size
     print "Pruning value: ", int(args.prune_inverse_index)
     print "File name: ", file_name
     
@@ -61,25 +66,28 @@ if __name__ == "__main__":
         datasetBursi = pickle.load(fileObject)
     fitting_time = 0
     query_time = 0
-    
     minHash = MinHash(n_neighbors=int(args.n_neighbors), radius=float(args.radius), fast=bool(args.fast), 
                 number_of_hash_functions=int(args.number_of_hash_functions),
                 max_bin_size = int(args.max_bin_size), minimal_blocks_in_common = int(args.minimal_blocks_in_common),
                 shingle_size = int(args.shingle_size), excess_factor = int(args.excess_factor),
                 similarity=bool(args.similarity), bloomierFilter=False,
-                number_of_cores=args.number_of_cores,
+                number_of_cores=int(args.number_of_cores),
                 chunk_size=int(args.chunk_size), prune_inverse_index=int(args.prune_inverse_index),
                 prune_inverse_index_after_instance=float(args.prune_inverse_index_after_instance),
                 removeHashFunctionWithLessEntriesAs=int(args.removeHashFunctionWithLessEntriesAs), 
                 hash_algorithm = int(args.hash_algorithm),
                  block_size = int(args.block_size), 
                  shingle = int(args.shingle))
+                 
     time_start = time.time()
     minHash.fit(datasetBursi)
+    
     fitting_time = time.time() - time_start
     distribution =  minHash.get_distribution_of_inverse_index()
+    
     time_start = time.time()
     neighbors_result = minHash.kneighbors(fast=True,return_distance=False)
+    
     query_time = time.time() - time_start
     if not os.path.isfile("neighbors_sklearn"):
         nearest_Neighbors = NearestNeighbors(n_jobs=2)
@@ -93,6 +101,7 @@ if __name__ == "__main__":
         neighbors_sklearn = pickle.load(fileObject)
         
     accuracy_score_ = 0.0
+    
     for x, y in zip(neighbors_result, neighbors_sklearn):
         accuracy_score_ += accuracy_score(x, y)
     accuracy_score_ = accuracy_score_ / float(len(neighbors_result))
