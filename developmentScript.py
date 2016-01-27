@@ -74,9 +74,9 @@ def test(data):
     # if not os.path.exists("inverse_index.approx"):
     print "Build inverse index for approximate..."
     time_build_approx_start = time.time()
-    minHash = MinHash(number_of_hash_functions=400, max_bin_size= 100000, shingle_size = 4, similarity=False, bloomierFilter=False, number_of_cores=4,
-                     prune_inverse_index=-1, 
-                    prune_inverse_index_after_instance=-1, removeHashFunctionWithLessEntriesAs=-1, hash_algorithm = 1, shingle=0, block_size=1)
+    minHash = MinHash(number_of_hash_functions=400, max_bin_size= 50, shingle_size = 3, similarity=False, bloomierFilter=False, number_of_cores=4,
+                     prune_inverse_index=-1, remove_value_with_least_sigificant_bit=0,
+                    prune_inverse_index_after_instance=-1, removeHashFunctionWithLessEntriesAs=-1, hash_algorithm = 1, shingle=0, block_size=100)
     # minHash.fit(data[0])
     minHash.fit(datasetBursi)
     # minHash.get_distribution_of_inverse_index()
@@ -87,7 +87,7 @@ def test(data):
     print distribution
     dist_count = 0;
     for key in distribution[0]:
-        if key < 2:
+        if key < 1:
             continue;
         else:
             dist_count += distribution[0][key]
@@ -123,13 +123,25 @@ def test(data):
     print "Time: ", time_comp_approx_end  - time_comp_approx
     print "\n\n"
 
-    minHash2 = MinHash(number_of_hash_functions=4000, max_bin_size= 1000000, shingle_size = 4, similarity=False, bloomierFilter=False, number_of_cores=4,
-                     prune_inverse_index=-1, 
-                    prune_inverse_index_after_instance=-1, removeHashFunctionWithLessEntriesAs=-1, hash_algorithm = 0, shingle=0, block_size=1)
+    minHash2 = MinHash(number_of_hash_functions=800, max_bin_size= 50, shingle_size = 2, similarity=False, bloomierFilter=False, number_of_cores=4,
+                     prune_inverse_index=-1, remove_value_with_least_sigificant_bit=0,
+                    prune_inverse_index_after_instance=-1, removeHashFunctionWithLessEntriesAs=0, hash_algorithm = 0, shingle=1, block_size=4)
     # minHash.fit(data[0])
     time_fit = time.time()
     minHash2.fit(datasetBursi)
     print "Fitting: ", time.time() - time_fit
+    
+    
+    distribution =  minHash2.get_distribution_of_inverse_index()
+    print distribution
+    dist_count = 0;
+    for key in distribution[0]:
+        if key < 1:
+            continue;
+        else:
+            dist_count += distribution[0][key]
+    print "dist count: ", dist_count
+    
     time_comp_exact = time.time()
     # print "Exact solution, distance=True: ", minHash_exact.kneighbors( centroids_neighborhood,return_distance=True)
     approx_fit = minHash2.kneighbors(fast=True, return_distance=False)

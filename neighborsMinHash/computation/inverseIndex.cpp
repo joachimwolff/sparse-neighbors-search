@@ -36,7 +36,7 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     size_t pMaxBinSize, size_t pMinimalBlocksInCommon,
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, size_t pBloomierFilter,
                     int pPruneInverseIndex, float pPruneInverseIndexAfterInstance, int pRemoveHashFunctionWithLessEntriesAs,
-                    size_t pHashAlgorithm, size_t pBlockSize, size_t pShingle) {   
+                    size_t pHashAlgorithm, size_t pBlockSize, size_t pShingle, size_t pRemoveValueWithLeastSigificantBit) {   
                         
     mNumberOfHashFunctions = pNumberOfHashFunctions;
     mShingleSize = pShingleSize;
@@ -65,26 +65,17 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
         inverseIndexSize = ceil(((float) (mNumberOfHashFunctions * mBlockSize) / (float) mShingleSize));        
     }
     if (pBloomierFilter) {
-        // std::cout << "Using bloomier filter. " << std::endl;
         mInverseIndexStorage = new InverseIndexStorageBloomierFilter(inverseIndexSize, mMaxBinSize, maximalFeatures);
     } else {
-        // std::cout << "Using unorderedMap. " << std::endl;
-        
         mInverseIndexStorage = new InverseIndexStorageUnorderedMap(inverseIndexSize, mMaxBinSize);
     }
+    mRemoveValueWithLeastSigificantBit = pRemoveValueWithLeastSigificantBit;
 }
  
 InverseIndex::~InverseIndex() {
-
-    // for (auto it = (*mSignatureStorage).begin(); it != (*mSignatureStorage).end(); ++it) {
-    //     // delete it->second->instances;
-    //     delete it->second;
-    //     delete it->second->signature;
-    // }
     delete mSignatureStorage;
     delete mHash;
     delete mInverseIndexStorage;
-     
 }
 
 distributionInverseIndex* InverseIndex::getDistribution() {
@@ -163,46 +154,46 @@ vsize_t InverseIndex::computeSignatureWTA(const SparseMatrixFloat* pRawData, con
     
     // signatureHash.reserve(sizeOfInstance);    
     size_t mSeed = 42;
-    size_t mK = 10;
-    std::unordered_map<size_t, float> keyValue;
+    size_t mK = mBlockSize;
+    // mNumberOfHashFunctions = 800;
+    
+    std::map<size_t, float> keyValue;
     vsize_t signature(mNumberOfHashFunctions);
     // std::cout << "pInstance: " << pInstance << " size: " << sizeOfInstance << std::endl;
     if (sizeOfInstance < mK) {
         mK = sizeOfInstance;
     }
     // std::cout << "\nSignature: ";
-    mNumberOfHashFunctions = 100;
     // if (sizeOfInstance > 0) {
     for (size_t i = 0; i < mNumberOfHashFunctions; ++i) {
         for (size_t j = 0; j < sizeOfInstance; ++j) {
-            size_t hashIndex = mHash->hash((pRawData->getNextElement(pInstance, j) +1), mSeed+i, sizeOfInstance);
-            // std::cout << hashIndex << std::endl;
-            signatureHash[j] = hashIndex;
+            size_t hashIndex = mHash->hash((pRawData->getNextElement(pInstance, j) +1), mSeed+i, MAX_VALUE);
+            // signatureHash[j] = hashIndex;
             keyValue[hashIndex] = pRawData->getNextValue(pInstance, j);
         } 
         
-        std::partial_sort (signatureHash.begin(), signatureHash.begin()+mK, signatureHash.end());
+        // std::partial_sort (signatureHash.begin(), signatureHash.begin()+mK, signatureHash.end());
         float maxValue = 0.0;
         size_t maxValueIndex = 0;
-        for (size_t j = 0; j < mK; ++j) {
-            // std::cout << "foo: " << keyValue[signatureHash[j]] << std::endl;
-            if (keyValue[signatureHash[j]] > maxValue) {
-                maxValue = keyValue[signatureHash[j]];
+        size_t j = 0;
+        // for (size_t j = 0; j < mK; ++j) {
+        for (auto it = keyValue.begin(); it != keyValue.end(); ++it) {
+            if (j >= mK) break;
+            if (it->second > maxValue) {
+                maxValue = it->second;
                 maxValueIndex = j;
                 // std::cout << "max value: " << maxValue << " maxValueIndex: " << maxValueIndex << std::endl;
+            // if (keyValue[signatureHash[j]] > maxValue) {
+            //     maxValue = keyValue[signatureHash[j]];
+            //     maxValueIndex = j;              
             } 
+            ++j;
         }
-        // signatureHash.clear();
         signature[i] = maxValueIndex;
-        // std::cout << maxValueIndex << ", ";
         keyValue.clear();
         signatureHash.clear();
     }
-    // }
-    if (mShingle) {
-        return shingle(signature);
-    }
-    // std::cout << std::endl;
+   
     return signature;
 }
 
@@ -326,7 +317,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
             // std::cout << __LINE__ << std::endl;
         
         for (size_t j = 0; j < signature.size(); ++j) {
-            mInverseIndexStorage->insert(j, signature[j], index);
+            mInverseIndexStorage->insert(j, signature[j], index, mRemoveValueWithLeastSigificantBit);
         }
             // std::cout << __LINE__ << std::endl;
         

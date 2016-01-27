@@ -32,7 +32,7 @@ const vsize_t* InverseIndexStorageBloomierFilter::getElement(size_t pVectorId, s
     // vsize_t foo;
     // return foo;
 }
-void InverseIndexStorageBloomierFilter::insert(size_t pVectorId, size_t pHashValue, size_t pInstance) {
+void InverseIndexStorageBloomierFilter::insert(size_t pVectorId, size_t pHashValue, size_t pInstance, size_t pRemoveValueWithLeastSigificantBit) {
     if ((*mInverseIndex)[pVectorId] == NULL) {
         (*mInverseIndex)[pVectorId] = new BloomierFilter(mM, mK, mQ, 100, mMaxBinSize);
     }

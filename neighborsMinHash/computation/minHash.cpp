@@ -27,14 +27,15 @@ MinHash::MinHash(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     int pFast, int pSimilarity, size_t pBloomierFilter,
                     int pPruneInverseIndex, float pPruneInverseIndexAfterInstance, 
                     int pRemoveHashFunctionWithLessEntriesAs, size_t pHashAlgorithm,
-                    size_t pBlockSize, size_t pShingle):MinHashBase(pNumberOfHashFunctions, pShingleSize,
+                    size_t pBlockSize, size_t pShingle,
+                    size_t pRemoveValueWithLeastSigificantBit):MinHashBase(pNumberOfHashFunctions, pShingleSize,
                                                 pNumberOfCores, pChunkSize, pMaxBinSize,
                                                 pSizeOfNeighborhood, pMinimalBlocksInCommon,
                                                 pExcessFactor, pMaximalNumberOfHashCollisions,
                                                 pFast, pSimilarity, pBloomierFilter,
                                                 pPruneInverseIndex, pPruneInverseIndexAfterInstance,
                                                 pRemoveHashFunctionWithLessEntriesAs, pHashAlgorithm,
-                                                pBlockSize, pShingle) {
+                                                pBlockSize, pShingle, pRemoveValueWithLeastSigificantBit) {
 }
 
 MinHash::~MinHash() {

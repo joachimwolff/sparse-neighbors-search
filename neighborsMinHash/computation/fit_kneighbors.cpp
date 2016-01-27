@@ -43,13 +43,14 @@ MinHash* createMinHashObj(size_t pNumberOfHashFunctions, size_t pShingleSize, si
 							size_t pExcessFactor, int pFast, int pSimilarity, size_t pBloomierFilter,
                             size_t pPrune_inverse_index, float pPrune_inverse_index_after_instance, 
                             int pRemoveHashFunctionWithLessEntriesAs,
-                            size_t pHash_algorithm, size_t pBlock_size, size_t pShingle) {
+                            size_t pHash_algorithm, size_t pBlock_size, size_t pShingle, 
+                            size_t pRemoveValueWithLeastSigificantBit) {
 	MinHash* minHashObj = new MinHash (pNumberOfHashFunctions, pShingleSize, pNumberOfCores, pChunkSize,
                     pMaxBinSize, pNneighbors, pMinimalBlocksInCommon, 
                     pExcessFactor, pMaximalNumberOfHashCollisions, pFast, pSimilarity, pBloomierFilter,
                     pPrune_inverse_index, pPrune_inverse_index_after_instance,
                     pRemoveHashFunctionWithLessEntriesAs, pHash_algorithm,
-                    pBlock_size, pShingle);
+                    pBlock_size, pShingle, pRemoveValueWithLeastSigificantBit);
 	return minHashObj;
 }
 

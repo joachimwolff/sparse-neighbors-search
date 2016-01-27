@@ -41,6 +41,7 @@ class InverseIndex {
     float mPruneInverseIndexAfterInstance;
     int mRemoveHashFunctionWithLessEntriesAs;
     size_t mBlockSize;
+    size_t mRemoveValueWithLeastSigificantBit;
     
     InverseIndexStorage* mInverseIndexStorage;
   	umap_uniqueElement* mSignatureStorage;
@@ -53,7 +54,7 @@ class InverseIndex {
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, size_t pBloomierFilter,
                     int pPruneInverseIndex, float pPruneInverseIndexAfterInstance,
                     int pRemoveHashFunctionWithLessEntriesAs, size_t pHashAlgorithm, 
-                    size_t pBlockSize, size_t pShingle);
+                    size_t pBlockSize, size_t pShingle, size_t pRemoveValueWithLeastSigificantBit);
     ~InverseIndex();
   	vsize_t computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance);
   	vsize_t computeSignatureWTA(const SparseMatrixFloat* pRawData, const size_t pInstance);

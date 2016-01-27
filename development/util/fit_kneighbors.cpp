@@ -40,10 +40,11 @@ SparseMatrixFloat* parseRawData(std::vector<size_t>* pInstances, std::vector<siz
 MinHash* createMinHashObj(size_t pNumberOfHashFunctions, size_t pShingleSize, size_t pNumberOfCores, 
 							size_t pChunkSize, size_t pNneighbors, size_t pMinimalBlocksInCommon, 
 							size_t pMaxBinSize,  size_t pMaximalNumberOfHashCollisions, 
-							size_t pExcessFactor, int pFast) {
+							size_t pExcessFactor, int pFast, size_t pRemoveValueWithLeastSigificantBit) {
 	MinHash* minHashObj = new MinHash (pNumberOfHashFunctions, pShingleSize, pNumberOfCores, pChunkSize,
                     pMaxBinSize, pNneighbors, pMinimalBlocksInCommon, 
-                    pExcessFactor, pMaximalNumberOfHashCollisions, pFast);
+                    pExcessFactor, pMaximalNumberOfHashCollisions, pFast,
+                    pRemoveValueWithLeastSigificantBit);
 	return minHashObj;
 }
 

@@ -13,7 +13,7 @@ class InverseIndexStorageUnorderedMap : public InverseIndexStorage {
 	~InverseIndexStorageUnorderedMap();
   	size_t size() const;
 	const vsize_t* getElement(size_t pVectorId, size_t pHashValue);
-	void insert(size_t pVectorId, size_t pHashValue, size_t pInstance);
+	void insert(size_t pVectorId, size_t pHashValue, size_t pInstance, size_t pRemoveValueWithLeastSigificantBit);
     distributionInverseIndex* getDistribution();
     void prune(int pValue);
     void removeHashFunctionWithLessEntriesAs(int pRemoveHashFunctionWithLessEntriesAs);

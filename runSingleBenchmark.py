@@ -86,11 +86,11 @@ if __name__ == "__main__":
     distribution =  minHash.get_distribution_of_inverse_index()
     
     time_start = time.time()
-    neighbors_result = minHash.kneighbors(fast=True,return_distance=False)
+    neighbors_result = minHash.kneighbors(fast=False,return_distance=False)
     
     query_time = time.time() - time_start
     if not os.path.isfile("neighbors_sklearn"):
-        nearest_Neighbors = NearestNeighbors(n_jobs=2)
+        nearest_Neighbors = NearestNeighbors(n_jobs=4)
         nearest_Neighbors.fit(datasetBursi)
         neighbors_sklearn = nearest_Neighbors.kneighbors(return_distance=False)
         fileObject = open("neighbors_sklearn",'wb')
