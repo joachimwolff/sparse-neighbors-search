@@ -35,11 +35,8 @@ if __name__ == "__main__":
     if os.path.isfile(input_file_name):
         fileObject = open(input_file_name,'r')
         data = pickle.load(fileObject)
-        elements_in_index = []
-        for i in data[0][0].iterkeys():
-            elements_in_index.append(i)
+       
         fileObjectOut = open(output_file_name,'wb')
-        # pickle.dump(max_value, fileObjectOut)
-        for i in xrange(len(elements_in_index)):
-            fileObjectOut.write(str(elements_in_index[i])+" ")
+        for i in sorted(data[0][1])[0::10]:
+            fileObjectOut.write(str(i)+" ")
         fileObjectOut.close()
