@@ -29,6 +29,7 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     int pRemoveHashFunctionWithLessEntriesAs, size_t pHashAlgorithm,
                     size_t pBlockSize, size_t pShingle, size_t pRemoveValueWithLeastSigificantBit) {
     // std::cout << __LINE__ << std::endl;
+        std::cout << __LINE__ << std::endl;
 
         mInverseIndex = new InverseIndex(pNumberOfHashFunctions, pShingleSize,
                                     pNumberOfCores, pChunkSize,
@@ -44,6 +45,8 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pShingleSize,
         mNumberOfCores = pNumberOfCores;
         mChunkSize = pChunkSize;
         mSimilarity = pSimilarity;
+                std::cout << __LINE__ << std::endl;
+
 }
 
 MinHashBase::~MinHashBase() {
@@ -53,7 +56,11 @@ MinHashBase::~MinHashBase() {
 }
 
 void MinHashBase::fit(const SparseMatrixFloat* pRawData) {
+            std::cout << __LINE__ << std::endl;
+
     mInverseIndex->fit(pRawData);
+            std::cout << __LINE__ << std::endl;
+
     return;
 }
 

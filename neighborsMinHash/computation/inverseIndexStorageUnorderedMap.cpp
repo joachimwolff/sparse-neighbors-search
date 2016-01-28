@@ -34,7 +34,7 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
                         size_t pRemoveValueWithLeastSigificantBit) {
     
     // std::cout << __LINE__ << std::endl;
-    // std::cout << __LINE__ << std::endl;
+    std::cout << __LINE__ << std::endl;
     if (pRemoveValueWithLeastSigificantBit) {
         size_t leastSignificantBits = 0b11111111111111111111111111111111 << pRemoveValueWithLeastSigificantBit;
         size_t insertValue = pHashValue | leastSignificantBits;
@@ -42,12 +42,14 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
             return;
         }
     }
-    // std::cout << __LINE__ << std::endl;
+    std::cout << __LINE__ << std::endl;
     
 #ifdef OPENMP
 #pragma omp critical
 #endif
     {	
+                std::cout << __LINE__ << std::endl;
+
         auto itHashValue_InstanceVector = (*mSignatureStorage)[pVectorId].find(pHashValue);
         // if for hash function h_i() the given hash values is already stored
         if (itHashValue_InstanceVector != (*mSignatureStorage)[pVectorId].end()) {
@@ -68,6 +70,8 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
             instanceIdVector.push_back(pInstance);
             (*mSignatureStorage)[pVectorId][pHashValue] = instanceIdVector;
         }
+                std::cout << __LINE__ << std::endl;
+ 
     }
 }
 
@@ -142,7 +146,7 @@ void InverseIndexStorageUnorderedMap::prune(int pValue) {
 // which has less entries than mean+standard deviation
 // else: remove every hash function which has less entries than pRemoveHashFunctionWithLessEntriesAs
 void InverseIndexStorageUnorderedMap::removeHashFunctionWithLessEntriesAs(int pRemoveHashFunctionWithLessEntriesAs) {
-    // std::cout << __LINE__ << std::endl;
+    std::cout << __LINE__ << std::endl;
     
     if (pRemoveHashFunctionWithLessEntriesAs == 0) {
         int mean = 0;
