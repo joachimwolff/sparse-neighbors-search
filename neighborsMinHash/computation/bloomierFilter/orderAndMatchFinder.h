@@ -1,6 +1,6 @@
 #include "../typeDefinitions.h"
 #include <set>
-#include <gtest/gtest_prod.h>
+// #include <gtest/gtest_prod.h>
 #include "bloomierHash.h"
 
 #ifndef ORDER_AND_MATCH_FINDER_H
@@ -22,9 +22,9 @@ class OrderAndMatchFinder {
     std::unordered_map<size_t, size_t>* mSeeds;
     const Hash* mHash;
     void findMatch(const size_t pKey, vsize_t* pNeighbors, const vvsize_t_p* pValueTable);
-    FRIEND_TEST(OrderAndMatchFinderTest, computeNonSingeltonsTest);
+    // FRIEND_TEST(OrderAndMatchFinderTest, computeNonSingeltonsTest);
     void computeNonSingeltons(const vsize_t* pNeighbors);
-    FRIEND_TEST(OrderAndMatchFinderTest, tweakTest);
+    // FRIEND_TEST(OrderAndMatchFinderTest, tweakTest);
     int tweak(const size_t pKey, vsize_t* pNeighbors, const vvsize_t_p* pValueTable);
   public:
   	OrderAndMatchFinder(const size_t pModulo, const size_t pNumberOfElements, BloomierHash* pBloomierHash);
