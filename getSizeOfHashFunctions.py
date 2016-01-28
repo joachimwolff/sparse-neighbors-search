@@ -26,6 +26,7 @@ if __name__ == "__main__":
    
     parser.add_argument('-i', '--input_file_name', type=str,dest="input_file_name")
     parser.add_argument('-o', '--output_file_name', type=str,dest="output_file_name")
+    parser.add_argument('-f', '--frequency', type=int,dest="frequency")
     
     args = parser.parse_args()
     input_file_name = args.input_file_name
@@ -37,6 +38,10 @@ if __name__ == "__main__":
         data = pickle.load(fileObject)
        
         fileObjectOut = open(output_file_name,'wb')
-        for i in sorted(data[0][1])[0::10]:
+        
+        for i in sorted(set(sorted(data[0][1][0::10]))):
             fileObjectOut.write(str(i)+" ")
+        
+                
         fileObjectOut.close()
+       

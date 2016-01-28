@@ -43,6 +43,7 @@ if __name__ == "__main__":
     parser.add_argument('-bs', '--block_size', type=int,dest="block_size")
     parser.add_argument('-sh', '--shingle',type=int, dest="shingle")
     parser.add_argument('-fn', '--file_name', type=str,dest="file_name")
+    parser.add_argument('-lsb', '--least_significant_bit', type=str,dest="lsb")
     
     args = parser.parse_args()
     file_name = args.file_name
@@ -77,7 +78,7 @@ if __name__ == "__main__":
                 removeHashFunctionWithLessEntriesAs=int(args.removeHashFunctionWithLessEntriesAs), 
                 hash_algorithm = int(args.hash_algorithm),
                  block_size = int(args.block_size), 
-                 shingle = int(args.shingle))
+                 shingle = int(args.shingle), remove_value_with_least_sigificant_bit=int(args.lsb))
                  
     time_start = time.time()
     minHash.fit(datasetBursi)

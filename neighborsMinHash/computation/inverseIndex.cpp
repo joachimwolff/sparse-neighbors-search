@@ -86,7 +86,6 @@ distributionInverseIndex* InverseIndex::getDistribution() {
 vsize_t InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance) {
 
     vsize_t signature(mNumberOfHashFunctions * mBlockSize);
-    // signature->resize();
 
     for(size_t j = 0; j < mNumberOfHashFunctions; ++j) {
         for (size_t k = 0; k < mBlockSize; ++k) {
@@ -97,12 +96,7 @@ vsize_t InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const 
                     minHashValue = hashValue;
                 }
             }
-            // std::cout << __LINE__ << std::endl;
-            // std::cout << j << " :: " << k << std::endl; 
             signature[j+k] = minHashValue;
-            // std::cout << __LINE__ << std::endl;
-            
-            // std::cout << "minHashValue: " << minHashValue << std::endl; 
         }
        
     }
@@ -110,7 +104,6 @@ vsize_t InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const 
     if (mShingle) {
         return shingle(signature);
     }
-            // std::cout << __LINE__ << std::endl;
     
     return signature;
 }
