@@ -28,9 +28,9 @@ sources_list = ['neighborsMinHash/computation/interface/minHash_PythonInterface.
                  'neighborsMinHash/computation/inverseIndexStorageBloomierFilter.cpp' , 'neighborsMinHash/computation/inverseIndexStorageUnorderedMap.cpp',
                  'neighborsMinHash/computation/bloomierFilter/bloomierFilter.cpp', 'neighborsMinHash/computation/bloomierFilter/bloomierHash.cpp',
                  'neighborsMinHash/computation/bloomierFilter/encoder.cpp','neighborsMinHash/computation/bloomierFilter/orderAndMatchFinder.cpp']
-depends_list = ['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/computation/minHashBase.h', 'neighborsMinHash/computation/inverseIndex.h',
+depends_list = ['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/computation/minHashBase.h', 'neighborsMinHash/computation/inverseIndex.h', 'neighborsMinHash/computation/kSizeSortedMap.h',
          'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h', 'neighborsMinHash/computation/sparseMatrix.h',
-          'neighborsMinHash/computation/inverseIndexStorage.h',
+          'neighborsMinHash/computation/inverseIndexStorage.h', 
                  'neighborsMinHash/computation/inverseIndexStorageBloomierFilter.h' , 'neighborsMinHash/computation/inverseIndexStorageUnorderedMap.h',
                  'neighborsMinHash/computation/bloomierFilter/bloomierFilter.h', 'neighborsMinHash/computation/bloomierFilter/bloomierHash.h',
                  'neighborsMinHash/computation/bloomierFilter/encoder.h','neighborsMinHash/computation/bloomierFilter/orderAndMatchFinder.h', 'neighborsMinHash/computation/hash.h']

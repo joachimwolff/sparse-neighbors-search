@@ -34,7 +34,7 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
                         size_t pRemoveValueWithLeastSigificantBit) {
     
     // std::cout << __LINE__ << std::endl;
-    std::cout << __LINE__ << std::endl;
+    // std::cout << __LINE__ << std::endl;
     if (pRemoveValueWithLeastSigificantBit) {
         size_t leastSignificantBits = 0b11111111111111111111111111111111 << pRemoveValueWithLeastSigificantBit;
         size_t insertValue = pHashValue | leastSignificantBits;
@@ -42,47 +42,50 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
             return;
         }
     }
-    std::cout << __LINE__ << std::endl;
+    // std::cout << __LINE__ << std::endl;
     
 #ifdef OPENMP
 #pragma omp critical
 #endif
     {	
-                std::cout << __LINE__ << std::endl;
-
+                // std::cout << "pVectorID: " << pVectorId << std::endl;
+        // if ((*mSignatureStorage)[pVectorId] == NULL) {
+                // std::cout << "HANNIBAL" << std::endl;
+            
+        // }
         auto itHashValue_InstanceVector = (*mSignatureStorage)[pVectorId].find(pHashValue);
-                std::cout << __LINE__ << std::endl;
+                // std::cout << __LINE__ << std::endl;
 
         // if for hash function h_i() the given hash values is already stored
         if (itHashValue_InstanceVector != (*mSignatureStorage)[pVectorId].end()) {
-                std::cout << __LINE__ << std::endl;
+                // std::cout << __LINE__ << std::endl;
 
             // insert the instance id if not too many collisions (maxBinSize)
             if (itHashValue_InstanceVector->second.size() && itHashValue_InstanceVector->second.size() < mMaxBinSize) {
-                std::cout << __LINE__ << std::endl;
+                // std::cout << __LINE__ << std::endl;
 
                 // insert only if there wasn't any collisions in the past
                 if (itHashValue_InstanceVector->second.size() > 0) {
-                std::cout << __LINE__ << std::endl;
+                // std::cout << __LINE__ << std::endl;
 
                     itHashValue_InstanceVector->second.push_back(pInstance);
                 }
             } else { 
                 // too many collisions: delete stored ids. empty vector is interpreted as an error code 
                 // for too many collisions
-                std::cout << __LINE__ << std::endl;
+                // std::cout << __LINE__ << std::endl;
 
                 itHashValue_InstanceVector->second.clear();
             }
         } else {
-                std::cout << __LINE__ << std::endl;
+                // std::cout << __LINE__ << std::endl;
 
             // given hash value for the specific hash function was not avaible: insert new hash value
             vsize_t instanceIdVector;
             instanceIdVector.push_back(pInstance);
             (*mSignatureStorage)[pVectorId][pHashValue] = instanceIdVector;
         }
-                std::cout << __LINE__ << std::endl;
+                // std::cout << __LINE__ << std::endl;
  
     }
 }

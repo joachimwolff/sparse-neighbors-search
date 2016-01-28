@@ -20,6 +20,8 @@
 #endif
 
 #include "inverseIndex.h"
+#include "kSizeSortedMap.h"
+
 
 class sort_map {
   public:
@@ -71,7 +73,7 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
         mInverseIndexStorage = new InverseIndexStorageUnorderedMap(inverseIndexSize, mMaxBinSize);
     }
     mRemoveValueWithLeastSigificantBit = pRemoveValueWithLeastSigificantBit;
-        std::cout << __LINE__ << std::endl;
+        // std::cout << __LINE__ << std::endl;
     
 }
  
@@ -104,7 +106,7 @@ vsize_t InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const 
        
     }
     // reduce number of hash values by a factor of mShingleSize
-        std::cout << __LINE__ << std::endl;
+        // std::cout << __LINE__ << std::endl;
     
     if (mShingle) {
         return shingle(signature);
@@ -115,25 +117,25 @@ vsize_t InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const 
 
 vsize_t InverseIndex::shingle(vsize_t pSignature) {
     vsize_t signature;
-        std::cout << __LINE__ << std::endl;
+        // std::cout << "BUUUUU" << std::endl;
     
     if (mShingle == 1) {
         // if 0 than combine hash values inside the block to one new hash value
         size_t k = 0;
-        std::cout << __LINE__ << std::endl;
-        while (k < mNumberOfHashFunctions*mBlockSize) {
+        // std::cout << __LINE__ << std::endl;
+        while (k < mNumberOfHashFunctions*mBlockSize && k < pSignature.size()) {
         // use computed hash value as a seed for the next computation
-        std::cout << __LINE__ << std::endl;
+        // std::cout << __LINE__ << std::endl;
             size_t signatureBlockValue = pSignature[k];
             for (size_t j = 0; j < mShingleSize && k+j < mNumberOfHashFunctions*mBlockSize; ++j) {
                 signatureBlockValue = mHash->hash(pSignature[k+j]+1,  signatureBlockValue+1, MAX_VALUE);
             }
             signature.push_back(signatureBlockValue);
             k += mShingleSize; 
-            std::cout << __LINE__ << std::endl;
+            // std::cout << __LINE__ << std::endl;
             
         }
-        std::cout << __LINE__ << std::endl;
+        // std::cout << "Size of signature: " << signature.size() << std::endl;
         
     } else if (mShingle == 2) {
         // if 1 than take the minimum hash values of that block as the hash value
@@ -163,41 +165,32 @@ vsize_t InverseIndex::computeSignatureWTA(const SparseMatrixFloat* pRawData, con
     size_t mK = mBlockSize;
     // mNumberOfHashFunctions = 800;
     
-    std::map<size_t, float> keyValue;
+    KSizeSortedMap keyValue(mK);
     vsize_t signature(mNumberOfHashFunctions);
     if (sizeOfInstance < mK) {
         mK = sizeOfInstance;
     }
-    // if (sizeOfInstance > 0) {
     for (size_t i = 0; i < mNumberOfHashFunctions; ++i) {
         for (size_t j = 0; j < sizeOfInstance; ++j) {
             size_t hashIndex = mHash->hash((pRawData->getNextElement(pInstance, j) +1), mSeed+i, MAX_VALUE);
-            // signatureHash[j] = hashIndex;
-            keyValue[hashIndex] = pRawData->getNextValue(pInstance, j);
+            keyValue.insert(hashIndex, pRawData->getNextValue(pInstance, j));
         } 
         
-        // std::partial_sort (signatureHash.begin(), signatureHash.begin()+mK, signatureHash.end());
         float maxValue = 0.0;
         size_t maxValueIndex = 0;
-        size_t j = 0;
-        // for (size_t j = 0; j < mK; ++j) {
-        for (auto it = keyValue.begin(); it != keyValue.end(); ++it) {
-            if (j >= mK) break;
-            if (it->second > maxValue) {
-                maxValue = it->second;
+        for (size_t j = 0; j < mK; ++j) {
+            if (keyValue.getValue(j) > maxValue) {
+                maxValue = keyValue.getValue(j);
                 maxValueIndex = j;
-                // std::cout << "max value: " << maxValue << " maxValueIndex: " << maxValueIndex << std::endl;
-            // if (keyValue[signatureHash[j]] > maxValue) {
-            //     maxValue = keyValue[signatureHash[j]];
-            //     maxValueIndex = j;              
-            } 
-            ++j;
+            }
         }
         signature[i] = maxValueIndex;
-        keyValue.clear();
-        signatureHash.clear();
+        // keyValue.clear();
+        // signatureHash.clear();
     }
-   
+    if (mShingle) {
+        return shingle(signature);
+    }
     return signature;
 }
 
@@ -268,7 +261,7 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     return instanceSignature;
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
-    std::cout << __LINE__ << std::endl;
+    // std::cout << __LINE__ << std::endl;
     
     size_t pruneEveryNIterations = pRawData->size() * mPruneInverseIndexAfterInstance;
     size_t pruneCount = 0;
@@ -296,7 +289,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
                 signature = computeSignature(pRawData, index);
             } else if (mHashAlgorithm == 1) {
                 // use wta hash
-                        std::cout << __LINE__ << std::endl;
+                        // std::cout << __LINE__ << std::endl;
 
                 signature = computeSignatureWTA(pRawData, index);
             }
@@ -307,7 +300,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
 #pragma omp critical
 #endif
         {   
-                    std::cout << __LINE__ << std::endl;
+                    // std::cout << __LINE__ << std::endl;
 
             ++pruneCount;
             if (itSignatureStorage == mSignatureStorage->end()) {
@@ -322,12 +315,12 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
                  mDoubleElementsStorageCount += 1;
             }
         }
-            std::cout << __LINE__ << std::endl;
+            // std::cout << __LINE__ << std::endl;
         
         for (size_t j = 0; j < signature.size(); ++j) {
             mInverseIndexStorage->insert(j, signature[j], index, mRemoveValueWithLeastSigificantBit);
         }
-            std::cout << __LINE__ << std::endl;
+            // std::cout << __LINE__ << std::endl;
         
         if (mPruneInverseIndexAfterInstance > 0) {
 #ifdef OPENMP
@@ -353,7 +346,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     if (mRemoveHashFunctionWithLessEntriesAs >= 0) {
         mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
     }
-    std::cout << __LINE__ << std::endl;
+    // std::cout << __LINE__ << std::endl;
     
 }
 
