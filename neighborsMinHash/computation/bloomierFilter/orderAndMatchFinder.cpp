@@ -59,7 +59,7 @@ int OrderAndMatchFinder::tweak(const size_t pKey, vsize_t* pNeighbors, const vvs
                 }
             }
             if (allValuesUsed){
-                std::cout << "All places are used!" << std::cout;
+                std::cout << "All places are used!" << std::endl;
             } 
             else { 
                 std::cout << "NOT all places are used, but do not find a free one!" << std::endl;
