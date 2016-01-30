@@ -165,12 +165,14 @@ vsize_t InverseIndex::computeSignatureWTA(const SparseMatrixFloat* pRawData, con
     size_t mK = mBlockSize;
     // mNumberOfHashFunctions = 800;
     
-    KSizeSortedMap keyValue(mK);
     vsize_t signature(mNumberOfHashFunctions);
     if (sizeOfInstance < mK) {
         mK = sizeOfInstance;
     }
+    KSizeSortedMap keyValue(mK);
+    
     for (size_t i = 0; i < mNumberOfHashFunctions; ++i) {
+        
         for (size_t j = 0; j < sizeOfInstance; ++j) {
             size_t hashIndex = mHash->hash((pRawData->getNextElement(pInstance, j) +1), mSeed+i, MAX_VALUE);
             keyValue.insert(hashIndex, pRawData->getNextValue(pInstance, j));
@@ -178,16 +180,24 @@ vsize_t InverseIndex::computeSignatureWTA(const SparseMatrixFloat* pRawData, con
         
         float maxValue = 0.0;
         size_t maxValueIndex = 0;
+        // std::cout << "size: " << keyValue.getSize() << std::endl;
         for (size_t j = 0; j < mK; ++j) {
+            // std::cout << keyValue.getKey(j) << "::" << keyValue.getValue(j) << std::endl;
+            
             if (keyValue.getValue(j) > maxValue) {
                 maxValue = keyValue.getValue(j);
                 maxValueIndex = j;
             }
         }
+            // std::cout << std::endl;
+            // std::cout << std::endl;
+        
         signature[i] = maxValueIndex;
-        // keyValue.clear();
+        // std::cout << maxValueIndex << ", ";
+        keyValue.clear();
         // signatureHash.clear();
     }
+    // std::cout << std::endl;
     if (mShingle) {
         return shingle(signature);
     }

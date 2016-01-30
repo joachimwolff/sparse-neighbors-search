@@ -39,21 +39,28 @@ class KSizeSortedMap {
                 (*mKSizeSortedMap)[pInstance] = pValue;
                 rit = mKSizeSortedMap->crbegin();
                 size_t key = rit->first;
+                // std::cout << "Key: " << key << std::endl; 
                 mKSizeSortedMap->erase(key);
+                // std::cout << "Size: " << mKSizeSortedMap->size() << std::endl;
             }
         }
         return;
     };
     size_t getKey(size_t pIndexPosition) {
         auto it = mKSizeSortedMap->begin();
-        std::next(it,pIndexPosition);
+        it = std::next(it,pIndexPosition);
         return it->first;
     };
     float getValue(size_t pIndexPosition) {
         auto it = mKSizeSortedMap->begin();
-        std::next(it,pIndexPosition);
+        it = std::next(it,pIndexPosition);
         return it->second;
     };    
-
+    size_t getSize() {
+        return mKSizeSortedMap->size();
+    };
+    void clear() {
+        mKSizeSortedMap->clear();
+    }
 };
 #endif // K_SIZE_SORTED_MAP_H
