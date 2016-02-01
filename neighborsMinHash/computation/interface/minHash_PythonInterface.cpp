@@ -12,6 +12,9 @@
 #include <Python.h>
 
 #include "../minHash.h"
+#ifdef CUDA
+#include "../minHashCuda.h"
+#endif
 #include "../parsePythonToCpp.h"
 
 static neighborhood* neighborhoodComputation(size_t pMinHashAddress, PyObject* pInstancesListObj,PyObject* pFeaturesListObj,PyObject* pDataListObj, 
@@ -23,7 +26,7 @@ static neighborhood* neighborhoodComputation(size_t pMinHashAddress, PyObject* p
         originalDataMatrix = parseRawData(pInstancesListObj, pFeaturesListObj, pDataListObj, 
                                                     pMaxNumberOfInstances, pMaxNumberOfFeatures);
     }
-    MinHash* minHash = reinterpret_cast<MinHash* >(pMinHashAddress);
+    MinHashBase* minHash = reinterpret_cast<MinHashBase* >(pMinHashAddress);
 
     // compute the k-nearest neighbors
     neighborhood* neighbors_ =  minHash->kneighbors(originalDataMatrix, pNneighbors, pFast, pSimilarity);
@@ -39,7 +42,7 @@ static neighborhood* fitNeighborhoodComputation(size_t pMinHashAddress, PyObject
     SparseMatrixFloat* originalDataMatrix = parseRawData(pInstancesListObj, pFeaturesListObj, pDataListObj, 
                                                     pMaxNumberOfInstances, pMaxNumberOfFeatures);
     // get pointer to the minhash object
-    MinHash* minHash = reinterpret_cast<MinHash* >(pMinHashAddress);
+    MinHashBase* minHash = reinterpret_cast<MinHashBase* >(pMinHashAddress);
     minHash->set_mOriginalData(originalDataMatrix);
 
     minHash->fit(originalDataMatrix);
@@ -53,24 +56,42 @@ static PyObject* createObject(PyObject* self, PyObject* args) {
     size_t numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
     nNeighbors, minimalBlocksInCommon, maxBinSize,
     maximalNumberOfHashCollisions, excessFactor, bloomierFilter, hashAlgorithm,
-     blockSize, shingle, removeValueWithLeastSigificantBit;
+     blockSize, shingle, removeValueWithLeastSigificantBit, cuda;
     int fast, similarity, pruneInverseIndex, removeHashFunctionWithLessEntriesAs;
     float pruneInverseIndexAfterInstance;
     
-    if (!PyArg_ParseTuple(args, "kkkkkkkkkiikifikkkk", &numberOfHashFunctions,
+    if (!PyArg_ParseTuple(args, "kkkkkkkkkiikifikkkkk", &numberOfHashFunctions,
                         &shingleSize, &numberOfCores, &chunkSize, &nNeighbors,
                         &minimalBlocksInCommon, &maxBinSize,
                         &maximalNumberOfHashCollisions, &excessFactor, &fast, &similarity, &bloomierFilter,
                         &pruneInverseIndex,&pruneInverseIndexAfterInstance, &removeHashFunctionWithLessEntriesAs,
-                        &hashAlgorithm, &blockSize, &shingle, &removeValueWithLeastSigificantBit))
+                        &hashAlgorithm, &blockSize, &shingle, &removeValueWithLeastSigificantBit, &cuda))
         return NULL;
         std::cout << __LINE__ << std::endl;
-
-    MinHash* minHash = new MinHash (numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
-                    maxBinSize, nNeighbors, minimalBlocksInCommon, 
-                    excessFactor, maximalNumberOfHashCollisions, fast, similarity, bloomierFilter, pruneInverseIndex,
-                    pruneInverseIndexAfterInstance, removeHashFunctionWithLessEntriesAs, 
-                    hashAlgorithm, blockSize, shingle, removeValueWithLeastSigificantBit);
+    MinHashBase* minHash;
+    minHash = NULL;
+    if (cuda == 0) {
+        minHash = new MinHash (numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
+                        maxBinSize, nNeighbors, minimalBlocksInCommon, 
+                        excessFactor, maximalNumberOfHashCollisions, fast, similarity, bloomierFilter, pruneInverseIndex,
+                        pruneInverseIndexAfterInstance, removeHashFunctionWithLessEntriesAs, 
+                        hashAlgorithm, blockSize, shingle, removeValueWithLeastSigificantBit);
+    } else if (cuda == 1) {
+#ifdef CUDA
+        minHash = new MinHashCuda(numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
+                        maxBinSize, nNeighbors, minimalBlocksInCommon, 
+                        excessFactor, maximalNumberOfHashCollisions, fast, similarity, bloomierFilter, pruneInverseIndex,
+                        pruneInverseIndexAfterInstance, removeHashFunctionWithLessEntriesAs, 
+                        hashAlgorithm, blockSize, shingle, removeValueWithLeastSigificantBit);
+#endif
+        if (minHash == NULL) {
+            minHash = new MinHash (numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
+                        maxBinSize, nNeighbors, minimalBlocksInCommon, 
+                        excessFactor, maximalNumberOfHashCollisions, fast, similarity, bloomierFilter, pruneInverseIndex,
+                        pruneInverseIndexAfterInstance, removeHashFunctionWithLessEntriesAs, 
+                        hashAlgorithm, blockSize, shingle, removeValueWithLeastSigificantBit);
+        }
+    }
         std::cout << __LINE__ << std::endl;
 
     size_t adressMinHashObject = reinterpret_cast<size_t>(minHash);
@@ -84,7 +105,7 @@ static PyObject* deleteObject(PyObject* self, PyObject* args) {
     if (!PyArg_ParseTuple(args, "k", &addressMinHashObject))
         return Py_BuildValue("i", 1);;
 
-    MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
+    MinHashBase* minHash = reinterpret_cast<MinHashBase* >(addressMinHashObject);
     delete minHash;
     return Py_BuildValue("i", 0);
 }
@@ -109,7 +130,7 @@ static PyObject* fit(PyObject* self, PyObject* args) {
     std::cout << __LINE__ << std::endl;
 
     // get pointer to the minhash object
-    MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
+    MinHashBase* minHash = reinterpret_cast<MinHashBase* >(addressMinHashObject);
         std::cout << __LINE__ << std::endl;
 
     minHash->set_mOriginalData(originalDataMatrix);
@@ -152,7 +173,7 @@ static PyObject* kneighbors(PyObject* self, PyObject* args) {
         cutFirstValue = 1;
     }
     if (nNeighbors == 0) {
-        MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
+        MinHashBase* minHash = reinterpret_cast<MinHashBase* >(addressMinHashObject);
         nNeighbors = minHash->getNneighbors();
     }
     // std::cout << "140" << std::endl;
@@ -179,7 +200,7 @@ static PyObject* kneighborsGraph(PyObject* self, PyObject* args) {
     neighborhood* neighborhood_ = neighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
                                                 maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast, similarity);
     if (nNeighbors == 0) {
-        MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
+        MinHashBase* minHash = reinterpret_cast<MinHashBase* >(addressMinHashObject);
         nNeighbors = minHash->getNneighbors();
     }
     return buildGraph(neighborhood_, nNeighbors, returnDistance, symmetric);
@@ -250,7 +271,7 @@ static PyObject* fitKneighbors(PyObject* self, PyObject* args) {
                                                    maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast, similarity);
     size_t cutFirstValue = 1;
     if (nNeighbors == 0) {
-        MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
+        MinHashBase* minHash = reinterpret_cast<MinHashBase* >(addressMinHashObject);
         nNeighbors = minHash->getNneighbors();
     }
     return bringNeighborhoodInShape(neighborhood_, nNeighbors, cutFirstValue, returnDistance);
@@ -276,7 +297,7 @@ static PyObject* fitKneighborsGraph(PyObject* self, PyObject* args) {
     neighborhood* neighborhood_ = fitNeighborhoodComputation(addressMinHashObject, instancesListObj, featuresListObj, dataListObj, 
                                                    maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast, similarity);
     if (nNeighbors == 0) {
-        MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
+        MinHashBase* minHash = reinterpret_cast<MinHashBase* >(addressMinHashObject);
         nNeighbors = minHash->getNneighbors();
     }
     return buildGraph(neighborhood_, nNeighbors, returnDistance, symmetric);
@@ -337,7 +358,7 @@ static PyObject* getDistributionOfInverseIndex(PyObject* self, PyObject* args) {
         return NULL;
     // std::cout << __LINE__ << std::endl;
 
-    MinHash* minHash = reinterpret_cast<MinHash* >(addressMinHashObject);
+    MinHashBase* minHash = reinterpret_cast<MinHashBase* >(addressMinHashObject);
     // std::cout << __LINE__ << std::endl;
 
     distributionInverseIndex* distribution = minHash->getDistributionOfInverseIndex();
