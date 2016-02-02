@@ -104,7 +104,7 @@ class MinHash():
                                                     prune_inverse_index_after_instance, removeHashFunctionWithLessEntriesAs,
                                                     hash_algorithm,
                                                      block_size, 
-                                                     shingle, remove_value_with_least_sigificant_bit)
+                                                     shingle, remove_value_with_least_sigificant_bit, cuda)
 
     def __del__(self):
         _minHash.delete_object(self._pointer_address_of_minHash_object)

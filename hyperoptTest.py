@@ -24,7 +24,7 @@ def compute_score(error, memory, time, max_memory, max_time, alpha, beta):
     error = error/(float (max_error))
     memory = math.log(memory/float(max_memory), 10)*alpha
     time = math.log(time/float(max_time), 10)*beta
-    return error + memory  + time
+    return error #+ memory  + time
 
  
 
@@ -69,7 +69,7 @@ def objective(args):
         accuracy += accuracy_score(x, y)
     accuracy = accuracy / float(len(neighbors))
     error = 1 - accuracy
-    return compute_score(error, memory, time_end, max_memory, max_time, 0.1, 0.3)
+    return compute_score(error, memory, time_end, max_memory, max_time, 0.1, 1)
 
 
 # get data set  

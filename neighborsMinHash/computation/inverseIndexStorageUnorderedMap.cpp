@@ -161,7 +161,7 @@ void InverseIndexStorageUnorderedMap::prune(int pValue) {
 // which has less entries than mean+standard deviation
 // else: remove every hash function which has less entries than pRemoveHashFunctionWithLessEntriesAs
 void InverseIndexStorageUnorderedMap::removeHashFunctionWithLessEntriesAs(int pRemoveHashFunctionWithLessEntriesAs) {
-    std::cout << __LINE__ << std::endl;
+    // std::cout << __LINE__ << std::endl;
     
     if (pRemoveHashFunctionWithLessEntriesAs == 0) {
         int mean = 0;

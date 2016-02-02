@@ -67,7 +67,7 @@ static PyObject* createObject(PyObject* self, PyObject* args) {
                         &pruneInverseIndex,&pruneInverseIndexAfterInstance, &removeHashFunctionWithLessEntriesAs,
                         &hashAlgorithm, &blockSize, &shingle, &removeValueWithLeastSigificantBit, &cuda))
         return NULL;
-        std::cout << __LINE__ << std::endl;
+        // std::cout << __LINE__ << std::endl;
     MinHashBase* minHash;
     minHash = NULL;
     if (cuda == 0) {
@@ -92,7 +92,7 @@ static PyObject* createObject(PyObject* self, PyObject* args) {
                         hashAlgorithm, blockSize, shingle, removeValueWithLeastSigificantBit);
         }
     }
-        std::cout << __LINE__ << std::endl;
+        // std::cout << __LINE__ << std::endl;
 
     size_t adressMinHashObject = reinterpret_cast<size_t>(minHash);
     PyObject* pointerToInverseIndex = Py_BuildValue("k", adressMinHashObject);
@@ -127,17 +127,17 @@ static PyObject* fit(PyObject* self, PyObject* args) {
     // where key == instance id and vector<size_t> == non null feature ids
     SparseMatrixFloat* originalDataMatrix = parseRawData(instancesListObj, featuresListObj, dataListObj, 
                                                     maxNumberOfInstances, maxNumberOfFeatures);
-    std::cout << __LINE__ << std::endl;
+    // std::cout << __LINE__ << std::endl;
 
     // get pointer to the minhash object
     MinHashBase* minHash = reinterpret_cast<MinHashBase* >(addressMinHashObject);
-        std::cout << __LINE__ << std::endl;
+        // std::cout << __LINE__ << std::endl;
 
     minHash->set_mOriginalData(originalDataMatrix);
-    std::cout << __LINE__ << std::endl;
+    // std::cout << __LINE__ << std::endl;
 
     minHash->fit(originalDataMatrix);
-    std::cout << __LINE__ << std::endl;
+    // std::cout << __LINE__ << std::endl;
 
     addressMinHashObject = reinterpret_cast<size_t>(minHash);
     PyObject * pointerToInverseIndex = Py_BuildValue("k", addressMinHashObject);
