@@ -41,8 +41,8 @@ def objective(args):
     block_size =args["block_size"]
     shingle = args["shingle"]
     remove_value_with_least_sigificant_bit =args["remove_value_with_least_sigificant_bit"]
-    alpha = args["alpha"]
-    beta = args["beta"]
+    # alpha = args["alpha"]
+    # beta = args["beta"]
     #number_of_hash_functions
     
             
@@ -69,7 +69,7 @@ def objective(args):
         accuracy += accuracy_score(x, y)
     accuracy = accuracy / float(len(neighbors))
     error = 1 - accuracy
-    return compute_score(error, memory, time_end, max_memory, max_time, alpha, beta)
+    return compute_score(error, memory, time_end, max_memory, max_time, 0.1, 0.3)
 
 
 # get data set  
@@ -126,13 +126,13 @@ space = {
         'block_size': hp.uniform('block_size', 1, 10), 
         'shingle': hp.choice('shingle', [0,1]), 
         'remove_value_with_least_sigificant_bit': hp.choice('remove_value_with_least_sigificant_bit', [0, 1, 2, 3, 4, 5]),
-        'alpha':hp.uniform('alpha', 0, 1),
-        'beta':hp.uniform('beta', 0,1),    
+        # 'alpha':hp.uniform('alpha', 0, 1),
+        # 'beta':hp.uniform('beta', 0,1),    
 }
 
 # minimize the objective over the space
 from hyperopt import fmin, tpe
-best = fmin(objective, space, algo=tpe.suggest, max_evals=20)
+best = fmin(objective, space, algo=tpe.suggest, max_evals=100)
 
 print best
 # -> {'a': 1, 'c2': 0.01420615366247227}
