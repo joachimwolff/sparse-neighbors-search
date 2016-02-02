@@ -28,8 +28,6 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     int pPruneInverseIndex, float pPruneInverseIndexAfterInstance, 
                     int pRemoveHashFunctionWithLessEntriesAs, size_t pHashAlgorithm,
                     size_t pBlockSize, size_t pShingle, size_t pRemoveValueWithLeastSigificantBit) {
-    // std::cout << __LINE__ << std::endl;
-        std::cout << __LINE__ << std::endl;
 
         mInverseIndex = new InverseIndex(pNumberOfHashFunctions, pShingleSize,
                                     pNumberOfCores, pChunkSize,
@@ -38,29 +36,21 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pShingleSize,
                                     pPruneInverseIndex, pPruneInverseIndexAfterInstance, 
                                     pRemoveHashFunctionWithLessEntriesAs, pHashAlgorithm, pBlockSize, pShingle,
                                     pRemoveValueWithLeastSigificantBit);
-        // std::cout << __LINE__ << std::endl;
 
         mNneighbors = pSizeOfNeighborhood;
         mFast = pFast;
         mNumberOfCores = pNumberOfCores;
         mChunkSize = pChunkSize;
         mSimilarity = pSimilarity;
-                std::cout << __LINE__ << std::endl;
-
 }
 
 MinHashBase::~MinHashBase() {
-    // std::cout << "Destructor of minhashBase is called!" << std::endl;
     delete mInverseIndex;
     delete mOriginalData;
 }
 
 void MinHashBase::fit(const SparseMatrixFloat* pRawData) {
-            std::cout << __LINE__ << std::endl;
-
     mInverseIndex->fit(pRawData);
-            std::cout << __LINE__ << std::endl;
-
     return;
 }
 
@@ -89,14 +79,6 @@ neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t 
     }
     neighborhood* neighborhood_ = mInverseIndex->kneighbors(X, pNneighbors, doubleElementsStorageCount);
     if (!doubleElementsStorageCount) {
-        // for (auto it = X->begin(); it != X->end(); ++it) {
-        //     if (mInverseIndex->getSignatureStorage()->find(it->first) == mInverseIndex->getSignatureStorage()->end()) {
-        //         delete it->second->instances;
-        //         delete it->second->signature;
-        //         delete it->second;
-        //     }
-           
-        // }
         delete X;
     }
     if (pFast) {     
