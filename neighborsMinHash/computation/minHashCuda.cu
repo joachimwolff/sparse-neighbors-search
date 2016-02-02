@@ -14,7 +14,8 @@
 #include <omp.h>
 #endif
 
-#include "minHash.h"
+#include "minHashCuda.h"
+
 
 
 
@@ -42,14 +43,18 @@ MinHashCuda::~MinHashCuda() {
 }
 
 neighborhood MinHashCuda::radiusNeighbors() {
-    
+    neighborhood foo;
+    return foo;
 }
 neighborhood MinHashCuda::radiusNeighborsGraph() {
-    
+    neighborhood foo;
+    return foo;
 }
 neighborhood MinHashCuda::fitRadiusNeighbors() {
-    
+    neighborhood foo;
+    return foo;
 }
 neighborhood MinHashCuda::fitRadiusNeighborsGraph() {
-    
+    neighborhood foo;
+    return foo;
 }

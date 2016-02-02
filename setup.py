@@ -56,6 +56,11 @@ else:
     module1 = Extension('_minHash', sources = sources_list, depends = depends_list,
         define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"],
          extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])
+no_cuda = False
+if "--nocuda" in sys.argv:
+    no_cuda = True
+    sys.argv.remove("--nocuda")
+    
 if "--openmp" in sys.argv:
     sys.argv.remove("--openmp")
 if "--noopenmp" in sys.argv:
@@ -166,7 +171,7 @@ class custom_build_ext(build_ext):
 
 
 
-if (locate_cuda == None):
+if (locate_cuda == None or no_cuda):
     setup (name = 'neighborsMinHash',
             author = 'Joachim Wolff',
             author_email = 'wolffj@informatik.uni-freiburg.de',
@@ -190,10 +195,10 @@ if (locate_cuda == None):
             )
 else:
     print "CUDA found on system. Installing MinHash with CUDA-Support."
-    sources_list.append("neighborsMinHash/computation/minHashCuda.cu", 'neighborsMinHash/computation/kernel.cu', 
-                        'neighborsMinHash/computation/inverseIndexCuda.cu')
-    depends_list.append("neighborsMinHash/computation/minHashCuda.h", 
-                        'neighborsMinHash/computation/inverseIndexCuda.h')
+    sources_list.extend(["neighborsMinHash/computation/minHashCuda.cu", 'neighborsMinHash/computation/kernel.cu', 
+                        'neighborsMinHash/computation/inverseIndexCuda.cu'])
+    depends_list.extend(["neighborsMinHash/computation/minHashCuda.h", 
+                        'neighborsMinHash/computation/inverseIndexCuda.h'])
     # Extension('_minHash', sources = sources_list, depends = depends_list,
     #      define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
     #     extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])
@@ -208,9 +213,9 @@ else:
                 # the implementation of this trick is in customize_compiler() below
                 define_macros=[('OPENMP', None), ('CUDA', None)],
                 extra_link_args={'gcc': ["-lm", "-lrt","-lgomp"], 
-                                  'nvcc' :[]  }
+                                  'nvcc' :[]  },
                 extra_compile_args={'gcc': ["-fopenmp", "-O3", "-std=c++11"],
-                                    'nvcc': ['-arch=sm_20', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'"]},
+                                    'nvcc': ['-arch=sm_20', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
                 include_dirs = [CUDA['include'], 'src'],
                 platforms = "Linux, Mac OS X"
                 )
