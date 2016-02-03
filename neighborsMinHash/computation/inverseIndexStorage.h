@@ -12,4 +12,5 @@ class InverseIndexStorage {
     virtual void prune(size_t pValue) = 0;
     virtual void removeHashFunctionWithLessEntriesAs(size_t pRemoveHashFunctionWithLessEntriesAs) = 0;
 };
+inline InverseIndexStorage::~InverseIndexStorage() { }
 #endif // INVERSE_INDEX_STORAGE_H
