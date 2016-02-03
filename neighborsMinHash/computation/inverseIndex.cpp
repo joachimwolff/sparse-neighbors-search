@@ -165,7 +165,6 @@ vsize_t InverseIndex::computeSignatureWTA(const SparseMatrixFloat* pRawData, con
         float maxValue = 0.0;
         size_t maxValueIndex = 0;
         for (size_t j = 0; j < mK; ++j) {
-            
             if (keyValue.getValue(j) > maxValue) {
                 maxValue = keyValue.getValue(j);
                 maxValueIndex = j;
