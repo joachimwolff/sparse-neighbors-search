@@ -132,7 +132,7 @@ int main( int argc, const char* argv[] ) {
     					minimalBlocksInCommon, maxBinSize, maximalNumberOfHashCollisions,
     					excessFactor, fast, similarity, bloomierFilter, prune_inverse_index, 
                                                     prune_inverse_index_after_instance, removeHashFunctionWithLessEntriesAs,
-                                                    hash_algorithm, block_size, shingle);
+                                                    hash_algorithm, block_size, shingle, 0);
     // std::cout << __LINE__ << std::endl;
                                                     
     fit(minHash, &instances, &features, &data, addInfo[0], addInfo[1]);
@@ -165,8 +165,9 @@ int main( int argc, const char* argv[] ) {
     std::cout << "]" << std::endl;
     delete minHash;
     delete dataSparse;
+    delete neighborhood_->neighbors;
+    delete neighborhood_->distances;
     delete neighborhood_;
-    // delete neighborhood2_;
     
 	return 0;
 }
