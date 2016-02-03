@@ -4,37 +4,30 @@
 #endif
  
 InverseIndexStorageUnorderedMap::InverseIndexStorageUnorderedMap(size_t pSizeOfInverseIndex, size_t pMaxBinSize) {
-	mSignatureStorage = new vector__umapVector(pSizeOfInverseIndex);
+	mInverseIndex = new vector__umapVector(pSizeOfInverseIndex);
 	mMaxBinSize = pMaxBinSize;
-	mKeys = new vvsize_t(pSizeOfInverseIndex, vsize_t());
-	mValues = new vvsize_t(pSizeOfInverseIndex, vsize_t());
+	// mKeys = new vvsize_t(pSizeOfInverseIndex, vsize_t());
+	// mValues = new vvsize_t(pSizeOfInverseIndex, vsize_t());
 }
 InverseIndexStorageUnorderedMap::~InverseIndexStorageUnorderedMap() {
-	delete mSignatureStorage;
-    delete mKeys;
-    delete mValues;
+	delete mInverseIndex;
+    // delete mKeys;
+    // delete mValues;
 }
 size_t InverseIndexStorageUnorderedMap::size() const {
-	return mSignatureStorage->size();
+	return mInverseIndex->size();
 }
 const vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, size_t pHashValue) {
-    // std::cout << __LINE__ << std::endl;
-    
-	auto iterator = (*mSignatureStorage)[pVectorId].find(pHashValue);
-	if (iterator != (*mSignatureStorage)[pVectorId].end()) {
+    // char hashValue = static_cast<char>(pHashValue >> 24);
+	auto iterator = (*mInverseIndex)[pVectorId].find(pHashValue);
+	if (iterator != (*mInverseIndex)[pVectorId].end()) {
 		return &(iterator->second);
 	}
-    // vsize_t foo;
 	return NULL; 
-    // std::cout << __LINE__ << std::endl;
-    
-	
 }
 void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue, size_t pInstance, 
                         size_t pRemoveValueWithLeastSigificantBit) {
     
-    // std::cout << __LINE__ << std::endl;
-    // std::cout << __LINE__ << std::endl;
     if (pRemoveValueWithLeastSigificantBit) {
         size_t leastSignificantBits = 0b11111111111111111111111111111111 << pRemoveValueWithLeastSigificantBit;
         size_t insertValue = pHashValue | leastSignificantBits;
@@ -42,51 +35,33 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
             return;
         }
     }
-    // std::cout << __LINE__ << std::endl;
+    // char hashValue = static_cast<char>(pHashValue >> 24);
     
 #ifdef OPENMP
 #pragma omp critical
 #endif
     {	
-                // std::cout << "pVectorID: " << pVectorId << std::endl;
-        // if ((*mSignatureStorage)[pVectorId] == NULL) {
-                // std::cout << "HANNIBAL" << std::endl;
-            
-        // }
-        auto itHashValue_InstanceVector = (*mSignatureStorage)[pVectorId].find(pHashValue);
-                // std::cout << __LINE__ << std::endl;
+        auto itHashValue_InstanceVector = (*mInverseIndex)[pVectorId].find(pHashValue);
 
         // if for hash function h_i() the given hash values is already stored
-        if (itHashValue_InstanceVector != (*mSignatureStorage)[pVectorId].end()) {
-                // std::cout << __LINE__ << std::endl;
-
+        if (itHashValue_InstanceVector != (*mInverseIndex)[pVectorId].end()) {
             // insert the instance id if not too many collisions (maxBinSize)
             if (itHashValue_InstanceVector->second.size() && itHashValue_InstanceVector->second.size() < mMaxBinSize) {
-                // std::cout << __LINE__ << std::endl;
-
                 // insert only if there wasn't any collisions in the past
                 if (itHashValue_InstanceVector->second.size() > 0) {
-                // std::cout << __LINE__ << std::endl;
-
                     itHashValue_InstanceVector->second.push_back(pInstance);
                 }
             } else { 
                 // too many collisions: delete stored ids. empty vector is interpreted as an error code 
                 // for too many collisions
-                // std::cout << __LINE__ << std::endl;
-
                 itHashValue_InstanceVector->second.clear();
             }
         } else {
-                // std::cout << __LINE__ << std::endl;
-
             // given hash value for the specific hash function was not avaible: insert new hash value
             vsize_t instanceIdVector;
             instanceIdVector.push_back(pInstance);
-            (*mSignatureStorage)[pVectorId][pHashValue] = instanceIdVector;
+            (*mInverseIndex)[pVectorId][pHashValue] = instanceIdVector;
         }
-                // std::cout << __LINE__ << std::endl;
- 
     }
 }
 
@@ -98,7 +73,7 @@ distributionInverseIndex* InverseIndexStorageUnorderedMap::getDistribution() {
     vsize_t standardDeviationPerNumberOfValuesPerHashValue;
     size_t meanForNumberHashValues = 0;
     
-    for (auto it = mSignatureStorage->begin(); it != mSignatureStorage->end(); ++it) {
+    for (auto it = mInverseIndex->begin(); it != mInverseIndex->end(); ++it) {
         numberOfCreatedHashValuesPerHashFunction.push_back(it->size());
         meanForNumberHashValues += it->size();
         size_t mean = 0;
@@ -117,13 +92,13 @@ distributionInverseIndex* InverseIndexStorageUnorderedMap::getDistribution() {
             variance += pow(static_cast<int>(itMap->second.size()) - mean, 2);
         }
         
-        variance = variance / mSignatureStorage->size();
+        variance = variance / mInverseIndex->size();
         int standardDeviation = sqrt(variance);
         standardDeviationPerNumberOfValuesPerHashValue.push_back(standardDeviation);
     }
     
     size_t varianceForNumberOfHashValues = 0;
-    for (auto it = mSignatureStorage->begin(); it != mSignatureStorage->end(); ++it) {
+    for (auto it = mInverseIndex->begin(); it != mInverseIndex->end(); ++it) {
        varianceForNumberOfHashValues += pow(it->size() - meanForNumberHashValues, 2);
     }
     
@@ -139,7 +114,7 @@ distributionInverseIndex* InverseIndexStorageUnorderedMap::getDistribution() {
     return retVal;
 }
 void InverseIndexStorageUnorderedMap::prune(size_t pValue) { 
-    for (auto it = mSignatureStorage->begin(); it != mSignatureStorage->end(); ++it) {
+    for (auto it = mInverseIndex->begin(); it != mInverseIndex->end(); ++it) {
         vsize_t elementsToDelete;
         for (auto itMap = it->begin(); itMap != it->end(); ++itMap) {
             if (itMap->second.size() <= pValue) {
@@ -162,27 +137,25 @@ void InverseIndexStorageUnorderedMap::removeHashFunctionWithLessEntriesAs(size_t
     if (pRemoveHashFunctionWithLessEntriesAs == 0) {
         size_t mean = 0;
         size_t variance = 0;
-        for (size_t i = 0; i < mSignatureStorage->size(); ++i) {
-            mean += (*mSignatureStorage)[i].size();
+        for (size_t i = 0; i < mInverseIndex->size(); ++i) {
+            mean += (*mInverseIndex)[i].size();
         }
-        mean = mean / mSignatureStorage->size();
-        for (size_t i = 0; i < mSignatureStorage->size(); ++i) {
-            variance += pow(static_cast<int>((*mSignatureStorage)[i].size()) - mean, 2);
+        mean = mean / mInverseIndex->size();
+        for (size_t i = 0; i < mInverseIndex->size(); ++i) {
+            variance += pow(static_cast<int>((*mInverseIndex)[i].size()) - mean, 2);
         }
-        variance = variance / mSignatureStorage->size();
+        variance = variance / mInverseIndex->size();
         size_t standardDeviation = sqrt(variance);
-        for (size_t i = 0; i < mSignatureStorage->size(); ++i) {
-            if ((*mSignatureStorage)[i].size() < mean + standardDeviation) {
-                    (*mSignatureStorage)[i].clear();
+        for (size_t i = 0; i < mInverseIndex->size(); ++i) {
+            if ((*mInverseIndex)[i].size() < mean + standardDeviation) {
+                    (*mInverseIndex)[i].clear();
             }
         }
     } else {
-        for (size_t i = 0; i < mSignatureStorage->size(); ++i) {
-            if ((*mSignatureStorage)[i].size() < pRemoveHashFunctionWithLessEntriesAs) {
-                (*mSignatureStorage)[i].clear();
+        for (size_t i = 0; i < mInverseIndex->size(); ++i) {
+            if ((*mInverseIndex)[i].size() < pRemoveHashFunctionWithLessEntriesAs) {
+                (*mInverseIndex)[i].clear();
             }
         }
     }
-    // std::cout << __LINE__ << std::endl;
-    
 }
