@@ -9,10 +9,14 @@
 # Department of Computer Science
 # Faculty of Engineering
 # Albert-Ludwig-University Freiburg im Breisgau
+
+## CUDA extension based on the example by Robert McGibbon and Yutong Zhao
+## https://github.com/rmcgibbo/npcuda-example
+
 import time 
 __author__ = "Joachim Wolff"
 __contact__ = "wolffj@informatik.uni-freiburg.de"
-__copyright__ = "Copyright 2015, Joachim Wolff"
+__copyright__ = "Copyright 2016, Joachim Wolff"
 __credits__ = ["Milad Miladi", "Fabrizio Costa"]
 __license__ = "No License"
 __date__ = time.strftime("%d/%m/%Y")
