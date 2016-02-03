@@ -33,7 +33,7 @@ vsize_t* OrderAndMatchFinder::getTauVector() const {
 int OrderAndMatchFinder::tweak(const size_t pKey, vsize_t* pNeighbors, const vvsize_t_p* pValueTable) {
     int singelton = -1;
     size_t j = 0;
-    size_t index = 0;
+    // size_t index = 0;
     size_t seed = mBloomierHash->getHashSeed();
     while (singelton == -1) {
         mBloomierHash->getKNeighbors(pKey, seed, pNeighbors);

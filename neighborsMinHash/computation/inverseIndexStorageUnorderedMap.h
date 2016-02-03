@@ -15,8 +15,8 @@ class InverseIndexStorageUnorderedMap : public InverseIndexStorage {
 	const vsize_t* getElement(size_t pVectorId, size_t pHashValue);
 	void insert(size_t pVectorId, size_t pHashValue, size_t pInstance, size_t pRemoveValueWithLeastSigificantBit);
     distributionInverseIndex* getDistribution();
-    void prune(int pValue);
-    void removeHashFunctionWithLessEntriesAs(int pRemoveHashFunctionWithLessEntriesAs);
+    void prune(size_t pValue);
+    void removeHashFunctionWithLessEntriesAs(size_t pRemoveHashFunctionWithLessEntriesAs);
 	// void create();
 };
 #endif // INVERSE_INDEX_STORAGE_UNORDERED_MAP_H

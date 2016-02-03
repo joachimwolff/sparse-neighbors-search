@@ -349,20 +349,14 @@ static PyObject* fitRadiusNeighborsGraph(PyObject* self, PyObject* args) {
 
 
 static PyObject* getDistributionOfInverseIndex(PyObject* self, PyObject* args) {
-    size_t addressMinHashObject, maxNumberOfInstances, maxNumberOfFeatures,
-            radius, returnDistance, symmetric;
-    int fast, similarity;
-    PyObject* instancesListObj, *featuresListObj, *dataListObj;
+    size_t addressMinHashObject;
 
     if (!PyArg_ParseTuple(args, "k", &addressMinHashObject))
         return NULL;
-    // std::cout << __LINE__ << std::endl;
 
     MinHashBase* minHash = reinterpret_cast<MinHashBase* >(addressMinHashObject);
-    // std::cout << __LINE__ << std::endl;
 
     distributionInverseIndex* distribution = minHash->getDistributionOfInverseIndex();
-    // std::cout << __LINE__ << std::endl;
 
     return parseDistributionOfInverseIndex(distribution);
 }

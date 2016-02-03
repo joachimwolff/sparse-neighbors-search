@@ -138,34 +138,30 @@ distributionInverseIndex* InverseIndexStorageUnorderedMap::getDistribution() {
     
     return retVal;
 }
-void InverseIndexStorageUnorderedMap::prune(int pValue) { 
-    // std::cout << __LINE__ << std::endl;
+void InverseIndexStorageUnorderedMap::prune(size_t pValue) { 
     for (auto it = mSignatureStorage->begin(); it != mSignatureStorage->end(); ++it) {
         vsize_t elementsToDelete;
         for (auto itMap = it->begin(); itMap != it->end(); ++itMap) {
             if (itMap->second.size() <= pValue) {
                 elementsToDelete.push_back(itMap->first);
             }
-            // (*distribution)[itMap->second.size()] += 1;
         }
         for (size_t i = 0; i < elementsToDelete.size(); ++i) {
             it->erase(elementsToDelete[i]);
         }
         elementsToDelete.clear();
     }
-    // std::cout << __LINE__ << std::endl;
-    
 }
 
 // if pRemoveHashFunctionWithLessEntriesAs == 0 remove every hash function 
 // which has less entries than mean+standard deviation
 // else: remove every hash function which has less entries than pRemoveHashFunctionWithLessEntriesAs
-void InverseIndexStorageUnorderedMap::removeHashFunctionWithLessEntriesAs(int pRemoveHashFunctionWithLessEntriesAs) {
+void InverseIndexStorageUnorderedMap::removeHashFunctionWithLessEntriesAs(size_t pRemoveHashFunctionWithLessEntriesAs) {
     // std::cout << __LINE__ << std::endl;
     
     if (pRemoveHashFunctionWithLessEntriesAs == 0) {
-        int mean = 0;
-        int variance = 0;
+        size_t mean = 0;
+        size_t variance = 0;
         for (size_t i = 0; i < mSignatureStorage->size(); ++i) {
             mean += (*mSignatureStorage)[i].size();
         }
@@ -174,7 +170,7 @@ void InverseIndexStorageUnorderedMap::removeHashFunctionWithLessEntriesAs(int pR
             variance += pow(static_cast<int>((*mSignatureStorage)[i].size()) - mean, 2);
         }
         variance = variance / mSignatureStorage->size();
-        int standardDeviation = sqrt(variance);
+        size_t standardDeviation = sqrt(variance);
         for (size_t i = 0; i < mSignatureStorage->size(); ++i) {
             if ((*mSignatureStorage)[i].size() < mean + standardDeviation) {
                     (*mSignatureStorage)[i].clear();

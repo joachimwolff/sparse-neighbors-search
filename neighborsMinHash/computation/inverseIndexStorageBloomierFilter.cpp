@@ -18,10 +18,10 @@ InverseIndexStorageBloomierFilter::~InverseIndexStorageBloomierFilter() {
 distributionInverseIndex* InverseIndexStorageBloomierFilter::getDistribution(){
     return new distributionInverseIndex();
 }
-void InverseIndexStorageBloomierFilter::prune(int pValue) {
+void InverseIndexStorageBloomierFilter::prune(size_t pValue) {
     
 }
-void InverseIndexStorageBloomierFilter::removeHashFunctionWithLessEntriesAs(int pRemoveHashFunctionWithLessEntriesAs) {
+void InverseIndexStorageBloomierFilter::removeHashFunctionWithLessEntriesAs(size_t pRemoveHashFunctionWithLessEntriesAs) {
     
 }
 size_t InverseIndexStorageBloomierFilter::size() const {

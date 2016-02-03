@@ -46,8 +46,8 @@ void BloomierFilter::xorBitVector(bitVector* pResult, const bitVector* pInput) {
 
 const vsize_t* BloomierFilter::get(const size_t pKey) {
     
-    unsigned char tries = 5;
-    unsigned char i = 0;
+    // unsigned char tries = 5;
+    // unsigned char i = 0;
     vsize_t* neighbors = new vsize_t(mNumberOfElements);
     const bitVector* mask = mBloomierHash->getMask(pKey);
     bitVector* valueToGet = new bitVector[mBitVectorSize];
