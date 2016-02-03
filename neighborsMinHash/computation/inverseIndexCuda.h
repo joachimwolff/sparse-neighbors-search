@@ -17,7 +17,7 @@
 #include "inverseIndexStorageUnorderedMap.h"
 
 #include "typeDefinitions.h"
-#include "kernel.cu"
+#include "kernel.h"
 
 #ifndef INVERSE_INDEX_CUDA_H
 #define INVERSE_INDEX_CUDA_H
