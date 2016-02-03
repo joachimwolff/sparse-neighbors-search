@@ -29,19 +29,29 @@ MinHashCuda::MinHashCuda(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     int pPruneInverseIndex, float pPruneInverseIndexAfterInstance, 
                     int pRemoveHashFunctionWithLessEntriesAs, size_t pHashAlgorithm,
                     size_t pBlockSize, size_t pShingle,
-                    size_t pRemoveValueWithLeastSigificantBit):MinHashBase(pNumberOfHashFunctions, pShingleSize,
-                                                pNumberOfCores, pChunkSize, pMaxBinSize,
-                                                pSizeOfNeighborhood, pMinimalBlocksInCommon,
-                                                pExcessFactor, pMaximalNumberOfHashCollisions,
-                                                pFast, pSimilarity, pBloomierFilter,
-                                                pPruneInverseIndex, pPruneInverseIndexAfterInstance,
-                                                pRemoveHashFunctionWithLessEntriesAs, pHashAlgorithm,
-                                                pBlockSize, pShingle, pRemoveValueWithLeastSigificantBit) {
+                    size_t pRemoveValueWithLeastSigificantBit) {
+       
+       mInverseIndex = new InverseIndexCuda(pNumberOfHashFunctions, pShingleSize,
+                                            pNumberOfCores, pChunkSize,
+                                            pMaxBinSize, pMinimalBlocksInCommon, 
+                                            pExcessFactor, pMaximalNumberOfHashCollisions, pBloomierFilter,
+                                            pPruneInverseIndex, pPruneInverseIndexAfterInstance, 
+                                            pRemoveHashFunctionWithLessEntriesAs, pHashAlgorithm, pBlockSize, pShingle,
+                                            pRemoveValueWithLeastSigificantBit);
+
+        mNneighbors = pSizeOfNeighborhood;
+        mFast = pFast;
+        mNumberOfCores = pNumberOfCores;
+        mChunkSize = pChunkSize;
+        mSimilarity = pSimilarity;
 }
 
 MinHashCuda::~MinHashCuda() {
+    delete mInverseIndex;
 }
-
+MinHashCuda::fit(const SparseMatrixFloat* pRawData) {
+    mInverseIndex->fit(pRawData);
+}
 neighborhood MinHashCuda::radiusNeighbors() {
     neighborhood foo;
     return foo;
