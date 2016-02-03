@@ -11,6 +11,7 @@
 **/
 
 #include "minHashBase.h"
+#include "inverseIndexCuda.h"
 
 #ifndef MIN_HASH_CUDA_H
 #define MIN_HASH_CUDA_H
