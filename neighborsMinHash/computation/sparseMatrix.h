@@ -43,14 +43,20 @@ class SparseMatrixFloat {
         delete [] mSparseMatrixValues;
         delete [] mSizesOfInstances;
     };
-    size_t* getSparseMatrixIndex() {
+    size_t* getSparseMatrixIndex() const{
         return mSparseMatrix;
     }
-    float* getSparseMatrixValues() {
+    float* getSparseMatrixValues() const{
         return mSparseMatrixValues;
     }
-    size_t* getSparseMatrixSizeOfInstances() {
+    size_t* getSparseMatrixSizeOfInstances() const{
         return mSizesOfInstances;
+    }
+    size_t getMaxNnz() const {
+        return mMaxNnz;
+    }
+    size_t getNumberOfInstances() const {
+        return mNumberOfInstances;
     }
     size_t getNextElement(size_t pInstance, size_t pCounter) const {
         if (pCounter < mSizesOfInstances[pInstance]) {
