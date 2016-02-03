@@ -58,7 +58,12 @@ def parameter_optimization():
     #                 for excess_factor_ in xrange(excess_factor):
     #                     minHash = MinHash(number_of_hash_functions=hash_functions, shingle_size = 4, similarity=True, bloomierFilter=True, number_of_cores=4)
                         
-    
+    # {'max_bin_size': 36.189887524302385, 'remove_value_with_least_sigificant_bit': 0, 'prune_inverse_index': 1, 
+    # 'number_of_hash_functions': 415.88067313520196, 'shingle': 1, 
+    # 'removeHashFunctionWithLessEntriesAs': 107.08907660001913, 
+    # 'prune2': 0.16894760968869377, 'chunk_size': 12.926991521897076,
+    #  'excess_factor': 11.286649698096753, 'block_size': 2.622734214453821, 
+    #  'prune_inverse_index_after_instance': 1, 'shingle_size': 3.398546692984647}
 def test(data):
 
     if not os.path.isfile("bursiDataset"):
@@ -74,9 +79,11 @@ def test(data):
     # if not os.path.exists("inverse_index.approx"):
     print "Build inverse index for approximate..."
     time_build_approx_start = time.time()
-    minHash = MinHash(number_of_hash_functions=821, max_bin_size= 81, shingle_size = 2, similarity=False, bloomierFilter=False, number_of_cores=4,
-                     prune_inverse_index=1, remove_value_with_least_sigificant_bit=3, excess_factor=13,
-                    prune_inverse_index_after_instance=1, removeHashFunctionWithLessEntriesAs=296, hash_algorithm = 0, shingle=1, block_size=2)
+    minHash = MinHash(number_of_hash_functions=415, max_bin_size= 36, shingle_size = 3, similarity=False, 
+                        bloomierFilter=False, number_of_cores=4,
+                     prune_inverse_index=1, remove_value_with_least_sigificant_bit=0, excess_factor=11,
+                    prune_inverse_index_after_instance=1, removeHashFunctionWithLessEntriesAs=107, 
+                    hash_algorithm = 0, shingle=1, block_size=2)
     # minHash.fit(data[0])
     minHash.fit(datasetBursi)
     # minHash.get_distribution_of_inverse_index()
@@ -123,9 +130,9 @@ def test(data):
     print "Time: ", time_comp_approx_end  - time_comp_approx
     print "\n\n"
 
-    minHash2 = MinHash(number_of_hash_functions=821, max_bin_size= 81, shingle_size = 2, similarity=False, bloomierFilter=False, number_of_cores=4,
-                     prune_inverse_index=-1, remove_value_with_least_sigificant_bit=0, excess_factor=13,
-                    prune_inverse_index_after_instance=-1.0, removeHashFunctionWithLessEntriesAs=-1, hash_algorithm = 0, shingle=0, block_size=2)
+    minHash2 = MinHash(number_of_hash_functions=415, max_bin_size= 36, shingle_size = 2, similarity=False, bloomierFilter=False, number_of_cores=4,
+                     prune_inverse_index=-1, remove_value_with_least_sigificant_bit=0, excess_factor=1,
+                    prune_inverse_index_after_instance=-1.0, removeHashFunctionWithLessEntriesAs=-1, hash_algorithm = 0, shingle=0, block_size=1)
     time_fit = time.time()
     minHash2.fit(datasetBursi)
     print "Fitting: ", time.time() - time_fit
