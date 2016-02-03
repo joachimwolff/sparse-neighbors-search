@@ -23,7 +23,7 @@ __date__ = time.strftime("%d/%m/%Y")
 __version_ = "0.1.dev"
 
 from setuptools import setup, find_packages
-from distutils.core import Extension
+# from distutils.core import Extension
 import platform
 import sys
 
@@ -31,10 +31,11 @@ import sys
 import  os
 from os.path import join as pjoin
 from setuptools import setup
-# from distutils.extension import Extension
+from distutils.extension import Extension
 from Cython.Distutils import build_ext
 import subprocess
 import numpy
+
 
 sources_list = ['neighborsMinHash/computation/interface/minHash_PythonInterface.cpp', 'neighborsMinHash/computation/minHash.cpp', 
                 'neighborsMinHash/computation/minHashBase.cpp', 'neighborsMinHash/computation/inverseIndex.cpp',
@@ -216,8 +217,9 @@ else:
                 # we're only going to use certain compiler args with nvcc and not with gcc
                 # the implementation of this trick is in customize_compiler() below
                 define_macros=[('OPENMP', None), ('CUDA', None)],
-                extra_link_args={'gcc': ["-lm", "-lrt","-lgomp"], 
-                                  'nvcc' :[]  },
+                # extra_link_args={'gcc': ["-lm", "-lrt","-lgomp"], 
+                #                   'nvcc' :[]  },
+                extra_link_args=["-lm", "-lrt","-lgomp"],
                 extra_compile_args={'gcc': ["-fopenmp", "-O3", "-std=c++11"],
                                     'nvcc': ['-arch=sm_20', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
                 include_dirs = [CUDA['include'], 'src'],
