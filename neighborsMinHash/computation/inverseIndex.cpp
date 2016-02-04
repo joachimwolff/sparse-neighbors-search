@@ -246,6 +246,7 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     return instanceSignature;
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
+std::cout << "fitting" << std::endl;
     size_t pruneEveryNIterations = pRawData->size() * mPruneInverseIndexAfterInstance;
     size_t pruneCount = 0;
     mDoubleElementsStorageCount = 0;
@@ -258,7 +259,6 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
 #ifdef OPENMP
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
 #endif
-
     for (size_t index = 0; index < pRawData->size(); ++index) {
         size_t signatureId = 0;
         for (size_t j = 0; j < pRawData->getSizeOfInstance(index); ++j) {
@@ -327,6 +327,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
 
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                         const size_t pNneighborhood, const bool pDoubleElementsStorageCount) {
+                                            std::cout << "kneighbors inverseIndex" << std::endl;
     size_t doubleElements = 0;
     if (pDoubleElementsStorageCount) {
         doubleElements = mDoubleElementsStorageCount;
@@ -349,41 +350,52 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
 #endif 
 
     for (size_t i = 0; i < pSignaturesMap->size(); ++i) {
+        
         umap_uniqueElement::const_iterator instanceId = pSignaturesMap->begin();
         std::advance(instanceId, i); 
         std::unordered_map<size_t, size_t> neighborhood;
-        const vsize_t signature = instanceId->second.signature;
-        for (size_t j = 0; j < signature.size(); ++j) {
-            size_t hashID = signature[j];
-            if (hashID != 0 && hashID != MAX_VALUE) {
-                size_t collisionSize = 0;
-                const vsize_t* instances = mInverseIndexStorage->getElement(j, hashID);
-                if (instances == NULL) continue;
-                if (instances->size() != 0) {
-                    collisionSize = instances->size();
-                } else { 
-                    continue;
-                }
-                
-                if (collisionSize < mMaxBinSize && collisionSize > 0) {
-                    for (size_t k = 0; k < instances->size(); ++k) {
-                        neighborhood[(*instances)[k]] += 1;
+        const vsize_t signature = instanceId->second.signature; 
+        // if (signature != NULL) {
+            for (size_t j = 0; j < signature.size(); ++j) {
+                size_t hashID = signature[j];
+                if (hashID != 0 && hashID != MAX_VALUE) {
+                    size_t collisionSize = 0;
+                    const vsize_t* instances = mInverseIndexStorage->getElement(j, hashID);
+                    if (instances == NULL) continue;
+                    if (instances->size() != 0) {
+                        collisionSize = instances->size();
+                    } else { 
+                        continue;
+                    }
+                    
+                    if (collisionSize < mMaxBinSize && collisionSize > 0) {
+                        for (size_t k = 0; k < instances->size(); ++k) {
+                            neighborhood[(*instances)[k]] += 1;
+                        }
                     }
                 }
             }
-        }
+        // }
         
         if (neighborhood.size() == 0) {
             vint emptyVectorInt;
             emptyVectorInt.push_back(1);
             vfloat emptyVectorFloat;
             emptyVectorFloat.push_back(1);
-            for (size_t j = 0; j < instanceId->second.instances.size(); ++j) {
-                (*neighbors)[instanceId->second.instances[j]] = emptyVectorInt;
-                (*distances)[instanceId->second.instances[j]] = emptyVectorFloat;
+#ifdef OPENMP
+#pragma omp critical
+#endif
+            { // write vector to every instance with identical signatures
+            
+                for (size_t j = 0; j < instanceId->second.instances.size(); ++j) {
+                    (*neighbors)[instanceId->second.instances[j]] = emptyVectorInt;
+                    (*distances)[instanceId->second.instances[j]] = emptyVectorFloat;
+                }
+            
             }
             continue;
-        } 
+        }
+         
         std::vector< sort_map > neighborhoodVectorForSorting;
         for (auto it = neighborhood.begin(); it != neighborhood.end(); ++it) {
             sort_map mapForSorting;
@@ -395,7 +407,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         if (pNneighborhood > neighborhoodVectorForSorting.size()) {
             numberOfElementsToSort = neighborhoodVectorForSorting.size();
         }
-        std::partial_sort(neighborhoodVectorForSorting.begin(), neighborhoodVectorForSorting.begin()+numberOfElementsToSort, neighborhoodVectorForSorting.end(), mapSortDescByValue);
+        
         size_t sizeOfNeighborhoodAdjusted;
         if (pNneighborhood == MAX_VALUE) {
             sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(pNneighborhood), neighborhoodVectorForSorting.size());
@@ -426,20 +438,24 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 }
             }
         }
+        
 #ifdef OPENMP
 #pragma omp critical
 #endif
 
-        {     
+        {   // write vector to every instance with identical signatures
+       
             for (size_t j = 0; j < instanceId->second.instances.size(); ++j) {
                 (*neighbors)[instanceId->second.instances[j]] = neighborsForThisInstance[j];
                 (*distances)[instanceId->second.instances[j]] = distancesForThisInstance[j];
             }
+        
         }
     }
     
     neighborhood* neighborhood_ = new neighborhood();
     neighborhood_->neighbors = neighbors;
     neighborhood_->distances = distances;
+    std::cout << "kneighbors inverse index END" << std::endl;
     return neighborhood_;
 }

@@ -6,28 +6,25 @@
 InverseIndexStorageUnorderedMap::InverseIndexStorageUnorderedMap(size_t pSizeOfInverseIndex, size_t pMaxBinSize) {
 	mInverseIndex = new vector__umapVector(pSizeOfInverseIndex);
 	mMaxBinSize = pMaxBinSize;
-	// mKeys = new vvsize_t(pSizeOfInverseIndex, vsize_t());
-	// mValues = new vvsize_t(pSizeOfInverseIndex, vsize_t());
 }
 InverseIndexStorageUnorderedMap::~InverseIndexStorageUnorderedMap() {
 	delete mInverseIndex;
-    // delete mKeys;
-    // delete mValues;
 }
 size_t InverseIndexStorageUnorderedMap::size() const {
 	return mInverseIndex->size();
 }
 const vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, size_t pHashValue) {
-    // char hashValue = static_cast<char>(pHashValue >> 24);
-	auto iterator = (*mInverseIndex)[pVectorId].find(pHashValue);
-	if (iterator != (*mInverseIndex)[pVectorId].end()) {
-		return &(iterator->second);
-	}
+    if (pVectorId < mInverseIndex->size()) {
+        auto iterator = (*mInverseIndex)[pVectorId].find(pHashValue);
+        if (iterator != (*mInverseIndex)[pVectorId].end()) {
+            return &(iterator->second);
+        }
+    }
 	return NULL; 
 }
 void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue, size_t pInstance, 
                         size_t pRemoveValueWithLeastSigificantBit) {
-    
+    if (pVectorId >= mInverseIndex->size()) return;
     if (pRemoveValueWithLeastSigificantBit) {
         size_t leastSignificantBits = 0b11111111111111111111111111111111 << pRemoveValueWithLeastSigificantBit;
         size_t insertValue = pHashValue | leastSignificantBits;
@@ -35,7 +32,6 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
             return;
         }
     }
-    // char hashValue = static_cast<char>(pHashValue >> 24);
     
 #ifdef OPENMP
 #pragma omp critical

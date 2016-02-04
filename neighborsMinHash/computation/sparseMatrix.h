@@ -59,37 +59,47 @@ class SparseMatrixFloat {
         return mNumberOfInstances;
     }
     size_t getNextElement(size_t pInstance, size_t pCounter) const {
-        if (pCounter < mSizesOfInstances[pInstance]) {
-            return mSparseMatrix[pInstance*mMaxNnz+pCounter];
-        } else {
-            return MAX_VALUE;
+        if (pInstance < mNumberOfInstances && pInstance*mMaxNnz+pCounter < mNumberOfInstances*mMaxNnz) {
+            if (pCounter < mSizesOfInstances[pInstance]) {
+                return mSparseMatrix[pInstance*mMaxNnz+pCounter];
+            }
         }
+        return MAX_VALUE;
     }
     float getNextValue(size_t pInstance, size_t pCounter) const {
-        if (pCounter < mSizesOfInstances[pInstance]) {
-            return mSparseMatrixValues[pInstance*mMaxNnz+pCounter];
-        } else {
-            return MAX_VALUE;
+        if (pInstance < mNumberOfInstances && pInstance*mMaxNnz+pCounter < mNumberOfInstances*mMaxNnz) {
+            if (pCounter < mSizesOfInstances[pInstance]) {
+                return mSparseMatrixValues[pInstance*mMaxNnz+pCounter];
+            }
         }
+        return MAX_VALUE;
     }
     size_t size() const {
         return mNumberOfInstances;
     }
     
     size_t getSizeOfInstance(size_t pInstance) const {
-        return mSizesOfInstances[pInstance];
+        if (pInstance < mNumberOfInstances) {
+            return mSizesOfInstances[pInstance];
+        }
+        return 0;
     }
     void insertElement(size_t pInstanceId, size_t pNnzCount, size_t pFeatureId, float pValue) {
-        mSparseMatrix[pInstanceId*mMaxNnz + pNnzCount] = pFeatureId;
-        mSparseMatrixValues[pInstanceId*mMaxNnz + pNnzCount] = pValue; 
+        if (pInstanceId*mMaxNnz + pNnzCount < mNumberOfInstances * mMaxNnz) {
+            mSparseMatrix[pInstanceId*mMaxNnz + pNnzCount] = pFeatureId;
+            mSparseMatrixValues[pInstanceId*mMaxNnz + pNnzCount] = pValue;
+        }
     };
 
     void insertToSizesOfInstances(size_t pInstanceId, size_t pSizeOfInstance) {
-        mSizesOfInstances[pInstanceId] = pSizeOfInstance;
+        if (pInstanceId < mNumberOfInstances) {
+            mSizesOfInstances[pInstanceId] = pSizeOfInstance;
+        }
     };
 
-    std::vector<sortMapFloat> euclidianDistance(const std::vector<int> pRowIdVector, const int pRowId, const size_t pNneighbors, const SparseMatrixFloat* pQueryData=NULL) const {
+    std::vector<sortMapFloat> euclidianDistance(const std::vector<int> pRowIdVector, const size_t pNneighbors, const SparseMatrixFloat* pQueryData=NULL) const {
         const SparseMatrixFloat* queryData = this;
+        const size_t pRowId = pRowIdVector[0];
         if (pQueryData != NULL) {
             queryData = pQueryData;
         }
@@ -99,8 +109,6 @@ class SparseMatrixFloat {
         // iterate over all candidates
 
         for (size_t i = 0; i < pRowIdVector.size(); ++i) {
-            // std::cout << "77S" << std::endl;
-            // std::cout << "id: " << pRowIdVector[i] << std::endl;
             sortMapFloat element; 
             element.key = pRowIdVector[i];
             element.val = 0.0;
@@ -109,7 +117,6 @@ class SparseMatrixFloat {
             // how many elements per index are stored is stored in mSizesOfInstances[indexID]
             // iterate until both instances have no more feature ids
             bool endOfFirstVectorNotReached = pointerToMatrixElement < this->getSizeOfInstance(pRowIdVector[i]);
-            // bool endOfSecondVector = pointerToVectorElement < mSizesOfInstances[pRowId];
             bool endOfSecondVectorNotReached = pointerToVectorElement < queryData->getSizeOfInstance(pRowId);
 
             while (endOfFirstVectorNotReached && endOfSecondVectorNotReached) {
@@ -169,8 +176,10 @@ class SparseMatrixFloat {
         return returnValue;
     };
 
-    std::vector<sortMapFloat> cosineSimilarity(const std::vector<int> pRowIdVector, const int pRowId, const size_t pNneighbors, const SparseMatrixFloat* pQueryData=NULL) const {
+    std::vector<sortMapFloat> cosineSimilarity(const std::vector<int> pRowIdVector, const size_t pNneighbors, const SparseMatrixFloat* pQueryData=NULL) const {
         const SparseMatrixFloat* queryData = this;
+        const size_t pRowId = pRowIdVector[0];
+        
         if (pQueryData != NULL) {
             queryData = pQueryData;
         }

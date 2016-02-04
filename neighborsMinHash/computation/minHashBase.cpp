@@ -58,6 +58,7 @@ void MinHashBase::partialFit() {
 
 }
 neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast, int pSimilarity) {
+    std::cout << "kneighbors" << std::endl;
     if (pFast == -1) {
         pFast = mFast;
     } 
@@ -101,13 +102,13 @@ if (mChunkSize <= 0) {
     for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
         if (neighborhood_->neighbors->operator[](i).size() != 1) {
             std::vector<sortMapFloat> exactNeighbors;
-            if (neighborhood_->neighbors->operator[](i).size() != 0) {
+            if (0 < neighborhood_->neighbors->operator[](i).size()) {
                 if (pSimilarity) {
                     exactNeighbors = 
-                        mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), neighborhood_->neighbors->operator[](i)[0], pNneighbors, pRawData);
+                        mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), pNneighbors, pRawData);
                 } else {
                     exactNeighbors = 
-                        mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), neighborhood_->neighbors->operator[](i)[0], pNneighbors, pRawData);
+                        mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), pNneighbors, pRawData);
                 }
             }
             size_t vectorSize = exactNeighbors.size();

@@ -24,7 +24,7 @@ def compute_score(error, memory, time, max_memory, max_time, alpha, beta):
     error = error/(float (max_error))
     memory = math.log(memory/float(max_memory), 10)*alpha
     time = math.log(time/float(max_time), 10)*beta
-    return error #+ memory  + time
+    return error + memory  + time
 
  
 
@@ -44,32 +44,61 @@ def objective(args):
     # alpha = args["alpha"]
     # beta = args["beta"]
     #number_of_hash_functions
-    
-            
-    minHash = MinHash(n_neighbors=5, radius=1.0, fast=False, number_of_hash_functions=int(number_of_hash_functions),
-                 max_bin_size = int(max_bin_size), minimal_blocks_in_common = 1, shingle_size = int(shingle_size),
-                  excess_factor = int(excess_factor),
-                 similarity=False, bloomierFilter=False, number_of_cores=4, chunk_size=int(chunk_size), 
-                 prune_inverse_index=int(prune_inverse_index),
-                 prune_inverse_index_after_instance=prune_inverse_index_after_instance,
-                 removeHashFunctionWithLessEntriesAs=int(removeHashFunctionWithLessEntriesAs), 
-                 hash_algorithm = 0, block_size = int(block_size), shingle=shingle,
-                 remove_value_with_least_sigificant_bit=remove_value_with_least_sigificant_bit, 
-                 cuda=0)
-    minHash.fit(datasetBursi)
-    distribution = minHash.get_distribution_of_inverse_index()
-    memory = 0
-    for j in distribution[0]:
-        memory += j * distribution[0][j]
-    time_start = time.time()
-    neighbors = minHash.kneighbors(return_distance=False)
-    time_end = time.time() - time_start
-    accuracy = 0.0
-    for x, y in zip(neighbors, neighbors_sklearn):
-        accuracy += accuracy_score(x, y)
-    accuracy = accuracy / float(len(neighbors))
-    error = 1 - accuracy
-    return compute_score(error, memory, time_end, max_memory, max_time, 0.1, 1)
+    print "Exception!" 
+    print "Values: "
+    print "number_of_hash_functions ", number_of_hash_functions
+    print "max_bin_size ", max_bin_size
+    print "shingle_size ", shingle_size
+    print "excess_factor ", excess_factor
+    print "chunk_size ",chunk_size
+    print "prune_inverse_index ", prune_inverse_index
+    print "prune_inverse_index_after_instance ", prune_inverse_index_after_instance
+    print "removeHashFunctionWithLessEntriesAs ", removeHashFunctionWithLessEntriesAs
+    print "block_size ", block_size
+    print "shingle ", shingle
+    print "remove_value_with_least_sigificant_bit ", remove_value_with_least_sigificant_bit
+    try:        
+        minHash = MinHash(n_neighbors=5, radius=1.0, fast=False, number_of_hash_functions=int(number_of_hash_functions),
+                    max_bin_size = int(max_bin_size), minimal_blocks_in_common = 1, shingle_size = int(shingle_size),
+                    excess_factor = int(excess_factor),
+                    similarity=False, bloomierFilter=False, number_of_cores=4, chunk_size=int(chunk_size), 
+                    prune_inverse_index=int(prune_inverse_index),
+                    prune_inverse_index_after_instance=prune_inverse_index_after_instance,
+                    removeHashFunctionWithLessEntriesAs=int(removeHashFunctionWithLessEntriesAs), 
+                    hash_algorithm = 0, block_size = int(block_size), shingle=shingle,
+                    remove_value_with_least_sigificant_bit=remove_value_with_least_sigificant_bit, 
+                    cuda=0)
+        minHash.fit(datasetBursi)
+        distribution = minHash.get_distribution_of_inverse_index()
+        memory = 0
+        for j in distribution[0]:
+            memory += j * distribution[0][j]
+        time_start = time.time()
+        neighbors = minHash.kneighbors(return_distance=False)
+        time_end = time.time() - time_start
+        accuracy = 0.0
+        for x, y in zip(neighbors, neighbors_sklearn):
+            accuracy += accuracy_score(x, y)
+        accuracy = accuracy / float(len(neighbors))
+        error = 1 - accuracy
+    except:
+        print "Exception!" 
+        print "Values: "
+        print "number_of_hash_functions ", number_of_hash_functions
+        print "max_bin_size ", max_bin_size
+        print "shingle_size ", shingle_size
+        print "excess_factor ", excess_factor
+        print "chunk_size ",chunk_size
+        print "prune_inverse_index ", prune_inverse_index
+        print "prune_inverse_index_after_instance ", prune_inverse_index_after_instance
+        print "removeHashFunctionWithLessEntriesAs ", removeHashFunctionWithLessEntriesAs
+        print "block_size ", block_size
+        print "shingle ", shingle
+        print "remove_value_with_least_sigificant_bit ", remove_value_with_least_sigificant_bit
+        return 5
+    # alpha = args["alpha"]
+    # beta = args["beta"]
+    return compute_score(error, memory, time_end, max_memory, max_time, 0.1, 0.2)
 
 
 # get data set  
