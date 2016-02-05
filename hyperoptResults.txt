@@ -32,3 +32,6 @@ number of size_t: 0
 accuracy pos: 0.0
 accuracy nei: 0.0
 5 out of 10:  0.0
+
+alpha 0.1 beta 0.2
+{'max_bin_size': 88.95800672570232, 'remove_value_with_least_sigificant_bit': 0, 'prune_inverse_index': 1, 'number_of_hash_functions': 326.0542084649504, 'shingle': 1, 'removeHashFunctionWithLessEntriesAs': 304.29915687592666, 'prune2': 0.7269026886416936, 'chunk_size': 5.123764320219982, 'excess_factor': 13.402262946940926, 'block_size': 1.267516200559707, 'prune_inverse_index_after_instance': 1, 'shingle_size': 2.4053757562202382}

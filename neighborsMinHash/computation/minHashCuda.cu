@@ -49,7 +49,7 @@ MinHashCuda::MinHashCuda(size_t pNumberOfHashFunctions, size_t pShingleSize,
 MinHashCuda::~MinHashCuda() {
     delete mInverseIndex;
 }
-MinHashCuda::fit(const SparseMatrixFloat* pRawData) {
+void MinHashCuda::fit(const SparseMatrixFloat* pRawData) {
     mInverseIndex->fit(pRawData);
 }
 neighborhood MinHashCuda::radiusNeighbors() {

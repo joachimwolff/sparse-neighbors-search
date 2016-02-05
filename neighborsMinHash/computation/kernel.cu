@@ -3,6 +3,13 @@
 // #include <math.h>
 #include "kernel.h"
 
+__device__ struct hashValue {
+    size_t value;
+    size_t* instances;
+}
+__device__ struct hashFunction {
+    size_t* instances;
+}
 
 __device__ size_t computeHashValueGpu(size_t key, size_t aModulo) {
     // source:  Thomas Wang: Integer Hash Functions, 1997 / 2007 

@@ -164,16 +164,16 @@ void InverseIndexCuda::fit(const SparseMatrixFloat* pRawData) {
             pRawData->getNumberOfInstances());
     cudaThreadSynchronize();
     
-    std::vector<std::vector<size_t> > hashFunctionHashValues;
-    std::vector<std::vector<size_t> > associatedIndexValues;
-    for (size_t i = 0; i < pRawData->getNumberOfInstances()*mNumberOfHashFunctions; ++i) {
-        std::cout << result[i] ", ";
-        
-        // std::vector<size_t> instance(mNumberOfHashFunctions);
-        // for (size_t j = 0; j < mNumberOfHashFunctions; ++j) {
-            
-        // }
+    std::vector<std::vector<size_t> > hashFunctionHashValues(mNumberOfHashFunctions, std::vector<size_t>(0));
+    std::vector<std::vector<vector<size_t> > > associatedIndexValues(mNumberOfHashFunctions, std::vector<size_t>(0));
+    for (size_t i = 0; i < pRawData->getNumberOfInstances(); ++i) {
+        // std::cout << result[i] ", ";
+        for (size_t j = 0; j < mNumberOfHashFunctions; ++j) {
+            hashFunctionHashValue[j].push_back(result[pRawData->getNumberOfInstances() * i + j]);
+            associatedIndexValues[j].push_back(i);
+        }
     }
+    
     cudaFree(dev_featureList);
     cudaFree(dev_sizeOfInstanceList);
     cudaFree(dev_computedSignaturesPerInstance);
@@ -184,9 +184,17 @@ void InverseIndexCuda::fit(const SparseMatrixFloat* pRawData) {
         // }
         
     // }
+    // put values in vectors, sort them.
+    // copy index to gpu
+    
+    
 }
 
 neighborhood* InverseIndexCuda::kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                         const size_t pNneighborhood, const bool pDoubleElementsStorageCount) {
+// compute hits in the inverse index on the gpu and 
+// return a list with all the associated index values per hash function
+// process them on the gpu,
+// compute exact neighbors based on the hits on gpu.
 
 }

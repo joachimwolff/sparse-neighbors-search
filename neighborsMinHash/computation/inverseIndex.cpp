@@ -327,7 +327,7 @@ std::cout << "fitting" << std::endl;
 
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                         const size_t pNneighborhood, const bool pDoubleElementsStorageCount) {
-                                            std::cout << "kneighbors inverseIndex" << std::endl;
+                                            // std::cout << "kneighbors inverseIndex" << std::endl;
     size_t doubleElements = 0;
     if (pDoubleElementsStorageCount) {
         doubleElements = mDoubleElementsStorageCount;
@@ -350,9 +350,11 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
 #endif 
 
     for (size_t i = 0; i < pSignaturesMap->size(); ++i) {
+    // std::cout << "kneighbors inverse index: " << __LINE__ << std::endl;
         
         umap_uniqueElement::const_iterator instanceId = pSignaturesMap->begin();
-        std::advance(instanceId, i); 
+        std::advance(instanceId, i);
+        if (instanceId == pSignaturesMap->end()) continue;
         std::unordered_map<size_t, size_t> neighborhood;
         const vsize_t signature = instanceId->second.signature; 
         // if (signature != NULL) {
@@ -376,6 +378,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 }
             }
         // }
+    // std::cout << "kneighbors inverse index: " << __LINE__ << std::endl;
         
         if (neighborhood.size() == 0) {
             vint emptyVectorInt;
@@ -386,15 +389,17 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
 #pragma omp critical
 #endif
             { // write vector to every instance with identical signatures
-            
+    // std::cout << "kneighbors inverse index: " << __LINE__ << std::endl;
+
                 for (size_t j = 0; j < instanceId->second.instances.size(); ++j) {
+                    // std::cout << "neighbors size: " << neighbors->size() << " Size of instance: " << instanceId->second.instances[j] << std::endl;
                     (*neighbors)[instanceId->second.instances[j]] = emptyVectorInt;
                     (*distances)[instanceId->second.instances[j]] = emptyVectorFloat;
                 }
-            
             }
             continue;
         }
+    // std::cout << "kneighbors inverse index: " << __LINE__ << std::endl;
          
         std::vector< sort_map > neighborhoodVectorForSorting;
         for (auto it = neighborhood.begin(); it != neighborhood.end(); ++it) {
@@ -407,13 +412,19 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         if (pNneighborhood > neighborhoodVectorForSorting.size()) {
             numberOfElementsToSort = neighborhoodVectorForSorting.size();
         }
+    // std::cout << "kneighbors inverse index: " << __LINE__ << std::endl;
         
+        std::partial_sort(neighborhoodVectorForSorting.begin(), 
+                            neighborhoodVectorForSorting.begin()+numberOfElementsToSort, 
+                            neighborhoodVectorForSorting.end(), mapSortDescByValue);
         size_t sizeOfNeighborhoodAdjusted;
         if (pNneighborhood == MAX_VALUE) {
             sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(pNneighborhood), neighborhoodVectorForSorting.size());
         } else {
             sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(pNneighborhood * mExcessFactor), neighborhoodVectorForSorting.size());
         }
+    // std::cout << "kneighbors inverse index: " << __LINE__ << std::endl;
+
         size_t count = 0;
         vvint neighborsForThisInstance(instanceId->second.instances.size());
         vvfloat distancesForThisInstance(instanceId->second.instances.size());
@@ -444,6 +455,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
 #endif
 
         {   // write vector to every instance with identical signatures
+    // std::cout << "kneighbors inverse index: " << __LINE__ << std::endl;
        
             for (size_t j = 0; j < instanceId->second.instances.size(); ++j) {
                 (*neighbors)[instanceId->second.instances[j]] = neighborsForThisInstance[j];
@@ -452,10 +464,11 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         
         }
     }
+    // std::cout << "kneighbors inverse index: " << __LINE__ << std::endl;
     
     neighborhood* neighborhood_ = new neighborhood();
     neighborhood_->neighbors = neighbors;
     neighborhood_->distances = distances;
-    std::cout << "kneighbors inverse index END" << std::endl;
+    // std::cout << "kneighbors inverse index END" << std::endl; 
     return neighborhood_;
 }

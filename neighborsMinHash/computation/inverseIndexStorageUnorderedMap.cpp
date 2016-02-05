@@ -14,13 +14,20 @@ size_t InverseIndexStorageUnorderedMap::size() const {
 	return mInverseIndex->size();
 }
 const vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, size_t pHashValue) {
+    vsize_t* foo;
+    foo = NULL;
+#ifdef OPENMP
+#pragma omp critical
+#endif
+    {
     if (pVectorId < mInverseIndex->size()) {
         auto iterator = (*mInverseIndex)[pVectorId].find(pHashValue);
         if (iterator != (*mInverseIndex)[pVectorId].end()) {
-            return &(iterator->second);
+            foo =  &(iterator->second);
         }
     }
-	return NULL; 
+    }
+	return foo; 
 }
 void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue, size_t pInstance, 
                         size_t pRemoveValueWithLeastSigificantBit) {
