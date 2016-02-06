@@ -17,7 +17,7 @@
 #define MIN_HASH_CUDA_H
 class MinHashCuda : public MinHashBase {
   private:
-
+        InverseIndexCuda* mInverseIndex;
   public:
   	MinHashCuda(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     size_t pNumberOfCores, size_t pChunkSize,
@@ -30,6 +30,7 @@ class MinHashCuda : public MinHashBase {
                     size_t pBlockSize, size_t pShingle,
                     size_t pRemoveValueWithLeastSigificantBit);
   	~MinHashCuda();
+    void fit(const SparseMatrixFloat* pRawData);
     // Calculate the neighbors inside a given radius.
     neighborhood radiusNeighbors();
     // Calculate the neighbors inside a given radius as a graph.
