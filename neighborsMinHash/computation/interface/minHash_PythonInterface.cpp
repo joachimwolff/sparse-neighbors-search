@@ -71,31 +71,44 @@ static PyObject* createObject(PyObject* self, PyObject* args) {
     MinHashBase* minHash;
     minHash = NULL;
     if (cuda == 0) {
+        printf("%i\n", __LINE__);
         minHash = new MinHash (numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
                         maxBinSize, nNeighbors, minimalBlocksInCommon, 
                         excessFactor, maximalNumberOfHashCollisions, fast, similarity, bloomierFilter, pruneInverseIndex,
                         pruneInverseIndexAfterInstance, removeHashFunctionWithLessEntriesAs, 
                         hashAlgorithm, blockSize, shingle, removeValueWithLeastSigificantBit);
+        printf("%i\n", __LINE__);
+                        
     } else if (cuda == 1) {
 #ifdef CUDA
+        printf("%i\n", __LINE__);
+
         minHash = new MinHashCuda(numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
                         maxBinSize, nNeighbors, minimalBlocksInCommon, 
                         excessFactor, maximalNumberOfHashCollisions, fast, similarity, bloomierFilter, pruneInverseIndex,
                         pruneInverseIndexAfterInstance, removeHashFunctionWithLessEntriesAs, 
                         hashAlgorithm, blockSize, shingle, removeValueWithLeastSigificantBit);
+        printf("%i\n", __LINE__);
+                        
 #endif
         if (minHash == NULL) {
+        printf("%i\n", __LINE__);
+            
             minHash = new MinHash (numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
                         maxBinSize, nNeighbors, minimalBlocksInCommon, 
                         excessFactor, maximalNumberOfHashCollisions, fast, similarity, bloomierFilter, pruneInverseIndex,
                         pruneInverseIndexAfterInstance, removeHashFunctionWithLessEntriesAs, 
                         hashAlgorithm, blockSize, shingle, removeValueWithLeastSigificantBit);
+        printf("%i\n", __LINE__);
+                        
         }
     }
         // std::cout << __LINE__ << std::endl;
+        printf("%i\n", __LINE__);
 
     size_t adressMinHashObject = reinterpret_cast<size_t>(minHash);
     PyObject* pointerToInverseIndex = Py_BuildValue("k", adressMinHashObject);
+        printf("%i\n", __LINE__);
     
     return pointerToInverseIndex;
 }
@@ -111,6 +124,7 @@ static PyObject* deleteObject(PyObject* self, PyObject* args) {
 }
 
 static PyObject* fit(PyObject* self, PyObject* args) {
+        printf("%i\n", __LINE__);
     
     size_t addressMinHashObject, maxNumberOfInstances, maxNumberOfFeatures;
     PyObject* instancesListObj, *featuresListObj, *dataListObj;
@@ -123,24 +137,32 @@ static PyObject* fit(PyObject* self, PyObject* args) {
                             &maxNumberOfFeatures,
                             &addressMinHashObject))
         return NULL;
+        printf("%i\n", __LINE__);
+    
     // parse from python list to a c++ map<size_t, vector<size_t> >
     // where key == instance id and vector<size_t> == non null feature ids
     SparseMatrixFloat* originalDataMatrix = parseRawData(instancesListObj, featuresListObj, dataListObj, 
                                                     maxNumberOfInstances, maxNumberOfFeatures);
     // std::cout << __LINE__ << std::endl;
-
+        printf("%i\n", __LINE__);
+ 
     // get pointer to the minhash object
-    MinHashBase* minHash = reinterpret_cast<MinHashBase* >(addressMinHashObject);
+    MinHashCuda* minHash = reinterpret_cast<MinHashCuda* >(addressMinHashObject);
         // std::cout << __LINE__ << std::endl;
+        printf("%i\n", __LINE__);
 
     minHash->set_mOriginalData(originalDataMatrix);
     // std::cout << __LINE__ << std::endl;
+        printf("%i\n", __LINE__);
 
     minHash->fit(originalDataMatrix);
     // std::cout << __LINE__ << std::endl;
+        printf("%i\n", __LINE__);
 
     addressMinHashObject = reinterpret_cast<size_t>(minHash);
     PyObject * pointerToInverseIndex = Py_BuildValue("k", addressMinHashObject);
+        printf("%i\n", __LINE__);
+    
     return pointerToInverseIndex;
 }
 static PyObject* partialFit(PyObject* self, PyObject* args) {
