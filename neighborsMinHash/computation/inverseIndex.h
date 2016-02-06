@@ -48,6 +48,8 @@ class InverseIndex {
     Hash* mHash;
     vsize_t shingle(vsize_t pSignature);
   public:
+    InverseIndex();
+
   	InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize, size_t pMinimalBlocksInCommon,
