@@ -34,6 +34,7 @@ class MinHashBase {
     size_t mSimilarity;
 
     public:
+    MinHashBase();
 
   	MinHashBase(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     size_t pNumberOfCores, size_t pChunkSize,
