@@ -29,7 +29,8 @@ MinHashCuda::MinHashCuda(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     int pPruneInverseIndex, float pPruneInverseIndexAfterInstance, 
                     int pRemoveHashFunctionWithLessEntriesAs, size_t pHashAlgorithm,
                     size_t pBlockSize, size_t pShingle,
-                    size_t pRemoveValueWithLeastSigificantBit) {
+                    size_t pRemoveValueWithLeastSigificantBit):MinHashBase() {
+            printf("%i\n", __LINE__);
        
        mInverseIndex = new InverseIndexCuda(pNumberOfHashFunctions, pShingleSize,
                                             pNumberOfCores, pChunkSize,
@@ -44,13 +45,19 @@ MinHashCuda::MinHashCuda(size_t pNumberOfHashFunctions, size_t pShingleSize,
         mNumberOfCores = pNumberOfCores;
         mChunkSize = pChunkSize;
         mSimilarity = pSimilarity;
+            printf("%i\n", __LINE__);
+        
 }
 
 MinHashCuda::~MinHashCuda() {
     delete mInverseIndex;
 }
 void MinHashCuda::fit(const SparseMatrixFloat* pRawData) {
+            printf("%i\n", __LINE__);
+
     mInverseIndex->fit(pRawData);
+            printf("%i\n", __LINE__);
+
 }
 neighborhood MinHashCuda::radiusNeighbors() {
     neighborhood foo;
