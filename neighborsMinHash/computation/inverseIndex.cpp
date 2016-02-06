@@ -32,7 +32,7 @@ class sort_map {
 bool mapSortDescByValue(const sort_map& a, const sort_map& b) {
         return a.val > b.val;
 };
-
+InverseIndex::InverseIndex(){};
 InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize, size_t pMinimalBlocksInCommon,
