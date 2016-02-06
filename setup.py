@@ -203,7 +203,8 @@ else:
     sources_list.extend(["neighborsMinHash/computation/minHashCuda.cu", 'neighborsMinHash/computation/kernel.cu', 
                         'neighborsMinHash/computation/inverseIndexCuda.cu'])
     depends_list.extend(["neighborsMinHash/computation/minHashCuda.h", 
-                        'neighborsMinHash/computation/inverseIndexCuda.h'])
+                        'neighborsMinHash/computation/inverseIndexCuda.h',
+                        'neighborsMinHash/computation/kernel.h'])
     # Extension('_minHash', sources = sources_list, depends = depends_list,
     #      define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
     #     extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])
