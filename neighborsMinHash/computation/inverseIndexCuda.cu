@@ -21,6 +21,7 @@
 
 #include "inverseIndexCuda.h"
 // #include "kSizeSortedMap.h"
+#include "kernel.h"
 
 
 // class sort_map {
@@ -38,7 +39,7 @@ InverseIndexCuda::InverseIndexCuda(size_t pNumberOfHashFunctions, size_t pShingl
                     size_t pMaxBinSize, size_t pMinimalBlocksInCommon,
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, size_t pBloomierFilter,
                     int pPruneInverseIndex, float pPruneInverseIndexAfterInstance, int pRemoveHashFunctionWithLessEntriesAs,
-                    size_t pHashAlgorithm, size_t pBlockSize, size_t pShingle, size_t pRemoveValueWithLeastSigificantBit) {   
+                    size_t pHashAlgorithm, size_t pBlockSize, size_t pShingle, size_t pRemoveValueWithLeastSigificantBit):InverseIndex() {   
         // std::cout << __LINE__ << std::endl;
                         
     mNumberOfHashFunctions = pNumberOfHashFunctions;
@@ -53,11 +54,8 @@ InverseIndexCuda::InverseIndexCuda(size_t pNumberOfHashFunctions, size_t pShingl
     mPruneInverseIndexAfterInstance = pPruneInverseIndexAfterInstance;
     mRemoveHashFunctionWithLessEntriesAs = pRemoveHashFunctionWithLessEntriesAs;
     mHashAlgorithm = pHashAlgorithm;
-    // mSignatureStorage = new umap_uniqueElement();
-    // mHash = new Hash();
     mBlockSize = pBlockSize;
     mShingle = pShingle;
-    size_t maximalFeatures = 5000;
     size_t inverseIndexSize;
     if (mShingle == 0) {
         if (mBlockSize == 0) {
@@ -68,20 +66,14 @@ InverseIndexCuda::InverseIndexCuda(size_t pNumberOfHashFunctions, size_t pShingl
         inverseIndexSize = ceil(((float) (mNumberOfHashFunctions * mBlockSize) / (float) mShingleSize));        
     }
     
-    // if (pBloomierFilter) {
-    //     mInverseIndexStorage = new InverseIndexStorageBloomierFilter(inverseIndexSize, mMaxBinSize, maximalFeatures);
-    // } else {
-    //     mInverseIndexStorage = new InverseIndexStorageUnorderedMap(inverseIndexSize, mMaxBinSize);
-    // }
-    // mRemoveValueWithLeastSigificantBit = pRemoveValueWithLeastSigificantBit;
-        // std::cout << __LINE__ << std::endl;
     
 }
  
 InverseIndexCuda::~InverseIndexCuda() {
-    delete mSignatureStorage;
-    delete mHash;
-    delete mInverseIndexStorage;
+   cudaFree(mDev_FeatureList);
+   cudaFree(mDev_ComputedSignaturesPerInstance);
+   cudaFree(mDev_SizeOfInstanceList);
+  
 }
 
 distributionInverseIndex* InverseIndexCuda::getDistribution() {
@@ -107,87 +99,48 @@ vsize_t InverseIndexCuda::computeSignatureWTA(const SparseMatrixFloat* pRawData,
 umap_uniqueElement* InverseIndexCuda::computeSignatureMap(const SparseMatrixFloat* pRawData) {
 }
 void InverseIndexCuda::fit(const SparseMatrixFloat* pRawData) {
+    printf("foo");
     int maxBlocks = 65535;
-    cudaDeviceProp prop;
-    int whichDevice;
-    cudaGetDevice(&whichDevice);
-    cudaGetDeviceProperties(&prop, whichDevice);
-    // if (pRawData->size() > maxBlocks) {
-    //     for (size_t i = 0; i < pRawData->size(); ++i) {
-    //         if (mNumberOfHashFunctions > prop.maxThreadsPerBlock) {
-    //             for (size_t j = 0; j < mNumberOfHashFunctions; ++j) {
-                    
-    //             }
-    //         }
-            
-    //     }
-    // } else {
-    //     if (mNumberOfHashFunctions > prop.maxThreadsPerBlock) {
-       
-    //     } else {
+    printf("number of hash functions: %i", mNumberOfHashFunctions);
+    if (mNumberOfHashFunctions % 32 != 0) {
+        mNumberOfHashFunctions += 32 - (mNumberOfHashFunctions % 32);
+    }
+    printf("number of hash functions: %i", mNumberOfHashFunctions);
+    
+    cudaMalloc((void **) &mDev_FeatureList,
+               pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(size_t));
+    cudaMalloc((void **) &mDev_SizeOfInstanceList,
+               pRawData->getNumberOfInstances() * sizeof(size_t));
+    cudaMalloc((void **) &mDev_ComputedSignaturesPerInstance,
+               pRawData->getNumberOfInstances()* mNumberOfHashFunctions * sizeof(size_t));
+    cudaMemcpy(mDev_FeatureList, pRawData->getSparseMatrixIndex(),
+                pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(size_t),
+               cudaMemcpyHostToDevice);
+    cudaMemcpy(mDev_SizeOfInstanceList, pRawData->getSparseMatrixSizeOfInstances(),
+            pRawData->getNumberOfInstances() * sizeof(size_t),
+            cudaMemcpyHostToDevice);
+    
+    // fitGpu<<<pRawData->getNumberOfInstances(), mNumberOfHashFunctions, mNumberOfHashFunctions>>>
    
-    size_t* result;
-    result = (size_t*) malloc(pRawData->size() * mNumberOfHashFunctions * sizeof(size_t));
-       
-    size_t* dev_featureList;
-    size_t* dev_sizeOfInstanceList;
-    size_t* dev_computedSignaturesPerInstance;
-    
-    cudaHostAlloc((void **) &dev_featureList,
-               pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(size_t),
-               cudaHostAllocWriteCombined |
-               cudaHostAllocMapped);
-    cudaHostAlloc((void **) &dev_sizeOfInstanceList,
-               pRawData->getNumberOfInstances() * sizeof(size_t),
-               cudaHostAllocWriteCombined |
-               cudaHostAllocMapped);
-    cudaHostAlloc((void **) &dev_computedSignaturesPerInstance,
-               pRawData->size() * mNumberOfHashFunctions * sizeof(size_t),
-               cudaHostAllocMapped);
-    // cudaMemcpy(dev_featureList, pRawData->getSparseMatrixIndex(),
-    //             pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(size_t),
-    //            cudaHostAllocWriteCombined |
-    //            cudaHostAllocMapped);
-    // cudaMemcpy(dev_sizeOfInstanceList, pRawData->getSparseMatrixSizeOfInstances(),
-    //         pRawData->getNumberOfInstances() * sizeof(size_t),
-    //         cudaHostAllocMapped);
-    cudaHostGetDevicePointer(&dev_featureList, pRawData->getSparseMatrixIndex(), 0);
-    cudaHostGetDevicePointer(&dev_sizeOfInstanceList, pRawData->getSparseMatrixSizeOfInstances(), 0);
-    cudaHostGetDevicePointer(&dev_computedSignaturesPerInstance, result, 0);
-    
-    fitGpu<<<pRawData->getNumberOfInstances(), mNumberOfHashFunctions, mNumberOfHashFunctions>>>
-    (dev_featureList, 
-    dev_sizeOfInstanceList, 
+    fitCuda<<<128, 128, mNumberOfHashFunctions>>>
+    (mDev_FeatureList, 
+    mDev_SizeOfInstanceList, 
     mNumberOfHashFunctions, 
     pRawData->getMaxNnz(),
-            dev_computedSignaturesPerInstance, 
+            mDev_ComputedSignaturesPerInstance, 
             pRawData->getNumberOfInstances());
-    cudaThreadSynchronize();
-    
-    std::vector<std::vector<size_t> > hashFunctionHashValues(mNumberOfHashFunctions, std::vector<size_t>(0));
-    std::vector<std::vector<vector<size_t> > > associatedIndexValues(mNumberOfHashFunctions, std::vector<size_t>(0));
-    for (size_t i = 0; i < pRawData->getNumberOfInstances(); ++i) {
-        // std::cout << result[i] ", ";
-        for (size_t j = 0; j < mNumberOfHashFunctions; ++j) {
-            hashFunctionHashValue[j].push_back(result[pRawData->getNumberOfInstances() * i + j]);
-            associatedIndexValues[j].push_back(i);
-        }
-    }
-    
-    cudaFree(dev_featureList);
-    cudaFree(dev_sizeOfInstanceList);
-    cudaFree(dev_computedSignaturesPerInstance);
-    // cudaMemcpy(result, dev_computedSignaturesPerInstance,
-    //            pRawData->size() * mNumberOfHashFunctions * sizeof(size_t),
-    //            cudaMemcpyDeviceToHost );
-    
-        // }
-        
-    // }
-    // put values in vectors, sort them.
-    // copy index to gpu
-    
-    
+    size_t* instancesHashValues = (size_t*) malloc(pRawData->getNumberOfInstances() * mNumberOfHashFunctions * sizeof(size_t));
+    cudaMemcpy(instancesHashValues, mDev_ComputedSignaturesPerInstance, 
+                pRawData->getNumberOfInstances() * mNumberOfHashFunctions * sizeof(size_t),
+                cudaMemcpyDeviceToHost);
+   for(size_t i = 0; i < pRawData->getNumberOfInstances(); ++i) {
+       printf("Instance: %i of %i", i, pRawData->getNumberOfInstances());
+       for (size_t j = 0; j < mNumberOfHashFunctions; ++j) {
+           printf("%i,", instancesHashValues[i*mNumberOfHashFunctions + j]);
+       }
+       printf("\n");
+   }
+   free(instancesHashValues);
 }
 
 neighborhood* InverseIndexCuda::kneighbors(const umap_uniqueElement* pSignaturesMap, 
