@@ -11,20 +11,25 @@
 **/
 
 #include <functional>
-#include "hash.h"
-#include "inverseIndexStorage.h"
-#include "inverseIndexStorageBloomierFilter.h"
-#include "inverseIndexStorageUnorderedMap.h"
+#include "inverseIndex.h"
+// #include "hash.h"
+// #include "inverseIndexStorage.h"
+// #include "inverseIndexStorageBloomierFilter.h"
+// #include "inverseIndexStorageUnorderedMap.h"
 
 #include "typeDefinitions.h"
-#include "kernel.h"
 
 #ifndef INVERSE_INDEX_CUDA_H
 #define INVERSE_INDEX_CUDA_H
-class InverseIndexCuda {
+class InverseIndexCuda : public InverseIndex {
 
-  protected: 
+  private: 
   	// const double A = sqrt(2) - 1;
+      
+    size_t* mDev_FeatureList;
+    size_t* mDev_SizeOfInstanceList;
+    size_t* mDev_ComputedSignaturesPerInstance;
+      
     size_t mNumberOfHashFunctions;
     size_t mShingleSize;
     size_t mNumberOfCores;
