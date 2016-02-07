@@ -50,7 +50,7 @@ MinHash* createMinHashObj(size_t pNumberOfHashFunctions, size_t pShingleSize, si
                     pExcessFactor, pMaximalNumberOfHashCollisions, pFast, pSimilarity, pBloomierFilter,
                     pPrune_inverse_index, pPrune_inverse_index_after_instance,
                     pRemoveHashFunctionWithLessEntriesAs, pHash_algorithm,
-                    pBlock_size, pShingle, pRemoveValueWithLeastSigificantBit);
+                    pBlock_size, pShingle, pRemoveValueWithLeastSigificantBit, 1);
 	return minHashObj;
 }
 

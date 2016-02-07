@@ -72,6 +72,7 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
         featureId = instanceId * pMaxNnz;
         minHashValue = MAX_VALUE;
         hashFunctionId = threadIdx.x;
+        __syncthreads();
         
         
     }
