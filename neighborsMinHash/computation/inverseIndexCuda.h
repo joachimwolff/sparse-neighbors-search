@@ -1,13 +1,13 @@
 /**
- Copyright 2015 Joachim Wolff
+ Copyright 2016 Joachim Wolff
  Master Thesis
- Tutor: Fabrizio Costa
+ Tutor: Fabrizio Costa, Milad Miladi
  Winter semester 2015/2016
 
  Chair of Bioinformatics
  Department of Computer Science
  Faculty of Engineering
- Albert-Ludwig-University Freiburg im Breisgau
+ Albert-Ludwigs-University Freiburg im Breisgau
 **/
 
 #include <functional>
@@ -29,6 +29,7 @@ class InverseIndexCuda : public InverseIndex {
     size_t* mDev_FeatureList;
     size_t* mDev_SizeOfInstanceList;
     size_t* mDev_ComputedSignaturesPerInstance;
+    float* mDev_ValuesList;
       
     size_t mNumberOfHashFunctions;
     size_t mShingleSize;

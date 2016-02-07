@@ -137,7 +137,7 @@ static PyObject* fit(PyObject* self, PyObject* args) {
                             &maxNumberOfFeatures,
                             &addressMinHashObject))
         return NULL;
-        printf("%i\n", __LINE__);
+        printf("%i\n", __LINE__); 
     
     // parse from python list to a c++ map<size_t, vector<size_t> >
     // where key == instance id and vector<size_t> == non null feature ids
@@ -153,7 +153,7 @@ static PyObject* fit(PyObject* self, PyObject* args) {
 
     minHash->set_mOriginalData(originalDataMatrix);
     // std::cout << __LINE__ << std::endl;
-        printf("%i\n", __LINE__);
+        printf("%i\n", __LINE__); 
 
     minHash->fit(originalDataMatrix);
     // std::cout << __LINE__ << std::endl;

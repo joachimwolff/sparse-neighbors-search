@@ -1,3 +1,15 @@
+/**
+ Copyright 2016 Joachim Wolff
+ Master Thesis
+ Tutor: Fabrizio Costa, Milad Miladi
+ Winter semester 2015/2016
+
+ Chair of Bioinformatics
+ Department of Computer Science
+ Faculty of Engineering
+ Albert-Ludwigs-University Freiburg im Breisgau
+**/
+
 #include <stdio.h>
 #include "sparseMatrix.h"
 // #include <math.h>
@@ -21,27 +33,52 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
                     size_t* pComputedSignatures, 
                     const size_t pNumberOfInstances) {
     extern __shared__ size_t signature[];  // pNumberOfHashFunctions
-    size_t threadId = threadIdx.x;
-    size_t blockId = blockIdx.x;
+    // size_t threadId = threadIdx.x;
+    int instanceId = blockIdx.x;
     size_t minHashValue = MAX_VALUE;
     size_t hashValue = 0;
-    if (blockId < pNumberOfInstances*pMaxNnz) {
-        // size_t sizeOfInstance = pSizeOfInstanceList[blockId];
-        for (size_t i = 0; i < pSizeOfInstanceList[blockId]; ++i) {
-            hashValue = computeHashValueCuda((pFeatureIdList[blockId*pMaxNnz + i] + 1)*threadId, MAX_VALUE);
-            if (hashValue < minHashValue) {
-                minHashValue = hashValue;
+    
+    int featureId = blockIdx.x * pMaxNnz;
+    int hashFunctionId = threadIdx.x;
+    size_t sizeOfInstance;// = pSizeOfInstanceList[blockId];
+    if (blockIdx.x == 0 && threadIdx.x == 0) {
+        printf("Grid dim: %i" , gridDim.x); 
+        printf("BLock id: %i" , blockIdx.x);
+        printf("ffpp");
+    }
+        // fflush(stdout);
+
+        // 
+    
+    while (instanceId < pNumberOfInstances) {
+        sizeOfInstance = pSizeOfInstanceList[instanceId];
+        while (hashFunctionId < pNumberOfHashFunctions) {
+            for (size_t i = 0; i < sizeOfInstance; ++i) {
+                hashValue = computeHashValueCuda((pFeatureIdList[featureId + i]+1) * (hashFunctionId+1), MAX_VALUE);
+                if (hashValue < minHashValue) {
+                    minHashValue = hashValue;
+                }
+            }
+            signature[hashFunctionId] = minHashValue;
+            hashFunctionId += blockDim.x;
+        }
+        __syncthreads();
+        if (threadIdx.x == 0) {
+            for (size_t i = 0; i < pNumberOfHashFunctions; ++i) {
+                pComputedSignatures[instanceId*pNumberOfHashFunctions +i] = signature[i];
             }
         }
-        signature[threadId] = minHashValue;
+        instanceId += gridDim.x;
+        featureId = instanceId * pMaxNnz;
+        minHashValue = MAX_VALUE;
+        hashFunctionId = threadIdx.x;
+        
+        
     }
-    __syncthreads();
+    // printf("BLock id: %i , ", instanceId);
     
-    if (threadId == 0) {
-        for (size_t i = 0; i < pNumberOfHashFunctions; ++i) {
-            pComputedSignatures[blockId*pNumberOfHashFunctions +i] = signature[i];
-        }
-    }
+    
+    
 }
 
 
