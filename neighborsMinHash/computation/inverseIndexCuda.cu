@@ -100,8 +100,6 @@ vsize_t InverseIndexCuda::computeSignatureWTA(const SparseMatrixFloat* pRawData,
 umap_uniqueElement* InverseIndexCuda::computeSignatureMap(const SparseMatrixFloat* pRawData) {
 }
 void InverseIndexCuda::fit(const SparseMatrixFloat* pRawData) {
-    // printf("foo");
-    // fflush(stdout);
     int maxBlocks = 65535;
     // printf("number of hash functions: %zu", mNumberOfHashFunctions);
     // fflush(stdout);
@@ -138,33 +136,80 @@ void InverseIndexCuda::fit(const SparseMatrixFloat* pRawData) {
             cudaMemcpyHostToDevice);
     // fitGpu<<<pRawData->getNumberOfInstances(), mNumberOfHashFunctions, mNumberOfHashFunctions>>>
     // compute values on the gpu
-    fitCuda<<<32, 10, mNumberOfHashFunctions>>>
+    fitCuda<<<128, 128, mNumberOfHashFunctions * sizeof(size_t)>>>
     (mDev_FeatureList, 
     mDev_SizeOfInstanceList,  
     mNumberOfHashFunctions, 
     pRawData->getMaxNnz(),
             mDev_ComputedSignaturesPerInstance, 
             pRawData->getNumberOfInstances());
-    // copy values back for debugging
-    size_t* instancesHashValues = (size_t*) malloc(pRawData->getNumberOfInstances() * mNumberOfHashFunctions * sizeof(size_t));
-    cudaMemcpy(instancesHashValues, mDev_ComputedSignaturesPerInstance, 
-                pRawData->getNumberOfInstances() * mNumberOfHashFunctions * sizeof(size_t),
-                cudaMemcpyDeviceToHost);
-   for(size_t i = 0; i < pRawData->getNumberOfInstances(); ++i) {
-       printf("Instance: %zu of %zu: ", i, pRawData->getNumberOfInstances());
-       for (size_t j = 0; j < mNumberOfHashFunctions; ++j) {
-           printf("%zu,", instancesHashValues[i*mNumberOfHashFunctions + j]);
-       }
-       printf("\n");
-   }
-   free(instancesHashValues);
+//     fflush(stdout);
+//     // copy values back for debugging
+//     size_t* instancesHashValues = (size_t*) malloc(pRawData->getNumberOfInstances() * mNumberOfHashFunctions * sizeof(size_t));
+//     cudaMemcpy(instancesHashValues, mDev_ComputedSignaturesPerInstance, 
+//                 pRawData->getNumberOfInstances() * mNumberOfHashFunctions * sizeof(size_t),
+//                 cudaMemcpyDeviceToHost);
+//    for(size_t i = 0; i < pRawData->getNumberOfInstances(); ++i) {
+//        printf("Instance: %zu of %zu: ", i, pRawData->getNumberOfInstances());
+//        for (size_t j = 0; j < mNumberOfHashFunctions; ++j) {
+//            printf("%zu,", instancesHashValues[i*mNumberOfHashFunctions + j]);
+//        }
+//        printf("\n");
+//    }
+//    free(instancesHashValues);
 }
 
-neighborhood* InverseIndexCuda::kneighbors(const umap_uniqueElement* pSignaturesMap, 
-                                        const size_t pNneighborhood, const bool pDoubleElementsStorageCount) {
+neighborhood* InverseIndexCuda::kneighbors(const SparseMatrixFloat* pRawDataInverseIndex,
+                                            const SparseMatrixFloat* pRawDataQuery) {
 // compute hits in the inverse index on the gpu and 
 // return a list with all the associated index values per hash function
 // process them on the gpu,
 // compute exact neighbors based on the hits on gpu.
 
+    size_t* dev_featureIdsQuery;
+    size_t* dev_sizeOfInstanceQuery;
+    float* dev_valuesListQuery;
+    size_t* dev_signaturesQuery;
+    size_t* dev_hitsPerInstance;
+    cudaMalloc((void **) &dev_featureIdsQuery,
+               pRawDataQuery->getMaxNnz() * pRawDataQuery->getNumberOfInstances() * sizeof(size_t));
+    cudaMalloc((void **) &dev_sizeOfInstanceQuery,
+               pRawDataQuery->getNumberOfInstances() * sizeof(size_t));
+    cudaMalloc((void **) &dev_valuesListQuery,
+                pRawDataQuery->getMaxNnz() * pRawDataQuery->getNumberOfInstances() * sizeof(float));
+    cudaMalloc((void **) &dev_signaturesQuery,
+                mNumberOfHashFunctions * pRawData->getNumberOfInstances() * sizeof(size_t));
+    cudaMalloc((void **) &dev_hitsPerInstance,
+                pRawDataInverseIndex->getNumberOfInstances() * pRawDataQuery->getNumberOfInstances() * sizeof(size_t));
+                
+                
+    cudaMemcpy(mDev_FeatureList, pRawData->getSparseMatrixIndex(),
+                pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(size_t),
+               cudaMemcpyHostToDevice);
+    // copy instances and their values for each feature to the gpu
+    cudaMemcpy(mDev_ValuesList, pRawData->getSparseMatrixValues(),
+                pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(float),
+               cudaMemcpyHostToDevice);
+    // copy the size of all instances to the gpu               
+    cudaMemcpy(mDev_SizeOfInstanceList, pRawData->getSparseMatrixSizeOfInstances(),
+            pRawData->getNumberOfInstances() * sizeof(size_t),
+            cudaMemcpyHostToDevice);          
+    fitCuda<<<128, 128, mNumberOfHashFunctions * sizeof(size_t)>>>
+    (mDev_FeatureList, 
+    mDev_SizeOfInstanceList,  
+    mNumberOfHashFunctions, 
+    pRawData->getMaxNnz(),
+            mDev_ComputedSignaturesPerInstance, 
+            pRawData->getNumberOfInstances());
+    
+    
+    
+    size_t* dev_hitsPerInstance;
+    cudaMalloc((void **) &dev_hitsPerInstance,
+               pRawDataInverseIndex->getNumberOfInstances() * mNumberOfHashFunctions * sizeof(size_t));
+    queryCuda<<<128, 128, 
+    pRawDataInverseIndex->getNumberOfInstances() * mNumberOfHashFunctions * sizeof(size_t)>>>(
+      pRawDataQuery->getSparseMatrixIndex
+    )
+    
 }

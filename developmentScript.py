@@ -79,7 +79,7 @@ def test(data):
     # if not os.path.exists("inverse_index.approx"):
     print "Build inverse index for approximate..."
     time_build_approx_start = time.time()
-    minHash = MinHash(number_of_hash_functions=416, max_bin_size= 88, shingle_size = 2, similarity=False, 
+    minHash = MinHash(number_of_hash_functions=5000, max_bin_size= 88, shingle_size = 2, similarity=False, 
                         bloomierFilter=False, number_of_cores=4,
                      prune_inverse_index=1, remove_value_with_least_sigificant_bit=0, excess_factor=13,
                     prune_inverse_index_after_instance=1, removeHashFunctionWithLessEntriesAs=304, 
