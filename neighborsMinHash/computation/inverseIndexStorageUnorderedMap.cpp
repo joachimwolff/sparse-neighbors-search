@@ -2,32 +2,43 @@
 #ifdef OPENMP
 #include <omp.h>
 #endif
- 
+//  #include <stdexcept> 
 InverseIndexStorageUnorderedMap::InverseIndexStorageUnorderedMap(size_t pSizeOfInverseIndex, size_t pMaxBinSize) {
-	mInverseIndex = new vector__umapVector(pSizeOfInverseIndex);
+	mInverseIndex = new vector__umapVector_ptr(pSizeOfInverseIndex);
+    for (size_t i = 0; i < pSizeOfInverseIndex; ++i) {
+        mInverseIndex->operator[](i) = new umapVector_ptr();
+    }
 	mMaxBinSize = pMaxBinSize;
 }
 InverseIndexStorageUnorderedMap::~InverseIndexStorageUnorderedMap() {
+    for (size_t i = 0; i < mInverseIndex->size(); ++i) {
+        for (auto it = )
+    }
 	delete mInverseIndex;
 }
 size_t InverseIndexStorageUnorderedMap::size() const {
 	return mInverseIndex->size();
 }
 const vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, size_t pHashValue) {
-    vsize_t* foo;
-    foo = NULL;
-#ifdef OPENMP
-#pragma omp critical
-#endif
-    {
+
+    // try {
+    //     return &((*mInverseIndex)[pVectorId].at(pHashValue));
+    // } catch (const std::out_of_range& oor) {
+    //     return NULL;
+    // }
     if (pVectorId < mInverseIndex->size()) {
         auto iterator = (*mInverseIndex)[pVectorId].find(pHashValue);
         if (iterator != (*mInverseIndex)[pVectorId].end()) {
-            foo =  &(iterator->second);
+            return &(iterator->second);
         }
     }
-    }
-	return foo; 
+    
+	return NULL; 
+}
+void InverseIndexStorageUnorderedMap::reserveSpaceForMaps(size_t pNumberOfInstances) {
+    // for (size_t i = 0; i < mInverseIndex->size(); ++i) {
+    //     mInverseIndex->operator[](i).reserve(pNumberOfInstances*5);
+    // } 
 }
 void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue, size_t pInstance, 
                         size_t pRemoveValueWithLeastSigificantBit) {

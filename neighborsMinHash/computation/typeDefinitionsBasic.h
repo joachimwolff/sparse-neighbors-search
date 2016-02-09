@@ -17,7 +17,7 @@
 #include <unordered_map>
 #include <utility>
 #include <limits>
-
+#include <google/dense_hash_map>
 #define MAX_VALUE 2147483647 //std::numeric_limits<int>::max()
 
 typedef std::vector< size_t > vsize_t;
@@ -30,12 +30,12 @@ typedef std::vector< vsize_t* > vvsize_t_p;
 typedef std::vector< vint > vvint;
 typedef std::vector< vfloat > vvfloat;
 
-typedef std::unordered_map< size_t, vsize_t > umapVector;
+typedef google::dense_hash_map< size_t, vsize_t > umapVector;
 typedef std::unordered_map< size_t, vsize_t* > umapVector_ptr;
 
 typedef std::vector< std::map< size_t, size_t > > vmSize_tSize_t;
 typedef std::vector< umapVector > vector__umapVector;
-typedef std::vector< umapVector_ptr > vector__umapVector_ptr;
+typedef std::vector< umapVector_ptr* > vector__umapVector_ptr;
 
 
 struct uniqueElement {

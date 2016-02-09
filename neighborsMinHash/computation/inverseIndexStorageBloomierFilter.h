@@ -19,5 +19,7 @@ class InverseIndexStorageBloomierFilter : public InverseIndexStorage {
     distributionInverseIndex* getDistribution();
     void prune(size_t pValue);
     void removeHashFunctionWithLessEntriesAs(size_t pRemoveHashFunctionWithLessEntriesAs);
+    vector__umapVector* getIndex(){return NULL;};
+    void reserveSpaceForMaps(size_t pNumberOfInstances) {};
 };
 #endif // INVERSE_INDEX_STORAGE_BLOOMIER_FILTER_H

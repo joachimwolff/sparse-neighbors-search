@@ -29,7 +29,7 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     int pPruneInverseIndex, float pPruneInverseIndexAfterInstance, 
                     int pRemoveHashFunctionWithLessEntriesAs, size_t pHashAlgorithm,
                     size_t pBlockSize, size_t pShingle, size_t pRemoveValueWithLeastSigificantBit) {
-            printf("foo%i\n", __LINE__);
+            // printf("foo%i\n", __LINE__);
 
         mInverseIndex = new InverseIndex(pNumberOfHashFunctions, pShingleSize,
                                     pNumberOfCores, pChunkSize,
@@ -44,7 +44,7 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pShingleSize,
         mNumberOfCores = pNumberOfCores;
         mChunkSize = pChunkSize;
         mSimilarity = pSimilarity;
-                    printf("foo%i\n", __LINE__);
+                    // printf("foo%i\n", __LINE__);
 
 }
 
@@ -62,7 +62,7 @@ void MinHashBase::partialFit() {
 
 }
 neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast, int pSimilarity) {
-    std::cout << "kneighbors" << std::endl;
+    // std::cout << "kneighbors" << std::endl;
     if (pFast == -1) {
         pFast = mFast;
     } 

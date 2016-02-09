@@ -234,19 +234,20 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
                 vsize_t doubleInstanceVector(1);
                 doubleInstanceVector[0] = index;
                 uniqueElement element;
-                element.instances = doubleInstanceVector;
+                element.instances = doubleInstanceVector; 
                 element.signature = signature;
                 (*instanceSignature)[signatureId] = element;
             } else {
                 (*instanceSignature)[signatureId].instances.push_back(index);
                 mDoubleElementsQueryCount += 1;
-            }
+            } 
         }
     }
     return instanceSignature;
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
-std::cout << "fitting" << std::endl;
+// std::cout << "fitting" << std::endl;
+    mInverseIndexStorage->reserveSpaceForMaps(pRawData->size()); 
     size_t pruneEveryNIterations = pRawData->size() * mPruneInverseIndexAfterInstance;
     size_t pruneCount = 0;
     mDoubleElementsStorageCount = 0;
@@ -323,6 +324,7 @@ std::cout << "fitting" << std::endl;
     if (mRemoveHashFunctionWithLessEntriesAs >= 0) {
         mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(static_cast<size_t>(mRemoveHashFunctionWithLessEntriesAs));
     }
+    // for (std::cout << )
 }
 
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
