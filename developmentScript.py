@@ -87,8 +87,8 @@ def test(data):
     time_build_approx_start = time.time()
     minHash = MinHash(number_of_hash_functions=800, max_bin_size= 36, shingle_size = 3, similarity=False, 
                         bloomierFilter=False, number_of_cores=4,
-                     prune_inverse_index=1, remove_value_with_least_sigificant_bit=1, excess_factor=11,
-                    prune_inverse_index_after_instance=1, removeHashFunctionWithLessEntriesAs=107, 
+                     prune_inverse_index=-1, remove_value_with_least_sigificant_bit=1, excess_factor=11,
+                    prune_inverse_index_after_instance=-1, removeHashFunctionWithLessEntriesAs=-1, 
                     hash_algorithm = 0, shingle=1, block_size=2, cuda = 0)
     # minHash.fit(data[0])
     minHash.fit(datasetBursi)
@@ -138,7 +138,7 @@ def test(data):
 
     minHash2 = MinHash(number_of_hash_functions=6200, max_bin_size=1000000, shingle_size = 4,
      similarity=False, bloomierFilter=False, number_of_cores=4,
-                     prune_inverse_index=1, remove_value_with_least_sigificant_bit=2,
+                     prune_inverse_index=-1, remove_value_with_least_sigificant_bit=2,
                       excess_factor=5000, prune_inverse_index_after_instance=-1.0,
                        removeHashFunctionWithLessEntriesAs=-1, hash_algorithm = 0, 
                        shingle=1, block_size=5)

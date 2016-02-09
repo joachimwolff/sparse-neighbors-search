@@ -11,7 +11,7 @@ class InverseIndexStorage {
     virtual distributionInverseIndex* getDistribution() = 0;
     virtual void prune(size_t pValue) = 0;
     virtual void removeHashFunctionWithLessEntriesAs(size_t pRemoveHashFunctionWithLessEntriesAs) = 0;
-    virtual vector__umapVector* getIndex() = 0;
+    virtual vector__umapVector_ptr* getIndex() = 0;
     virtual void reserveSpaceForMaps(size_t pNumberOfInstances) = 0;
 };
 inline InverseIndexStorage::~InverseIndexStorage() { }

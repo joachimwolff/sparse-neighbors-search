@@ -246,7 +246,7 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     return instanceSignature;
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
-// std::cout << "fitting" << std::endl;
+std::cout << "fitting" << std::endl;
     mInverseIndexStorage->reserveSpaceForMaps(pRawData->size()); 
     size_t pruneEveryNIterations = pRawData->size() * mPruneInverseIndexAfterInstance;
     size_t pruneCount = 0;
@@ -318,18 +318,26 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
             }           
         }
     }
+    	std::cout << __LINE__ << std::endl;
+    
     if (mPruneInverseIndex > 0) {
         mInverseIndexStorage->prune(mPruneInverseIndex);
     }
+    	std::cout << __LINE__ << std::endl;
+    
     if (mRemoveHashFunctionWithLessEntriesAs >= 0) {
         mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(static_cast<size_t>(mRemoveHashFunctionWithLessEntriesAs));
     }
     // for (std::cout << )
+    	std::cout << __LINE__ << std::endl;
+    
 }
 
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                         const size_t pNneighborhood, const bool pDoubleElementsStorageCount) {
                                             // std::cout << "kneighbors inverseIndex" << std::endl;
+    	// std::cout << __LINE__ << std::endl;
+
     size_t doubleElements = 0;
     if (pDoubleElementsStorageCount) {
         doubleElements = mDoubleElementsStorageCount;
@@ -347,6 +355,8 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
     if (mChunkSize <= 0) {
         mChunkSize = ceil(mInverseIndexStorage->size() / static_cast<float>(mNumberOfCores));
     }
+    	// std::cout << __LINE__ << std::endl;
+    
 #ifdef OPENMP
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
 #endif 
@@ -359,12 +369,16 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         if (instanceId == pSignaturesMap->end()) continue;
         std::unordered_map<size_t, size_t> neighborhood;
         const vsize_t signature = instanceId->second.signature; 
-        // if (signature != NULL) {
+        // if (signature != NULL) { 
             for (size_t j = 0; j < signature.size(); ++j) {
                 size_t hashID = signature[j];
                 if (hashID != 0 && hashID != MAX_VALUE) {
-                    size_t collisionSize = 0;
+                    size_t collisionSize = 0; 
+    	// std::cout << __LINE__ << std::endl;
+                    
                     const vsize_t* instances = mInverseIndexStorage->getElement(j, hashID);
+    	// std::cout << __LINE__ << std::endl;
+                    
                     if (instances == NULL) continue;
                     if (instances->size() != 0) {
                         collisionSize = instances->size();
@@ -377,6 +391,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                             neighborhood[(*instances)[k]] += 1;
                         }
                     }
+                    // delete 
                 }
             }
         // }
