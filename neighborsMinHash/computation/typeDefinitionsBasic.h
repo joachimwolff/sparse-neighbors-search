@@ -39,8 +39,8 @@ typedef std::vector< umapVector_ptr* > vector__umapVector_ptr;
 
 
 struct uniqueElement {
-  vsize_t instances;
-  vsize_t signature;
+  vsize_t* instances;
+  vsize_t* signature;
 };
 
 struct neighborhood {

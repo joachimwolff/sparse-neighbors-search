@@ -55,9 +55,9 @@ const vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, siz
 	return NULL; 
 }
 void InverseIndexStorageUnorderedMap::reserveSpaceForMaps(size_t pNumberOfInstances) {
-    // for (size_t i = 0; i < mInverseIndex->size(); ++i) {
-    //     mInverseIndex->operator[](i).reserve(pNumberOfInstances*5);
-    // } 
+    for (size_t i = 0; i < mInverseIndex->size(); ++i) {
+        mInverseIndex->operator[](i)->reserve(pNumberOfInstances / 2);
+    } 
 }
 void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue, size_t pInstance, 
                         size_t pRemoveValueWithLeastSigificantBit) {
