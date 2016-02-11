@@ -12,8 +12,8 @@
 
 #include <functional>
 #include "hash.h"
-#include "inverseIndexStorage.h"
-#include "inverseIndexStorageBloomierFilter.h"
+// #include "inverseIndexStorage.h"
+// #include "inverseIndexStorageBloomierFilter.h"
 #include "inverseIndexStorageUnorderedMap.h"
 
 #include "typeDefinitions.h"
@@ -42,8 +42,9 @@ class InverseIndex {
     int mRemoveHashFunctionWithLessEntriesAs;
     size_t mBlockSize;
     size_t mRemoveValueWithLeastSigificantBit;
-    
-    InverseIndexStorage* mInverseIndexStorage;
+    size_t mInverseIndexSize;
+
+    InverseIndexStorageUnorderedMap* mInverseIndexStorage;
   	umap_uniqueElement* mSignatureStorage;
     Hash* mHash;
     vsize_t* shingle(vsize_t* pSignature);

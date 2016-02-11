@@ -2,7 +2,7 @@
 
 #ifndef INVERSE_INDEX_STORAGE_UNORDERED_MAP_H
 #define INVERSE_INDEX_STORAGE_UNORDERED_MAP_H
-class InverseIndexStorageUnorderedMap : public InverseIndexStorage {
+class InverseIndexStorageUnorderedMap {
   private:
 	vector__umapVector_ptr* mInverseIndex;
 	size_t mMaxBinSize;
@@ -13,7 +13,8 @@ class InverseIndexStorageUnorderedMap : public InverseIndexStorage {
 	~InverseIndexStorageUnorderedMap();
   	size_t size() const;
 	const vsize_t* getElement(size_t pVectorId, size_t pHashValue);
-	void insert(size_t pVectorId, size_t pHashValue, size_t pInstance, size_t pRemoveValueWithLeastSigificantBit);
+	// void insert(size_t pVectorId, size_t pHashValue, size_t pInstance, size_t pRemoveValueWithLeastSigificantBit);
+    void insert(vector__umapVector_ptr::iterator start, vector__umapVector_ptr::iterator end);
     distributionInverseIndex* getDistribution();
     void prune(size_t pValue);
     void removeHashFunctionWithLessEntriesAs(size_t pRemoveHashFunctionWithLessEntriesAs);

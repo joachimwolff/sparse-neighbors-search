@@ -1,17 +1,19 @@
+/**
+ Copyright 2016 Joachim Wolff
+ Master Thesis
+ Tutors: Fabrizio Costa, Milad Miladi
+ Winter semester 2015/2016
+
+ Chair of Bioinformatics
+ Department of Computer Science
+ Faculty of Engineering
+ Albert-Ludwig-University Freiburg im Breisgau
+**/
+
 #include "inverseIndexStorageUnorderedMap.h"
-#ifdef OPENMP
-#include <omp.h>
-#endif
-//  #include <stdexcept> 
+
 InverseIndexStorageUnorderedMap::InverseIndexStorageUnorderedMap(size_t pSizeOfInverseIndex, size_t pMaxBinSize) {
-	std::cout << __LINE__ << std::endl;
-    std::cout << "size of inverse index: " << pSizeOfInverseIndex << std::endl;
-    mInverseIndex = new vector__umapVector_ptr(pSizeOfInverseIndex);
-    for (size_t i = 0; i < pSizeOfInverseIndex; ++i) {
-        mInverseIndex->operator[](i) = new umapVector_ptr();
-    }
-	std::cout << __LINE__ << std::endl;
-    
+    mInverseIndex = new vector__umapVector_ptr;
 	mMaxBinSize = pMaxBinSize;
 }
 InverseIndexStorageUnorderedMap::~InverseIndexStorageUnorderedMap() {
@@ -26,28 +28,16 @@ InverseIndexStorageUnorderedMap::~InverseIndexStorageUnorderedMap() {
 size_t InverseIndexStorageUnorderedMap::size() const {
 	return mInverseIndex->size();
 }
+void InverseIndexStorageUnorderedMap::insert(vector__umapVector_ptr::iterator start, vector__umapVector_ptr::iterator end) {
+    mInverseIndex->insert(mInverseIndex->end(), start, end);
+}
 const vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, size_t pHashValue) {
 
-    // try {
-    //     return &((*mInverseIndex)[pVectorId].at(pHashValue));
-    // } catch (const std::out_of_range& oor) {
-    //     return NULL;
-    // }
-        	// std::cout << __LINE__ << std::endl;
 
     if (pVectorId < mInverseIndex->size() && (*mInverseIndex)[pVectorId] != NULL) {
-            	// std::cout << __LINE__ << std::endl;
-                // std::cout << "pVectorUd: " << pVectorId << std::endl;
-            	// std::cout << __LINE__ << std::endl;
                 (*mInverseIndex)[pVectorId];
-            	// std::cout << __LINE__ << std::endl;
-                
         auto iterator = (*mInverseIndex)[pVectorId]->find(pHashValue);
-            	// std::cout << __LINE__ << std::endl;
-
         if (iterator != (*mInverseIndex)[pVectorId]->end() && iterator->second != NULL) {
-                	// std::cout << __LINE__ << std::endl;
-
             return iterator->second;
         }
     }
@@ -58,50 +48,6 @@ void InverseIndexStorageUnorderedMap::reserveSpaceForMaps(size_t pNumberOfInstan
     for (size_t i = 0; i < mInverseIndex->size(); ++i) {
         mInverseIndex->operator[](i)->reserve(pNumberOfInstances / 2);
     } 
-}
-void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue, size_t pInstance, 
-                        size_t pRemoveValueWithLeastSigificantBit) {
-	// std::cout << __LINE__ << std::endl;
-                            
-    if (pVectorId >= mInverseIndex->size()) return;
-    if (pRemoveValueWithLeastSigificantBit) {
-        size_t leastSignificantBits = 0b11111111111111111111111111111111 << pRemoveValueWithLeastSigificantBit;
-        size_t insertValue = pHashValue | leastSignificantBits;
-        if (insertValue == leastSignificantBits) {
-            return;
-        }
-    }
-    
-#ifdef OPENMP
-#pragma omp critical
-#endif
-    {	
-	// std::cout << __LINE__ << std::endl;
-        
-        auto itHashValue_InstanceVector = (*mInverseIndex)[pVectorId]->find(pHashValue);
-
-        // if for hash function h_i() the given hash values is already stored
-        if (itHashValue_InstanceVector != (*mInverseIndex)[pVectorId]->end()) {
-            // insert the instance id if not too many collisions (maxBinSize)
-            if (itHashValue_InstanceVector->second->size() && itHashValue_InstanceVector->second->size() < mMaxBinSize) {
-                // insert only if there wasn't any collisions in the past
-                if (itHashValue_InstanceVector->second->size() > 0) {
-                    itHashValue_InstanceVector->second->push_back(pInstance);
-                }
-            } else { 
-                // too many collisions: delete stored ids. empty vector is interpreted as an error code 
-                // for too many collisions
-                itHashValue_InstanceVector->second->clear();
-            }
-        } else {
-            // given hash value for the specific hash function was not avaible: insert new hash value
-            vsize_t* instanceIdVector = new vsize_t(1);
-            (*instanceIdVector)[0] = pInstance;
-            (*mInverseIndex)[pVectorId]->operator[](pHashValue) = instanceIdVector;
-        }
-	// std::cout << __LINE__ << std::endl;
-        
-    }
 }
 
 distributionInverseIndex* InverseIndexStorageUnorderedMap::getDistribution() {
@@ -173,11 +119,7 @@ void InverseIndexStorageUnorderedMap::prune(size_t pValue) {
 // which has less entries than mean+standard deviation
 // else: remove every hash function which has less entries than pRemoveHashFunctionWithLessEntriesAs
 void InverseIndexStorageUnorderedMap::removeHashFunctionWithLessEntriesAs(size_t pRemoveHashFunctionWithLessEntriesAs) {
-    std::cout << __LINE__ << std::endl;
-    
     if (pRemoveHashFunctionWithLessEntriesAs == 0) {
-            	std::cout << __LINE__ << std::endl;
-
         size_t mean = 0;
         size_t variance = 0;
         for (size_t i = 0; i < mInverseIndex->size(); ++i) {
@@ -197,40 +139,20 @@ void InverseIndexStorageUnorderedMap::removeHashFunctionWithLessEntriesAs(size_t
                 delete (*mInverseIndex)[i];
             }
         }
-            	std::cout << __LINE__ << std::endl;
-
     } else {
-            	std::cout << __LINE__ << std::endl;
-
         for (size_t i = 0; i < mInverseIndex->size(); ++i) {
-            	// std::cout << __LINE__ << std::endl;
-            
             if ((*mInverseIndex)[i] != NULL && (*mInverseIndex)[i]->size() < pRemoveHashFunctionWithLessEntriesAs) {
-               
-            	// std::cout << __LINE__ << std::endl;
                 for (auto it = (*mInverseIndex)[i]->begin(); it != (*mInverseIndex)[i]->end(); ++it) {
-            	// std::cout << __LINE__ << std::endl;
-                   
                     if (it->second != NULL) {
                         delete it->second;
                         it->second = NULL;
                     }
-            	// std::cout << __LINE__ << std::endl;
-                    
                 }
-            	std::cout << __LINE__ << std::endl;
-                std::cout << "i" << i << std::endl;
                 if ((*mInverseIndex)[i] != NULL) {
                     delete  (*mInverseIndex)[i];
                     (*mInverseIndex)[i] = NULL;
                 }
-            	std::cout << __LINE__ << std::endl;
-                
             }
         }
-            	std::cout << __LINE__ << std::endl;
-
     }
-        	std::cout << __LINE__ << std::endl;
-
 }

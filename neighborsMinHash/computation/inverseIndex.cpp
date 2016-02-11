@@ -55,21 +55,15 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
     mHash = new Hash();
     mBlockSize = pBlockSize;
     mShingle = pShingle;
-    size_t maximalFeatures = 5000;
-    size_t inverseIndexSize;
     if (mShingle == 0) {
         if (mBlockSize == 0) {
             mBlockSize = 1;
         }
-        inverseIndexSize = mNumberOfHashFunctions * mBlockSize;
+        mInverseIndexSize = mNumberOfHashFunctions * mBlockSize;
     } else {
-        inverseIndexSize = ceil(((float) (mNumberOfHashFunctions * mBlockSize) / (float) mShingleSize));        
+        mInverseIndexSize = ceil(((float) (mNumberOfHashFunctions * mBlockSize) / (float) mShingleSize));        
     }
-    if (pBloomierFilter) {
-        mInverseIndexStorage = new InverseIndexStorageBloomierFilter(inverseIndexSize, mMaxBinSize, maximalFeatures);
-    } else {
-        mInverseIndexStorage = new InverseIndexStorageUnorderedMap(inverseIndexSize, mMaxBinSize);
-    }
+        mInverseIndexStorage = new InverseIndexStorageUnorderedMap(mInverseIndexSize, mMaxBinSize);
     mRemoveValueWithLeastSigificantBit = pRemoveValueWithLeastSigificantBit;
 }
  
@@ -85,7 +79,6 @@ distributionInverseIndex* InverseIndex::getDistribution() {
 
  // compute the signature for one instance
 vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance) {
-
     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
 
     for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
@@ -99,51 +92,40 @@ vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const
             (*signature)[j] = minHashValue;
     }
     // reduce number of hash values by a factor of mShingleSize
-    // for (size_t i = 0; i < mNumberOfHashFunctions * mBlockSize; ++i) {
-    //     std::cout << (*signature)[i] << ", ";
-    // }
-    // std::cout << std::endl;
     if (mShingle) {
         return shingle(signature);
     }
-    
     return signature;
 }
 
 vsize_t* InverseIndex::shingle(vsize_t* pSignature) {
+    
     vsize_t* signature = new vsize_t(mNumberOfHashFunctions*mBlockSize / mShingleSize);
+    
     if (mShingle == 1) {
+        
         // if 0 than combine hash values inside the block to one new hash value
         size_t signatureBlockValue;
         size_t count = 0;
-        for (size_t i = 0; i < signature->size() && (i+1)*mShingleSize < pSignature->size(); ++i) {
+        
+        for (size_t i = 0; i < signature->size(); ++i) {
+            if (i*mShingleSize >= pSignature->size()) break;
             signatureBlockValue = (*pSignature)[i*mShingleSize];
+            
             for (size_t j = 1; j < mShingleSize; ++j) {
                 signatureBlockValue = mHash->hash((*pSignature)[i*mShingleSize+j]+1, signatureBlockValue+1, MAX_VALUE);
             }
             (*signature)[i] = signatureBlockValue;
             count = i;
         }
+        
         signatureBlockValue = (*pSignature)[count*mShingleSize];
         for (size_t j = count; count * mShingleSize + j < pSignature->size(); ++j) {
             signatureBlockValue = mHash->hash((*pSignature)[count * mShingleSize + j]+1, signatureBlockValue+1, MAX_VALUE);
         }
+        
         (*signature)[count+1] = signatureBlockValue;
-        // std::cout << "Shingle: " << std::endl;
-        // for (size_t i = 0; i < mNumberOfHashFunctions * mBlockSize / mShingleSize ; ++i) {
-        //     std::cout << (*signature)[i] << ", ";
-        // }
-        // std::cout << std::endl;
-        // return NULL;
-        // while (k < mNumberOfHashFunctions*mBlockSize && k < pSignature->size()) {
-        // // use computed hash value as a seed for the next computation
-        //     size_t signatureBlockValue = (*pSignature)[k];
-        //     for (size_t j = 0; j < mShingleSize && k+j < mNumberOfHashFunctions*mBlockSize; ++j) {
-        //         signatureBlockValue = mHash->hash((*pSignature)[k+j]+1,  signatureBlockValue+1, MAX_VALUE);
-        //     }
-        //     signature.push_back(signatureBlockValue);
-        //     k += mShingleSize; 
-        // }
+        
     } else if (mShingle == 2) {
         // if 1 than take the minimum hash values of that block as the hash value
         // size_t k = 0;
@@ -166,7 +148,6 @@ vsize_t* InverseIndex::shingle(vsize_t* pSignature) {
 
 vsize_t* InverseIndex::computeSignatureWTA(const SparseMatrixFloat* pRawData, const size_t pInstance) {
     size_t sizeOfInstance = pRawData->getSizeOfInstance(pInstance);
-    // vsize_t* signatureHash = new vsize_t (sizeOfInstance);
     
     size_t mSeed = 42;
     size_t mK = mBlockSize;
@@ -209,7 +190,6 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
-    mInverseIndexStorage->reserveSpaceForMaps(pRawData->size());
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
@@ -218,7 +198,6 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
 #endif
     for(size_t index = 0; index < pRawData->size(); ++index) {
-        // vsize_t* features = pRawData->getFeatureRow(index);
         // compute unique id
         size_t signatureId = 0;
         for (size_t j = 0; j < pRawData->getSizeOfInstance(index); ++j) {
@@ -268,70 +247,136 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     return instanceSignature;
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
-std::cout << "fitting" << std::endl;
-    mInverseIndexStorage->reserveSpaceForMaps(pRawData->size()); 
+    std::cout << __LINE__ << std::endl;
     size_t pruneEveryNIterations = pRawData->size() * mPruneInverseIndexAfterInstance;
     size_t pruneCount = 0;
     mDoubleElementsStorageCount = 0;
-    if (mChunkSize <= 0) {
+    if (mChunkSize <= 0) { 
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
+    std::cout << __LINE__ << std::endl;
+    
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
 #ifndef OPENMP
     mNumberOfCores = 1;
 #endif
-    vvsize_t_p signatures(pRawData->size());
+    vvsize_t_p signatures;
 #ifdef OPENMP
 #pragma omp parallel num_threads(mNumberOfCores)
 #endif
     {
-        vvsize_t_p signaturesPerThread(pRawData->size() / mNumberOfCores);
+    std::cout << __LINE__ << std::endl;
+        
+        vvsize_t_p signaturesPerThread;//(pRawData->size() / mNumberOfCores);
+        size_t substractFactor = omp_get_thread_num() * pRawData->size() / mNumberOfCores;
+        std::cout << "substractFactor : " << substractFactor << std::endl;
+        std::cout << "Thread id: " << omp_get_thread_num() << " size of signature " << signaturesPerThread.size() << std::endl;
 #ifdef OPENMP
 #pragma omp for nowait schedule(static, mChunkSize) 
 #endif 
-        for (size_t i = 0; i < pRawData->size(); ++i) {
-            size_t signatureId = 0;
+        for (size_t instance = 0; instance < pRawData->size(); ++instance) {
+    // std::cout << __LINE__ << std::endl;
+            
             if (mHashAlgorithm == 0) {
                 // use minHash
-                signaturesPerThread[i] = computeSignature(pRawData, i);
+                // std::cout << "instance ff" << instance << "fff   \n" << std::endl;
+                // signaturesPerThread[instance - substractFactor] = computeSignature(pRawData, instance);
+                signaturesPerThread.push_back(computeSignature(pRawData, instance));
+                
             } else if (mHashAlgorithm == 1) {
                 // use wta hash
-                signaturesPerThread[i] = computeSignatureWTA(pRawData, i);
+                // signaturesPerThread[instance - substractFactor] = computeSignatureWTA(pRawData, instance);
             }
+    // std::cout << "Instance: " << instance << std::endl;
+            
         }
+    // std::cout << __LINE__ << std::endl;
+    // #pragma omp ordered
+    //     for (size_t i = 0; i < signaturesPerThread.size(); ++i) {
+    //         std::cout << "Instance " << i + substractFactor << std::endl;
+    //         for (size_t j = 0; j < signaturesPerThread[i]->size(); ++j) {
+    //             std::cout << (signaturesPerThread[i])->operator[](j) << ", ";
+    //         }
+    //         std::cout << std::endl;
+    // }
 #ifdef OPENMP
 #pragma omp for schedule(static) ordered
-        for(size_t i=0; i<omp_get_num_threads(); i++) {
-            #pragma omp ordered
+        for(int i=0; i < omp_get_num_threads(); i++) {
+            // #pragma omp critical
+            {
+            // std::cout << "thread: " << omp_get_thread_num() << " signaturesPerThread size: " << signaturesPerThread.size() << std::endl; 
             signatures.insert(signatures.end(), signaturesPerThread.begin(), signaturesPerThread.end());
+    // std::cout << __LINE__ << std::endl;
+            }
+            
         }       
 #endif
     } 
 #ifndef OPENMP
-    signatures = signaturesPerThread;
+    // signatures = signaturesPerThread;
 #endif
 
-
+    // for (size_t i = 0; i < signatures.size(); ++i) {
+    //     std::cout << "Instance " << i << " foo size: "<< signatures[i]->size() << std::endl;
+    //     for (size_t j = 0; j < signatures[i]->size(); ++j) {
+    //         std::cout << (signatures[i])->operator[](j) << ", ";
+    //     }
+    //     std::cout << std::endl;
+    // }
     
+    // std::cout << "Size of signatue: " << signatures.size() << std::endl;
+
+    // std::cout << __LINE__ << std::endl;
+    // return;
     // add gpu part
     // merge gpu signatures with cpu signatures
     
-    
+    std::cout << "insert to inverse index: " << std::endl;
 // create inverse index 
-#ifdef OPENMP
-#pragma omp parallel num_threads(mNumberOfCores)
-#endif
-    { 
-         vector__umapVector_ptr inverseIndex (pSizeOfInverseIndex / mNumberOfCores);
+// #ifdef OPENMP
+// #pragma omp parallel num_threads(mNumberOfCores)
+// #endif
+//     { 
+    std::cout << __LINE__ << std::endl;
+        
+         vector__umapVector_ptr inverseIndex (mInverseIndexSize);
+        //  size_t substractFactor = omp_get_thread_num() * (mInverseIndexSize / mNumberOfCores);
          
-#ifdef OPENMP
-#pragma omp for nowait schedule(static, mChunkSize) 
-#endif 
-        for (size_t i = 0; i < mNumberOfHashFunctions; ++i) {
+         for (size_t i = 0; i < mInverseIndexSize; ++i) {
+             inverseIndex[i] = new umapVector_ptr();
+             inverseIndex[i]->reserve(pRawData->size() / 2);
+         }
+    // std::cout << __LINE__ << std::endl;
+         
+         
+// #ifdef OPENMP
+// #pragma omp for  
+// #endif
+        // std::cout << "thread: " << omp_get_thread_num() << " endloop: " <<  (omp_get_thread_num()+1) * (mInverseIndexSize / mNumberOfCores) << std::endl;
+        for (size_t i = 0; i < mInverseIndexSize; ++i) {
+    // std::cout << __LINE__ << std::endl;
+            
             for (size_t j = 0; j < signatures.size(); ++j) {
-                auto itHashValue_InstanceVector = inverseIndex[i]->find((*signatures[j])[i]);
+    // std::cout << __LINE__ << std::endl;
+                
+                size_t hashValue = (signatures[j])->operator[](i);
+    // std::cout << __LINE__ << std::endl;
+                
+                if (mRemoveValueWithLeastSigificantBit) {
+                    size_t leastSignificantBits = 0b11111111111111111111111111111111 << mRemoveValueWithLeastSigificantBit;
+                    size_t insertValue = hashValue | leastSignificantBits;
+                    if (insertValue == leastSignificantBits) {
+                        continue;
+                    }
+                }       
+    // std::cout << __LINE__ << std::endl;
+                // std::cout << "I: " << i << " substractFactor: " << substractFactor << std::endl; 
+                // std::cout << (inverseIndex[i - substractFactor]) << std::endl;
+                // std::cout << __LINE__ << std::endl;
+                auto itHashValue_InstanceVector = inverseIndex[i]->find(hashValue);
+    // std::cout << __LINE__ << std::endl;
 
                 // if for hash function h_i() the given hash values is already stored
                 if (itHashValue_InstanceVector != inverseIndex[i]->end()) {
@@ -350,114 +395,115 @@ std::cout << "fitting" << std::endl;
                     // given hash value for the specific hash function was not avaible: insert new hash value
                     vsize_t* instanceIdVector = new vsize_t(1);
                     (*instanceIdVector)[0] = j;
-                    inverseIndex[i]->operator[](pHashValue) = instanceIdVector;
+                    inverseIndex[i]->operator[](hashValue) = instanceIdVector;
                 }       
             }
         }
         
+    std::cout << __LINE__ << std::endl;
         
         
-#ifdef OPENMP
-#pragma omp for schedule(static) ordered
-        for(size_t i=0; i<omp_get_num_threads(); i++) {
-            #pragma omp ordered
-            signatures.insert(signatures.end(), signaturesPerThread.begin(), vec_prisignaturesPerThreadvate.end());
-        }       
-#endif
-    } 
+// #ifdef OPENMP
+// #pragma omp for schedule(static) ordered
+        // for(int i=0; i<omp_get_num_threads(); i++) {
+            // #pragma omp ordered
+            mInverseIndexStorage->insert(inverseIndex.begin(), inverseIndex.end());
+        // }       
+// #endif
+    // } 
+    
+    std::cout << __LINE__ << std::endl;
     
     
     
-    
-#ifdef OPENMP
-    omp_set_dynamic(0);
-#endif
-#ifdef OPENMP
-#pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
-#endif
-    for (size_t index = 0; index < pRawData->size(); ++index) {
-        size_t signatureId = 0;
-        for (size_t j = 0; j < pRawData->getSizeOfInstance(index); ++j) {
-            signatureId = mHash->hash((pRawData->getNextElement(index, j) +1), (signatureId+1), MAX_VALUE);
-        }
-        vsize_t* signature;
-        auto itSignatureStorage = mSignatureStorage->find(signatureId);
-        if (itSignatureStorage == mSignatureStorage->end()) {
-            if (mHashAlgorithm == 0) {
-                // use minHash
-                signature = computeSignature(pRawData, index);
-            } else if (mHashAlgorithm == 1) {
-                // use wta hash
-                signature = computeSignatureWTA(pRawData, index);
-            }
-        } else {
-            signature = itSignatureStorage->second.signature;
-        }
-#ifdef OPENMP
-#pragma omp critical
-#endif
-        {   
-            ++pruneCount;
-            if (itSignatureStorage == mSignatureStorage->end()) {
-                vsize_t* doubleInstanceVector = new vsize_t(1);
-                (*doubleInstanceVector)[0] = index;
-                uniqueElement element;
-                element.instances = doubleInstanceVector;
-                element.signature = signature;
-                mSignatureStorage->operator[](signatureId) = element;
-            } else {
-                 mSignatureStorage->operator[](signatureId).instances->push_back(index);
-                 mDoubleElementsStorageCount += 1;
-            }
-        }
+// #ifdef OPENMP
+//     omp_set_dynamic(0);
+// #endif
+// #ifdef OPENMP
+// #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+// #endif
+//     for (size_t index = 0; index < pRawData->size(); ++index) {
+//         size_t signatureId = 0;
+//         for (size_t j = 0; j < pRawData->getSizeOfInstance(index); ++j) {
+//             signatureId = mHash->hash((pRawData->getNextElement(index, j) +1), (signatureId+1), MAX_VALUE);
+//         }
+//         vsize_t* signature;
+//         auto itSignatureStorage = mSignatureStorage->find(signatureId);
+//         if (itSignatureStorage == mSignatureStorage->end()) {
+//             if (mHashAlgorithm == 0) {
+//                 // use minHash
+//                 signature = computeSignature(pRawData, index);
+//             } else if (mHashAlgorithm == 1) {
+//                 // use wta hash
+//                 signature = computeSignatureWTA(pRawData, index);
+//             }
+//         } else {
+//             signature = itSignatureStorage->second.signature;
+//         }
+// #ifdef OPENMP
+// #pragma omp critical
+// #endif
+//         {   
+//             ++pruneCount;
+//             if (itSignatureStorage == mSignatureStorage->end()) {
+//                 vsize_t* doubleInstanceVector = new vsize_t(1);
+//                 (*doubleInstanceVector)[0] = index;
+//                 uniqueElement element;
+//                 element.instances = doubleInstanceVector;
+//                 element.signature = signature;
+//                 mSignatureStorage->operator[](signatureId) = element;
+//             } else {
+//                  mSignatureStorage->operator[](signatureId).instances->push_back(index);
+//                  mDoubleElementsStorageCount += 1;
+//             }
+//         }
         
-        for (size_t j = 0; j < signature->size(); ++j) {
-            mInverseIndexStorage->insert(j, (*signature)[j], index, mRemoveValueWithLeastSigificantBit);
-        }
+//         for (size_t j = 0; j < signature->size(); ++j) {
+//             mInverseIndexStorage->insert(j, (*signature)[j], index, mRemoveValueWithLeastSigificantBit);
+//         }
         
-        if (mPruneInverseIndexAfterInstance > 0) {
-#ifdef OPENMP
-#pragma omp critical
-#endif
-            {
-                if (pruneCount >= pruneEveryNIterations) {
-                    pruneCount = 0;
+//         if (mPruneInverseIndexAfterInstance > 0) {
+// #ifdef OPENMP
+// #pragma omp critical
+// #endif
+//             {
+//                 if (pruneCount >= pruneEveryNIterations) {
+//                     pruneCount = 0;
                     
-                    if (mPruneInverseIndex > 0) {
-                        mInverseIndexStorage->prune(static_cast<size_t>(mPruneInverseIndex));
-                    }
-                    if (mRemoveHashFunctionWithLessEntriesAs >= 0) {
-                        mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(static_cast<size_t>(mRemoveHashFunctionWithLessEntriesAs));
-                    }
-                }
-            }           
-        }
-    }
-    	std::cout << __LINE__ << std::endl;
+//                     if (mPruneInverseIndex > 0) {
+//                         mInverseIndexStorage->prune(static_cast<size_t>(mPruneInverseIndex));
+//                     }
+//                     if (mRemoveHashFunctionWithLessEntriesAs >= 0) {
+//                         mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(static_cast<size_t>(mRemoveHashFunctionWithLessEntriesAs));
+//                     }
+//                 }
+//             }           
+//         }
+//     }
+//     	std::cout << __LINE__ << std::endl;
     
-    if (mPruneInverseIndex > 0) {
-        mInverseIndexStorage->prune(mPruneInverseIndex);
-    }
-    	std::cout << __LINE__ << std::endl;
+//     if (mPruneInverseIndex > 0) {
+//         mInverseIndexStorage->prune(mPruneInverseIndex);
+//     }
+//     	std::cout << __LINE__ << std::endl;
     
-    if (mRemoveHashFunctionWithLessEntriesAs >= 0) {
-        mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(static_cast<size_t>(mRemoveHashFunctionWithLessEntriesAs));
-    }
-    // for (std::cout << )
-    	std::cout << __LINE__ << std::endl;
-        std::cout << "Number of hash function: " << mInverseIndexStorage->size() << std::endl;
-        for (size_t i = 0; i < mInverseIndexStorage->size(); ++i) {
-            std::cout << "hash function: " << i << " Size: " << mInverseIndexStorage->getIndex()->operator[](i)->size();
-            std::cout << " Load factor: " << mInverseIndexStorage->getIndex()->operator[](i)->load_factor() << std::endl;
+//     if (mRemoveHashFunctionWithLessEntriesAs >= 0) {
+//         mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(static_cast<size_t>(mRemoveHashFunctionWithLessEntriesAs));
+//     }
+//     // for (std::cout << )
+//     	std::cout << __LINE__ << std::endl;
+//         std::cout << "Number of hash function: " << mInverseIndexStorage->size() << std::endl;
+//         for (size_t i = 0; i < mInverseIndexStorage->size(); ++i) {
+//             std::cout << "hash function: " << i << " Size: " << mInverseIndexStorage->getIndex()->operator[](i)->size();
+//             std::cout << " Load factor: " << mInverseIndexStorage->getIndex()->operator[](i)->load_factor() << std::endl;
             
-        }
+//         }
     
 }
 
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                         const size_t pNneighborhood, const bool pDoubleElementsStorageCount) {
                                             // std::cout << "kneighbors inverseIndex" << std::endl;
-    	// std::cout << __LINE__ << std::endl;
 
     size_t doubleElements = 0;
     if (pDoubleElementsStorageCount) {
@@ -476,14 +522,12 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
     if (mChunkSize <= 0) {
         mChunkSize = ceil(mInverseIndexStorage->size() / static_cast<float>(mNumberOfCores));
     }
-    	// std::cout << __LINE__ << std::endl;
     
 #ifdef OPENMP
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
 #endif 
 
     for (size_t i = 0; i < pSignaturesMap->size(); ++i) {
-    // std::cout << "kneighbors inverse index: " << __LINE__ << std::endl;
         
         umap_uniqueElement::const_iterator instanceId = pSignaturesMap->begin();
         std::advance(instanceId, i);
@@ -491,33 +535,27 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         std::unordered_map<size_t, size_t> neighborhood;
         neighborhood.reserve(mMaxBinSize*2);
         const vsize_t* signature = instanceId->second.signature; 
-        // if (signature != NULL) {  
-            for (size_t j = 0; j < signature->size(); ++j) {
-                size_t hashID = (*signature)[j];
-                if (hashID != 0 && hashID != MAX_VALUE) {
-                    size_t collisionSize = 0; 
-    	// std::cout << __LINE__ << std::endl;
-                    
-                    const vsize_t* instances = mInverseIndexStorage->getElement(j, hashID);
-    	// std::cout << __LINE__ << std::endl;
-                    
-                    if (instances == NULL) continue;
-                    if (instances->size() != 0) {
-                        collisionSize = instances->size();
-                    } else { 
-                        continue;
+        for (size_t j = 0; j < signature->size(); ++j) {
+            size_t hashID = (*signature)[j];
+            if (hashID != 0 && hashID != MAX_VALUE) {
+                size_t collisionSize = 0; 
+                
+                const vsize_t* instances = mInverseIndexStorage->getElement(j, hashID);
+                
+                if (instances == NULL) continue;
+                if (instances->size() != 0) {
+                    collisionSize = instances->size();
+                } else { 
+                    continue;
+                }
+                
+                if (collisionSize < mMaxBinSize && collisionSize > 0) {
+                    for (size_t k = 0; k < instances->size(); ++k) {
+                        neighborhood[(*instances)[k]] += 1;
                     }
-                    
-                    if (collisionSize < mMaxBinSize && collisionSize > 0) {
-                        for (size_t k = 0; k < instances->size(); ++k) {
-                            neighborhood[(*instances)[k]] += 1;
-                        }
-                    }
-                    // delete 
                 }
             }
-        // }
-    // std::cout << "kneighbors inverse index: " << __LINE__ << std::endl;
+        }
         
         if (neighborhood.size() == 0) {
             vint emptyVectorInt;
@@ -528,17 +566,14 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
 #pragma omp critical
 #endif
             { // write vector to every instance with identical signatures
-    // std::cout << "kneighbors inverse index: " << __LINE__ << std::endl;
 
                 for (size_t j = 0; j < instanceId->second.instances->size(); ++j) {
-                    // std::cout << "neighbors size: " << neighbors->size() << " Size of instance: " << instanceId->second.instances[j] << std::endl;
                     (*neighbors)[(*instanceId->second.instances)[j]] = emptyVectorInt;
                     (*distances)[(*instanceId->second.instances)[j]] = emptyVectorFloat;
                 }
             }
             continue;
         }
-    // std::cout << "kneighbors inverse index: " << __LINE__ << std::endl;
          
         std::vector< sort_map > neighborhoodVectorForSorting;
         for (auto it = neighborhood.begin(); it != neighborhood.end(); ++it) {
@@ -551,7 +586,6 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         if (pNneighborhood > neighborhoodVectorForSorting.size()) {
             numberOfElementsToSort = neighborhoodVectorForSorting.size();
         }
-    // std::cout << "kneighbors inverse index: " << __LINE__ << std::endl;
         
         std::partial_sort(neighborhoodVectorForSorting.begin(), 
                             neighborhoodVectorForSorting.begin()+numberOfElementsToSort, 
@@ -562,7 +596,6 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         } else {
             sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(pNneighborhood * mExcessFactor), neighborhoodVectorForSorting.size());
         }
-    // std::cout << "kneighbors inverse index: " << __LINE__ << std::endl;
 
         size_t count = 0;
         vvint neighborsForThisInstance(instanceId->second.instances->size());
@@ -594,7 +627,6 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
 #endif
 
         {   // write vector to every instance with identical signatures
-    // std::cout << "kneighbors inverse index: " << __LINE__ << std::endl;
        
             for (size_t j = 0; j < instanceId->second.instances->size(); ++j) {
                 (*neighbors)[(*instanceId->second.instances)[j]] = neighborsForThisInstance[j];
@@ -603,11 +635,9 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         
         }
     }
-    // std::cout << "kneighbors inverse index: " << __LINE__ << std::endl;
     
     neighborhood* neighborhood_ = new neighborhood();
     neighborhood_->neighbors = neighbors;
     neighborhood_->distances = distances;
-    // std::cout << "kneighbors inverse index END" << std::endl; 
     return neighborhood_;
 }
