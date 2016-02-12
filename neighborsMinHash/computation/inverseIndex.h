@@ -43,6 +43,15 @@ class InverseIndex {
     size_t mBlockSize;
     size_t mRemoveValueWithLeastSigificantBit;
     size_t mInverseIndexSize;
+    
+    
+    // cuda stuff
+    size_t* mDev_FeatureList;
+    size_t* mDev_SizeOfInstanceList;
+    size_t* mDev_ComputedSignaturesPerInstance;
+    float* mDev_ValuesList;
+    
+    
 
     InverseIndexStorageUnorderedMap* mInverseIndexStorage;
   	umap_uniqueElement* mSignatureStorage;

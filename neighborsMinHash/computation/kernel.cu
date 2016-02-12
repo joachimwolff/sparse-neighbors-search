@@ -31,10 +31,10 @@ __device__ size_t computeHashValueCuda(size_t key, size_t aModulo) {
 __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInstanceList,
                     const size_t pNumberOfHashFunctions, const size_t pMaxNnz,
                     size_t* pComputedSignatures, 
-                    const size_t pNumberOfInstances) {
+                    const size_t pNumberOfInstances, const size_t pStartInstance) {
     extern __shared__ size_t signature[];  // pNumberOfHashFunctions
     // size_t threadId = threadIdx.x;
-    int instanceId = blockIdx.x;
+    int instanceId = blockIdx.x + pStartInstance;
     size_t minHashValue = MAX_VALUE;
     size_t hashValue = 0;
     
@@ -70,7 +70,7 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
         if (threadIdx.x == 0) {
             for (size_t i = 0; i < pNumberOfHashFunctions; ++i) {
                 // printf("size: %i" , instanceId*pNumberOfHashFunctions);
-                pComputedSignatures[instanceId*pNumberOfHashFunctions +i] = signature[i];
+                pComputedSignatures[(instanceId-pStartInstance)*pNumberOfHashFunctions +i] = signature[i];
             }
         }
         instanceId += gridDim.x;

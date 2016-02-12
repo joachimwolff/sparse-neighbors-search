@@ -12,9 +12,7 @@
 #include <Python.h>
 
 #include "../minHash.h"
-#ifdef CUDA
-#include "../minHashCuda.h"
-#endif
+
 #include "../parsePythonToCpp.h"
 
 static neighborhood* neighborhoodComputation(size_t pMinHashAddress, PyObject* pInstancesListObj,PyObject* pFeaturesListObj,PyObject* pDataListObj, 
@@ -69,42 +67,11 @@ static PyObject* createObject(PyObject* self, PyObject* args) {
         return NULL;
         // std::cout << __LINE__ << std::endl;
     MinHashBase* minHash;
-    minHash = NULL;
-    if (cuda == 0) {
-        // printf("%i\n", __LINE__);
-        minHash = new MinHash (numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
+    minHash = new MinHash (numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
                         maxBinSize, nNeighbors, minimalBlocksInCommon, 
                         excessFactor, maximalNumberOfHashCollisions, fast, similarity, bloomierFilter, pruneInverseIndex,
                         pruneInverseIndexAfterInstance, removeHashFunctionWithLessEntriesAs, 
                         hashAlgorithm, blockSize, shingle, removeValueWithLeastSigificantBit);
-        // printf("%i\n", __LINE__);
-                        
-    } else if (cuda == 1) {
-#ifdef CUDA
-        // printf("%i\n", __LINE__);
-
-        minHash = new MinHashCuda(numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
-                        maxBinSize, nNeighbors, minimalBlocksInCommon, 
-                        excessFactor, maximalNumberOfHashCollisions, fast, similarity, bloomierFilter, pruneInverseIndex,
-                        pruneInverseIndexAfterInstance, removeHashFunctionWithLessEntriesAs, 
-                        hashAlgorithm, blockSize, shingle, removeValueWithLeastSigificantBit);
-        // printf("%i\n", __LINE__);
-                        
-#endif
-        if (minHash == NULL) {
-        // printf("%i\n", __LINE__);
-            
-            minHash = new MinHash (numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
-                        maxBinSize, nNeighbors, minimalBlocksInCommon, 
-                        excessFactor, maximalNumberOfHashCollisions, fast, similarity, bloomierFilter, pruneInverseIndex,
-                        pruneInverseIndexAfterInstance, removeHashFunctionWithLessEntriesAs, 
-                        hashAlgorithm, blockSize, shingle, removeValueWithLeastSigificantBit);
-        // printf("%i\n", __LINE__);
-                        
-        }
-    }
-        // std::cout << __LINE__ << std::endl;
-        // printf("%i\n", __LINE__);
 
     size_t adressMinHashObject = reinterpret_cast<size_t>(minHash);
     PyObject* pointerToInverseIndex = Py_BuildValue("k", adressMinHashObject);

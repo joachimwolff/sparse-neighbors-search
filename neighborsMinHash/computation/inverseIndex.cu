@@ -21,7 +21,7 @@
 
 #include "inverseIndex.h"
 #include "kSizeSortedMap.h"
-
+#include "kernel.h"
 
 class sort_map {
   public:
@@ -260,49 +260,125 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     
 #endif
 #ifndef OPENMP
-    mNumberOfCores = 1;
+    // mNumberOfCores = 1;
 #endif
     vvsize_t_p signatures;
     // omp_set_nested();
-    omp_set_dynamic(0);
-    omp_set_num_threads(mNumberOfCores);
-    omp_set_nested(1);
-#pragma omp parallel
-    {
-        vvsize_t_p signaturesPerThread;
+    // omp_set_dynamic(0);
+    // omp_set_num_threads(mNumberOfCores);
+    // omp_set_nested(1);
+// #pragma omp parallel num_threads(mNumberOfCores)
+    // {
+        // vvsize_t_p signaturesPerThread;
         // /(pRawData->size() / mNumberOfCores);
-        size_t substractFactor = omp_get_thread_num() - 1 * pRawData->size() / 2 / mNumberOfCores;
-        #pragma omp single nowait
-        {
-            std::cout << "single no wait thread id: " << omp_get_thread_num() << std::endl;
-        }
+        // size_t substractFactor = omp_get_thread_num() - 1 * pRawData->size() / 2 / mNumberOfCores;
+        // #pragma omp master nowait
+        // {
+            // memory for instances and their featureIds
+            cudaMalloc((void **) &mDev_FeatureList,
+                    pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(size_t));
+            // memory for the values of the features of the instances
+            cudaMalloc((void **) &mDev_ValuesList, 
+                        pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(float));
+            // memory for the number of features per instance
+            cudaMalloc((void **) &mDev_SizeOfInstanceList,
+                    pRawData->getNumberOfInstances() * sizeof(size_t));
+            // memory for the inverse index on the gpu.
+            // for each instance the number of hash functions
+            cudaMalloc((void **) &mDev_ComputedSignaturesPerInstance,
+                    pRawData->getNumberOfInstances()  * mNumberOfHashFunctions * sizeof(size_t));
+            // copy instances and their feature ids to the gpu
+            cudaMemcpy(mDev_FeatureList, pRawData->getSparseMatrixIndex(),
+                        pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(size_t),
+                    cudaMemcpyHostToDevice);
+            // copy instances and their values for each feature to the gpu
+            cudaMemcpy(mDev_ValuesList, pRawData->getSparseMatrixValues(),
+                        pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(float),
+                    cudaMemcpyHostToDevice);
+            // copy the size of all instances to the gpu               
+            cudaMemcpy(mDev_SizeOfInstanceList, pRawData->getSparseMatrixSizeOfInstances(),
+                    pRawData->getNumberOfInstances() * sizeof(size_t),
+                    cudaMemcpyHostToDevice);
+            // fitGpu<<<pRawData->getNumberOfInstances(), mNumberOfHashFunctions, mNumberOfHashFunctions>>>
+            // compute values on the gpu
+            size_t iterations = 2;
+            size_t start = 0;
+            size_t end = pRawData->getNumberOfInstances() / iterations;
+            size_t windowSize = pRawData->getNumberOfInstances() / iterations;
+            size_t* instancesHashValues = (size_t*) malloc(pRawData->getNumberOfInstances() / iterations * mNumberOfHashFunctions * sizeof(size_t));
+    std::cout << __LINE__ << std::endl;
+            
+            for (size_t i = 0; i < 2; ++i) {
+                
+                fitCuda<<<128, 128, mNumberOfHashFunctions * sizeof(size_t)>>>
+                (mDev_FeatureList, 
+                mDev_SizeOfInstanceList,  
+                mNumberOfHashFunctions, 
+                pRawData->getMaxNnz(),
+                        mDev_ComputedSignaturesPerInstance, 
+                        end, start);
+    std::cout << __LINE__ << std::endl;
+                        
+                cudaMemcpy(instancesHashValues, mDev_ComputedSignaturesPerInstance, 
+                            pRawData->getNumberOfInstances()/iterations * mNumberOfHashFunctions * sizeof(size_t),
+                            cudaMemcpyDeviceToHost);
+    std::cout << __LINE__ << std::endl;
+                            
+                for(size_t i = 0; i < pRawData->getNumberOfInstances() / iterations; ++i) {
+                    // printf("Instance: %zu of %zu: ", i, pRawData->getNumberOfInstances());
+                    vsize_t* instance = new vsize_t(mNumberOfHashFunctions);
+                    for (size_t j = 0; j < mNumberOfHashFunctions; ++j) {
+                        (*instance)[j] = instancesHashValues[i*mNumberOfHashFunctions + j];
+                        // printf("%zu,", instancesHashValues[i*mNumberOfHashFunctions + j]);
+                    }
+                    signatures.push_back(instance);
+                    // printf("\n");
+                }
+    std::cout << __LINE__ << std::endl;
+                
+                // #pragma omp critical
+                // signatures.insert(signatures.end(), signaturesPerThread.begin(), signaturesPerThread.end());
+                // signaturesPerThread.clear();
+                start = end+1;
+                end = end + windowSize;
+            }
+            cudaFree(mDev_ComputedSignaturesPerInstance);
+            
+        // }
        
         
-        
-        #pragma omp for schedule(static, mChunkSize) 
-                for (size_t instance = 0; instance < pRawData->size(); ++instance) {
-                    std::cout << "for no wait thread id: " << omp_get_thread_num() << ", ";
+        mInverseIndexStorage->reserveSpaceForMaps(pRawData->size() / 2);
+        for (size_t i = 0; i < signatures.size(); ++i) {
+            for (size_t j = 0; j < signatures[i]->size(); ++j) {
+                // std::cout << signatures[i]->operator[](j) << ",";
+                mInverseIndexStorage->insert(j, signatures[i]->operator[](j), i, mRemoveValueWithLeastSigificantBit);
+            }
+            // std::cout << std::endl;
+        }
+    // #pragma omp for nowait schedule(static)
+    //         for (size_t instance = pRawData->size() / 2; instance < pRawData->size(); ++instance) {
+    //             std::cout << "for no wait thread id: " << omp_get_thread_num() << ", ";
+    //             // if (omp_get_thread_num() == 0) break;
+    //             if (mHashAlgorithm == 0) {
+    //                 // use minHash
+    //                 signaturesPerThread.push_back(computeSignature(pRawData, instance));
                     
-                    if (mHashAlgorithm == 0) {
-                        // use minHash
-                        signaturesPerThread.push_back(computeSignature(pRawData, instance));
-                        
-                    } else if (mHashAlgorithm == 1) {
-                        // use wta hash
-                        signaturesPerThread.push_back(computeSignatureWTA(pRawData, instance));
-                    }
-                }
-                std::cout << std::endl;
-        #pragma omp parallel for schedule(static) ordered
-                for(int i=0; i < omp_get_num_threads(); i++) {
-        #pragma omp ordered
-                    signatures.insert(signatures.end(), signaturesPerThread.begin(), signaturesPerThread.end());
-                }       
+    //             } else if (mHashAlgorithm == 1) {
+    //                 // use wta hash
+    //                 signaturesPerThread.push_back(computeSignatureWTA(pRawData, instance));
+    //             }
+    //         }
+                
+    //   #pragma omp for schedule(static) ordered
+    //         for(int i=0; i < omp_get_num_threads(); i++) {
+    //         #pragma omp ordered
+    //             signatures.insert(signatures.end(), signaturesPerThread.begin(), signaturesPerThread.end());
+    //         }       
         
-    } 
-#ifndef OPENMP
-    signatures = signaturesPerThread;
-#endif
+//     } 
+// #ifndef OPENMP
+//     signatures = signaturesPerThread;
+// #endif
 
     // for (size_t i = 0; i < signatures.size(); ++i) {
     //     std::cout << "Instance " << i << " foo size: "<< signatures[i]->size() << std::endl;
@@ -319,73 +395,73 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     // add gpu part
     // merge gpu signatures with cpu signatures
     
-    std::cout << "insert to inverse index: " << std::endl;
-// create inverse index 
-#ifdef OPENMP
-    omp_set_dynamic(0);
-#endif
-#ifdef OPENMP
-#pragma omp parallel num_threads(1)
-#endif
-    { 
-    // std::cout << __LINE__ << std::endl;
+//     std::cout << "insert to inverse index: " << std::endl;
+// // create inverse index 
+// #ifdef OPENMP
+//     omp_set_dynamic(0);
+// #endif
+// #ifdef OPENMP
+// #pragma omp parallel num_threads(1)
+// #endif
+//     { 
+//     // std::cout << __LINE__ << std::endl;
         
-         vector__umapVector_ptr inverseIndex (mInverseIndexSize);
-        //  size_t substractFactor = omp_get_thread_num() * (mInverseIndexSize / mNumberOfCores);
+//          vector__umapVector_ptr inverseIndex (mInverseIndexSize);
+//         //  size_t substractFactor = omp_get_thread_num() * (mInverseIndexSize / mNumberOfCores);
          
-         for (size_t i = 0; i < mInverseIndexSize; ++i) {
-             inverseIndex[i] = new umapVector_ptr();
-             inverseIndex[i]->reserve(pRawData->size() / 2);
-         }
-    // std::cout << __LINE__ << std::endl;
+//          for (size_t i = 0; i < mInverseIndexSize; ++i) {
+//              inverseIndex[i] = new umapVector_ptr();
+//              inverseIndex[i]->reserve(pRawData->size() / 2);
+//          }
+//     // std::cout << __LINE__ << std::endl;
          
          
-#ifdef OPENMP
-#pragma omp for  
-#endif
+// #ifdef OPENMP
+// #pragma omp for  
+// #endif
 
-        for (size_t i = 0; i < mInverseIndexSize; ++i) {
-            for (size_t j = 0; j < signatures.size(); ++j) {
-                size_t hashValue = (signatures[j])->operator[](i);
-                if (mRemoveValueWithLeastSigificantBit) {
-                    size_t leastSignificantBits = 0b11111111111111111111111111111111 << mRemoveValueWithLeastSigificantBit;
-                    size_t insertValue = hashValue | leastSignificantBits;
-                    if (insertValue == leastSignificantBits) {
-                        continue;
-                    }
-                }       
-                auto itHashValue_InstanceVector = inverseIndex[i]->find(hashValue);
+//         for (size_t i = 0; i < mInverseIndexSize; ++i) {
+//             for (size_t j = 0; j < signatures.size(); ++j) {
+//                 size_t hashValue = (signatures[j])->operator[](i);
+//                 if (mRemoveValueWithLeastSigificantBit) {
+//                     size_t leastSignificantBits = 0b11111111111111111111111111111111 << mRemoveValueWithLeastSigificantBit;
+//                     size_t insertValue = hashValue | leastSignificantBits;
+//                     if (insertValue == leastSignificantBits) {
+//                         continue;
+//                     }
+//                 }       
+//                 auto itHashValue_InstanceVector = inverseIndex[i]->find(hashValue);
 
-                // if for hash function h_i() the given hash values is already stored
-                if (itHashValue_InstanceVector != inverseIndex[i]->end()) {
-                    // insert the instance id if not too many collisions (maxBinSize)
-                    if (itHashValue_InstanceVector->second->size() && itHashValue_InstanceVector->second->size() < mMaxBinSize) {
-                        // insert only if there wasn't any collisions in the past
-                        if (itHashValue_InstanceVector->second->size() > 0) {
-                            itHashValue_InstanceVector->second->push_back(j);
-                        }
-                    } else { 
-                        // too many collisions: delete stored ids. empty vector is interpreted as an error code 
-                        // for too many collisions
-                        itHashValue_InstanceVector->second->clear();
-                    }
-                } else {
-                    // given hash value for the specific hash function was not avaible: insert new hash value
-                    vsize_t* instanceIdVector = new vsize_t(1);
-                    (*instanceIdVector)[0] = j;
-                    inverseIndex[i]->operator[](hashValue) = instanceIdVector;
-                }       
-            }
-        }
+//                 // if for hash function h_i() the given hash values is already stored
+//                 if (itHashValue_InstanceVector != inverseIndex[i]->end()) {
+//                     // insert the instance id if not too many collisions (maxBinSize)
+//                     if (itHashValue_InstanceVector->second->size() && itHashValue_InstanceVector->second->size() < mMaxBinSize) {
+//                         // insert only if there wasn't any collisions in the past
+//                         if (itHashValue_InstanceVector->second->size() > 0) {
+//                             itHashValue_InstanceVector->second->push_back(j);
+//                         }
+//                     } else { 
+//                         // too many collisions: delete stored ids. empty vector is interpreted as an error code 
+//                         // for too many collisions
+//                         itHashValue_InstanceVector->second->clear();
+//                     }
+//                 } else {
+//                     // given hash value for the specific hash function was not avaible: insert new hash value
+//                     vsize_t* instanceIdVector = new vsize_t(1);
+//                     (*instanceIdVector)[0] = j;
+//                     inverseIndex[i]->operator[](hashValue) = instanceIdVector;
+//                 }       
+//             }
+//         }
 
-#ifdef OPENMP
-#pragma omp for schedule(static) ordered
-        for(int i=0; i<omp_get_num_threads(); i++) {
-            #pragma omp ordered
-            mInverseIndexStorage->insert(inverseIndex.begin(), inverseIndex.end());
-        }       
-#endif
-    } 
+// #ifdef OPENMP
+// #pragma omp for schedule(static) ordered
+//         for(int i=0; i<omp_get_num_threads(); i++) {
+//             #pragma omp ordered
+//             mInverseIndexStorage->insert(inverseIndex.begin(), inverseIndex.end());
+//         }       
+// #endif
+//     } 
     
     // for (size_t i = 0; i < mInverseIndexStorage->size(); ++i) {
     //     std::cout << "hash function: " << i << std::endl;

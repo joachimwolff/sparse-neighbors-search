@@ -38,7 +38,7 @@ import numpy
 
 
 sources_list = ['neighborsMinHash/computation/interface/minHash_PythonInterface.cpp', 'neighborsMinHash/computation/minHash.cpp', 
-                'neighborsMinHash/computation/minHashBase.cpp', 'neighborsMinHash/computation/inverseIndex.cpp',
+                'neighborsMinHash/computation/minHashBase.cpp', 'neighborsMinHash/computation/inverseIndex.cu',
                  'neighborsMinHash/computation/inverseIndexStorageBloomierFilter.cpp' , 'neighborsMinHash/computation/inverseIndexStorageUnorderedMap.cpp',
                  'neighborsMinHash/computation/bloomierFilter/bloomierFilter.cpp', 'neighborsMinHash/computation/bloomierFilter/bloomierHash.cpp',
                  'neighborsMinHash/computation/bloomierFilter/encoder.cpp','neighborsMinHash/computation/bloomierFilter/orderAndMatchFinder.cpp']
@@ -200,11 +200,8 @@ if (locate_cuda == None or no_cuda):
             )
 else:
     print "CUDA found on system. Installing MinHash with CUDA-Support."
-    sources_list.extend(["neighborsMinHash/computation/minHashCuda.cu", 'neighborsMinHash/computation/kernel.cu', 
-                        'neighborsMinHash/computation/inverseIndexCuda.cu'])
-    depends_list.extend(["neighborsMinHash/computation/minHashCuda.h", 
-                        'neighborsMinHash/computation/inverseIndexCuda.h',
-                        'neighborsMinHash/computation/kernel.h'])
+    sources_list.extend(['neighborsMinHash/computation/kernel.cu'])
+    depends_list.extend(['neighborsMinHash/computation/kernel.h'])
     # Extension('_minHash', sources = sources_list, depends = depends_list,
     #      define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
     #     extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])

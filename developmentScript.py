@@ -85,11 +85,11 @@ def test(data):
     #   'block_size': 7.880427429793286, 'prune_inverse_index_after_instance': 1, 'shingle_size': 2.393356246460925}
 
     time_build_approx_start = time.time()
-    minHash = MinHash(number_of_hash_functions=800, max_bin_size= 36, shingle_size = 4, similarity=False, 
-                        bloomierFilter=False, number_of_cores=4,
+    minHash = MinHash(number_of_hash_functions=10, max_bin_size= 36, shingle_size = 4, similarity=False, 
+                        bloomierFilter=False, number_of_cores=1,
                      prune_inverse_index=1, remove_value_with_least_sigificant_bit=1, excess_factor=11,
                     prune_inverse_index_after_instance=-1, removeHashFunctionWithLessEntriesAs=-1, 
-                    hash_algorithm = 0, shingle=1, block_size=2, cuda = 0)
+                    hash_algorithm = 0, shingle=0, block_size=1, cuda = 0)
     # minHash.fit(data[0])
     minHash.fit(datasetBursi)
     # minHash.get_distribution_of_inverse_index()
@@ -137,7 +137,7 @@ def test(data):
     print "\n\n"
 
     minHash2 = MinHash(number_of_hash_functions=32000, max_bin_size=300, shingle_size = 4,
-     similarity=False, bloomierFilter=False, number_of_cores=4, minimal_blocks_in_common = 2,
+     similarity=False, bloomierFilter=False, number_of_cores=1, minimal_blocks_in_common = 2,
                      prune_inverse_index=1, remove_value_with_least_sigificant_bit=1,
                       excess_factor=400, prune_inverse_index_after_instance=-1,
                        removeHashFunctionWithLessEntriesAs=-1, hash_algorithm = 0, 

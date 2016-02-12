@@ -28,9 +28,59 @@ InverseIndexStorageUnorderedMap::~InverseIndexStorageUnorderedMap() {
 size_t InverseIndexStorageUnorderedMap::size() const {
 	return mInverseIndex->size();
 }
-void InverseIndexStorageUnorderedMap::insert(vector__umapVector_ptr::iterator start, vector__umapVector_ptr::iterator end) {
-    mInverseIndex->insert(mInverseIndex->end(), start, end);
+void InverseIndexStorageUnorderedMap::reserveSpaceForMaps(size_t pNumberOfInstances) {
+    for (size_t i = 0; i < mInverseIndex->size(); ++i) {
+        mInverseIndex->operator[](i)->reserve(pNumberOfInstances);
+    } 
 }
+void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue, size_t pInstance, size_t pRemoveValueWithLeastSigificantBit) {
+
+	// std::cout << __LINE__ << std::endl;
+                            
+    if (pVectorId >= mInverseIndex->size()) return;
+    if (pRemoveValueWithLeastSigificantBit) {
+        size_t leastSignificantBits = 0b11111111111111111111111111111111 << pRemoveValueWithLeastSigificantBit;
+        size_t insertValue = pHashValue | leastSignificantBits;
+        if (insertValue == leastSignificantBits) {
+            return;
+        }
+    }
+    
+// #ifdef OPENMP
+// #pragma omp critical
+// #endif
+   
+	// std::cout << __LINE__ << std::endl;
+        
+        auto itHashValue_InstanceVector = (*mInverseIndex)[pVectorId]->find(pHashValue);
+
+        // if for hash function h_i() the given hash values is already stored
+        if (itHashValue_InstanceVector != (*mInverseIndex)[pVectorId]->end()) {
+            // insert the instance id if not too many collisions (maxBinSize)
+            if (itHashValue_InstanceVector->second->size() && itHashValue_InstanceVector->second->size() < mMaxBinSize) {
+                // insert only if there wasn't any collisions in the past
+                if (itHashValue_InstanceVector->second->size() > 0) {
+                    itHashValue_InstanceVector->second->push_back(pInstance);
+                }
+            } else { 
+                // too many collisions: delete stored ids. empty vector is interpreted as an error code 
+                // for too many collisions
+                itHashValue_InstanceVector->second->clear();
+            }
+        } else {
+            // given hash value for the specific hash function was not avaible: insert new hash value
+            vsize_t* instanceIdVector = new vsize_t(1);
+            (*instanceIdVector)[0] = pInstance;
+            (*mInverseIndex)[pVectorId]->operator[](pHashValue) = instanceIdVector;
+        }
+	// std::cout << __LINE__ << std::endl;
+        
+    
+}
+
+// void InverseIndexStorageUnorderedMap::insert(vector__umapVector_ptr::iterator start, vector__umapVector_ptr::iterator end) {
+//     mInverseIndex->insert(mInverseIndex->end(), start, end);
+// }
 const vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, size_t pHashValue) {
 
 
@@ -44,11 +94,11 @@ const vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, siz
     
 	return NULL; 
 }
-void InverseIndexStorageUnorderedMap::reserveSpaceForMaps(size_t pNumberOfInstances) {
-    for (size_t i = 0; i < mInverseIndex->size(); ++i) {
-        mInverseIndex->operator[](i)->reserve(pNumberOfInstances / 2);
-    } 
-}
+// void InverseIndexStorageUnorderedMap::reserveSpaceForMaps(size_t pNumberOfInstances) {
+//     for (size_t i = 0; i < mInverseIndex->size(); ++i) {
+//         mInverseIndex->operator[](i)->reserve(pNumberOfInstances / 2);
+//     } 
+// }
 
 distributionInverseIndex* InverseIndexStorageUnorderedMap::getDistribution() {
     distributionInverseIndex* retVal = new distributionInverseIndex();
