@@ -263,17 +263,18 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     // mNumberOfCores = 1;
 #endif
     vvsize_t_p signatures;
-    // omp_set_nested();
-    // omp_set_dynamic(0);
+    omp_set_nested(1);
+    omp_set_dynamic(0);
     // omp_set_num_threads(mNumberOfCores);
     // omp_set_nested(1);
-// #pragma omp parallel num_threads(mNumberOfCores)
-    // {
-        // vvsize_t_p signaturesPerThread;
-        // /(pRawData->size() / mNumberOfCores);
+    
+#pragma omp parallel num_threads(mNumberOfCores)
+    {
+        vvsize_t_p signaturesPerThread;
+        // (pRawData->size() / mNumberOfCores);
         // size_t substractFactor = omp_get_thread_num() - 1 * pRawData->size() / 2 / mNumberOfCores;
-        // #pragma omp master nowait
-        // {
+        #pragma omp master nowait
+        {
             // memory for instances and their featureIds
             cudaMalloc((void **) &mDev_FeatureList,
                     pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(size_t));
@@ -283,10 +284,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
             // memory for the number of features per instance
             cudaMalloc((void **) &mDev_SizeOfInstanceList,
                     pRawData->getNumberOfInstances() * sizeof(size_t));
-            // memory for the inverse index on the gpu.
-            // for each instance the number of hash functions
-            cudaMalloc((void **) &mDev_ComputedSignaturesPerInstance,
-                    pRawData->getNumberOfInstances()  * mNumberOfHashFunctions * sizeof(size_t));
+            
             // copy instances and their feature ids to the gpu
             cudaMemcpy(mDev_FeatureList, pRawData->getSparseMatrixIndex(),
                         pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(size_t),
@@ -299,30 +297,45 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
             cudaMemcpy(mDev_SizeOfInstanceList, pRawData->getSparseMatrixSizeOfInstances(),
                     pRawData->getNumberOfInstances() * sizeof(size_t),
                     cudaMemcpyHostToDevice);
-            // fitGpu<<<pRawData->getNumberOfInstances(), mNumberOfHashFunctions, mNumberOfHashFunctions>>>
-            // compute values on the gpu
-            size_t iterations = 2;
+            
+            // check if enough memory is available on the gpu 
+            size_t memory_total = 0;
+            size_t memory_free = 0;
+            size_t iterations = 1;
+            cudaMemGetInfo(&memory_free, &memory_total);
+            std::cout << "memory total: " << memory_total << " memory free: " << memory_free << std::endl;
+            std::cout << "sizeof)size_t) : " << sizeof(size_t) << std::endl;
+            std::cout << "Needed memory: " << pRawData->getNumberOfInstances()  * mNumberOfHashFunctions * sizeof(size_t) << std::endl;
+            if (memory_free >= pRawData->getNumberOfInstances()  * mNumberOfHashFunctions * sizeof(size_t)) {
+                iterations = ceil(pRawData->getNumberOfInstances()  * mNumberOfHashFunctions * sizeof(size_t) / static_cast<float>(memory_free));
+            }
+            std::cout << "Iterations: " << iterations << std::endl;
             size_t start = 0;
             size_t end = pRawData->getNumberOfInstances() / iterations;
             size_t windowSize = pRawData->getNumberOfInstances() / iterations;
             size_t* instancesHashValues = (size_t*) malloc(pRawData->getNumberOfInstances() / iterations * mNumberOfHashFunctions * sizeof(size_t));
-    std::cout << __LINE__ << std::endl;
+            std::cout << __LINE__ << std::endl;
             
-            for (size_t i = 0; i < 2; ++i) {
+            // memory for the inverse index on the gpu.
+            // for each instance the number of hash functions
+            cudaMalloc((void **) &mDev_ComputedSignaturesPerInstance,
+                    pRawData->getNumberOfInstances() / iterations  * mNumberOfHashFunctions * sizeof(size_t));
+            
+            for (size_t i = 0; i < iterations; ++i) {
                 
-                fitCuda<<<128, 128, mNumberOfHashFunctions * sizeof(size_t)>>>
+                fitCuda<<<64, 128, mNumberOfHashFunctions * sizeof(size_t)>>>
                 (mDev_FeatureList, 
                 mDev_SizeOfInstanceList,  
                 mNumberOfHashFunctions, 
                 pRawData->getMaxNnz(),
                         mDev_ComputedSignaturesPerInstance, 
                         end, start);
-    std::cout << __LINE__ << std::endl;
+                std::cout << __LINE__ << std::endl;
                         
                 cudaMemcpy(instancesHashValues, mDev_ComputedSignaturesPerInstance, 
                             pRawData->getNumberOfInstances()/iterations * mNumberOfHashFunctions * sizeof(size_t),
                             cudaMemcpyDeviceToHost);
-    std::cout << __LINE__ << std::endl;
+                std::cout << __LINE__ << std::endl;
                             
                 for(size_t i = 0; i < pRawData->getNumberOfInstances() / iterations; ++i) {
                     // printf("Instance: %zu of %zu: ", i, pRawData->getNumberOfInstances());
@@ -331,51 +344,52 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
                         (*instance)[j] = instancesHashValues[i*mNumberOfHashFunctions + j];
                         // printf("%zu,", instancesHashValues[i*mNumberOfHashFunctions + j]);
                     }
-                    signatures.push_back(instance);
+                    signaturesPerThread.push_back(instance);
                     // printf("\n");
                 }
-    std::cout << __LINE__ << std::endl;
                 
-                // #pragma omp critical
-                // signatures.insert(signatures.end(), signaturesPerThread.begin(), signaturesPerThread.end());
-                // signaturesPerThread.clear();
+                #pragma omp critical
+                signatures.insert(signatures.end(), signaturesPerThread.begin(), signaturesPerThread.end());
+                signaturesPerThread.clear();
                 start = end+1;
                 end = end + windowSize;
             }
             cudaFree(mDev_ComputedSignaturesPerInstance);
             
-        // }
-       
-        
-        mInverseIndexStorage->reserveSpaceForMaps(pRawData->size() / 2);
-        for (size_t i = 0; i < signatures.size(); ++i) {
-            for (size_t j = 0; j < signatures[i]->size(); ++j) {
-                // std::cout << signatures[i]->operator[](j) << ",";
-                mInverseIndexStorage->insert(j, signatures[i]->operator[](j), i, mRemoveValueWithLeastSigificantBit);
-            }
-            // std::cout << std::endl;
         }
-    // #pragma omp for nowait schedule(static)
-    //         for (size_t instance = pRawData->size() / 2; instance < pRawData->size(); ++instance) {
-    //             std::cout << "for no wait thread id: " << omp_get_thread_num() << ", ";
-    //             // if (omp_get_thread_num() == 0) break;
-    //             if (mHashAlgorithm == 0) {
-    //                 // use minHash
-    //                 signaturesPerThread.push_back(computeSignature(pRawData, instance));
-                    
-    //             } else if (mHashAlgorithm == 1) {
-    //                 // use wta hash
-    //                 signaturesPerThread.push_back(computeSignatureWTA(pRawData, instance));
-    //             }
-    //         }
+       
+        // std::cout << __LINE__ << std::endl;
+        // mInverseIndexStorage->reserveSpaceForMaps(pRawData->size() / 2);
+        // for (size_t i = 0; i < signatures.size(); ++i) {
+        //     // std::cout << "i: " << i << std::endl;
+        //     for (size_t j = 0; j < signatures[i]->size(); ++j) {
+        //         // std::cout << signatures[i]->operator[](j) << ",";
                 
-    //   #pragma omp for schedule(static) ordered
-    //         for(int i=0; i < omp_get_num_threads(); i++) {
-    //         #pragma omp ordered
-    //             signatures.insert(signatures.end(), signaturesPerThread.begin(), signaturesPerThread.end());
-    //         }       
+        //         mInverseIndexStorage->insert(j, signatures[i]->operator[](j), i, mRemoveValueWithLeastSigificantBit);
+        //     }
+        //     // std::cout << std::endl;
+        // }
+    #pragma omp for nowait schedule(static)
+            for (size_t instance = pRawData->size() / 2; instance < pRawData->size(); ++instance) {
+                std::cout << "for no wait thread id: " << omp_get_thread_num() << ", ";
+                // if (omp_get_thread_num() == 0) break;
+                if (mHashAlgorithm == 0) {
+                    // use minHash
+                    signaturesPerThread.push_back(computeSignature(pRawData, instance));
+                    
+                } else if (mHashAlgorithm == 1) {
+                    // use wta hash
+                    signaturesPerThread.push_back(computeSignatureWTA(pRawData, instance));
+                }
+            }
+                
+      #pragma omp for schedule(static) ordered
+            for(int i=0; i < omp_get_num_threads(); i++) {
+            #pragma omp ordered
+                signatures.insert(signatures.end(), signaturesPerThread.begin(), signaturesPerThread.end());
+            }       
         
-//     } 
+    } 
 // #ifndef OPENMP
 //     signatures = signaturesPerThread;
 // #endif

@@ -13,7 +13,11 @@
 #include "inverseIndexStorageUnorderedMap.h"
 
 InverseIndexStorageUnorderedMap::InverseIndexStorageUnorderedMap(size_t pSizeOfInverseIndex, size_t pMaxBinSize) {
-    mInverseIndex = new vector__umapVector_ptr;
+    mInverseIndex = new vector__umapVector_ptr(pSizeOfInverseIndex);
+     for (size_t i = 0; i < mInverseIndex->size(); ++i) {
+       
+        mInverseIndex->operator[](i) = new umapVector_ptr();
+    }
 	mMaxBinSize = pMaxBinSize;
 }
 InverseIndexStorageUnorderedMap::~InverseIndexStorageUnorderedMap() {
@@ -36,12 +40,16 @@ void InverseIndexStorageUnorderedMap::reserveSpaceForMaps(size_t pNumberOfInstan
 void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue, size_t pInstance, size_t pRemoveValueWithLeastSigificantBit) {
 
 	// std::cout << __LINE__ << std::endl;
-                            
-    if (pVectorId >= mInverseIndex->size()) return;
+                            // std::cout << "Inserting!" << std::endl;
+    if (pVectorId >= mInverseIndex->size()) {
+        // std::cout << "pVectorId" << pVectorId << " mInverseindex size: " << mInverseIndex->size()<< std::endl;
+        return;
+    } 
     if (pRemoveValueWithLeastSigificantBit) {
         size_t leastSignificantBits = 0b11111111111111111111111111111111 << pRemoveValueWithLeastSigificantBit;
         size_t insertValue = pHashValue | leastSignificantBits;
         if (insertValue == leastSignificantBits) {
+            // std::cout << "foo" << std::endl;
             return;
         }
     }
@@ -60,18 +68,25 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
             if (itHashValue_InstanceVector->second->size() && itHashValue_InstanceVector->second->size() < mMaxBinSize) {
                 // insert only if there wasn't any collisions in the past
                 if (itHashValue_InstanceVector->second->size() > 0) {
+                // std::cout << "Adding to vector" << std::endl;
+                    
                     itHashValue_InstanceVector->second->push_back(pInstance);
                 }
             } else { 
                 // too many collisions: delete stored ids. empty vector is interpreted as an error code 
                 // for too many collisions
+                // std::cout << "Clearing vector" << std::endl;
                 itHashValue_InstanceVector->second->clear();
             }
         } else {
             // given hash value for the specific hash function was not avaible: insert new hash value
+                // std::cout << "New vector" << std::endl;
+            
             vsize_t* instanceIdVector = new vsize_t(1);
             (*instanceIdVector)[0] = pInstance;
             (*mInverseIndex)[pVectorId]->operator[](pHashValue) = instanceIdVector;
+                // std::cout << "New vector Inserted" << std::endl;
+            
         }
 	// std::cout << __LINE__ << std::endl;
         
