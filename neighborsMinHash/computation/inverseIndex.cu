@@ -21,7 +21,7 @@
 
 #include "inverseIndex.h"
 #include "kSizeSortedMap.h"
-#include "kernel.h"
+// #include "kernel.h"
 
 class sort_map {
   public:
@@ -186,49 +186,49 @@ vvsize_t_p* InverseIndex::computeSignaturesOnGpu(const SparseMatrixFloat* pRawDa
     size_t pNumberOfBlocks, size_t pNumberOfThreads) {
 
     vvsize_t_p* signatures = new vvsize_t_p(pNumberOfInstances);
-    // check if enough memory is available on the gpu 
-    size_t memory_total = 0;
-    size_t memory_free = 0;
-    size_t iterations = 1;
-    cudaMemGetInfo(&memory_free, &memory_total);
-    if (memory_free >= pRawData->getNumberOfInstances()  * mNumberOfHashFunctions * sizeof(size_t)) {
-        iterations = ceil(pRawData->getNumberOfInstances()  * mNumberOfHashFunctions * sizeof(size_t) / static_cast<float>(memory_free));
-    }
-    size_t start = 0;
-    size_t end = pRawData->getNumberOfInstances() / iterations;
-    size_t windowSize = pRawData->getNumberOfInstances() / iterations;
-    size_t* instancesHashValues = (size_t*) malloc(pRawData->getNumberOfInstances() / iterations * mNumberOfHashFunctions * sizeof(size_t));
+    // // check if enough memory is available on the gpu 
+    // size_t memory_total = 0;
+    // size_t memory_free = 0;
+    // size_t iterations = 1;
+    // cudaMemGetInfo(&memory_free, &memory_total);
+    // if (memory_free >= pRawData->getNumberOfInstances()  * mNumberOfHashFunctions * sizeof(size_t)) {
+    //     iterations = ceil(pRawData->getNumberOfInstances()  * mNumberOfHashFunctions * sizeof(size_t) / static_cast<float>(memory_free));
+    // }
+    // size_t start = 0;
+    // size_t end = pRawData->getNumberOfInstances() / iterations;
+    // size_t windowSize = pRawData->getNumberOfInstances() / iterations;
+    // size_t* instancesHashValues = (size_t*) malloc(pRawData->getNumberOfInstances() / iterations * mNumberOfHashFunctions * sizeof(size_t));
     
-    // memory for the inverse index on the gpu.
-    // for each instance the number of hash functions
-    cudaMalloc((void **) &mDev_ComputedSignaturesPerInstance,
-            pRawData->getNumberOfInstances() / iterations  * mNumberOfHashFunctions * sizeof(size_t));
+    // // memory for the inverse index on the gpu.
+    // // for each instance the number of hash functions
+    // cudaMalloc((void **) &mDev_ComputedSignaturesPerInstance,
+    //         pRawData->getNumberOfInstances() / iterations  * mNumberOfHashFunctions * sizeof(size_t));
     
-    for (size_t i = 0; i < iterations; ++i) {
+    // for (size_t i = 0; i < iterations; ++i) {
         
-        fitCuda<<<pNumberOfBlocks, pNumberOfThreads, mNumberOfHashFunctions * sizeof(size_t)>>>
-        (mDev_FeatureList, 
-        mDev_SizeOfInstanceList,  
-        mNumberOfHashFunctions, 
-        pRawData->getMaxNnz(),
-                mDev_ComputedSignaturesPerInstance, 
-                end, start);
+    //     fitCuda<<<pNumberOfBlocks, pNumberOfThreads, mNumberOfHashFunctions * sizeof(size_t)>>>
+    //     (mDev_FeatureList, 
+    //     mDev_SizeOfInstanceList,  
+    //     mNumberOfHashFunctions, 
+    //     pRawData->getMaxNnz(),
+    //             mDev_ComputedSignaturesPerInstance, 
+    //             end, start);
                 
-        cudaMemcpy(instancesHashValues, mDev_ComputedSignaturesPerInstance, 
-                    pRawData->getNumberOfInstances()/iterations * mNumberOfHashFunctions * sizeof(size_t),
-                    cudaMemcpyDeviceToHost);
-        for(size_t i = 0; i < pRawData->getNumberOfInstances() / iterations; ++i) {
-            vsize_t* instance = new vsize_t(mNumberOfHashFunctions);
-            for (size_t j = 0; j < mNumberOfHashFunctions; ++j) {
-                (*instance)[j] = instancesHashValues[i*mNumberOfHashFunctions + j];
-            }
-            signatures->push_back(instance);
-        }
+    //     cudaMemcpy(instancesHashValues, mDev_ComputedSignaturesPerInstance, 
+    //                 pRawData->getNumberOfInstances()/iterations * mNumberOfHashFunctions * sizeof(size_t),
+    //                 cudaMemcpyDeviceToHost);
+    //     for(size_t i = 0; i < pRawData->getNumberOfInstances() / iterations; ++i) {
+    //         vsize_t* instance = new vsize_t(mNumberOfHashFunctions);
+    //         for (size_t j = 0; j < mNumberOfHashFunctions; ++j) {
+    //             (*instance)[j] = instancesHashValues[i*mNumberOfHashFunctions + j];
+    //         }
+    //         signatures->push_back(instance);
+    //     }
         
-        start = end+1;
-        end = end + windowSize;
-    }
-    cudaFree(mDev_ComputedSignaturesPerInstance);
+    //     start = end+1;
+    //     end = end + windowSize;
+    // }
+    // cudaFree(mDev_ComputedSignaturesPerInstance);
     return signatures;
 }
 vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawData) {

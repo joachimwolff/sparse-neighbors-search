@@ -15,7 +15,9 @@
 // #include "inverseIndexStorage.h"
 // #include "inverseIndexStorageBloomierFilter.h"
 #include "inverseIndexStorageUnorderedMap.h"
-
+#ifdef CUDA
+#include "inverseIndexCuda.h"
+#endif
 #include "typeDefinitions.h"
 
 
@@ -56,6 +58,9 @@ class InverseIndex {
     InverseIndexStorageUnorderedMap* mInverseIndexStorage;
   	umap_uniqueElement* mSignatureStorage;
     Hash* mHash;
+    #ifdef CUDA
+    InverseIndexCuda* mInverseIndexCuda;
+    #endif
     vsize_t* shingle(vsize_t* pSignature);
   public:
     InverseIndex();

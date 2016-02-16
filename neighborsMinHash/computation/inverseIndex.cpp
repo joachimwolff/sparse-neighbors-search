@@ -7,7 +7,7 @@
  Chair of Bioinformatics
  Department of Computer Science
  Faculty of Engineering
- Albert-Ludwig-University Freiburg im Breisgau
+ Albert-Ludwigs-University Freiburg im Breisgau
 **/
 
 #include <algorithm>
@@ -21,7 +21,7 @@
 
 #include "inverseIndex.h"
 #include "kSizeSortedMap.h"
-
+// #include "inverseIndexCuda.h"
 
 class sort_map {
   public:
@@ -65,6 +65,9 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
     }
         mInverseIndexStorage = new InverseIndexStorageUnorderedMap(mInverseIndexSize, mMaxBinSize);
     mRemoveValueWithLeastSigificantBit = pRemoveValueWithLeastSigificantBit;
+    #ifdef CUDA
+    mInverseIndexCuda = new InverseIndexCuda(pNumberOfHashFunctions, mShingle, mShingleSize, mBlockSize);
+    #endif
 }
  
 InverseIndex::~InverseIndex() {
@@ -182,6 +185,76 @@ vsize_t* InverseIndex::computeSignatureWTA(const SparseMatrixFloat* pRawData, co
     return signature;
 }
 
+
+vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawData) {
+    if (mChunkSize <= 0) {
+        mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
+    }
+    std::cout << __LINE__ << std::endl;
+    
+    vvsize_t_p* signatures = new vvsize_t_p();
+    // omp_set_nested(1);
+    omp_set_dynamic(0);
+    omp_set_num_threads(mNumberOfCores);
+    omp_set_nested(1);
+    size_t cpuStart = 0;
+    size_t cpuEnd = pRawData->size();
+    #ifdef CUDA
+    // how to split the data between cpu and gpu?
+    float cpuGpuSplitFactor = 0.7;
+    size_t gpuStart = 0;
+    size_t gpuEnd = floor(pRawData->getNumberOfInstances() * cpuGpuSplitFactor);
+    cpuStart = ceil(pRawData->getNumberOfInstances() * cpuGpuSplitFactor);
+    cpuEnd = pRawData->getNumberOfInstances();
+    // how many blocks, how many threads?
+    size_t numberOfBlocksForGpu = 128;
+    size_t numberOfThreadsForGpu = 128;
+    std::cout << __LINE__ << std::endl;
+    #endif
+    // std::cout << "Number of cores: " << mNumberOfCores << std::endl;
+    
+    #pragma omp parallel num_threads(mNumberOfCores)
+    {
+        // std::cout << "for no wait thread id: " << omp_get_thread_num() << ", " <<std::endl;
+        vvsize_t_p* signaturesPerThread = new vvsize_t_p();
+    //     // compute part of the signature on the gpu
+        #ifdef CUDA
+        #pragma omp single nowait
+        {
+
+            signaturesPerThread = mInverseIndexCuda->computeSignaturesOnGpu(pRawData, gpuStart,
+                                                                        gpuEnd, gpuEnd - gpuStart, 
+                                                                        numberOfBlocksForGpu, 
+                                                                        numberOfThreadsForGpu);
+             
+        }
+        #endif
+        // compute other parts of the signature on the computed   
+        #pragma omp for schedule(static, mChunkSize)
+        for (size_t instance = cpuStart; instance < cpuEnd; ++instance) {
+            // std::cout << "for no wait thread id: " << omp_get_thread_num() << ", ";
+            // if (omp_get_thread_num() == 0) break;
+            if (mHashAlgorithm == 0) {
+                // use minHash
+                signaturesPerThread->push_back(computeSignature(pRawData, instance));
+                 
+            } else if (mHashAlgorithm == 1) {
+                // use wta hash
+                signaturesPerThread->push_back(computeSignatureWTA(pRawData, instance));
+            }
+        }
+        #pragma omp barrier
+        #pragma omp for schedule(static) ordered
+        for(int i=0; i < omp_get_num_threads(); i++) {
+            #pragma omp ordered
+            signatures->insert(signatures->end(), signaturesPerThread->begin(), signaturesPerThread->end());
+        }       
+        
+    } 
+    std::cout << __LINE__ << std::endl;
+
+    return signatures;
+}
 umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* pRawData) {
     mDoubleElementsQueryCount = 0;
     const size_t sizeOfInstances = pRawData->size();
@@ -190,7 +263,7 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
-#ifdef OPENMP
+#ifdef OPENMP 
     omp_set_dynamic(0);
 #endif
 
@@ -247,248 +320,43 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     return instanceSignature;
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
-    std::cout << __LINE__ << std::endl;
-    size_t pruneEveryNIterations = pRawData->size() * mPruneInverseIndexAfterInstance;
-    size_t pruneCount = 0;
-    mDoubleElementsStorageCount = 0;
-    if (mChunkSize <= 0) { 
-        mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
-    }
-    std::cout << __LINE__ << std::endl;
-    
-#ifdef OPENMP
-    
-#endif
-#ifndef OPENMP
-    // mNumberOfCores = 1;
-#endif
-    vvsize_t_p signatures;
-    // omp_set_nested();
+    // compute signatures
+    vvsize_t_p* signatures = computeSignatureVectors(pRawData);
     omp_set_dynamic(0);
-    omp_set_num_threads(mNumberOfCores);
-    omp_set_nested(1);
-#pragma omp parallel
-    {
-        vvsize_t_p signaturesPerThread;
-        // /(pRawData->size() / mNumberOfCores);
-        size_t substractFactor = omp_get_thread_num() - 1 * pRawData->size() / 2 / mNumberOfCores;
-        #pragma omp single nowait
-        {
-            std::cout << "single no wait thread id: " << omp_get_thread_num() << std::endl;
+    // store signatures in signatureStorage
+#pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+    for (size_t i = 0; i < signatures->size(); ++i) {
+
+        size_t signatureId = 0;
+        for (size_t j = 0; j < pRawData->getSizeOfInstance(i); ++j) {
+                signatureId = mHash->hash((pRawData->getNextElement(i, j) +1), (signatureId+1), MAX_VALUE);
         }
-       
-        
-        
-        #pragma omp for schedule(static, mChunkSize) 
-                for (size_t instance = 0; instance < pRawData->size(); ++instance) {
-                    std::cout << "for no wait thread id: " << omp_get_thread_num() << ", ";
-                    
-                    if (mHashAlgorithm == 0) {
-                        // use minHash
-                        signaturesPerThread.push_back(computeSignature(pRawData, instance));
-                        
-                    } else if (mHashAlgorithm == 1) {
-                        // use wta hash
-                        signaturesPerThread.push_back(computeSignatureWTA(pRawData, instance));
-                    }
-                }
-                std::cout << std::endl;
-        #pragma omp parallel for schedule(static) ordered
-                for(int i=0; i < omp_get_num_threads(); i++) {
-        #pragma omp ordered
-                    signatures.insert(signatures.end(), signaturesPerThread.begin(), signaturesPerThread.end());
-                }       
-        
-    } 
-#ifndef OPENMP
-    signatures = signaturesPerThread;
-#endif
-
-    // for (size_t i = 0; i < signatures.size(); ++i) {
-    //     std::cout << "Instance " << i << " foo size: "<< signatures[i]->size() << std::endl;
-    //     for (size_t j = 0; j < signatures[i]->size(); ++j) {
-    //         std::cout << (signatures[i])->operator[](j) << ", ";
-    //     }
-    //     std::cout << std::endl;
-    // }
-    
-    // std::cout << "Size of signatue: " << signatures.size() << std::endl;
-
-    // std::cout << __LINE__ << std::endl;
-    // return;
-    // add gpu part
-    // merge gpu signatures with cpu signatures
-    
-    std::cout << "insert to inverse index: " << std::endl;
-// create inverse index 
-#ifdef OPENMP
-    omp_set_dynamic(0);
-#endif
-#ifdef OPENMP
-#pragma omp parallel num_threads(1)
-#endif
-    { 
-    // std::cout << __LINE__ << std::endl;
-        
-         vector__umapVector_ptr inverseIndex (mInverseIndexSize);
-        //  size_t substractFactor = omp_get_thread_num() * (mInverseIndexSize / mNumberOfCores);
-         
-         for (size_t i = 0; i < mInverseIndexSize; ++i) {
-             inverseIndex[i] = new umapVector_ptr();
-             inverseIndex[i]->reserve(pRawData->size() / 2);
-         }
-    // std::cout << __LINE__ << std::endl;
-         
-         
-#ifdef OPENMP
-#pragma omp for  
-#endif
-
-        for (size_t i = 0; i < mInverseIndexSize; ++i) {
-            for (size_t j = 0; j < signatures.size(); ++j) {
-                size_t hashValue = (signatures[j])->operator[](i);
-                if (mRemoveValueWithLeastSigificantBit) {
-                    size_t leastSignificantBits = 0b11111111111111111111111111111111 << mRemoveValueWithLeastSigificantBit;
-                    size_t insertValue = hashValue | leastSignificantBits;
-                    if (insertValue == leastSignificantBits) {
-                        continue;
-                    }
-                }       
-                auto itHashValue_InstanceVector = inverseIndex[i]->find(hashValue);
-
-                // if for hash function h_i() the given hash values is already stored
-                if (itHashValue_InstanceVector != inverseIndex[i]->end()) {
-                    // insert the instance id if not too many collisions (maxBinSize)
-                    if (itHashValue_InstanceVector->second->size() && itHashValue_InstanceVector->second->size() < mMaxBinSize) {
-                        // insert only if there wasn't any collisions in the past
-                        if (itHashValue_InstanceVector->second->size() > 0) {
-                            itHashValue_InstanceVector->second->push_back(j);
-                        }
-                    } else { 
-                        // too many collisions: delete stored ids. empty vector is interpreted as an error code 
-                        // for too many collisions
-                        itHashValue_InstanceVector->second->clear();
-                    }
-                } else {
-                    // given hash value for the specific hash function was not avaible: insert new hash value
-                    vsize_t* instanceIdVector = new vsize_t(1);
-                    (*instanceIdVector)[0] = j;
-                    inverseIndex[i]->operator[](hashValue) = instanceIdVector;
-                }       
+        auto itSignatureStorage = mSignatureStorage->find(signatureId);
+        if (itSignatureStorage == mSignatureStorage->end()) {
+            vsize_t* doubleInstanceVector = new vsize_t(1);
+            (*doubleInstanceVector)[0] = i;
+            uniqueElement element;
+            element.instances = doubleInstanceVector;
+            element.signature = (*signatures)[i];
+            #pragma omp critical
+            mSignatureStorage->operator[](signatureId) = element;
+        } else {
+            #pragma omp critical
+            {            
+                mSignatureStorage->operator[](signatureId).instances->push_back(i);
+                mDoubleElementsStorageCount += 1;
             }
+        }        
+        for (size_t j = 0; j < (*signatures)[i]->size(); ++j) {
+            mInverseIndexStorage->insert(j, (*(*signatures)[i])[j], i, mRemoveValueWithLeastSigificantBit);
         }
-
-#ifdef OPENMP
-#pragma omp for schedule(static) ordered
-        for(int i=0; i<omp_get_num_threads(); i++) {
-            #pragma omp ordered
-            mInverseIndexStorage->insert(inverseIndex.begin(), inverseIndex.end());
-        }       
-#endif
-    } 
-    
-    // for (size_t i = 0; i < mInverseIndexStorage->size(); ++i) {
-    //     std::cout << "hash function: " << i << std::endl;
-    //     for (auto it = mInverseIndexStorage->getIndex()->operator[](i)->begin();
-    //             it != mInverseIndexStorage->getIndex()->operator[](i)->end(); ++it) {
-    //                 std::cout << "hashValue: " << it->first << ": ";
-    //                 for (auto itVec = it->second->begin(); itVec != it->second->end(); ++itVec) {
-    //                     std::cout << *itVec << ",";
-    //                 }
-    //                 std::cout << std::endl;
-    //             }
-    //                 std::cout << std::endl;
-                
-    // }
-    
-// #ifdef OPENMP
-//     omp_set_dynamic(0);
-// #endif
-// #ifdef OPENMP
-// #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
-// #endif
-//     for (size_t index = 0; index < pRawData->size(); ++index) {
-//         size_t signatureId = 0;
-//         for (size_t j = 0; j < pRawData->getSizeOfInstance(index); ++j) {
-//             signatureId = mHash->hash((pRawData->getNextElement(index, j) +1), (signatureId+1), MAX_VALUE);
-//         }
-//         vsize_t* signature;
-//         auto itSignatureStorage = mSignatureStorage->find(signatureId);
-//         if (itSignatureStorage == mSignatureStorage->end()) {
-//             if (mHashAlgorithm == 0) {
-//                 // use minHash
-//                 signature = computeSignature(pRawData, index);
-//             } else if (mHashAlgorithm == 1) {
-//                 // use wta hash
-//                 signature = computeSignatureWTA(pRawData, index);
-//             }
-//         } else {
-//             signature = itSignatureStorage->second.signature;
-//         }
-// #ifdef OPENMP
-// #pragma omp critical
-// #endif
-//         {   
-//             ++pruneCount;
-//             if (itSignatureStorage == mSignatureStorage->end()) {
-//                 vsize_t* doubleInstanceVector = new vsize_t(1);
-//                 (*doubleInstanceVector)[0] = index;
-//                 uniqueElement element;
-//                 element.instances = doubleInstanceVector;
-//                 element.signature = signature;
-//                 mSignatureStorage->operator[](signatureId) = element;
-//             } else {
-//                  mSignatureStorage->operator[](signatureId).instances->push_back(index);
-//                  mDoubleElementsStorageCount += 1;
-//             }
-//         }
-        
-//         for (size_t j = 0; j < signature->size(); ++j) {
-//             mInverseIndexStorage->insert(j, (*signature)[j], index, mRemoveValueWithLeastSigificantBit);
-//         }
-        
-//         if (mPruneInverseIndexAfterInstance > 0) {
-// #ifdef OPENMP
-// #pragma omp critical
-// #endif
-//             {
-//                 if (pruneCount >= pruneEveryNIterations) {
-//                     pruneCount = 0;
-                    
-//                     if (mPruneInverseIndex > 0) {
-//                         mInverseIndexStorage->prune(static_cast<size_t>(mPruneInverseIndex));
-//                     }
-//                     if (mRemoveHashFunctionWithLessEntriesAs >= 0) {
-//                         mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(static_cast<size_t>(mRemoveHashFunctionWithLessEntriesAs));
-//                     }
-//                 }
-//             }           
-//         }
-//     }
-//     	std::cout << __LINE__ << std::endl;
-    
-//     if (mPruneInverseIndex > 0) {
-//         mInverseIndexStorage->prune(mPruneInverseIndex);
-//     }
-//     	std::cout << __LINE__ << std::endl;
-    
-//     if (mRemoveHashFunctionWithLessEntriesAs >= 0) {
-//         mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(static_cast<size_t>(mRemoveHashFunctionWithLessEntriesAs));
-//     }
-//     // for (std::cout << )
-//     	std::cout << __LINE__ << std::endl;
-//         std::cout << "Number of hash function: " << mInverseIndexStorage->size() << std::endl;
-//         for (size_t i = 0; i < mInverseIndexStorage->size(); ++i) {
-//             std::cout << "hash function: " << i << " Size: " << mInverseIndexStorage->getIndex()->operator[](i)->size();
-//             std::cout << " Load factor: " << mInverseIndexStorage->getIndex()->operator[](i)->load_factor() << std::endl;
-            
-//         }
-    
+    }
+    // pruning is missing!
 }
+
 
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                         const size_t pNneighborhood, const bool pDoubleElementsStorageCount) {
-                                            // std::cout << "kneighbors inverseIndex" << std::endl;
 
     size_t doubleElements = 0;
     if (pDoubleElementsStorageCount) {
