@@ -260,7 +260,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     
 #endif
 #ifndef OPENMP
-    mNumberOfCores = 1;
+    // mNumberOfCores = 1;
 #endif
     vvsize_t_p signatures;
     // omp_set_nested();

@@ -54,10 +54,10 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
         }
     }
     
-// #ifdef OPENMP
-// #pragma omp critical
-// #endif
-   
+#ifdef OPENMP
+#pragma omp critical
+#endif
+   {
 	// std::cout << __LINE__ << std::endl;
         
         auto itHashValue_InstanceVector = (*mInverseIndex)[pVectorId]->find(pHashValue);
@@ -90,7 +90,7 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
         }
 	// std::cout << __LINE__ << std::endl;
         
-    
+   }
 }
 
 // void InverseIndexStorageUnorderedMap::insert(vector__umapVector_ptr::iterator start, vector__umapVector_ptr::iterator end) {

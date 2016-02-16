@@ -1,5 +1,5 @@
 /**
- Copyright 2015 Joachim Wolff
+ Copyright 2016 Joachim Wolff
  Master Thesis
  Tutors: Milad Miladi, Fabrizio Costa
  Winter semester 2015/2016
@@ -7,7 +7,7 @@
  Chair of Bioinformatics
  Department of Computer Science
  Faculty of Engineering
- Albert-Ludwig-University Freiburg im Breisgau
+ Albert-Ludwigs-University Freiburg im Breisgau
 **/
 #include <Python.h>
 
@@ -15,10 +15,10 @@
 
 #include "../parsePythonToCpp.h"
 
-static neighborhood* neighborhoodComputation(size_t pMinHashAddress, PyObject* pInstancesListObj,PyObject* pFeaturesListObj,PyObject* pDataListObj, 
-                                                   size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures, 
-                                                   size_t pNneighbors, int pFast, int pSimilarity) {
-    // std::cout << "20" << std::endl;
+static neighborhood* neighborhoodComputation(size_t pMinHashAddress, PyObject* pInstancesListObj,
+                                                PyObject* pFeaturesListObj,PyObject* pDataListObj, 
+                                                size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures, 
+                                                size_t pNneighbors, int pFast, int pSimilarity) {
     SparseMatrixFloat* originalDataMatrix = NULL;
     if (pMaxNumberOfInstances != 0) {
         originalDataMatrix = parseRawData(pInstancesListObj, pFeaturesListObj, pDataListObj, 
@@ -34,9 +34,10 @@ static neighborhood* neighborhoodComputation(size_t pMinHashAddress, PyObject* p
     return neighbors_;
 }
 
-static neighborhood* fitNeighborhoodComputation(size_t pMinHashAddress, PyObject* pInstancesListObj,PyObject* pFeaturesListObj,PyObject* pDataListObj, 
-                                                   size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures, 
-                                                   size_t pNneighbors, int pFast, int pSimilarity) {
+static neighborhood* fitNeighborhoodComputation(size_t pMinHashAddress, PyObject* pInstancesListObj,
+                                                PyObject* pFeaturesListObj,PyObject* pDataListObj, 
+                                                size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures, 
+                                                size_t pNneighbors, int pFast, int pSimilarity) {
     SparseMatrixFloat* originalDataMatrix = parseRawData(pInstancesListObj, pFeaturesListObj, pDataListObj, 
                                                     pMaxNumberOfInstances, pMaxNumberOfFeatures);
     // get pointer to the minhash object
@@ -65,7 +66,6 @@ static PyObject* createObject(PyObject* self, PyObject* args) {
                         &pruneInverseIndex,&pruneInverseIndexAfterInstance, &removeHashFunctionWithLessEntriesAs,
                         &hashAlgorithm, &blockSize, &shingle, &removeValueWithLeastSigificantBit, &cuda))
         return NULL;
-        // std::cout << __LINE__ << std::endl;
     MinHashBase* minHash;
     minHash = new MinHash (numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
                         maxBinSize, nNeighbors, minimalBlocksInCommon, 
@@ -75,7 +75,6 @@ static PyObject* createObject(PyObject* self, PyObject* args) {
 
     size_t adressMinHashObject = reinterpret_cast<size_t>(minHash);
     PyObject* pointerToInverseIndex = Py_BuildValue("k", adressMinHashObject);
-        // printf("%i\n", __LINE__);
     
     return pointerToInverseIndex;
 }
@@ -91,7 +90,6 @@ static PyObject* deleteObject(PyObject* self, PyObject* args) {
 }
 
 static PyObject* fit(PyObject* self, PyObject* args) {
-        // printf("%i\n", __LINE__);
     
     size_t addressMinHashObject, maxNumberOfInstances, maxNumberOfFeatures;
     PyObject* instancesListObj, *featuresListObj, *dataListObj;
@@ -104,31 +102,20 @@ static PyObject* fit(PyObject* self, PyObject* args) {
                             &maxNumberOfFeatures,
                             &addressMinHashObject))
         return NULL;
-        // printf("%i\n", __LINE__); 
     
     // parse from python list to a c++ map<size_t, vector<size_t> >
     // where key == instance id and vector<size_t> == non null feature ids
     SparseMatrixFloat* originalDataMatrix = parseRawData(instancesListObj, featuresListObj, dataListObj, 
                                                     maxNumberOfInstances, maxNumberOfFeatures);
-    // std::cout << __LINE__ << std::endl;
-        // printf("%i\n", __LINE__);
- 
     // get pointer to the minhash object
     MinHashBase* minHash = reinterpret_cast<MinHashBase* >(addressMinHashObject);
-        // std::cout << __LINE__ << std::endl;
-        // printf("%i\n", __LINE__);
 
     minHash->set_mOriginalData(originalDataMatrix);
-    // std::cout << __LINE__ << std::endl;
-        // printf("%i\n", __LINE__); 
 
     minHash->fit(originalDataMatrix);
-    // std::cout << __LINE__ << std::endl;
-        // printf("%i\n", __LINE__);
 
     addressMinHashObject = reinterpret_cast<size_t>(minHash);
     PyObject * pointerToInverseIndex = Py_BuildValue("k", addressMinHashObject);
-        // printf("%i\n", __LINE__);
     
     return pointerToInverseIndex;
 }
@@ -136,7 +123,6 @@ static PyObject* partialFit(PyObject* self, PyObject* args) {
     return fit(self, args);
 }
 static PyObject* kneighbors(PyObject* self, PyObject* args) {
-    // std::cout << __LINE__ << std::endl;
     
     size_t addressMinHashObject, nNeighbors, maxNumberOfInstances,
             maxNumberOfFeatures, returnDistance;
@@ -165,7 +151,6 @@ static PyObject* kneighbors(PyObject* self, PyObject* args) {
         MinHashBase* minHash = reinterpret_cast<MinHashBase* >(addressMinHashObject);
         nNeighbors = minHash->getNneighbors();
     }
-    // std::cout << "140" << std::endl;
 
     return bringNeighborhoodInShape(neighborhood_, nNeighbors, cutFirstValue, returnDistance);
 }

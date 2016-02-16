@@ -84,64 +84,64 @@ def test(data):
     #   'chunk_size': 2.2477032655582794, 'excess_factor': 18.234021666380613, 
     #   'block_size': 7.880427429793286, 'prune_inverse_index_after_instance': 1, 'shingle_size': 2.393356246460925}
 
-    # time_build_approx_start = time.time()
-    # minHash = MinHash(number_of_hash_functions=400, max_bin_size= 36, shingle_size = 4, similarity=False, 
-    #                     bloomierFilter=False, number_of_cores=1,
-    #                  prune_inverse_index=1, remove_value_with_least_sigificant_bit=1, excess_factor=11,
-    #                 prune_inverse_index_after_instance=-1, removeHashFunctionWithLessEntriesAs=-1, 
-    #                 hash_algorithm = 0, shingle=0, block_size=1, cuda = 0)
-    # # minHash.fit(data[0])
-    # minHash.fit(datasetBursi)
-    # minHash.get_distribution_of_inverse_index()
-    # print "Fitting time: ",  time.time() - time_build_approx_start
+    time_build_approx_start = time.time()
+    minHash = MinHash(number_of_hash_functions=400, max_bin_size= 36, shingle_size = 4, similarity=False, 
+                        bloomierFilter=False, number_of_cores=4,
+                     prune_inverse_index=1, remove_value_with_least_sigificant_bit=1, excess_factor=11,
+                    prune_inverse_index_after_instance=-1, removeHashFunctionWithLessEntriesAs=-1, 
+                    hash_algorithm = 0, shingle=0, block_size=1, cuda = 0)
+    # minHash.fit(data[0])
+    minHash.fit(datasetBursi)
+    minHash.get_distribution_of_inverse_index()
+    print "Fitting time: ",  time.time() - time_build_approx_start
     
-    # print "distribution of inverse index: "
-    # distribution =  minHash.get_distribution_of_inverse_index()
-    # print distribution
-    # dist_count = 0;
-    # for key in distribution[0]:
-    #     if key < 1:
-    #         continue;
-    #     else:
-    #         dist_count += key * distribution[0][key]
-    # print "dist count: ", dist_count
-    # # time_build_approx_end = time.time()
-    # # print "Build inverse index for approximate... Done!"
-    # # print "Time: ", time_build_approx_end - time_build_approx_start
+    print "distribution of inverse index: "
+    distribution =  minHash.get_distribution_of_inverse_index()
+    print distribution
+    dist_count = 0;
+    for key in distribution[0]:
+        if key < 1:
+            continue;
+        else:
+            dist_count += key * distribution[0][key]
+    print "dist count: ", dist_count
+    # time_build_approx_end = time.time()
+    # print "Build inverse index for approximate... Done!"
+    # print "Time: ", time_build_approx_end - time_build_approx_start
 
 
-    # # centroids_list = []
-    # # for i in range(50):
-    # #     centroids_list.append(data[0].getrow(i))
-    # # centroids_neighborhood = vstack(centroids_list)
-    # # print "starting computation..."
+    # centroids_list = []
+    # for i in range(50):
+    #     centroids_list.append(data[0].getrow(i))
+    # centroids_neighborhood = vstack(centroids_list)
+    # print "starting computation..."
 
 
 
-    # time_comp_approx = time.time()
-    # approx1 = minHash.kneighbors(n_neighbors=10,fast=True,return_distance=False)
-    # print "Approx solution, distance=False: ", approx1
-    # # print "Approx solution, distance=True: ", minHash_approximate.kneighbors(centroids_neighborhood,return_distance=True)
+    time_comp_approx = time.time()
+    approx1 = minHash.kneighbors(n_neighbors=10,fast=True,return_distance=False)
+    print "Approx solution, distance=False: ", approx1
+    # print "Approx solution, distance=True: ", minHash_approximate.kneighbors(centroids_neighborhood,return_distance=True)
 
-    # time_comp_approx_end = time.time()
-    # print "Time: ", time_comp_approx_end  - time_comp_approx
-    # print "\n\n"
+    time_comp_approx_end = time.time()
+    print "Time: ", time_comp_approx_end  - time_comp_approx
+    print "\n\n"
 
-    # time_comp_approx = time.time()
-    # exact1 = minHash.kneighbors(n_neighbors=10,fast=False,return_distance=False)
-    # print "Exact solution, distance=False: ", exact1
-    # # print "Approx solution, distance=True: ", minHash_approximate.kneighbors(centroids_neighborhood,return_distance=True)
+    time_comp_approx = time.time()
+    exact1 = minHash.kneighbors(n_neighbors=10,fast=False,return_distance=False)
+    print "Exact solution, distance=False: ", exact1
+    # print "Approx solution, distance=True: ", minHash_approximate.kneighbors(centroids_neighborhood,return_distance=True)
 
-    # time_comp_approx_end = time.time()
-    # print "Time: ", time_comp_approx_end  - time_comp_approx
-    # print "\n\n"
+    time_comp_approx_end = time.time()
+    print "Time: ", time_comp_approx_end  - time_comp_approx
+    print "\n\n"
 
-    minHash2 = MinHash(number_of_hash_functions=6000, max_bin_size=300, shingle_size = 4,
-     similarity=False, bloomierFilter=False, number_of_cores=1, minimal_blocks_in_common = 2,
-                     prune_inverse_index=1, remove_value_with_least_sigificant_bit=1,
-                      excess_factor=400, prune_inverse_index_after_instance=-1,
-                       removeHashFunctionWithLessEntriesAs=-1, hash_algorithm = 0, 
-                       shingle=0, block_size=1)
+    # minHash2 = MinHash(number_of_hash_functions=6000, max_bin_size=300, shingle_size = 4,
+    #  similarity=False, bloomierFilter=False, number_of_cores=4, minimal_blocks_in_common = 2,
+    #                  prune_inverse_index=1, remove_value_with_least_sigificant_bit=1,
+    #                   excess_factor=400, prune_inverse_index_after_instance=-1,
+    #                    removeHashFunctionWithLessEntriesAs=-1, hash_algorithm = 0, 
+    #                    shingle=0, block_size=1)
                        
     #                     minHash2 = MinHash(number_of_hash_functions=32000, max_bin_size=300, shingle_size = 4,
     #  similarity=False, bloomierFilter=False, number_of_cores=4, minimal_blocks_in_common = 2,
