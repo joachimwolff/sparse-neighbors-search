@@ -219,11 +219,15 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
         #ifdef CUDA
         #pragma omp single nowait
         {
+            std::cout << __LINE__ << std::endl;
             mInverseIndexCuda->copyDataToGpu(pRawData);
+            std::cout << __LINE__ << std::endl;
+            
             signaturesPerThread = mInverseIndexCuda->computeSignaturesOnGpu(pRawData, gpuStart,
                                                                         gpuEnd, gpuEnd - gpuStart, 
                                                                         numberOfBlocksForGpu, 
                                                                         numberOfThreadsForGpu);
+            std::cout << __LINE__ << std::endl;                                                                        
         }
         #endif
         // compute other parts of the signature on the computed   
