@@ -247,8 +247,11 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
             #pragma omp ordered
             signatures->insert(signatures->end(), signaturesPerThread->begin(), signaturesPerThread->end());
         }       
+            std::cout << __LINE__ << std::endl;                                                                        
         
     } 
+            std::cout << __LINE__ << std::endl;                                                                        
+    
     return signatures;
 }
 umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* pRawData) {
