@@ -207,37 +207,31 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
     cpuStart = ceil(pRawData->getNumberOfInstances() * cpuGpuSplitFactor);
     cpuEnd = pRawData->getNumberOfInstances();
     // how many blocks, how many threads?
-    size_t numberOfBlocksForGpu = 128;
+    size_t numberOfBlocksForGpu = 64;
     size_t numberOfThreadsForGpu = 128;
     std::cout << __LINE__ << std::endl;
     #endif
-    // std::cout << "Number of cores: " << mNumberOfCores << std::endl;
     
     #pragma omp parallel num_threads(mNumberOfCores)
     {
-        // std::cout << "for no wait thread id: " << omp_get_thread_num() << ", " <<std::endl;
         vvsize_t_p* signaturesPerThread = new vvsize_t_p();
-    //     // compute part of the signature on the gpu
+        // compute part of the signature on the gpu
         #ifdef CUDA
         #pragma omp single nowait
         {
-
+            mInverseIndexCuda->copyDataToGpu(pRawData);
             signaturesPerThread = mInverseIndexCuda->computeSignaturesOnGpu(pRawData, gpuStart,
                                                                         gpuEnd, gpuEnd - gpuStart, 
                                                                         numberOfBlocksForGpu, 
                                                                         numberOfThreadsForGpu);
-             
         }
         #endif
         // compute other parts of the signature on the computed   
         #pragma omp for schedule(static, mChunkSize)
         for (size_t instance = cpuStart; instance < cpuEnd; ++instance) {
-            // std::cout << "for no wait thread id: " << omp_get_thread_num() << ", ";
-            // if (omp_get_thread_num() == 0) break;
             if (mHashAlgorithm == 0) {
                 // use minHash
                 signaturesPerThread->push_back(computeSignature(pRawData, instance));
-                 
             } else if (mHashAlgorithm == 1) {
                 // use wta hash
                 signaturesPerThread->push_back(computeSignatureWTA(pRawData, instance));
@@ -251,8 +245,6 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
         }       
         
     } 
-    std::cout << __LINE__ << std::endl;
-
     return signatures;
 }
 umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* pRawData) {
@@ -276,7 +268,6 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
         for (size_t j = 0; j < pRawData->getSizeOfInstance(index); ++j) {
                 signatureId = mHash->hash((pRawData->getNextElement(index, j) +1), (signatureId+1), MAX_VALUE);
         }
-        // signature is in storage && 
         auto signatureIt = (*mSignatureStorage).find(signatureId);
         if (signatureIt != (*mSignatureStorage).end() && (instanceSignature->find(signatureId) != instanceSignature->end())) {
 #ifdef OPENMP
@@ -322,6 +313,8 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     // compute signatures
     vvsize_t_p* signatures = computeSignatureVectors(pRawData);
+    // compute how often the inverse index should be pruned 
+    size_t pruneEveryNInstances = ceil(signatures->size() * mPruneInverseIndexAfterInstance);
     omp_set_dynamic(0);
     // store signatures in signatureStorage
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
@@ -350,8 +343,22 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
         for (size_t j = 0; j < (*signatures)[i]->size(); ++j) {
             mInverseIndexStorage->insert(j, (*(*signatures)[i])[j], i, mRemoveValueWithLeastSigificantBit);
         }
+        if (signatures->size() == pruneEveryNInstances) {
+            pruneEveryNInstances += pruneEveryNInstances;
+            if (mPruneInverseIndex > -1) {
+                mInverseIndexStorage->prune(mPruneInverseIndex);
+            }
+            if (mRemoveHashFunctionWithLessEntriesAs > -1) {
+                mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
+            }
+        }
     }
-    // pruning is missing!
+    if (mPruneInverseIndex > -1) {
+        mInverseIndexStorage->prune(mPruneInverseIndex);
+    }
+    if (mRemoveHashFunctionWithLessEntriesAs > -1) {
+        mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
+    }
 }
 
 
@@ -386,7 +393,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         std::advance(instanceId, i);
         if (instanceId == pSignaturesMap->end()) continue;
         std::unordered_map<size_t, size_t> neighborhood;
-        neighborhood.reserve(mMaxBinSize*2);
+        // neighborhood.reserve(mMaxBinSize*2);
         const vsize_t* signature = instanceId->second.signature; 
         for (size_t j = 0; j < signature->size(); ++j) {
             size_t hashID = (*signature)[j];
@@ -435,19 +442,31 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             mapForSorting.val = (*it).second;
             neighborhoodVectorForSorting.push_back(mapForSorting);
         }
-        size_t numberOfElementsToSort = pNneighborhood;
-        if (pNneighborhood > neighborhoodVectorForSorting.size()) {
+        size_t numberOfElementsToSort = pNneighborhood * mExcessFactor;
+        if (numberOfElementsToSort > neighborhoodVectorForSorting.size()) {
             numberOfElementsToSort = neighborhoodVectorForSorting.size();
         }
         
-        std::partial_sort(neighborhoodVectorForSorting.begin(), 
-                            neighborhoodVectorForSorting.begin()+numberOfElementsToSort, 
-                            neighborhoodVectorForSorting.end(), mapSortDescByValue);
+        std::sort(neighborhoodVectorForSorting.begin(), neighborhoodVectorForSorting.end(), mapSortDescByValue);
+        
         size_t sizeOfNeighborhoodAdjusted;
         if (pNneighborhood == MAX_VALUE) {
             sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(pNneighborhood), neighborhoodVectorForSorting.size());
         } else {
+            
             sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(pNneighborhood * mExcessFactor), neighborhoodVectorForSorting.size());
+            if (sizeOfNeighborhoodAdjusted == pNneighborhood * mExcessFactor 
+                    && pNneighborhood * mExcessFactor < neighborhoodVectorForSorting.size()) {
+                for (size_t j = sizeOfNeighborhoodAdjusted; j < neighborhoodVectorForSorting.size(); ++j) {
+                    if (j + 1 < neighborhoodVectorForSorting.size() 
+                            && neighborhoodVectorForSorting[j].val == neighborhoodVectorForSorting[j+1].val) {
+                                ++sizeOfNeighborhoodAdjusted;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            
         }
 
         size_t count = 0;
