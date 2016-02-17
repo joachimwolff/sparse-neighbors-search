@@ -190,10 +190,7 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
-    std::cout << __LINE__ << std::endl;
     
-    vvsize_t_p* signatures = new vvsize_t_p();
-    // omp_set_nested(1);
     omp_set_dynamic(0);
     omp_set_num_threads(mNumberOfCores);
     omp_set_nested(1);
@@ -201,56 +198,50 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
     size_t cpuEnd = pRawData->size();
     #ifdef CUDA
     // how to split the data between cpu and gpu?
-    float cpuGpuSplitFactor = 0.7;
+    float cpuGpuSplitFactor = 0.99;
     size_t gpuStart = 0;
     size_t gpuEnd = floor(pRawData->getNumberOfInstances() * cpuGpuSplitFactor);
     cpuStart = ceil(pRawData->getNumberOfInstances() * cpuGpuSplitFactor);
     cpuEnd = pRawData->getNumberOfInstances();
     // how many blocks, how many threads?
-    size_t numberOfBlocksForGpu = 64;
+    size_t numberOfBlocksForGpu = 128;
     size_t numberOfThreadsForGpu = 128;
-    std::cout << __LINE__ << std::endl;
     #endif
-    
-    #pragma omp parallel num_threads(mNumberOfCores)
+    vvsize_t_p* signatures = new vvsize_t_p(pRawData->size());
+    #pragma omp parallel sections num_threads(mNumberOfCores)
     {
-        vvsize_t_p* signaturesPerThread = new vvsize_t_p();
         // compute part of the signature on the gpu
         #ifdef CUDA
-        #pragma omp single nowait
+        #pragma omp section
         {
-            std::cout << __LINE__ << std::endl;
             mInverseIndexCuda->copyDataToGpu(pRawData);
-            std::cout << __LINE__ << std::endl;
-            
-            signaturesPerThread = mInverseIndexCuda->computeSignaturesOnGpu(pRawData, gpuStart,
-                                                                        gpuEnd, gpuEnd - gpuStart, 
-                                                                        numberOfBlocksForGpu, 
-                                                                        numberOfThreadsForGpu);
-            std::cout << __LINE__ << std::endl;                                                                        
+            mInverseIndexCuda->computeSignaturesOnGpu(pRawData, gpuStart,
+                                                    gpuEnd, gpuEnd - gpuStart, 
+                                                    numberOfBlocksForGpu, 
+                                                    numberOfThreadsForGpu, signatures);
         }
         #endif
-        // compute other parts of the signature on the computed   
-        #pragma omp for schedule(static, mChunkSize)
-        for (size_t instance = cpuStart; instance < cpuEnd; ++instance) {
-            if (mHashAlgorithm == 0) {
-                // use minHash
-                signaturesPerThread->push_back(computeSignature(pRawData, instance));
-            } else if (mHashAlgorithm == 1) {
-                // use wta hash
-                signaturesPerThread->push_back(computeSignatureWTA(pRawData, instance));
+        
+        // compute other parts of the signature on the computed
+        #pragma omp section
+        {
+            #ifdef CUDA
+            #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores-1)
+            #endif
+            #ifndef CUDA
+            #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+            #endif
+            for (size_t instance = cpuStart; instance < cpuEnd; ++instance) {
+                if (mHashAlgorithm == 0) {
+                    // use minHash
+                    (*signatures)[instance] = computeSignature(pRawData, instance);
+                } else if (mHashAlgorithm == 1) {
+                    // use wta hash
+                    (*signatures)[instance] = computeSignatureWTA(pRawData, instance);
+                }
             }
         }
-        #pragma omp barrier
-        #pragma omp for schedule(static) ordered
-        for(int i=0; i < omp_get_num_threads(); i++) {
-            #pragma omp ordered
-            signatures->insert(signatures->end(), signaturesPerThread->begin(), signaturesPerThread->end());
-        }       
-            std::cout << __LINE__ << std::endl;                                                                        
-        
     } 
-            std::cout << __LINE__ << std::endl;                                                                        
     
     return signatures;
 }
@@ -369,9 +360,53 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
 }
 
 
+neighborhood* InverseIndex::kneighborsCuda(const umap_uniqueElement* pSignaturesMap, 
+                                        const size_t pNneighborhood, const bool pDoubleElementsStorageCount) {
+                    
+    std::vector<vvsize_t_p*>* hitsPerInstance 
+                            = new std::vector<vvsize_t_p*>(pSignaturesMap->size());                        
+#ifdef OPENMP
+#pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+#endif 
+    for (size_t i = 0; i < pSignaturesMap->size(); ++i) {
+        umap_uniqueElement::const_iterator instanceId = pSignaturesMap->begin();
+        std::advance(instanceId, i);
+        if (instanceId == pSignaturesMap->end()) continue;
+        std::unordered_map<size_t, size_t> neighborhood;
+        vvsize_t_p* hits = new vvsize_t_p();
+        const vsize_t* signature = instanceId->second.signature; 
+        for (size_t j = 0; j < signature->size(); ++j) {
+            size_t hashID = (*signature)[j];
+            if (hashID != 0 && hashID != MAX_VALUE) {
+                size_t collisionSize = 0; 
+                
+                vsize_t* instances = mInverseIndexStorage->getElement(j, hashID);
+                
+                if (instances == NULL) continue;
+                if (instances->size() != 0) {
+                    collisionSize = instances->size();
+                } else { 
+                    continue;
+                }
+                
+                if (collisionSize < mMaxBinSize && collisionSize > 0) {
+                    hits->push_back(instances);
+                }
+            }
+        }
+        (*hitsPerInstance)[i] = hits;
+        
+    }
+    neighborhood* neighbors = new neighborhood();
+    mInverseIndexCuda->computeHitsOnGpu(hitsPerInstance, neighbors);
+    return neighbors;                                  
+
+}
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                         const size_t pNneighborhood, const bool pDoubleElementsStorageCount) {
-
+    #ifdef CUDA
+    return kneighborsCuda(pSignaturesMap, pNneighborhood, pDoubleElementsStorageCount);
+    #endif                                       
     size_t doubleElements = 0;
     if (pDoubleElementsStorageCount) {
         doubleElements = mDoubleElementsStorageCount;

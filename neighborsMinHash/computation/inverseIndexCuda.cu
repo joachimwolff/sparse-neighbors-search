@@ -50,12 +50,11 @@ void InverseIndexCuda::copyDataToGpu(const SparseMatrixFloat* pRawData) {
             pRawData->getNumberOfInstances() * sizeof(size_t),
             cudaMemcpyHostToDevice);
 }
-vvsize_t_p* InverseIndexCuda::computeSignaturesOnGpu(const SparseMatrixFloat* pRawData, 
+void InverseIndexCuda::computeSignaturesOnGpu(const SparseMatrixFloat* pRawData, 
                                                         size_t pStartIndex, size_t pEndIndex, 
                                                         size_t pNumberOfInstances,
-                                                        size_t pNumberOfBlocks, size_t pNumberOfThreads) {
-    std::cout << __LINE__ << std::endl;
-    vvsize_t_p* signatures = new vvsize_t_p(pNumberOfInstances);
+                                                        size_t pNumberOfBlocks, size_t pNumberOfThreads,
+                                                       vvsize_t_p* pSignatures) {
     // check if enough memory is available on the gpu 
     size_t memory_total = 0;
     size_t memory_free = 0;
@@ -64,7 +63,6 @@ vvsize_t_p* InverseIndexCuda::computeSignaturesOnGpu(const SparseMatrixFloat* pR
     if (memory_free >= pRawData->getNumberOfInstances()  * mNumberOfHashFunctions * sizeof(size_t)) {
         iterations = ceil(pRawData->getNumberOfInstances()  * mNumberOfHashFunctions * sizeof(size_t) / static_cast<float>(memory_free));
     }
-    std::cout << __LINE__ << std::endl;
     
     size_t start = 0;
     size_t end = pRawData->getNumberOfInstances() / iterations;
@@ -75,18 +73,15 @@ vvsize_t_p* InverseIndexCuda::computeSignaturesOnGpu(const SparseMatrixFloat* pR
     // for each instance the number of hash functions
     cudaMalloc((void **) &mDev_ComputedSignaturesPerInstance,
             pRawData->getNumberOfInstances() / iterations  * mNumberOfHashFunctions * sizeof(size_t));
-    std::cout << __LINE__ << std::endl;
-    
     for (size_t i = 0; i < iterations; ++i) {
-    std::cout << __LINE__ << std::endl;
         
-        fitCuda<<<pNumberOfBlocks, pNumberOfThreads, mNumberOfHashFunctions * sizeof(size_t)>>>
+        fitCuda<<<pNumberOfBlocks, pNumberOfThreads>>>
         (mDev_FeatureList, 
         mDev_SizeOfInstanceList,  
         mNumberOfHashFunctions, 
         pRawData->getMaxNnz(),
                 mDev_ComputedSignaturesPerInstance, 
-                end, start);
+                end, start, mBlockSize, mShingleSize);
                 
         cudaMemcpy(instancesHashValues, mDev_ComputedSignaturesPerInstance, 
                     pRawData->getNumberOfInstances()/iterations * mNumberOfHashFunctions * sizeof(size_t),
@@ -96,16 +91,84 @@ vvsize_t_p* InverseIndexCuda::computeSignaturesOnGpu(const SparseMatrixFloat* pR
             for (size_t j = 0; j < mNumberOfHashFunctions; ++j) {
                 (*instance)[j] = instancesHashValues[i*mNumberOfHashFunctions + j];
             }
-            signatures->push_back(instance);
+            (*pSignatures)[i] = instance;
         }
         
         start = end+1;
         end = end + windowSize;
-    std::cout << __LINE__ << std::endl;
-        
     }
-    std::cout << __LINE__ << std::endl;
     
     cudaFree(mDev_ComputedSignaturesPerInstance);
-    return signatures;
+    // std::cout << "Size signatures kernel: " << signatures->size() << std::endl;
+    // for (auto it = signatures->begin(); it != signatures->end(); ++it) {
+    //     std::cout << (*it)->size() << "," << std::endl;
+    //     // for (auto it2 = (*it)->begin(); it2 != (*it)->end(); ++it2) {
+    //     //     std::cout << *it2 << ", ";
+    //     // }
+    //     // std::cout << std::endl;
+    // }
+    // return signatures;
+}
+
+void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstance, 
+                                                neighborhood* pNeighborhood, 
+                                                size_t pNeighborhoodSize,
+                                                size_t pNumberOfInstances,
+                                                size_t pNumberOfBlocks) {
+    vsize_t hitsPerInstance;
+    vsize_t sizePerInstance;
+    size_t counter = 0;
+    for (auto it = pHitsPerInstance->begin(); it != pHitsPerInstance->end(); ++it) {
+        for (auto itQueryInstance = (*it)->begin(); itQueryInstance != (*it)->end(); ++itQueryInstance) {
+            for(auto itInstance = (*itQueryInstance)->begin(); 
+                itInstance != (*itQueryInstance)->end(); ++itInstance) {
+                    hitsPerInstance.push_back(*itInstance);
+                    ++counter;
+                }
+        }
+        sizePerInstance.push_back(counter);
+        counter = 0;
+    }
+    size_t* dev_HitsPerInstances;
+    size_t* dev_SizePerInstances;
+    // std::cout << "Size of hitPerInstnace: " << hitsPerInstance.size() << std::endl;
+    cudaMalloc((void **) &dev_HitsPerInstances,
+            hitsPerInstance.size() * sizeof(size_t));
+    cudaMalloc((void **) &dev_SizePerInstances,
+            sizePerInstance.size() * sizeof(size_t));
+    cudaMemcpy(dev_HitsPerInstances, &hitsPerInstance[0],
+                hitsPerInstance.size() * sizeof(size_t),
+            cudaMemcpyHostToDevice);
+    cudaMemcpy(dev_SizePerInstances, &sizePerInstance[0],
+                sizePerInstance.size() * sizeof(size_t),
+            cudaMemcpyHostToDevice);
+    size_t* dev_Neighborhood;
+    float* dev_Distances;
+    size_t* neighborhood = (size_t*) malloc( pHitsPerInstance->size() * pNeighborhoodSize * sizeof(size_t));
+    float* distances = (float*) malloc( pHitsPerInstance->size() * pNeighborhoodSize * sizeof(float));
+    
+    size_t* instancesHashValues = (size_t*) malloc(pRawData->getNumberOfInstances() / iterations * mNumberOfHashFunctions * sizeof(size_t));
+    
+    cudaMalloc((void **) &dev_Neighborhood,
+                pHitsPerInstance->size() * pNeighborhoodSize * sizeof(size_t));
+    cudaMalloc((void **) &dev_Distances,
+                pHitsPerInstance->size() * pNeighborhoodSize * sizeof(float));
+    
+    queryCuda<<<pNumberOfBlocks pNumberOfInstances>>>
+                (dev_HitsPerInstances, dev_SizePerInstances,
+                pNeighborhoodSize, dev_Neighborhood,
+                dev_Distances);
+    
+    cudaMemcpy(neighborhood, dev_Neighborhood,
+                pHitsPerInstance->size() * pNeighborhoodSize * sizeof(size_t),
+                cudaMemcpyDeviceToHost);
+    cudaMemcpy(distances, dev_Distances,
+                pHitsPerInstance->size() * pNeighborhoodSize * sizeof(float),
+                cudaMemcpyDeviceToHost);
+     // transfer to neighorhood layout
+     // return it
+     // delete memory
+     // 
+     // check if everything is fitting in gpu memory,
+     // loop if not.              
 }

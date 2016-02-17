@@ -85,5 +85,7 @@ class InverseIndex {
     distributionInverseIndex* getDistribution();
     vvsize_t_p* computeSignaturesOnGpu(const SparseMatrixFloat* pRawData, size_t pStartIndex, size_t pEndIndex, size_t pNumberOfInstances,
     size_t pNumberOfBlocks, size_t pNumberOfThreads);
+    neighborhood* kneighborsCuda(const umap_uniqueElement* pSignaturesMap, 
+                                        const size_t pNneighborhood, const bool pDoubleElementsStorageCount);
 };
 #endif // INVERSE_INDEX_H

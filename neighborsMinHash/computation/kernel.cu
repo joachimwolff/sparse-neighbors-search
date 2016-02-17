@@ -31,9 +31,9 @@ __device__ size_t computeHashValueCuda(size_t key, size_t aModulo) {
 __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInstanceList,
                     const size_t pNumberOfHashFunctions, const size_t pMaxNnz,
                     size_t* pComputedSignatures, 
-                    const size_t pNumberOfInstances, const size_t pStartInstance) {
-    extern __shared__ size_t signature[];  // pNumberOfHashFunctions
-    // size_t threadId = threadIdx.x;
+                    const size_t pNumberOfInstances, const size_t pStartInstance, 
+                    const size_t pBlockSize, const size_t pShingleSize) {
+    // extern __shared__ size_t signature[];  // pNumberOfHashFunctions
     int instanceId = blockIdx.x + pStartInstance;
     size_t minHashValue = MAX_VALUE;
     size_t hashValue = 0;
@@ -41,123 +41,43 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
     int featureId = blockIdx.x * pMaxNnz;
     int hashFunctionId = threadIdx.x;
     size_t sizeOfInstance;// = pSizeOfInstanceList[blockId];
-    if (blockIdx.x == 0 && threadIdx.x == 0) {
-        printf("Grid dim: %i" , gridDim.x); 
-        printf("BLock id: %i" , blockIdx.x);
-        printf("ffpp");
-    }
-        // fflush(stdout);
-
-        // 
-    
+    // printf("pStartInstance: %i", pStartInstance);
+    // printf("pNumberOfInstances: %i", pNumberOfInstances);
+    // printf()
+    // if (blockIdx.x == 0 && threadIdx.x == 0) {
+    //     printf("Grid dim: %i" , gridDim.x); 
+    //     printf("BLock id: %i" , blockIdx.x);
+    //     printf("ffpp");
+    // }
     while (instanceId < pNumberOfInstances) {
         
         sizeOfInstance = pSizeOfInstanceList[instanceId];
         while (hashFunctionId < pNumberOfHashFunctions && featureId < pNumberOfInstances*pMaxNnz) {
-            
-            // printf("instanceId: %i, featureId: %i, hashFunctionId: %i\n", instanceId,featureId, hashFunctionId);
-            
             for (size_t i = 0; i < sizeOfInstance; ++i) {
                 hashValue = computeHashValueCuda((pFeatureIdList[featureId + i]+1) * (hashFunctionId+1), MAX_VALUE);
                 if (hashValue < minHashValue) {
                     minHashValue = hashValue;
                 }
             }
-            signature[hashFunctionId] = minHashValue;
+            // printf("%i ", (instanceId-pStartInstance)*pNumberOfHashFunctions + hashFunctionId);
+            pComputedSignatures[(instanceId-pStartInstance)*pNumberOfHashFunctions + hashFunctionId] = minHashValue;
             hashFunctionId += blockDim.x;
-        }
-        __syncthreads();
-        if (threadIdx.x == 0) {
-            for (size_t i = 0; i < pNumberOfHashFunctions; ++i) {
-                // printf("size: %i" , instanceId*pNumberOfHashFunctions);
-                pComputedSignatures[(instanceId-pStartInstance)*pNumberOfHashFunctions +i] = signature[i];
-            }
         }
         instanceId += gridDim.x;
         featureId = instanceId * pMaxNnz;
         minHashValue = MAX_VALUE;
         hashFunctionId = threadIdx.x;
-       
-        // if (blockIdx.x == 0 && threadIdx.x == 0) {
-        //     printf("Grid dim: %i\n" , gridDim.x);
-        //     printf("instanceID: %i\n" , instanceId);
-        //     printf("Number of instances: %i\n", pNumberOfInstances);
-        //     // printf("BLock id: %i" , blockIdx.x);
-        //     // printf("ffpp");
-        // }
-        __syncthreads();
-        
-        
+        // __syncthreads();
     }
-    // printf("BLock id: %i , ", instanceId);
-    
-    
-    
 }
 
 
 
-__global__ void queryCuda(size_t* pSignature, size_t* pInverseIndex, size_t pNumberOfHashFunctions, 
-                        size_t pNumberOfInstancs, size_t pSizeOfInverseIndex, size_t pSignatureCount,
-                        size_t* pHitsToBeReturned) {
-    extern __shared__ size_t hits[]; // pNumberOfHashFunctions
-    size_t inverseIndexId;
-    size_t signatureId;
-    size_t hit;
-    size_t signatureCount = 1;
-    size_t hashFunctionId = threadIdx.x;
-    // do query for every signature
-    while (signatureCount <= pSignatureCount) {
-        inverseIndexId = blockIdx.x;
-        signatureId = threadIdx.x * signatureCount;
-        hashFunctionId = threadIdx.x;
-        // compare every value of hash function i of the signature with the 
-        // value of hash function i of every instance.
-        // In the optimale case this is done in O(1) based on parallelism
-        // if per grid only one block and one thread is launched, 
-        // it is computed in O(n^2)
-        while (inverseIndexId < pSizeOfInverseIndex) {
-            while (signatureId < pNumberOfHashFunctions) {
-                hit = 0;
-                if (pInverseIndex[inverseIndexId + hashFunctionId] == pSignature[signatureId]) {
-                    hit = 1;
-                } 
-                hits[signatureId] = hit;
-                signatureId += blockDim.x;
-                hashFunctionId += blockDim.x;
-            }
-            __syncthreads();
-            // reduction
-            signatureId = threadIdx.x;
-            int i = blockDim.x / 2;
-            int tmp_i;
-            while (i != 0) {
-                tmp_i = i;
-                while (signatureId < pNumberOfHashFunctions) {
-                    if (signatureId < i) {
-                        hits[signatureId] += hits[signatureId + i];
-                    }
-                    signatureId += blockDim.x;
-                    i += blockDim.x;
-                }
-                __syncthreads();
-                i = tmp_i;
-                i /= 2;
-                // signatureId = threadIdx.x;
-            }
-            __syncthreads();
-            
-            if (threadIdx.x == 0) {
-                pHitsToBeReturned[signatureCount * blockIdx.x + inverseIndexId] = hits[0];
-            }  
-            inverseIndexId += gridDim.x;
-            // signatureId = threadIdx.x;
-            signatureId = threadIdx.x * signatureCount;
-            
-        }
-        __syncthreads();
-        ++signatureCount;
-    }
+__global__ void queryCuda(size_t* pHitsPerInstance, size_t* pSizePerInstance,
+                            size_t pNeighborhoodSize,
+                            size_t* pNeighborhood,
+                            float* pDistances) {
+    
 }
 
 __global__ void euclidianDistanceCuda(size_t* pFeatureIds, size_t* pSizeOfInstanceList,

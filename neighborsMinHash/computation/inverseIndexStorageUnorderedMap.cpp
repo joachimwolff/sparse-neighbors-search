@@ -7,7 +7,7 @@
  Chair of Bioinformatics
  Department of Computer Science
  Faculty of Engineering
- Albert-Ludwig-University Freiburg im Breisgau
+ Albert-Ludwigs-University Freiburg im Breisgau
 **/
 
 #include "inverseIndexStorageUnorderedMap.h"
@@ -22,7 +22,9 @@ InverseIndexStorageUnorderedMap::InverseIndexStorageUnorderedMap(size_t pSizeOfI
 }
 InverseIndexStorageUnorderedMap::~InverseIndexStorageUnorderedMap() {
     for (size_t i = 0; i < mInverseIndex->size(); ++i) {
+        if (mInverseIndex->operator[](i) == NULL) continue;        
         for (auto it = mInverseIndex->operator[](i)->begin(); it != mInverseIndex->operator[](i)->end(); ++it) {
+            if (it->second == NULL) continue;
             delete it->second;
         }
         delete mInverseIndex->operator[](i);
@@ -39,26 +41,21 @@ void InverseIndexStorageUnorderedMap::reserveSpaceForMaps(size_t pNumberOfInstan
 }
 void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue, size_t pInstance, size_t pRemoveValueWithLeastSigificantBit) {
 
-	// std::cout << __LINE__ << std::endl;
-                            // std::cout << "Inserting!" << std::endl;
     if (pVectorId >= mInverseIndex->size()) {
-        // std::cout << "pVectorId" << pVectorId << " mInverseindex size: " << mInverseIndex->size()<< std::endl;
         return;
     } 
     if (pRemoveValueWithLeastSigificantBit) {
         size_t leastSignificantBits = 0b11111111111111111111111111111111 << pRemoveValueWithLeastSigificantBit;
         size_t insertValue = pHashValue | leastSignificantBits;
         if (insertValue == leastSignificantBits) {
-            // std::cout << "foo" << std::endl;
             return;
         }
     }
-    
+    if ((*mInverseIndex)[pVectorId] == NULL) return;
 #ifdef OPENMP
 #pragma omp critical
 #endif
    {
-	// std::cout << __LINE__ << std::endl;
         
         auto itHashValue_InstanceVector = (*mInverseIndex)[pVectorId]->find(pHashValue);
 
@@ -75,28 +72,18 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
             } else { 
                 // too many collisions: delete stored ids. empty vector is interpreted as an error code 
                 // for too many collisions
-                // std::cout << "Clearing vector" << std::endl;
                 itHashValue_InstanceVector->second->clear();
             }
         } else {
             // given hash value for the specific hash function was not avaible: insert new hash value
-                // std::cout << "New vector" << std::endl;
-            
             vsize_t* instanceIdVector = new vsize_t(1);
             (*instanceIdVector)[0] = pInstance;
             (*mInverseIndex)[pVectorId]->operator[](pHashValue) = instanceIdVector;
-                // std::cout << "New vector Inserted" << std::endl;
-            
         }
-	// std::cout << __LINE__ << std::endl;
-        
    }
 }
 
-// void InverseIndexStorageUnorderedMap::insert(vector__umapVector_ptr::iterator start, vector__umapVector_ptr::iterator end) {
-//     mInverseIndex->insert(mInverseIndex->end(), start, end);
-// }
-const vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, size_t pHashValue) {
+vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, size_t pHashValue) {
 
 
     if (pVectorId < mInverseIndex->size() && (*mInverseIndex)[pVectorId] != NULL) {
@@ -109,11 +96,6 @@ const vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, siz
     
 	return NULL; 
 }
-// void InverseIndexStorageUnorderedMap::reserveSpaceForMaps(size_t pNumberOfInstances) {
-//     for (size_t i = 0; i < mInverseIndex->size(); ++i) {
-//         mInverseIndex->operator[](i)->reserve(pNumberOfInstances / 2);
-//     } 
-// }
 
 distributionInverseIndex* InverseIndexStorageUnorderedMap::getDistribution() {
     distributionInverseIndex* retVal = new distributionInverseIndex();
@@ -124,6 +106,7 @@ distributionInverseIndex* InverseIndexStorageUnorderedMap::getDistribution() {
     size_t meanForNumberHashValues = 0;
     
     for (auto it = mInverseIndex->begin(); it != mInverseIndex->end(); ++it) {
+        if (*it == NULL) continue;
         numberOfCreatedHashValuesPerHashFunction.push_back((*it)->size());
         meanForNumberHashValues += (*it)->size();
         size_t mean = 0;
@@ -149,6 +132,7 @@ distributionInverseIndex* InverseIndexStorageUnorderedMap::getDistribution() {
     
     size_t varianceForNumberOfHashValues = 0;
     for (auto it = mInverseIndex->begin(); it != mInverseIndex->end(); ++it) {
+        if (*it == NULL) continue;
        varianceForNumberOfHashValues += pow((*it)->size() - meanForNumberHashValues, 2);
     }
     
@@ -200,8 +184,10 @@ void InverseIndexStorageUnorderedMap::removeHashFunctionWithLessEntriesAs(size_t
             if ((*mInverseIndex)[i]->size() < mean + standardDeviation) {
                 for (auto it = (*mInverseIndex)[i]->begin(); it != (*mInverseIndex)[i]->end(); ++it) {
                     delete it->second;
+                    it->second = NULL;
                 }
                 delete (*mInverseIndex)[i];
+                (*mInverseIndex)[i] = NULL;
             }
         }
     } else {
