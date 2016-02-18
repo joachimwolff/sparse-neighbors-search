@@ -220,7 +220,7 @@ else:
                 extra_link_args=["-lm", "-lrt","-lgomp"],
                 extra_compile_args={'gcc': ["-fopenmp", "-O3", "-std=c++11"],
                                     'nvcc': ['-arch=sm_20', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
-                include_dirs = [CUDA['include'], 'src'],
+                include_dirs = [CUDA['include'], 'src', '/home/joachim/Software/cub-1.5.1'],
                 platforms = "Linux, Mac OS X"
                 )
                 

@@ -124,7 +124,7 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
                 itInstance != (*itQueryInstance)->end(); ++itInstance) {
                     hitsPerInstance.push_back(*itInstance);
                     ++counter;
-                }
+            }
         }
         sizePerInstance.push_back(counter);
         counter = 0;
@@ -144,28 +144,50 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
             cudaMemcpyHostToDevice);
     size_t* dev_Neighborhood;
     float* dev_Distances;
-    size_t* neighborhood = (size_t*) malloc( pHitsPerInstance->size() * pNeighborhoodSize * sizeof(size_t));
-    float* distances = (float*) malloc( pHitsPerInstance->size() * pNeighborhoodSize * sizeof(float));
+    int* neighborhood = (size_t*) malloc(pHitsPerInstance->size() * pNeighborhoodSize * sizeof(int));
+    float* distances = (float*) malloc(pHitsPerInstance->size() * pNeighborhoodSize * sizeof(float));
     
-    size_t* instancesHashValues = (size_t*) malloc(pRawData->getNumberOfInstances() / iterations * mNumberOfHashFunctions * sizeof(size_t));
+    // size_t* instancesHashValues = (size_t*) malloc(pRawData->getNumberOfInstances() / iterations * mNumberOfHashFunctions * sizeof(size_t));
     
     cudaMalloc((void **) &dev_Neighborhood,
                 pHitsPerInstance->size() * pNeighborhoodSize * sizeof(size_t));
     cudaMalloc((void **) &dev_Distances,
                 pHitsPerInstance->size() * pNeighborhoodSize * sizeof(float));
     
-    queryCuda<<<pNumberOfBlocks pNumberOfInstances>>>
+    queryCuda<<<pNumberOfBlocks, pNumberOfInstances>>>
                 (dev_HitsPerInstances, dev_SizePerInstances,
                 pNeighborhoodSize, dev_Neighborhood,
                 dev_Distances);
     
     cudaMemcpy(neighborhood, dev_Neighborhood,
-                pHitsPerInstance->size() * pNeighborhoodSize * sizeof(size_t),
+                pHitsPerInstance->size() * pNeighborhoodSize * sizeof(int),
                 cudaMemcpyDeviceToHost);
     cudaMemcpy(distances, dev_Distances,
                 pHitsPerInstance->size() * pNeighborhoodSize * sizeof(float),
                 cudaMemcpyDeviceToHost);
+                
+     cudaFree(dev_Neighborhood);
+     cudaFree(dev_Distances);
      // transfer to neighorhood layout
+     vvint* neighborsVector = new vvint(pHitsPerInstance->size());
+     vvfloat* distancesVector = new vvfloat(pHitsPerInstance->size());
+     
+     for (size_t i = 0; i < pHitsPerInstance->size(); ++i) {
+         vint neighbors_;
+         vfloat distances_;
+         for (size_t j = 0; j < pNeighborhoodSize; ++j) {
+             neighbors_.push_back(neighborhood[i*pNeighborhoodSize + j]);
+             distances_.push_back(distances[i*pNeighborhoodSize + j]);
+         }
+         (*neighborsVector)[i] = neighbors_;
+         (*distancesVector)[i] = distances_;
+     }
+     
+     pNeighborhood->neighbors = neighborsVector;
+     pNeighborhood->distances = distancesVector;
+     free(neighborhood);
+     free(distances);
+     
      // return it
      // delete memory
      // 

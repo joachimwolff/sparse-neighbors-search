@@ -14,7 +14,7 @@
 #include "sparseMatrix.h"
 // #include <math.h>
 #include "kernel.h"
-
+#include <cub/cub.cuh>
 __device__ size_t computeHashValueCuda(size_t key, size_t aModulo) {
     // source:  Thomas Wang: Integer Hash Functions, 1997 / 2007 
     // https://gist.github.com/badboy/6267743
@@ -40,15 +40,8 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
     
     int featureId = blockIdx.x * pMaxNnz;
     int hashFunctionId = threadIdx.x;
-    size_t sizeOfInstance;// = pSizeOfInstanceList[blockId];
-    // printf("pStartInstance: %i", pStartInstance);
-    // printf("pNumberOfInstances: %i", pNumberOfInstances);
-    // printf()
-    // if (blockIdx.x == 0 && threadIdx.x == 0) {
-    //     printf("Grid dim: %i" , gridDim.x); 
-    //     printf("BLock id: %i" , blockIdx.x);
-    //     printf("ffpp");
-    // }
+    size_t sizeOfInstance;
+    
     while (instanceId < pNumberOfInstances) {
         
         sizeOfInstance = pSizeOfInstanceList[instanceId];
@@ -59,7 +52,6 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
                     minHashValue = hashValue;
                 }
             }
-            // printf("%i ", (instanceId-pStartInstance)*pNumberOfHashFunctions + hashFunctionId);
             pComputedSignatures[(instanceId-pStartInstance)*pNumberOfHashFunctions + hashFunctionId] = minHashValue;
             hashFunctionId += blockDim.x;
         }
@@ -67,16 +59,51 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
         featureId = instanceId * pMaxNnz;
         minHashValue = MAX_VALUE;
         hashFunctionId = threadIdx.x;
-        // __syncthreads();
     }
 }
 
 
 
 __global__ void queryCuda(size_t* pHitsPerInstance, size_t* pSizePerInstance,
-                            size_t pNeighborhoodSize,
-                            size_t* pNeighborhood,
-                            float* pDistances) {
+                            size_t pNeighborhoodSize, size_t* pNeighborhood,
+                            float* pDistances, const size_t pNumberOfInstances) {
+    // sort hits per instances
+    // count instances
+    // take highest pNeighborhood*excessfaktor + same hits count
+    // to compute euclidean distance or cosine similarity
+    
+    
+    // per block query one instance
+    // sort these with the threads
+    
+    
+    const int numberOfThreads = blockDim.x;
+    int blockId = blockIdx.x;
+    
+    // create histogram
+    while (blockId < pNumberOfInstances) {
+        // compute start position in array phitsPerInstance
+        int startId = blockId;
+        for (size_t i = 0; i < blockId; ++i) {
+            startId += pSizePerInstance[i];
+        }
+       
+        blockId += gridDim.x;
+        
+    }
+    
+    __syncthreads();
+    size_t* histogram;
+    // merge sort histogram
+    while () {
+        if (histogram[threadId] < histogram[threadId+1]) {
+            
+        }
+    }
+    __syncthreads();
+    
+    // take largest values
+    // compute euclidean distance or cosine similarity
     
 }
 

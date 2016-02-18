@@ -64,7 +64,7 @@ static PyObject* radiusNeighborhood(const neighborhood* pNeighborhood, const siz
         PyObject* innerListDistances = PyList_New(0);
 
         for (size_t j = 0 + pCutFirstValue; j < sizeOfInnerNeighborList; ++j) {
-            if (pNeighborhood->distances->operator[](i)[j] <= pRadius) {
+            if (pNeighborhood->distances->operator[](i)[j] <= pRadius && pNeighborhood->neighbors->operator[](i)[j] != -1) {
                 PyObject* valueNeighbor = Py_BuildValue("i", pNeighborhood->neighbors->operator[](i)[j]);
                 PyList_SetItem(innerListNeighbors, j - pCutFirstValue, valueNeighbor);
                 
@@ -176,6 +176,7 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
             size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
 
             for (size_t j = 0; j < sizeOfInnerNeighborList && j < pNneighbors; ++j) {
+                if (pNeighborhood->neighbors->operator[](i)[j] == -1) break;
                 size_t node = pNeighborhood->neighbors->operator[](i)[j];
                 float distance;
                 if (pReturnDistance) {
@@ -215,6 +216,7 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
             PyObject* root = Py_BuildValue("i", pNeighborhood->neighbors->operator[](i)[0]);
             size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
             for (size_t j = 1; j < sizeOfInnerNeighborList && j < pNneighbors; ++j) {
+                if (pNeighborhood->neighbors->operator[](i)[j] == -1) break;
                 PyObject* node = Py_BuildValue("i", pNeighborhood->neighbors->operator[](i)[j]);
                 PyObject* distance;
                 if (pReturnDistance) {
@@ -255,6 +257,7 @@ static PyObject* radiusNeighborhoodGraph(const neighborhood* pNeighborhood, cons
             size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
 
             for (size_t j = 0; j < sizeOfInnerNeighborList; ++j) {
+                if (pNeighborhood->neighbors->operator[](i)[j] == -1) break;
                 if (pNeighborhood->distances->operator[](i)[j] <= pRadius) {
                     size_t node = pNeighborhood->neighbors->operator[](i)[j];
                     float distance;
@@ -297,6 +300,7 @@ static PyObject* radiusNeighborhoodGraph(const neighborhood* pNeighborhood, cons
             PyObject* root = Py_BuildValue("i", pNeighborhood->neighbors->operator[](i)[0]);
             size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
             for (size_t j = 1; j < sizeOfInnerNeighborList; ++j) {
+                if (pNeighborhood->neighbors->operator[](i)[j] == -1) break;
                 if (pNeighborhood->distances->operator[](i)[j] <= pRadius) {
                     PyObject* node = Py_BuildValue("i", pNeighborhood->neighbors->operator[](i)[j]);
                     PyObject* distance;
