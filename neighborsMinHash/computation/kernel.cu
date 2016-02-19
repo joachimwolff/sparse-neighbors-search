@@ -66,7 +66,8 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
 
 __global__ void queryCuda(size_t* pHitsPerInstance, size_t* pSizePerInstance,
                             size_t pNeighborhoodSize, size_t* pNeighborhood,
-                            float* pDistances, const size_t pNumberOfInstances) {
+                            float* pDistances, const size_t pNumberOfInstances,
+                            size_t* pHistogramMemory) {
     // sort hits per instances
     // count instances
     // take highest pNeighborhood*excessfaktor + same hits count
@@ -78,27 +79,39 @@ __global__ void queryCuda(size_t* pHitsPerInstance, size_t* pSizePerInstance,
     
     
     const int numberOfThreads = blockDim.x;
-    int blockId = blockIdx.x;
-    
+    int instanceId = blockIdx.x;
+    int threadId = threadIdx.x;
+    int startId;
+    int endId;
     // create histogram
-    while (blockId < pNumberOfInstances) {
-        // compute start position in array phitsPerInstance
-        int startId = blockId;
-        for (size_t i = 0; i < blockId; ++i) {
+    while (instanceId < pNumberOfInstances) {
+        // compute start position in array pHitsPerInstance
+        startId = instanceId;
+        for (size_t i = 0; i < instanceId; ++i) {
             startId += pSizePerInstance[i];
         }
-       
-        blockId += gridDim.x;
+        endId = startId+pSizePerInstance[instanceId];
         
+        while (startId + threadId < endId) {
+            atomicAdd(pHistogramMemory[pHitsPerInstance[startId+threadId] * instanceId], 1);
+            instanceId += gridDim.x;
+            threadId += numberOfThreads;
+        }
+        instanceId += gridDim.x;
+        threadId = threadIdx.x;
     }
     
     __syncthreads();
-    size_t* histogram;
-    // merge sort histogram
+    int mergeInstances = 2;
+    int idPart1 = 0;
+    int idPart2 = 0;
+    
+    // radix sort histogram
     while () {
-        if (histogram[threadId] < histogram[threadId+1]) {
-            
-        }
+        for (size_t i = 0; i < mergeInstances; ++i) {
+            if (histogram[threadId+idPart1] < histogram[threadId+idPart2]) {
+                
+            }
     }
     __syncthreads();
     
