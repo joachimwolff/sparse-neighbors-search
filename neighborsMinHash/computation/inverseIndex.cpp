@@ -19,6 +19,7 @@
 #include <omp.h>
 #endif
 
+#include <time.h>
 #include "inverseIndex.h"
 #include "kSizeSortedMap.h"
 // #include "inverseIndexCuda.h"
@@ -55,11 +56,14 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
     mHash = new Hash();
     mBlockSize = pBlockSize;
     mShingle = pShingle;
+    
     if (mShingle == 0) {
         if (mBlockSize == 0) {
             mBlockSize = 1;
         }
         mInverseIndexSize = mNumberOfHashFunctions * mBlockSize;
+        mShingleSize = 1;
+        mBlockSize = 1;
     } else {
         mInverseIndexSize = ceil(((float) (mNumberOfHashFunctions * mBlockSize) / (float) mShingleSize));        
     }
@@ -119,7 +123,7 @@ vsize_t* InverseIndex::shingle(vsize_t* pSignature) {
                 signatureBlockValue = mHash->hash((*pSignature)[i*mShingleSize+j]+1, signatureBlockValue+1, MAX_VALUE);
             }
             (*signature)[i] = signatureBlockValue;
-            count = i;
+            count = i; 
         }
         
         signatureBlockValue = (*pSignature)[count*mShingleSize];
@@ -190,6 +194,10 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
+    time_t timerStartCuda;
+    time_t timerEndCuda;
+    time_t timerStartCPU;
+    time_t timerEndCPU;
     
     omp_set_dynamic(0);
     omp_set_num_threads(mNumberOfCores);
@@ -198,7 +206,7 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
     size_t cpuEnd = pRawData->size();
     #ifdef CUDA
     // how to split the data between cpu and gpu?
-    float cpuGpuSplitFactor = 0.99;
+    float cpuGpuSplitFactor = 1.0;
     size_t gpuStart = 0;
     size_t gpuEnd = floor(pRawData->getNumberOfInstances() * cpuGpuSplitFactor);
     cpuStart = ceil(pRawData->getNumberOfInstances() * cpuGpuSplitFactor);
@@ -206,7 +214,11 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
     // how many blocks, how many threads?
     size_t numberOfBlocksForGpu = 128;
     size_t numberOfThreadsForGpu = 128;
+     std::cout << "gpu start: " << gpuStart << " gpuEnd: " << gpuEnd;
+    std::cout << " cpu start: " << cpuStart << " cpuEnd: " << cpuEnd << std::endl;
     #endif
+    
+   
     vvsize_t_p* signatures = new vvsize_t_p(pRawData->size());
     #pragma omp parallel sections num_threads(mNumberOfCores)
     {
@@ -214,17 +226,30 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
         #ifdef CUDA
         #pragma omp section
         {
+            time(&timerStartCuda);
+            
+            std::cout << "start cuda" << std::endl;
             mInverseIndexCuda->copyDataToGpu(pRawData);
             mInverseIndexCuda->computeSignaturesOnGpu(pRawData, gpuStart,
                                                     gpuEnd, gpuEnd - gpuStart, 
                                                     numberOfBlocksForGpu, 
-                                                    numberOfThreadsForGpu, signatures);
+                                                    numberOfThreadsForGpu, 
+                                                    mShingleSize,
+                                                    mBlockSize,
+                                                    signatures);
+            std::cout << "end cuda" << std::endl;
+            time(&timerEndCuda);
+            std::cout << "Computing signatures CUDA needs " << difftime(timerEndCuda, timerStartCuda) << " seconds." << std::endl;
         }
         #endif
         
         // compute other parts of the signature on the computed
         #pragma omp section
         {
+            std::cout << "start cpu" << std::endl;
+            time(&timerStartCPU);
+            
+            // timerStartCPU
             #ifdef CUDA
             #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores-1)
             #endif
@@ -240,6 +265,11 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
                     (*signatures)[instance] = computeSignatureWTA(pRawData, instance);
                 }
             }
+            std::cout << "end cpu" << std::endl;
+            time(&timerEndCPU);
+            
+            std::cout << "Computing signatures CPU needs " << difftime(timerEndCPU, timerStartCPU) << " seconds." << std::endl;
+            
         }
     } 
     
@@ -270,7 +300,7 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
         if (signatureIt != (*mSignatureStorage).end() && (instanceSignature->find(signatureId) != instanceSignature->end())) {
 #ifdef OPENMP
 #pragma omp critical
-#endif
+#endif 
             {
                 (*instanceSignature)[signatureId] = (*mSignatureStorage)[signatureId];
                 (*instanceSignature)[signatureId].instances->push_back(index);
@@ -309,8 +339,14 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     return instanceSignature;
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
+    time_t timerStart;
+    time_t timerEnd;
     // compute signatures
+    time(&timerStart);
     vvsize_t_p* signatures = computeSignatureVectors(pRawData);
+    time(&timerEnd);
+    std::cout << "Computing signatures needs " << difftime(timerEnd, timerStart) << " seconds." << std::endl;
+    time(&timerStart);
     // compute how often the inverse index should be pruned 
     size_t pruneEveryNInstances = ceil(signatures->size() * mPruneInverseIndexAfterInstance);
     omp_set_dynamic(0);
@@ -357,6 +393,8 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     if (mRemoveHashFunctionWithLessEntriesAs > -1) {
         mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
     }
+    time(&timerEnd);
+    std::cout << "Inserting in inverse index needs " << difftime(timerEnd, timerStart) << " seconds." << std::endl;
 }
 
 
@@ -398,15 +436,15 @@ neighborhood* InverseIndex::kneighborsCuda(const umap_uniqueElement* pSignatures
         
     }
     neighborhood* neighbors = new neighborhood();
-    mInverseIndexCuda->computeHitsOnGpu(hitsPerInstance, neighbors);
+    // mInverseIndexCuda->computeHitsOnGpu(hitsPerInstance, neighbors);
     return neighbors;                                  
 
 }
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                         const size_t pNneighborhood, const bool pDoubleElementsStorageCount) {
-    #ifdef CUDA
-    return kneighborsCuda(pSignaturesMap, pNneighborhood, pDoubleElementsStorageCount);
-    #endif                                       
+    // #ifdef CUDA
+    // return kneighborsCuda(pSignaturesMap, pNneighborhood, pDoubleElementsStorageCount);
+    // #endif                                       
     size_t doubleElements = 0;
     if (pDoubleElementsStorageCount) {
         doubleElements = mDoubleElementsStorageCount;
@@ -510,7 +548,24 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             }
             
         }
-
+        // old
+        // size_t numberOfElementsToSort = pNneighborhood * mExcessFactor;
+        // if (numberOfElementsToSort > neighborhoodVectorForSorting.size()) {
+        //     numberOfElementsToSort = neighborhoodVectorForSorting.size();
+        // }
+        
+        // std::partial_sort(neighborhoodVectorForSorting.begin(), 
+        //                     neighborhoodVectorForSorting.begin()+numberOfElementsToSort, 
+        //                     neighborhoodVectorForSorting.end(), mapSortDescByValue);
+        // size_t sizeOfNeighborhoodAdjusted;
+        // if (pNneighborhood == MAX_VALUE) {
+        //     sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(pNneighborhood), neighborhoodVectorForSorting.size());
+        // } else {
+        //     sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(pNneighborhood * mExcessFactor), neighborhoodVectorForSorting.size());
+        // }
+        
+        //end old
+        
         size_t count = 0;
         vvint neighborsForThisInstance(instanceId->second.instances->size());
         vvfloat distancesForThisInstance(instanceId->second.instances->size());
