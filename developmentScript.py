@@ -89,7 +89,7 @@ def test(data):
                         bloomierFilter=False, number_of_cores=4,
                      prune_inverse_index=1, remove_value_with_least_sigificant_bit=1, excess_factor=11,
                     prune_inverse_index_after_instance=0.5, removeHashFunctionWithLessEntriesAs=0, 
-                    hash_algorithm = 0, shingle=0, block_size=1, cuda = 0)
+                    hash_algorithm = 0, shingle=1, block_size=4, cuda = 0)
     # minHash.fit(data[0])
     minHash.fit(datasetBursi)
     minHash.get_distribution_of_inverse_index()

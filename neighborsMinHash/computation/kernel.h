@@ -12,7 +12,7 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
 __global__ void queryCuda(size_t* pHitsPerInstance, size_t* pSizePerInstance,
                             size_t pNeighborhoodSize, size_t* pNeighborhood,
                             float* pDistances, const size_t pNumberOfInstances,
-                            size_t* pHistogramMemory);
+                            int* pHistogramMemory);
 __global__ void euclidianDistanceCuda(size_t* pFeatureIds, size_t* pSizeOfInstanceList,
                                     float* pFeatureValues, size_t pMaxNnz,
                                     size_t* pPossibleInstances, size_t* pSizePerInstance, size_t pMaxCandidates,                             

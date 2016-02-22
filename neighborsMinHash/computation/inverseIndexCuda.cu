@@ -95,7 +95,7 @@ void InverseIndexCuda::computeSignaturesOnGpu(const SparseMatrixFloat* pRawData,
                     pRawData->getNumberOfInstances()/iterations * signaturesSize * sizeof(size_t),
                     cudaMemcpyDeviceToHost);
         // copy values into one vector per instance
-        for(size_t i = 0; i < pRawData->getNumberOfInstances() / iterations; ++i) {
+        for(size_t i = start; i < end; ++i) {
             vsize_t* instance = new vsize_t(signaturesSize);
             for (size_t j = 0; j < signaturesSize; ++j) {
                 (*instance)[j] = instancesHashValues[i*signaturesSize + j];
@@ -133,14 +133,20 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
     }
     size_t* dev_HitsPerInstances;
     size_t* dev_SizePerInstances;
-    size_t* dev_HistogramMemory;
+    int* dev_HistogramMemory;
+    int* dev_SortingMemory;
+    int* dev_RadixSortMemory;
     // std::cout << "Size of hitPerInstnace: " << hitsPerInstance.size() << std::endl;
     cudaMalloc((void **) &dev_HitsPerInstances,
             hitsPerInstance.size() * sizeof(size_t));
     cudaMalloc((void **) &dev_SizePerInstances,
             sizePerInstance.size() * sizeof(size_t));
     cudaMalloc((void **) &dev_HistogramMemory,
-            pNumberOfInstances * sizeof(size_t));
+            pNumberOfBlocks*pNumberOfInstances * sizeof(int));
+    cudaMalloc((void **) &dev_SortingMemory,
+            pNumberOfBlocks * pNumberOfInstances * 2 * sizeof(int));
+    cudaMalloc((void **) &dev_RadixSortMemory,
+            pNumberOfBlocks * pNumberOfInstances * 2 * 2 * sizeof(int));
     cudaMemcpy(dev_HitsPerInstances, &hitsPerInstance[0],
                 hitsPerInstance.size() * sizeof(size_t),
             cudaMemcpyHostToDevice);
@@ -162,7 +168,8 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
     queryCuda<<<pNumberOfBlocks, pNumberOfInstances>>>
                 (dev_HitsPerInstances, dev_SizePerInstances,
                 pNeighborhoodSize, dev_Neighborhood,
-                dev_Distances, pHitsPerInstance->size(), dev_HistogramMemory);
+                dev_Distances, pHitsPerInstance->size(), dev_HistogramMemory,
+                dev_RadixSortMemory, dev_SortingMemory);
     
     cudaMemcpy(neighborhood, dev_Neighborhood,
                 pHitsPerInstance->size() * pNeighborhoodSize * sizeof(int),
