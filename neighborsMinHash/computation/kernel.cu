@@ -34,7 +34,7 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
                     const size_t pNumberOfInstances, const size_t pStartInstance, 
                     const size_t pBlockSize, const size_t pShingleSize,
                     size_t* pSignaturesBlockSize) {
-    // extern __shared__ size_t signature[];  // pNumberOfHashFunctions
+                        
     int instanceId = blockIdx.x + pStartInstance;
     size_t minHashValue = MAX_VALUE;
     size_t hashValue = 0;
@@ -44,15 +44,13 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
     size_t sizeOfInstance;
     size_t signatureBlockValue;
     size_t shingleId;
-    // __shared__ size_t pointerToMemory [1];
-    // size_t* signatures;
-    // if (threadIdx.x == 0) {
-    //     signatures = new size_t[pNumberOfHashFunctions * pBlockSize];
-    //     pointerToMemory[0] = &signatures;
-    // }
-    // signatures = pointerToMemory[0];
+    size_t signatureBlockId = blockIdx.x * pNumberOfHashFunctions * pBlockSize;
+    // compute one instance per block
+    // if one instance is computed, block takes next instance
     while (instanceId < pNumberOfInstances) {
-        
+        // compute the minHashValue for every hash function
+        // if pBlockSize is greater as 1, hash functions * pBlockSize values 
+        // are computed. They will be merged together by a factor of pShingleSize
         sizeOfInstance = pSizeOfInstanceList[instanceId];
         while (hashFunctionId < pNumberOfHashFunctions * pBlockSize && featureId < pNumberOfInstances*pMaxNnz) {
             for (size_t i = 0; i < sizeOfInstance; ++i) {
@@ -61,30 +59,31 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
                     minHashValue = hashValue;
                 }
             }
-            pComputedSignatures[(instanceId-pStartInstance)*signatureSize + hashFunctionId] = minHashValue;
             
-            // pSignaturesBlockSize[hashFunctionId] = minHashValue;
+            pSignaturesBlockSize[signatureBlockId + hashFunctionId] = minHashValue;
             hashFunctionId += blockDim.x;
+            minHashValue = MAX_VALUE;
         }
-        
-        // hashFunctionId = threadIdx.x * pShingleSize;
-        // shingleId = threadIdx.x;
-        // while (hashFunctionId < pNumberOfHashFunctions * pBlockSize ) {
-        //     signatureBlockValue = pSignaturesBlockSize[hashFunctionId];
-        //     for (size_t i = 1; i < pShingleSize && hashFunctionId+i < pNumberOfHashFunctions * pBlockSize; ++i) {
-        //         signatureBlockValue = computeHashValueCuda((pSignaturesBlockSize[hashFunctionId+i]+1) * (signatureBlockValue+1), MAX_VALUE);
-        //     }
-        //     pComputedSignatures[(instanceId-pStartInstance)*signatureSize + shingleId] = signatureBlockValue;
-        //     hashFunctionId += blockDim.x * pShingleSize;
-        //     shingleId += blockDim.x;
-        // }
-        
+        __syncthreads();
+        // merge pShingleSize values together.
+        // do one merge per thread
+        hashFunctionId = threadIdx.x * pShingleSize;
+        shingleId = threadIdx.x;
+        while (hashFunctionId < pNumberOfHashFunctions * pBlockSize ) {
+            signatureBlockValue = pSignaturesBlockSize[signatureBlockId + hashFunctionId];
+            for (size_t i = 1; i < pShingleSize && hashFunctionId+i < pNumberOfHashFunctions * pBlockSize; ++i) {
+                signatureBlockValue = computeHashValueCuda((pSignaturesBlockSize[signatureBlockId + hashFunctionId+i]+1) * (signatureBlockValue+1), MAX_VALUE);
+            }
+            pComputedSignatures[(instanceId-pStartInstance)*signatureSize + shingleId] = signatureBlockValue;
+            hashFunctionId += blockDim.x * pShingleSize;
+            shingleId += blockDim.x;
+        }
+        __syncthreads();
         instanceId += gridDim.x;
         featureId = instanceId * pMaxNnz;
         minHashValue = MAX_VALUE;
         hashFunctionId = threadIdx.x;
     }
-    // delete signatures;
 }
 
 
