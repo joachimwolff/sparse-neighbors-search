@@ -77,9 +77,12 @@ void InverseIndexCuda::computeSignaturesOnGpu(const SparseMatrixFloat* pRawData,
             pRawData->getNumberOfInstances() / iterations  * signaturesSize * sizeof(size_t));
     size_t* dev_SignaturesBlockSize;
     cudaMalloc((void **) &dev_SignaturesBlockSize,
-            mNumberOfHashFunctions * pBlockSizeShingle * sizeof(size_t));
+           pNumberOfBlocks * mNumberOfHashFunctions * pBlockSizeShingle * sizeof(size_t));
+    // compute the signatures on the gpu
+    // do it in n iterations with equal sized chunks 
+    // if the data would not fit on the ram of the gpu
     for (size_t i = 0; i < iterations; ++i) {
-        
+        // execute kernel on gpu
         fitCuda<<<pNumberOfBlocks, pNumberOfThreads>>>
         (mDev_FeatureList, 
         mDev_SizeOfInstanceList,  
@@ -87,10 +90,11 @@ void InverseIndexCuda::computeSignaturesOnGpu(const SparseMatrixFloat* pRawData,
         pRawData->getMaxNnz(),
                 mDev_ComputedSignaturesPerInstance, 
                 end, start, mBlockSize, mShingleSize, dev_SignaturesBlockSize);
-                
+        // copy results back to host      
         cudaMemcpy(instancesHashValues, mDev_ComputedSignaturesPerInstance, 
                     pRawData->getNumberOfInstances()/iterations * signaturesSize * sizeof(size_t),
                     cudaMemcpyDeviceToHost);
+        // copy values into one vector per instance
         for(size_t i = 0; i < pRawData->getNumberOfInstances() / iterations; ++i) {
             vsize_t* instance = new vsize_t(signaturesSize);
             for (size_t j = 0; j < signaturesSize; ++j) {
@@ -105,15 +109,6 @@ void InverseIndexCuda::computeSignaturesOnGpu(const SparseMatrixFloat* pRawData,
     
     cudaFree(mDev_ComputedSignaturesPerInstance);
     cudaFree(dev_SignaturesBlockSize);
-    // std::cout << "Size signatures kernel: " << signatures->size() << std::endl;
-    // for (auto it = signatures->begin(); it != signatures->end(); ++it) {
-    //     std::cout << (*it)->size() << "," << std::endl;
-    //     // for (auto it2 = (*it)->begin(); it2 != (*it)->end(); ++it2) {
-    //     //     std::cout << *it2 << ", ";
-    //     // }
-    //     // std::cout << std::endl;
-    // }
-    // return signatures;
 }
 
 void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstance, 
