@@ -12,10 +12,19 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
 __global__ void queryCuda(size_t* pHitsPerInstance, size_t* pSizePerInstance,
                             size_t pNeighborhoodSize, size_t* pNeighborhood,
                             float* pDistances, const size_t pNumberOfInstances,
-                            int* pHistogramMemory);
-__global__ void euclidianDistanceCuda(size_t* pFeatureIds, size_t* pSizeOfInstanceList,
-                                    float* pFeatureValues, size_t pMaxNnz,
-                                    size_t* pPossibleInstances, size_t* pSizePerInstance, size_t pMaxCandidates,                             
-                                    size_t* pHitsToBeReturned, float* pValuesToBeReturned);
-__global__ void cosineSimilarityCuda();
+                            int* pHistogramMemory, int* pNumberInstancesToConsider);
+__global__ void euclidianDistanceCuda(int* pHitsPerQueryInstance, int* pNumberInstancesToConsider, 
+                                        size_t pRangeBetweenInstances, size_t pNumberOfInstances,
+                                        size_t* pFeatureList, float* pValuesList,
+                                        size_t* pSizeOfInstanceList, size_t pMaxNnz, 
+                                        int* pRadixSortMemory, int pNumberOfNeighbors);
+__global__ void cosineSimilarityCuda(int* pHitsPerQueryInstance, int* pInstancesToConsider, 
+                                        size_t pRangeBetweenInstances, size_t pNumberOfInstances,
+                                        size_t* pFeatureList, float* pValuesList,
+                                        size_t* pSizeOfInstanceList, size_t pMaxNnz, 
+                                        int* pRadixSortMemory, int pNumberOfNeighbors);
+__device__ void radixSortDesc(int pStartPosition, int pEndPosition, int* pRadixSortMemory,
+                                int* pSortingMemory, size_t pNumberOfInstances);
+__device__ void radixSortAsc(int pStartPosition, int pEndPosition, int* pRadixSortMemory,
+                                int* pSortingMemory, size_t pNumberOfInstances);
 #endif // KERNEL_CUDA

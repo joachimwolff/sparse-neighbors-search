@@ -171,6 +171,16 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
                 dev_Distances, pHitsPerInstance->size(), dev_HistogramMemory,
                 dev_RadixSortMemory, dev_SortingMemory);
     
+    if (!pFast) {
+        if (pDistance) {
+            euclideanDistanceCuda<<<512, 32>>>(dev_SortingMemory,
+            );
+        } else {
+            cosineSimilarityCuda<<<512, 32>>>(dev_SortingMemory,
+            );
+        }
+    }
+    
     cudaMemcpy(neighborhood, dev_Neighborhood,
                 pHitsPerInstance->size() * pNeighborhoodSize * sizeof(int),
                 cudaMemcpyDeviceToHost);
