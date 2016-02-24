@@ -9,11 +9,13 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
                     const size_t pNumberOfInstances, const size_t pStartInstance,
                     const size_t pBlockSize, const size_t pShingleSize,
                     size_t* pSignaturesBlockSize);
-__global__ void queryCuda(size_t* pHitsPerInstance, size_t* pSizePerInstance,
-                            size_t pNeighborhoodSize, size_t* pNeighborhood,
-                            float* pDistances, const size_t pNumberOfInstances,
-                            int* pHistogramMemory, int* pNumberInstancesToConsider);
-__global__ void euclidianDistanceCuda(int* pHitsPerQueryInstance, int* pNumberInstancesToConsider, 
+__global__ void createSortedHistogramsCuda(size_t* pHitsPerInstance, size_t* pSizePerInstance,
+                                            const size_t pNumberOfInstances,
+                                            int* pHistogram, int* pRadixSortMemory,
+                                            int* pSortedInstancesByNumberOfHits, 
+                                            int* pNumberOfPossibleNeighbors,
+                                            size_t pNumberOfNeighbors, size_t pExcessFactor);
+__global__ void euclideanDistanceCuda(int* pHitsPerQueryInstance, int* pNumberInstancesToConsider, 
                                         size_t pRangeBetweenInstances, size_t pNumberOfInstances,
                                         size_t* pFeatureList, float* pValuesList,
                                         size_t* pSizeOfInstanceList, size_t pMaxNnz, 

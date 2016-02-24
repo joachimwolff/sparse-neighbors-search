@@ -339,6 +339,7 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     return instanceSignature;
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
+    mMaxNnz = pRawData->getMaxNnz();
     time_t timerStart;
     time_t timerEnd;
     // compute signatures
@@ -399,7 +400,13 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
 
 
 neighborhood* InverseIndex::kneighborsCuda(const umap_uniqueElement* pSignaturesMap, 
-                                        const size_t pNneighborhood, const bool pDoubleElementsStorageCount) {
+                                        const size_t pNneighborhood, 
+                                        const bool pDoubleElementsStorageCount,
+                                        const size_t pNumberOfBlocksHistogram,
+                                        const size_t pNumberOfThreadsHistogram,
+                                        const size_t pNumberOfBlocksDistance,
+                                        const size_t pNumberOfThreadsDistance,
+                                        size_t pFast, size_t pDistance) {
                     
     std::vector<vvsize_t_p*>* hitsPerInstance 
                             = new std::vector<vvsize_t_p*>(pSignaturesMap->size());                        
@@ -436,15 +443,25 @@ neighborhood* InverseIndex::kneighborsCuda(const umap_uniqueElement* pSignatures
         
     }
     neighborhood* neighbors = new neighborhood();
-    // mInverseIndexCuda->computeHitsOnGpu(hitsPerInstance, neighbors);
+    mInverseIndexCuda->computeHitsOnGpu(hitsPerInstance, neighbors,
+                                        pNneighborhood, mInverseIndexSize,
+                                        pNumberOfBlocksHistogram,
+                                        pNumberOfThreadsHistogram,
+                                        pNumberOfBlocksDistance,
+                                        pNumberOfThreadsDistance,
+                                        pFast, pDistance,
+                                        mExcessFactor, mMaxNnz);
     return neighbors;                                  
 
 }
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
-                                        const size_t pNneighborhood, const bool pDoubleElementsStorageCount) {
-    // #ifdef CUDA
-    // return kneighborsCuda(pSignaturesMap, pNneighborhood, pDoubleElementsStorageCount);
-    // #endif                                       
+                                        const size_t pNneighborhood, 
+                                        const bool pDoubleElementsStorageCount,
+                                        size_t pFast, size_t pDistance) {
+    #ifdef CUDA
+        return kneighborsCuda(pSignaturesMap, pNneighborhood, pDoubleElementsStorageCount,
+                                128,128, 512, 32, pFast, pDistance);
+    #endif                                       
     size_t doubleElements = 0;
     if (pDoubleElementsStorageCount) {
         doubleElements = mDoubleElementsStorageCount;

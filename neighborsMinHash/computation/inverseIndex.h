@@ -45,8 +45,7 @@ class InverseIndex {
     size_t mBlockSize;
     size_t mRemoveValueWithLeastSigificantBit;
     size_t mInverseIndexSize;
-    
-    
+    size_t mMaxNnz;
     // cuda stuff
     size_t* mDev_FeatureList;
     size_t* mDev_SizeOfInstanceList;
@@ -78,7 +77,10 @@ class InverseIndex {
     vvsize_t_p* computeSignatureVectors(const SparseMatrixFloat* pRawData);
   	umap_uniqueElement* computeSignatureMap(const SparseMatrixFloat* pRawData);
   	void fit(const SparseMatrixFloat* pRawData);
-  	neighborhood* kneighbors(const umap_uniqueElement* signaturesMap, const size_t pNneighborhood, const bool pDoubleElementsStorageCount);
+  	neighborhood* kneighbors(const umap_uniqueElement* signaturesMap, 
+                                const size_t pNneighborhood, 
+                                const bool pDoubleElementsStorageCount,
+                                size_t pFast, size_t pDistance);
   	umap_uniqueElement* getSignatureStorage() { 
       return mSignatureStorage;
     };
@@ -86,6 +88,14 @@ class InverseIndex {
     vvsize_t_p* computeSignaturesOnGpu(const SparseMatrixFloat* pRawData, size_t pStartIndex, size_t pEndIndex, size_t pNumberOfInstances,
     size_t pNumberOfBlocks, size_t pNumberOfThreads);
     neighborhood* kneighborsCuda(const umap_uniqueElement* pSignaturesMap, 
-                                        const size_t pNneighborhood, const bool pDoubleElementsStorageCount);
+                                        const size_t pNneighborhood, 
+                                        const bool pDoubleElementsStorageCount,
+                                        const size_t pNumberOfBlocksHistogram,
+                                        const size_t pNumberOfThreadsHistogram,
+                                        const size_t pNumberOfBlocksDistance,
+                                        const size_t pNumberOfThreadsDistance,
+                                        size_t pFast, size_t pDistance);
+                                        
+                                        
 };
 #endif // INVERSE_INDEX_H

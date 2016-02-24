@@ -43,6 +43,11 @@ class InverseIndexCuda {
                                                 neighborhood* pNeighborhood, 
                                                 size_t pNeighborhoodSize,
                                                 size_t pNumberOfInstances,
-                                                size_t pNumberOfBlocks);
+                                                const size_t pNumberOfBlocksHistogram,
+                                                const size_t pNumberOfThreadsHistogram,
+                                                const size_t pNumberOfBlocksDistance,
+                                                const size_t pNumberOfThreadsDistance,
+                                                size_t pFast, size_t pDistance,
+                                                size_t pExcessFactor, size_t pMaxNnz);
 };
 #endif // INVERSE_INDEX_CUDA_H 

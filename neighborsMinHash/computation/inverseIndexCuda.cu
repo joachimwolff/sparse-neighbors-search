@@ -115,9 +115,14 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
                                                 neighborhood* pNeighborhood, 
                                                 size_t pNeighborhoodSize,
                                                 size_t pNumberOfInstances,
-                                                size_t pNumberOfBlocks) {
+                                                const size_t pNumberOfBlocksHistogram,
+                                                const size_t pNumberOfThreadsHistogram,
+                                                const size_t pNumberOfBlocksDistance,
+                                                const size_t pNumberOfThreadsDistance,
+                                                size_t pFast, size_t pDistance,
+                                                size_t pExcessFactor, size_t pMaxNnz) {
     vsize_t hitsPerInstance;
-    vsize_t sizePerInstance;
+    vsize_t elementsPerInstance;
     size_t counter = 0;
     
     for (auto it = pHitsPerInstance->begin(); it != pHitsPerInstance->end(); ++it) {
@@ -128,30 +133,67 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
                     ++counter;
             }
         }
-        sizePerInstance.push_back(counter);
+        elementsPerInstance.push_back(counter);
         counter = 0;
     }
+    size_t memory_free;
+    size_t memory_total;
+    size_t iterations = 1;
+    vsize_t instancesPerIteration = {pNumberOfInstances};
+    // size_t 
+    // memory for all instances and their hits
+    size_t needed_memory = hitsPerInstance.size() * sizeof(size_t);
+    // memory for the histogram
+    needed_memory += pNumberOfBlocksHistogram*pNumberOfInstances * sizeof(int);
+    // memory for number of elements per instance
+    needed_memory += elementsPerInstance.size() * sizeof(size_t);
+    // memory for radix sort
+    needed_memory += pNumberOfBlocksHistogram * pNumberOfInstances * 2 * 2 * sizeof(int);
+    // memory for sorted instances
+    needed_memory += pNumberOfBlocksHistogram * pNumberOfInstances * 2 * sizeof(int);
+    
+    // get memory usage from gpu
+    cudaMemGetInfo(&memory_free, &memory_total);
+    // enough memory on the gpu plus an buffer of 1MB
+    // if (memory_free >= needed_memory+1024*8*1024) {
+    //     iterations = ceil(needed_memory / static_cast<float>(memory_free));
+    //     if (iterations > elementsPerInstance.size()) {
+    //         printf("Sorry your dataset is too big to be computed on your GPU. Please use CPU only mode");
+    //     }
+    //     size_t elementsPerIteration = elementsPerInstance.size() / iteration;
+    //     for (size_t i = 0; i < iterations; ++i) {
+    //         size_t numberOfElements = 0;
+    //         for (size_t j = elementsPerIteration * i; j < elementsPerIteration ; ++j) {
+    //               numberOfElements += elementsPerIteration[j];
+    //         }
+    //         instancesPerIteration.push_back(numberOfElements);
+    //     }
+    // }
+    size_t rangeBetweenInstances = pNumberOfInstances * 2;
     size_t* dev_HitsPerInstances;
-    size_t* dev_SizePerInstances;
-    int* dev_HistogramMemory;
-    int* dev_SortingMemory;
+    size_t* dev_ElementsPerInstances;
+    int* dev_Histogram;
+    int* dev_HistogramSorted;
     int* dev_RadixSortMemory;
+    int* dev_NumberOfPossibleNeighbors;
     // std::cout << "Size of hitPerInstnace: " << hitsPerInstance.size() << std::endl;
     cudaMalloc((void **) &dev_HitsPerInstances,
             hitsPerInstance.size() * sizeof(size_t));
-    cudaMalloc((void **) &dev_SizePerInstances,
-            sizePerInstance.size() * sizeof(size_t));
-    cudaMalloc((void **) &dev_HistogramMemory,
-            pNumberOfBlocks*pNumberOfInstances * sizeof(int));
-    cudaMalloc((void **) &dev_SortingMemory,
-            pNumberOfBlocks * pNumberOfInstances * 2 * sizeof(int));
+    cudaMalloc((void **) &dev_ElementsPerInstances,
+            elementsPerInstance.size() * sizeof(size_t));
+    cudaMalloc((void **) &dev_Histogram,
+            pNumberOfBlocksHistogram*pNumberOfInstances * sizeof(int));
+    cudaMalloc((void **) &dev_HistogramSorted,
+            pNumberOfBlocksHistogram * pNumberOfInstances * 2 * sizeof(int));
     cudaMalloc((void **) &dev_RadixSortMemory,
-            pNumberOfBlocks * pNumberOfInstances * 2 * 2 * sizeof(int));
+            pNumberOfBlocksHistogram * pNumberOfInstances * 2 * 2 * sizeof(int));
+    cudaMalloc((void **) &dev_NumberOfPossibleNeighbors,
+                pNumberOfInstances * sizeof(int));
     cudaMemcpy(dev_HitsPerInstances, &hitsPerInstance[0],
                 hitsPerInstance.size() * sizeof(size_t),
             cudaMemcpyHostToDevice);
-    cudaMemcpy(dev_SizePerInstances, &sizePerInstance[0],
-                sizePerInstance.size() * sizeof(size_t),
+    cudaMemcpy(dev_ElementsPerInstances, &elementsPerInstance[0],
+                elementsPerInstance.size() * sizeof(size_t),
             cudaMemcpyHostToDevice);
     size_t* dev_Neighborhood;
     float* dev_Distances;
@@ -160,50 +202,61 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
     
     // size_t* instancesHashValues = (size_t*) malloc(pRawData->getNumberOfInstances() / iterations * mNumberOfHashFunctions * sizeof(size_t));
     
-    cudaMalloc((void **) &dev_Neighborhood,
-                pHitsPerInstance->size() * pNeighborhoodSize * sizeof(size_t));
-    cudaMalloc((void **) &dev_Distances,
-                pHitsPerInstance->size() * pNeighborhoodSize * sizeof(float));
-    
-    queryCuda<<<pNumberOfBlocks, pNumberOfInstances>>>
-                (dev_HitsPerInstances, dev_SizePerInstances,
-                pNeighborhoodSize, dev_Neighborhood,
-                dev_Distances, pHitsPerInstance->size(), dev_HistogramMemory,
-                dev_RadixSortMemory, dev_SortingMemory);
-    
-    if (!pFast) {
-        if (pDistance) {
-            euclideanDistanceCuda<<<512, 32>>>(dev_SortingMemory,
-            );
-        } else {
-            cosineSimilarityCuda<<<512, 32>>>(dev_SortingMemory,
-            );
+    // cudaMalloc((void **) &dev_Neighborhood,
+    //             pHitsPerInstance->size() * pNeighborhoodSize * sizeof(size_t));
+    // cudaMalloc((void **) &dev_Distances,
+    //             pHitsPerInstance->size() * pNeighborhoodSize * sizeof(float));
+    vvint* neighborsVector = new vvint(pHitsPerInstance->size());
+    vvfloat* distancesVector = new vvfloat(pHitsPerInstance->size());
+    for (size_t i = 0; i < iterations; ++i) {
+        createSortedHistogramsCuda<<<pNumberOfBlocksHistogram, pNumberOfThreadsHistogram>>>
+                    (dev_HitsPerInstances, dev_ElementsPerInstances,
+                    pHitsPerInstance->size(), dev_Histogram,
+                    dev_RadixSortMemory, dev_HistogramSorted, dev_NumberOfPossibleNeighbors, 
+                    pNeighborhoodSize, pExcessFactor);
+        
+        if (!pFast) {
+            if (pDistance) {
+                euclideanDistanceCuda<<<pNumberOfBlocksDistance, pNumberOfThreadsDistance>>>
+                                        (dev_HistogramSorted, dev_NumberOfPossibleNeighbors, 
+                                        rangeBetweenInstances, pNumberOfInstances,
+                                        mDev_FeatureList, mDev_ValuesList,
+                                        mDev_SizeOfInstanceList, pMaxNnz,
+                                        dev_RadixSortMemory, pNeighborhoodSize);
+                
+            } else {
+                cosineSimilarityCuda<<<pNumberOfBlocksDistance, pNumberOfThreadsDistance>>>
+                                        (dev_HistogramSorted, dev_NumberOfPossibleNeighbors, 
+                                        rangeBetweenInstances, pNumberOfInstances,
+                                        mDev_FeatureList, mDev_ValuesList,
+                                        mDev_SizeOfInstanceList, pMaxNnz,
+                                        dev_RadixSortMemory, pNeighborhoodSize);
+            }
+        }
+        
+        cudaMemcpy(neighborhood, dev_Neighborhood,
+                    pHitsPerInstance->size() * pNeighborhoodSize * sizeof(int),
+                    cudaMemcpyDeviceToHost);
+        cudaMemcpy(distances, dev_Distances,
+                    pHitsPerInstance->size() * pNeighborhoodSize * sizeof(float),
+                    cudaMemcpyDeviceToHost);
+                    
+        cudaFree(dev_Neighborhood);
+        cudaFree(dev_Distances);
+        // transfer to neighorhood layout
+       
+        
+        for (size_t i = 0; i < pHitsPerInstance->size(); ++i) {
+            vint neighbors_;
+            vfloat distances_;
+            for (size_t j = 0; j < pNeighborhoodSize; ++j) {
+                neighbors_.push_back(neighborhood[i*pNeighborhoodSize + j]);
+                distances_.push_back(distances[i*pNeighborhoodSize + j]);
+            }
+            (*neighborsVector)[i] = neighbors_;
+            (*distancesVector)[i] = distances_;
         }
     }
-    
-    cudaMemcpy(neighborhood, dev_Neighborhood,
-                pHitsPerInstance->size() * pNeighborhoodSize * sizeof(int),
-                cudaMemcpyDeviceToHost);
-    cudaMemcpy(distances, dev_Distances,
-                pHitsPerInstance->size() * pNeighborhoodSize * sizeof(float),
-                cudaMemcpyDeviceToHost);
-                
-     cudaFree(dev_Neighborhood);
-     cudaFree(dev_Distances);
-     // transfer to neighorhood layout
-     vvint* neighborsVector = new vvint(pHitsPerInstance->size());
-     vvfloat* distancesVector = new vvfloat(pHitsPerInstance->size());
-     
-     for (size_t i = 0; i < pHitsPerInstance->size(); ++i) {
-         vint neighbors_;
-         vfloat distances_;
-         for (size_t j = 0; j < pNeighborhoodSize; ++j) {
-             neighbors_.push_back(neighborhood[i*pNeighborhoodSize + j]);
-             distances_.push_back(distances[i*pNeighborhoodSize + j]);
-         }
-         (*neighborsVector)[i] = neighbors_;
-         (*distancesVector)[i] = distances_;
-     }
      
      pNeighborhood->neighbors = neighborsVector;
      pNeighborhood->distances = distancesVector;

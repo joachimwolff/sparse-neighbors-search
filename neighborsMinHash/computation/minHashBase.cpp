@@ -82,13 +82,18 @@ neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t 
     } else {
         X = (mInverseIndex->computeSignatureMap(pRawData));
     }
-    neighborhood* neighborhood_ = mInverseIndex->kneighbors(X, pNneighbors, doubleElementsStorageCount);
+    neighborhood* neighborhood_ = mInverseIndex->kneighbors(X, pNneighbors, 
+                                                            doubleElementsStorageCount,
+                                                            pFast, pSimilarity);
     if (!doubleElementsStorageCount) {
         delete X;
     }
     if (pFast) {     
         return neighborhood_;
     }
+    #ifdef CUDA
+        return neighborhood_;
+    #endif
 
     neighborhood* neighborhoodExact = new neighborhood();
     neighborhoodExact->neighbors = new vvint(neighborhood_->neighbors->size());
