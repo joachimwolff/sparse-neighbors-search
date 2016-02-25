@@ -444,7 +444,7 @@ neighborhood* InverseIndex::kneighborsCuda(const umap_uniqueElement* pSignatures
     }
     neighborhood* neighbors = new neighborhood();
     mInverseIndexCuda->computeHitsOnGpu(hitsPerInstance, neighbors,
-                                        pNneighborhood, mInverseIndexSize,
+                                        pNneighborhood, hitsPerInstance->size(),
                                         pNumberOfBlocksHistogram,
                                         pNumberOfThreadsHistogram,
                                         pNumberOfBlocksDistance,

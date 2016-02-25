@@ -93,7 +93,8 @@ __global__ void createSortedHistogramsCuda(size_t* pHitsPerInstance, size_t* pEl
                                             int* pHistogram, int* pRadixSortMemory,
                                             int* pSortedInstancesByNumberOfHits, 
                                             int* pNumberOfPossibleNeighbors,
-                                            size_t pNumberOfNeighbors, size_t pExcessFactor) {
+                                            size_t pNumberOfNeighbors, size_t pExcessFactor,
+                                            size_t* pNeighborhood, float* pDistances, size_t pFast) {
     // sort hits per instances
     // count instances
     // take highest pNeighborhood*excessfaktor + same hits count
@@ -104,35 +105,54 @@ __global__ void createSortedHistogramsCuda(size_t* pHitsPerInstance, size_t* pEl
     
     
     const int numberOfThreads = blockDim.x;
+    // const int gridDim = gridDim.x;
+    const int threadIdConst = threadIdx.x;
+    
     int instanceId = blockIdx.x;
     int threadId = threadIdx.x;
-    int startId;
-    int endId;
+    int startId = 0;
+    int endId = 0;
     int startPositionSortingMemory = blockIdx.x * pNumberOfInstances * 2;
     int addValue = 1;
     size_t numberOfElementsToBeConsidered = pNumberOfNeighbors * pExcessFactor;
     // size_t index;
     // create histogram
     while (instanceId < pNumberOfInstances) {
-        for (size_t i = 0; i < pNumberOfInstances; ++i) {
+        while (threadId < pNumberOfInstances) {
             // clear arrays to 0
-            pHistogram[instanceId * pNumberOfInstances + i] = 0;
+            pHistogram[blockIdx.x * pNumberOfInstances + threadId] = 0;
+            threadId += blockDim.x;
         }
+        threadId = threadIdx.x;
         // compute start position in array pHitsPerInstance
         startId = instanceId;
         for (size_t i = 0; i < instanceId; ++i) {
             startId += pElementsPerInstance[i];
         }
         endId = startId+pElementsPerInstance[instanceId];
-        
+        // if (blockIdx.x == 0 && threadIdx.x == 0) {
+        //     printf("\nstartId: %i", startId);
+        //     printf("\nendId: %i\n", endId);
+        //     return; 
+        // }
         while (startId + threadId < endId) {
-            atomicAdd(&(pHistogram[pHitsPerInstance[startId+threadId] * instanceId]), addValue);
+            // atomicAdd(&(pHistogram[pHitsPerInstance[startId+threadId] * instanceId]), addValue);
             instanceId += gridDim.x;
             threadId += numberOfThreads;
         }
         
         __syncthreads();
-        threadId = threadIdx.x;
+        
+        // if (instanceId == 0 && threadIdx.x == 0) {
+        //     for (size_t i = 0; i < pNumberOfInstances; ++i) {
+        //         printf("%i,", pHistogram[i]);
+        //     }
+        // }
+        // __syncthreads();
+        
+        // position i --> number of hits
+        // position i+1 --> instance id
+        threadId = threadIdConst;
         while (threadId < pNumberOfInstances) {
             pSortedInstancesByNumberOfHits[startPositionSortingMemory + threadId] = pHistogram[startId+threadId];
             pSortedInstancesByNumberOfHits[startPositionSortingMemory + threadId + 1] = startId+threadId;
@@ -142,12 +162,21 @@ __global__ void createSortedHistogramsCuda(size_t* pHitsPerInstance, size_t* pEl
 
         radixSortDesc(startPositionSortingMemory, MAX_VALUE, pRadixSortMemory,
                         pSortedInstancesByNumberOfHits, pNumberOfInstances);
-        
+        return;
         // count number of elements that should be considered in the euclidean distance 
         // or cosine similarity computation
-        
-        if (pSortedInstancesByNumberOfHits[startPositionSortingMemory + numberOfElementsToBeConsidered*2] != 0) {
-            // pSortedInstancesByNumberOfHits[startPositionSortingMemory + numberOfElementsToBeConsidered*2] != 0
+        if (pFast) {
+            // threadId = threadIdx.x;
+            // insert the k neighbors and distances to the neighborhood and distances vector
+            if (threadIdConst < pNumberOfNeighbors) {
+                pNeighborhood[instanceId*pNumberOfNeighbors+threadIdConst] 
+                    = pSortedInstancesByNumberOfHits[startPositionSortingMemory + threadIdConst+1];
+                pDistances[instanceId*pNumberOfNeighbors+threadIdConst] 
+                    = (float) pSortedInstancesByNumberOfHits[startPositionSortingMemory + threadIdConst];
+            }
+        } else {
+            // excess factor is missing!!!
+            
         }
     
         instanceId += gridDim.x;
@@ -193,6 +222,7 @@ __device__ void radixSortDesc(int pStartPosition, int pEndPosition, int* pRadixS
         }
         __syncthreads();
     }
+    
 }
 __device__ void radixSortAsc(int pStartPosition, int pEndPosition, int* pRadixSortMemory,
                             int* pSortingMemory, size_t pNumberOfInstances) {
@@ -237,7 +267,8 @@ __global__ void euclideanDistanceCuda(int* pHitsPerQueryInstance, int* pNumberIn
                                         size_t pRangeBetweenInstances, size_t pNumberOfInstances,
                                         size_t* pFeatureList, float* pValuesList,
                                         size_t* pSizeOfInstanceList, size_t pMaxNnz, 
-                                        int* pRadixSortMemory, int pNumberOfNeighbors) {
+                                        int* pRadixSortMemory, int pNumberOfNeighbors,
+                                        size_t* pNeighborhood, float* pDistances) {
     int blockId = blockIdx.x;
     int threadId = threadIdx.x;
     size_t pointerToFeatureInstance, pointerToFeatureNeighbor, queryIndexInstance,
@@ -258,8 +289,8 @@ __global__ void euclideanDistanceCuda(int* pHitsPerQueryInstance, int* pNumberIn
         queryIndexNeighbor = blockId * pRangeBetweenInstances + threadId*2;
         
         // get the two instance ids
-        instanceId = pHitsPerQueryInstance[queryIndexInstance];
-        instanceIdNeighbor = pHitsPerQueryInstance[queryIndexNeighbor];
+        instanceId = pHitsPerQueryInstance[queryIndexInstance+1];
+        instanceIdNeighbor = pHitsPerQueryInstance[queryIndexNeighbor+1];
         
         // get the index positons for the two instances in the sparse matrix
         indexSparseMatrixInstance = instanceId*pMaxNnz;
@@ -318,12 +349,12 @@ __global__ void euclideanDistanceCuda(int* pHitsPerQueryInstance, int* pNumberIn
             // square root of the sum
             euclideanDistance = sqrtf(euclideanDistance);
             // store euclidean distance and neighbor id
-            pHitsPerQueryInstance[queryIndexNeighbor + 1] = (int) euclideanDistance * 1000;
+            pHitsPerQueryInstance[queryIndexNeighbor] = (int) euclideanDistance * 1000;
             threadId += blockIdx.x;
             euclideanDistance = 0;
             value = 0;
             queryIndexNeighbor = blockId * pRangeBetweenInstances + threadId*2;
-            instanceIdNeighbor = pHitsPerQueryInstance[queryIndexNeighbor];
+            instanceIdNeighbor = pHitsPerQueryInstance[queryIndexNeighbor + 1];
             indexSparseMatrixNeighbor = instanceIdNeighbor*pMaxNnz;
             numberOfFeaturesNeighbor = pSizeOfInstanceList[instanceIdNeighbor];
             pointerToFeatureInstance = 0;
@@ -334,6 +365,14 @@ __global__ void euclideanDistanceCuda(int* pHitsPerQueryInstance, int* pNumberIn
         // sort instances by euclidean distance
         radixSortDesc(queryIndexInstance, pNumberInstancesToConsider[instanceId], 
                         pRadixSortMemory, pHitsPerQueryInstance, pNumberOfInstances);
+        threadId = threadIdx.x;
+        // insert the k neighbors and distances to the neighborhood and distances vector
+        if (threadId < pNumberOfNeighbors) {
+            pNeighborhood[instanceId*pNumberOfNeighbors+threadId] 
+                = pHitsPerQueryInstance[queryIndexInstance + threadId+1];
+            pDistances[instanceId*pNumberOfNeighbors+threadId] 
+                = (float) pHitsPerQueryInstance[queryIndexInstance + threadId];
+        }
         blockId += gridDim.x;
         threadId = threadIdx.x;
     }
@@ -344,7 +383,8 @@ __global__ void cosineSimilarityCuda(int* pHitsPerQueryInstance, int* pNumberIns
                                         size_t pRangeBetweenInstances, size_t pNumberOfInstances,
                                         size_t* pFeatureList, float* pValuesList,
                                         size_t* pSizeOfInstanceList, size_t pMaxNnz, 
-                                        int* pRadixSortMemory, int pNumberOfNeighbors) {
+                                        int* pRadixSortMemory, int pNumberOfNeighbors,
+                                        size_t* pNeighborhood, float* pDistances) {
     int blockId = blockIdx.x;
     int threadId = threadIdx.x;
     size_t pointerToFeatureInstance, pointerToFeatureNeighbor, queryIndexInstance,
@@ -441,6 +481,13 @@ __global__ void cosineSimilarityCuda(int* pHitsPerQueryInstance, int* pNumberIns
         // sort instances by euclidean distance
         radixSortDesc(queryIndexInstance, pNumberInstancesToConsider[instanceId],
                         pRadixSortMemory, pHitsPerQueryInstance, pNumberOfInstances);
+                        
+        if (threadId < pNumberOfNeighbors) {
+            pNeighborhood[instanceId*pNumberOfNeighbors+threadId] 
+                = pHitsPerQueryInstance[queryIndexInstance + threadId+1];
+            pDistances[instanceId*pNumberOfNeighbors+threadId] 
+                = (float) pHitsPerQueryInstance[queryIndexInstance + threadId];
+        }
         blockId += gridDim.x;
         threadId = threadIdx.x;
     }

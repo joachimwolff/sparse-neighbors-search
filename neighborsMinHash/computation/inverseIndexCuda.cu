@@ -121,37 +121,59 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
                                                 const size_t pNumberOfThreadsDistance,
                                                 size_t pFast, size_t pDistance,
                                                 size_t pExcessFactor, size_t pMaxNnz) {
-    vsize_t hitsPerInstance;
-    vsize_t elementsPerInstance;
+    size_t* hitsPerInstance = NULL;
+    size_t* hitsPerInstance_realloc = NULL;
+    //  = (size_t*) malloc(pHitsPerInstance->)
+    size_t* elementsPerInstance = (size_t*) malloc(pNumberOfInstances * sizeof(size_t));
     size_t counter = 0;
-    
-    for (auto it = pHitsPerInstance->begin(); it != pHitsPerInstance->end(); ++it) {
-        for (auto itQueryInstance = (*it)->begin(); itQueryInstance != (*it)->end(); ++itQueryInstance) {
+    // size_t i = 0;
+    // return;
+    // std::cout << "Size of pHits: " << pHitsPerInstance->size() << " pNumberofInstances: " << pNumberOfInstances;
+    // std::cout << std::endl;
+    size_t counterHitsPerInstance = 0;
+    for (size_t i = 0; i < pHitsPerInstance->size(); ++i) {
+        for (auto itQueryInstance = (*pHitsPerInstance)[i]->begin(); 
+                itQueryInstance != (*pHitsPerInstance)[i]->end(); ++itQueryInstance) {
+            hitsPerInstance_realloc = (size_t*) realloc(hitsPerInstance, (counterHitsPerInstance+(*itQueryInstance)->size() )* sizeof(size_t));
+            if (hitsPerInstance_realloc != NULL) {
+                hitsPerInstance = hitsPerInstance_realloc;
+            }
             for(auto itInstance = (*itQueryInstance)->begin(); 
                 itInstance != (*itQueryInstance)->end(); ++itInstance) {
-                    hitsPerInstance.push_back(*itInstance);
+                    hitsPerInstance[counterHitsPerInstance] = *itInstance;
                     ++counter;
+                    ++counterHitsPerInstance;
             }
         }
-        elementsPerInstance.push_back(counter);
+        elementsPerInstance[i] = counter;
         counter = 0;
+        // ++i;
     }
+    // return;
+    // printf("counter: ");
+    // for (size_t i = 0; i < pNumberOfInstances; ++i) {
+    //     printf("%i, ", elementsPerInstance[i]);
+    // }
+    // printf("possible instances for first instance: ");
+    // for (size_t i = 0; i < elementsPerInstance[0]; ++i) {
+    //     printf("%i, ",hitsPerInstance[i]);
+    // }
+    // printf("foo"); 
     size_t memory_free;
     size_t memory_total;
     size_t iterations = 1;
     vsize_t instancesPerIteration = {pNumberOfInstances};
     // size_t 
     // memory for all instances and their hits
-    size_t needed_memory = hitsPerInstance.size() * sizeof(size_t);
+    size_t needed_memory = counterHitsPerInstance * sizeof(size_t);
     // memory for the histogram
     needed_memory += pNumberOfBlocksHistogram*pNumberOfInstances * sizeof(int);
     // memory for number of elements per instance
-    needed_memory += elementsPerInstance.size() * sizeof(size_t);
+    needed_memory += pNumberOfInstances * sizeof(size_t);
     // memory for radix sort
     needed_memory += pNumberOfBlocksHistogram * pNumberOfInstances * 2 * 2 * sizeof(int);
     // memory for sorted instances
     needed_memory += pNumberOfBlocksHistogram * pNumberOfInstances * 2 * sizeof(int);
-    
     // get memory usage from gpu
     cudaMemGetInfo(&memory_free, &memory_total);
     // enough memory on the gpu plus an buffer of 1MB
@@ -178,9 +200,9 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
     int* dev_NumberOfPossibleNeighbors;
     // std::cout << "Size of hitPerInstnace: " << hitsPerInstance.size() << std::endl;
     cudaMalloc((void **) &dev_HitsPerInstances,
-            hitsPerInstance.size() * sizeof(size_t));
+            counterHitsPerInstance * sizeof(size_t));
     cudaMalloc((void **) &dev_ElementsPerInstances,
-            elementsPerInstance.size() * sizeof(size_t));
+            pNumberOfInstances * sizeof(size_t));
     cudaMalloc((void **) &dev_Histogram,
             pNumberOfBlocksHistogram*pNumberOfInstances * sizeof(int));
     cudaMalloc((void **) &dev_HistogramSorted,
@@ -189,17 +211,17 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
             pNumberOfBlocksHistogram * pNumberOfInstances * 2 * 2 * sizeof(int));
     cudaMalloc((void **) &dev_NumberOfPossibleNeighbors,
                 pNumberOfInstances * sizeof(int));
-    cudaMemcpy(dev_HitsPerInstances, &hitsPerInstance[0],
-                hitsPerInstance.size() * sizeof(size_t),
+    cudaMemcpy(dev_HitsPerInstances, hitsPerInstance,
+                counterHitsPerInstance * sizeof(size_t),
             cudaMemcpyHostToDevice);
-    cudaMemcpy(dev_ElementsPerInstances, &elementsPerInstance[0],
-                elementsPerInstance.size() * sizeof(size_t),
+    cudaMemcpy(dev_ElementsPerInstances, elementsPerInstance,
+                pNumberOfInstances * sizeof(size_t),
             cudaMemcpyHostToDevice);
     size_t* dev_Neighborhood;
     float* dev_Distances;
     int* neighborhood = (int*) malloc(pHitsPerInstance->size() * pNeighborhoodSize * sizeof(int));
     float* distances = (float*) malloc(pHitsPerInstance->size() * pNeighborhoodSize * sizeof(float));
-    
+    int* histogram = (int*) malloc(pNumberOfBlocksHistogram*pNumberOfInstances * sizeof(int));
     // size_t* instancesHashValues = (size_t*) malloc(pRawData->getNumberOfInstances() / iterations * mNumberOfHashFunctions * sizeof(size_t));
     
     // cudaMalloc((void **) &dev_Neighborhood,
@@ -212,9 +234,17 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
         createSortedHistogramsCuda<<<pNumberOfBlocksHistogram, pNumberOfThreadsHistogram>>>
                     (dev_HitsPerInstances, dev_ElementsPerInstances,
                     pHitsPerInstance->size(), dev_Histogram,
-                    dev_RadixSortMemory, dev_HistogramSorted, dev_NumberOfPossibleNeighbors, 
-                    pNeighborhoodSize, pExcessFactor);
-        
+                    dev_RadixSortMemory, dev_HistogramSorted, 
+                    dev_NumberOfPossibleNeighbors, 
+                    pNeighborhoodSize, pExcessFactor,
+                    dev_Neighborhood, dev_Distances, pFast);
+        cudaMemcpy(histogram, dev_HistogramSorted, pNumberOfBlocksHistogram*pNumberOfInstances * sizeof(int)
+                ,cudaMemcpyDeviceToHost);
+        printf("\n\nunsorted histogram: ");
+        for (size_t j = 0; j < pNumberOfInstances; ++j) {
+                printf("%i,", histogram[j]);
+        }
+        printf("\n\n");
         if (!pFast) {
             if (pDistance) {
                 euclideanDistanceCuda<<<pNumberOfBlocksDistance, pNumberOfThreadsDistance>>>
@@ -222,7 +252,8 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
                                         rangeBetweenInstances, pNumberOfInstances,
                                         mDev_FeatureList, mDev_ValuesList,
                                         mDev_SizeOfInstanceList, pMaxNnz,
-                                        dev_RadixSortMemory, pNeighborhoodSize);
+                                        dev_RadixSortMemory, pNeighborhoodSize,
+                                        dev_Neighborhood, dev_Distances);
                 
             } else {
                 cosineSimilarityCuda<<<pNumberOfBlocksDistance, pNumberOfThreadsDistance>>>
@@ -230,7 +261,8 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
                                         rangeBetweenInstances, pNumberOfInstances,
                                         mDev_FeatureList, mDev_ValuesList,
                                         mDev_SizeOfInstanceList, pMaxNnz,
-                                        dev_RadixSortMemory, pNeighborhoodSize);
+                                        dev_RadixSortMemory, pNeighborhoodSize,
+                                        dev_Neighborhood, dev_Distances);
             }
         }
         
@@ -258,11 +290,17 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
         }
     }
      
-     pNeighborhood->neighbors = neighborsVector;
-     pNeighborhood->distances = distancesVector;
-     free(neighborhood);
-     free(distances);
-     
+    pNeighborhood->neighbors = neighborsVector;
+    pNeighborhood->distances = distancesVector;
+    free(neighborhood);
+    free(distances);
+    free(elementsPerInstance);
+    cudaFree(dev_HitsPerInstances);
+    cudaFree(dev_ElementsPerInstances);
+    cudaFree(dev_Histogram);
+    cudaFree(dev_HistogramSorted);
+    cudaFree(dev_RadixSortMemory);
+    cudaFree(dev_NumberOfPossibleNeighbors);
      // return it
      // delete memory
      // 

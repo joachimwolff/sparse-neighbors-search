@@ -85,7 +85,7 @@ def test(data):
     #   'block_size': 7.880427429793286, 'prune_inverse_index_after_instance': 1, 'shingle_size': 2.393356246460925}
 
     time_build_approx_start = time.time()
-    minHash = MinHash(number_of_hash_functions=6400, max_bin_size= 36, shingle_size = 4, similarity=False, 
+    minHash = MinHash(number_of_hash_functions=400, max_bin_size= 36, shingle_size = 4, similarity=False, 
                         bloomierFilter=False, number_of_cores=4,
                      prune_inverse_index=1, remove_value_with_least_sigificant_bit=1, excess_factor=11,
                     prune_inverse_index_after_instance=0.5, removeHashFunctionWithLessEntriesAs=0, 
@@ -136,7 +136,7 @@ def test(data):
     print "Time: ", time_comp_approx_end  - time_comp_approx
     print "\n\n"
 
-    minHash2 = MinHash(number_of_hash_functions=100, max_bin_size=300, shingle_size = 4,
+    minHash2 = MinHash(number_of_hash_functions=400, max_bin_size=300, shingle_size = 4,
      similarity=False, bloomierFilter=False, number_of_cores=4, minimal_blocks_in_common = 1,
                      prune_inverse_index=1, remove_value_with_least_sigificant_bit=4,
                       excess_factor=200, prune_inverse_index_after_instance=-1,
