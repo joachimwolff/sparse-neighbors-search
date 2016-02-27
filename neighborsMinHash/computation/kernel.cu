@@ -91,7 +91,7 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
 __global__ void createSortedHistogramsCuda(size_t* pHitsPerInstance, size_t* pElementsPerInstance,
                                             const size_t pNumberOfInstances,
                                             int* pHistogram, int* pRadixSortMemory,
-                                            int* pSortedInstancesByNumberOfHits, 
+                                            int* pHistogramSortedWithId, 
                                             int* pNumberOfPossibleNeighbors,
                                             size_t pNumberOfNeighbors, size_t pExcessFactor,
                                             size_t* pNeighborhood, float* pDistances, size_t pFast) {
@@ -118,11 +118,19 @@ __global__ void createSortedHistogramsCuda(size_t* pHitsPerInstance, size_t* pEl
     // size_t index;
     // create histogram
     while (instanceId < pNumberOfInstances) {
+        threadId = threadIdx.x;
         while (threadId < pNumberOfInstances) {
             // clear arrays to 0
             pHistogram[blockIdx.x * pNumberOfInstances + threadId] = 0;
+            pHistogramSortedWithId[blockIdx.x * pNumberOfInstances*2 + threadId] = 0;
+            pHistogramSortedWithId[blockIdx.x * pNumberOfInstances*2 + threadId+1] = 0;
+            
             threadId += blockDim.x;
         }
+        // instanceId += gridDim.x;
+        // threadId = threadIdx.x;
+        // __syncthreads();
+        // continue;
         threadId = threadIdx.x;
         // compute start position in array pHitsPerInstance
         startId = instanceId;
@@ -136,12 +144,16 @@ __global__ void createSortedHistogramsCuda(size_t* pHitsPerInstance, size_t* pEl
         //     return; 
         // }
         while (startId + threadId < endId) {
-            // atomicAdd(&(pHistogram[pHitsPerInstance[startId+threadId] * instanceId]), addValue);
+            atomicAdd(&(pHistogram[pHitsPerInstance[startId+threadId] + blockIdx.x*pNumberOfInstances]), addValue);
             instanceId += gridDim.x;
             threadId += numberOfThreads;
         }
+        // __syncthreads();
+        // return;
+        // instanceId += gridDim.x;
+        // threadId = threadIdx.x;
         
-        __syncthreads();
+        // continue;
         
         // if (instanceId == 0 && threadIdx.x == 0) {
         //     for (size_t i = 0; i < pNumberOfInstances; ++i) {
@@ -152,16 +164,18 @@ __global__ void createSortedHistogramsCuda(size_t* pHitsPerInstance, size_t* pEl
         
         // position i --> number of hits
         // position i+1 --> instance id
-        threadId = threadIdConst;
+        threadId = threadIdx.x;
         while (threadId < pNumberOfInstances) {
-            pSortedInstancesByNumberOfHits[startPositionSortingMemory + threadId] = pHistogram[startId+threadId];
-            pSortedInstancesByNumberOfHits[startPositionSortingMemory + threadId + 1] = startId+threadId;
+            // number of hits
+            pHistogramSortedWithId[blockIdx.x * pNumberOfInstances*2 + threadId*2] = pHistogram[blockIdx.x * pNumberOfInstances + threadId];
+            // instance id
+            pHistogramSortedWithId[blockIdx.x * pNumberOfInstances*2 + threadId*2 + 1] = threadId;
             threadId += blockDim.x;  
         }
         __syncthreads();
-
-        radixSortDesc(startPositionSortingMemory, MAX_VALUE, pRadixSortMemory,
-                        pSortedInstancesByNumberOfHits, pNumberOfInstances);
+        // return;
+        radixSortDesc(blockIdx.x * pNumberOfInstances*2, MAX_VALUE, pRadixSortMemory,
+                        pHistogramSortedWithId, pNumberOfInstances);
         return;
         // count number of elements that should be considered in the euclidean distance 
         // or cosine similarity computation
@@ -170,9 +184,9 @@ __global__ void createSortedHistogramsCuda(size_t* pHitsPerInstance, size_t* pEl
             // insert the k neighbors and distances to the neighborhood and distances vector
             if (threadIdConst < pNumberOfNeighbors) {
                 pNeighborhood[instanceId*pNumberOfNeighbors+threadIdConst] 
-                    = pSortedInstancesByNumberOfHits[startPositionSortingMemory + threadIdConst+1];
+                    = pHistogramSortedWithId[startPositionSortingMemory + threadIdConst+1];
                 pDistances[instanceId*pNumberOfNeighbors+threadIdConst] 
-                    = (float) pSortedInstancesByNumberOfHits[startPositionSortingMemory + threadIdConst];
+                    = (float) pHistogramSortedWithId[startPositionSortingMemory + threadIdConst];
             }
         } else {
             // excess factor is missing!!!
@@ -181,6 +195,7 @@ __global__ void createSortedHistogramsCuda(size_t* pHitsPerInstance, size_t* pEl
     
         instanceId += gridDim.x;
         threadId = threadIdx.x;
+        // startPositionSortingMemory += 
     }
 }
 
@@ -188,40 +203,69 @@ __device__ void radixSortDesc(int pStartPosition, int pEndPosition, int* pRadixS
                             int* pSortingMemory, size_t pNumberOfInstances) {
     // radix sort in descending order of the histogram
     // a[number_of_instances][0] == hits, [1] == elementID
-    size_t threadId = threadIdx.x * 2;
+    size_t threadId = threadIdx.x;
     size_t index = 0;
     int addValue = 1;
     size_t bucketNumber = 0;
     __shared__ int elementCount [2];
+    // printf("\n\nfoo 211\n\n");
+    if (threadIdx.x == 0) {
+            elementCount[0] = 0;    
+            elementCount[1] = 0; 
+    }
+    __syncthreads();
+    
+    // startPosition = blockIdx.x * pNumberOfInstances*2
     for (int i = 0; i < sizeof(int) * 8; ++i) {
         // partion phase: split numbers to bucket 0 or 1
         while (threadId < pNumberOfInstances && threadId < pEndPosition) {
-            bucketNumber = (pSortingMemory[pStartPosition+threadId] >> i) & 1;
+            bucketNumber = (pSortingMemory[pStartPosition+threadId*2] >> i) & 1;
+            
+            // printf("%i, ", bucketNumber);
             atomicAdd(&(elementCount[bucketNumber]), addValue);
-            index = pStartPosition+(bucketNumber*pNumberOfInstances) + threadId;
-            pRadixSortMemory[index] =  pSortingMemory[pStartPosition + threadId];
-            pRadixSortMemory[index+1] =  pSortingMemory[pStartPosition + threadId+1];
+            index = pStartPosition+(bucketNumber*pNumberOfInstances) + threadId*2;
+            pRadixSortMemory[index] = pSortingMemory[pStartPosition + threadId*2];
+            pRadixSortMemory[index+1] = pSortingMemory[pStartPosition + threadId*2+1];
             threadId += blockDim.x;
         }
+        // printf("elementCount[0]: %i", elementCount[0]);
+        // printf("elementCount[1]: %i", elementCount[1]);
+        
         __syncthreads();
+        // return;
         // collection phase copy values from the bucket 1 and then from bucket 0 to the array
-        threadId = threadIdx.x * 2;
-        while (threadId < pNumberOfInstances && threadId < pEndPosition) {
-            index = pStartPosition + pNumberOfInstances + threadId;
-            pSortingMemory[index] = pRadixSortMemory[index];
-            pSortingMemory[index+1] = pRadixSortMemory[index+1];
+        threadId = threadIdx.x;
+        while (threadId < elementCount[1] && threadId < pEndPosition) {
+            index = pStartPosition + pNumberOfInstances*2 + threadId*2;
+            pSortingMemory[pStartPosition + threadId*2] = pRadixSortMemory[index];
+            pSortingMemory[pStartPosition + threadId*2+1] = pRadixSortMemory[index+1];
+            pRadixSortMemory[index] = 0;
+            pRadixSortMemory[index+1] = 0;
             threadId += blockDim.x;
         }
         
-        threadId = threadIdx.x * 2;
-        while (threadId < pNumberOfInstances && threadId < pEndPosition) {
-            index = pStartPosition + threadId;
-            pSortingMemory[index] = pRadixSortMemory[index];
-            pSortingMemory[index+1] = pRadixSortMemory[index+1];
+        threadId = threadIdx.x;
+        while (threadId < elementCount[0]  && threadId < pEndPosition) {
+            index = pStartPosition + threadId*2;
+            pSortingMemory[pStartPosition + threadId*2] = pRadixSortMemory[index];
+            pSortingMemory[pStartPosition + threadId*2+1] = pRadixSortMemory[index+1];
+            pRadixSortMemory[index] = 0;
+            pRadixSortMemory[index+1] = 0;
             threadId += blockDim.x;
         }
         __syncthreads();
+        if (threadIdx.x == 0) {
+            elementCount[0] = 0;    
+            elementCount[1] = 0; 
+        }
+        if (blockIdx.x == 0 && threadIdx.x == 0) {
+            printf("%i, ", i);
+        }
+        __syncthreads();
+        
     }
+    // printf("\n\nfoo 250\n\n");
+    
     
 }
 __device__ void radixSortAsc(int pStartPosition, int pEndPosition, int* pRadixSortMemory,
