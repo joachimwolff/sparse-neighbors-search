@@ -407,7 +407,7 @@ neighborhood* InverseIndex::kneighborsCuda(const umap_uniqueElement* pSignatures
                                         const size_t pNumberOfBlocksDistance,
                                         const size_t pNumberOfThreadsDistance,
                                         size_t pFast, size_t pDistance) {
-                    
+                
     std::vector<vvsize_t_p*>* hitsPerInstance 
                             = new std::vector<vvsize_t_p*>(pSignaturesMap->size());                        
 #ifdef OPENMP
@@ -443,6 +443,7 @@ neighborhood* InverseIndex::kneighborsCuda(const umap_uniqueElement* pSignatures
         
     }
     neighborhood* neighbors = new neighborhood();
+    #ifdef CUDA    
     mInverseIndexCuda->computeHitsOnGpu(hitsPerInstance, neighbors,
                                         pNneighborhood, hitsPerInstance->size(),
                                         pNumberOfBlocksHistogram,
@@ -451,6 +452,7 @@ neighborhood* InverseIndex::kneighborsCuda(const umap_uniqueElement* pSignatures
                                         pNumberOfThreadsDistance,
                                         pFast, pDistance,
                                         mExcessFactor, mMaxNnz);
+    #endif
     return neighbors;                                  
 
 }

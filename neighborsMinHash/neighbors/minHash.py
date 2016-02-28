@@ -225,7 +225,8 @@ class MinHash():
 
         # print result[0]
         # print result[1]
-        # print "foo"
+        
+        
         if return_distance:
             return asarray(result[0]), asarray(result[1])
         else:

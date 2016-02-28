@@ -167,12 +167,13 @@ class SparseMatrixFloat {
             returnValue[i] = element;
         }
 
-        size_t numberOfElementsToSort = pNneighbors;
-        if (pNneighbors > returnValue.size()) {
+        size_t numberOfElementsToSort = pNneighbors+1;
+        if (numberOfElementsToSort > returnValue.size()) {
             numberOfElementsToSort = returnValue.size();
         }
         // sort the values by increasing order
-        std::partial_sort(returnValue.begin(), returnValue.begin()+numberOfElementsToSort, returnValue.end(), mapSortAscByValueFloat);
+        std::sort(returnValue.begin(), returnValue.end(), mapSortAscByValueFloat);
+        // std::partial_sort(returnValue.begin(), returnValue.begin()+numberOfElementsToSort, returnValue.end(), mapSortAscByValueFloat);
         return returnValue;
     };
 
@@ -247,12 +248,14 @@ class SparseMatrixFloat {
             
             returnValue[i] = element;
         }
-        size_t numberOfElementsToSort = pNneighbors;
-        if (pNneighbors > returnValue.size()) {
+        size_t numberOfElementsToSort = pNneighbors+1;
+        if (numberOfElementsToSort > returnValue.size()) {
             numberOfElementsToSort = returnValue.size();
         }
         // sort the values by increasing order
-        std::partial_sort(returnValue.begin(), returnValue.begin()+numberOfElementsToSort, returnValue.end(), mapSortDescByValueFloat);
+        std::sort(returnValue.begin(), returnValue.end(), mapSortDescByValueFloat);
+        
+        // std::partial_sort(returnValue.begin(), returnValue.begin()+numberOfElementsToSort, returnValue.end(), mapSortDescByValueFloat);
         return returnValue;
     };
 };

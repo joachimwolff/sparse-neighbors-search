@@ -32,7 +32,7 @@ class MinHashBase {
     size_t mNumberOfCores;
     size_t mChunkSize;
     size_t mSimilarity;
-
+    size_t mExcessFactor;
     public:
     MinHashBase();
 

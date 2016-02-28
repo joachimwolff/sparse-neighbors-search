@@ -11,7 +11,7 @@
 **/
 
 #include <iostream>
-
+#include <set>
 #include "minHashBase.h"
 #include "sparseMatrix.h"
 
@@ -44,6 +44,7 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pShingleSize,
         mNumberOfCores = pNumberOfCores;
         mChunkSize = pChunkSize;
         mSimilarity = pSimilarity;
+        mExcessFactor = pExcessFactor;
                     // printf("foo%i\n", __LINE__);
 
 }
@@ -105,29 +106,88 @@ if (mChunkSize <= 0) {
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
-#ifdef OPENMP
-#pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
-#endif
-    for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
-        if (neighborhood_->neighbors->operator[](i).size() != 1) {
-            std::vector<sortMapFloat> exactNeighbors;
-            if (0 < neighborhood_->neighbors->operator[](i).size()) {
-                if (pSimilarity) {
-                    exactNeighbors = 
-                        mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), pNneighbors, pRawData);
-                } else {
-                    exactNeighbors = 
-                        mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), pNneighbors, pRawData);
+    vvint* neighborsListFirstRound = new vvint(neighborhood_->neighbors->size());
+    vvint* extendedNeighbors = new vvint(neighborhood_->neighbors->size());
+    size_t numberOfRounds = 5;
+    for (size_t round = 0; round < numberOfRounds; ++round) {
+    #ifdef OPENMP
+    #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+    #endif
+        for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
+            if (neighborhood_->neighbors->operator[](i).size() != 1) {
+                std::vector<sortMapFloat> exactNeighbors;
+                if (0 < neighborhood_->neighbors->operator[](i).size()) {
+                    if (pSimilarity) {
+                        exactNeighbors = 
+                            mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), pNneighbors, pRawData);
+                    } else {
+                        exactNeighbors = 
+                            mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), pNneighbors, pRawData);
+                    }
+                    
+                    size_t vectorSize = exactNeighbors.size();
+                    
+                    for (size_t j = 0; j < vectorSize && j < pNneighbors*mExcessFactor; ++j) {
+    #ifdef OPENMP
+    #pragma omp critical
+    #endif
+                        (*neighborsListFirstRound)[i].push_back(exactNeighbors[j].key);
+                    }
                 }
             }
+        }
+    #ifdef OPENMP
+    #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+    #endif   
+        for (size_t i = 0; i < neighborsListFirstRound->size(); ++i) {
+            size_t sizeOfExtended = (*neighborsListFirstRound)[i].size();
+            neighborhood_->neighbors->operator[](i).clear();
+            std::set<int> extendedSearchSet;
+            for (size_t j = 0; j < pNneighbors+1 && j < sizeOfExtended; ++j) {
+                size_t instance = (*neighborsListFirstRound)[i][j];
+                size_t extendedSearchSetSize = 0;
+                for (size_t k = 0; k < (*neighborsListFirstRound)[instance].size();  ++k) {
+                    extendedSearchSetSize = extendedSearchSet.size();
+                    extendedSearchSet.insert((*neighborsListFirstRound)[instance][k]);
+                    if (extendedSearchSetSize != extendedSearchSet.size()) {
+                    #ifdef OPENMP
+                    #pragma omp critical
+                    #endif
+                        neighborhood_->neighbors->operator[](i).push_back((*neighborsListFirstRound)[instance][k]);
+                        
+                    }
+                }
+            }
+            extendedSearchSet.clear();
+        }
+    
+    }
+ #ifdef OPENMP
+#pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+#endif   
+    for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
+       if (neighborhood_->neighbors->operator[](i).size() != 1) {
+                std::vector<sortMapFloat> exactNeighbors;
+                if (0 < neighborhood_->neighbors->operator[](i).size()) {
+                    if (pSimilarity) {
+                        exactNeighbors = 
+                            mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), pNneighbors, pRawData);
+                    } else {
+                        exactNeighbors = 
+                            mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), pNneighbors, pRawData);
+                    }
+                }
             size_t vectorSize = exactNeighbors.size();
             
             std::vector<int> neighborsVector(vectorSize);
             std::vector<float> distancesVector(vectorSize);
-
+            if (vectorSize == 0) {
+                neighborsVector.push_back(i);
+                distancesVector.push_back(0.0);
+            }
             for (size_t j = 0; j < vectorSize; ++j) {
-                neighborsVector[j] = exactNeighbors[j].key;
-                distancesVector[j] = exactNeighbors[j].val;
+                    neighborsVector[j] = exactNeighbors[j].key;
+                    distancesVector[j] = exactNeighbors[j].val;
             }
 #ifdef OPENMP
 #pragma omp critical
@@ -140,9 +200,11 @@ if (mChunkSize <= 0) {
 #ifdef OPENMP
 #pragma omp critical
 #endif
-            {
-                neighborhoodExact->neighbors->operator[](i) = neighborhood_->neighbors->operator[](i);
-                neighborhoodExact->distances->operator[](i) = neighborhood_->distances->operator[](i);
+        {
+                std::vector<int> neighborsVector(1, i);
+                std::vector<float> distancesVector(1, 0.0);
+                neighborhoodExact->neighbors->operator[](i) = neighborsVector;
+                neighborhoodExact->distances->operator[](i) = distancesVector;
             }
         }
     }
@@ -150,7 +212,8 @@ if (mChunkSize <= 0) {
     delete neighborhood_->neighbors;
     delete neighborhood_->distances;
     delete neighborhood_;
-
+    delete neighborsListFirstRound;
+    delete extendedNeighbors;
     return neighborhoodExact;
 }
 

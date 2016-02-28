@@ -105,12 +105,12 @@ static PyObject* bringNeighborhoodInShape(const neighborhood* pNeighborhood, con
             for (size_t j = 0 + pCutFirstValue; j < pNneighbors + pCutFirstValue; ++j) {
                 PyObject* valueNeighbor = Py_BuildValue("i", pNeighborhood->neighbors->operator[](i)[j]);
                 if (PyList_SetItem(innerListNeighbors, j - pCutFirstValue, valueNeighbor) == -1) {
-                    // std::cout << 'error: ' << pNeighborhood->neighbors->operator[](i)[j] << std::endl;
+                    std::cout << "error: " << __LINE__ << pNeighborhood->neighbors->operator[](i)[j] << std::endl;
                 }
                 
                 PyObject* valueDistance = Py_BuildValue("f", pNeighborhood->distances->operator[](i)[j]);
                 if (PyList_SetItem(innerListDistances, j - pCutFirstValue, valueDistance) == -1) {
-                    // std::cout << 'error: ' << pNeighborhood->distances->operator[](i)[j] << std::endl;
+                    std::cout << "error: " << __LINE__ << pNeighborhood->distances->operator[](i)[j] << std::endl;
                 }
                 
             }
@@ -118,34 +118,34 @@ static PyObject* bringNeighborhoodInShape(const neighborhood* pNeighborhood, con
             for (size_t j = 0 + pCutFirstValue; j < sizeOfInnerNeighborList; ++j) {
                 PyObject* valueNeighbor = Py_BuildValue("i", pNeighborhood->neighbors->operator[](i)[j]);
                 if (PyList_SetItem(innerListNeighbors, j - pCutFirstValue, valueNeighbor) == -1) {
-                    // std::cout << 'error: ' << pNeighborhood->neighbors->operator[](i)[j] << std::endl;
+                    std::cout << "error: " << __LINE__ << pNeighborhood->neighbors->operator[](i)[j] << std::endl;
 
                 }
                 PyObject* valueDistance = Py_BuildValue("f", pNeighborhood->distances->operator[](i)[j]);
                 if (PyList_SetItem(innerListDistances, j -pCutFirstValue, valueDistance) == -1) {
-                    // std::cout << 'error: ' << pNeighborhood->distances->operator[](i)[j] << std::endl;
+                    std::cout << "error: " << __LINE__ << pNeighborhood->distances->operator[](i)[j] << std::endl;
 
                 }
             }
             for (size_t j = sizeOfInnerNeighborList; j < pNneighbors + pCutFirstValue; ++j) {
                 PyObject* valueNeighbor = Py_BuildValue("i", -1);
                 if (PyList_SetItem(innerListNeighbors, j - pCutFirstValue, valueNeighbor) == -1) {
-                    // std::cout << 'error: ' << -1 << std::endl;
+                    std::cout << "error: " << __LINE__ << -1 << std::endl;
 
                 }
                 PyObject* valueDistance = Py_BuildValue("f", 0.0);
                 if (PyList_SetItem(innerListDistances, j -pCutFirstValue, valueDistance) == -1) {
-                    // std::cout << 'error: ' << 0.0 << std::endl;
+                    std::cout << "error: " << __LINE__ << 0.0 << std::endl;
 
                 }
             }
         }
         
         if (PyList_SetItem(outerListNeighbors, i, innerListNeighbors) == -1) {
-            // std::cout << "error setting neighbor list: " << i << std::endl;
+            std::cout << "error setting neighbor list: " << i << std::endl;
         }
         if (PyList_SetItem(outerListDistances, i, innerListDistances) == -1) {
-            // std::cout << "error setting distnace list: " << i << std::endl;
+            std::cout << "error setting distnace list: " << i << std::endl;
         }
     }
     delete pNeighborhood->neighbors;
