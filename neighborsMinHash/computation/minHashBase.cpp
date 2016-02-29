@@ -160,7 +160,7 @@ if (mChunkSize <= 0) {
             size_t instance;
             
             neighborhood_->neighbors->operator[](i).clear();
-            for (size_t j = 0; j < pNneighbors+mExcessFactor && j < sizeOfExtended; ++j) { 
+            for (size_t j = 0; j < pNneighbors && j < sizeOfExtended; ++j) { 
                 instance = neighborsListFirstRound[i][j];
                 // if (instance > neighborsListFirstRound.size()) continue;
                 // if (neighborsListFirstRound[instance].size() > 1000) continue;
