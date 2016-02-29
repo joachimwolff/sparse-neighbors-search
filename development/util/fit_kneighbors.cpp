@@ -91,15 +91,15 @@ int main( int argc, const char* argv[] ) {
     std::istream_iterator<size_t> end_addInfo; 
     std::copy(begin_addInfo, end_addInfo, std::back_inserter(addInfo));
 
-    size_t numberOfHashFunctions = 400;
-    size_t shingleSize = 4;
-    size_t numberOfCores = 4; 
+    size_t numberOfHashFunctions = 150;
+    size_t shingleSize = 1;
+    size_t numberOfCores = 1; 
     size_t chunkSize = 0;
     size_t nNeighbors = 5;
     size_t minimalBlocksInCommon = 1; 
     size_t maxBinSize = 50;
     size_t maximalNumberOfHashCollisions = ceil(numberOfHashFunctions / static_cast<float>(shingleSize));
-    size_t excessFactor = 5;
+    size_t excessFactor = 11;
     int fast = 0;
 
     MinHash* minHash = createMinHashObj(numberOfHashFunctions, shingleSize, numberOfCores, chunkSize, nNeighbors,

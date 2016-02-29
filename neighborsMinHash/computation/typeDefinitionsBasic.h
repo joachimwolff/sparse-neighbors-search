@@ -52,7 +52,7 @@ typedef std::unordered_map< size_t, uniqueElement > umap_uniqueElement;
 
 
 struct sortMapFloat {
-    size_t key;
+    int key;
     float val;
 };
 

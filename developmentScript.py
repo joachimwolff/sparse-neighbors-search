@@ -85,11 +85,16 @@ def test(data):
     #   'block_size': 7.880427429793286, 'prune_inverse_index_after_instance': 1, 'shingle_size': 2.393356246460925}
 
     time_build_approx_start = time.time()
-    minHash = MinHash(number_of_hash_functions=6200, max_bin_size= 100, shingle_size = 4, similarity=False, 
+    minHash = MinHash(number_of_hash_functions=200, max_bin_size= 36, shingle_size = 4, similarity=False, 
                         bloomierFilter=False, number_of_cores=4,
-                     prune_inverse_index=-1, remove_value_with_least_sigificant_bit=0, excess_factor=20,
-                    prune_inverse_index_after_instance=-1, removeHashFunctionWithLessEntriesAs=-1, 
-                    hash_algorithm = 0, shingle=0, block_size=1, cuda = 0)
+                     prune_inverse_index=2, remove_value_with_least_sigificant_bit=1, excess_factor=12,
+                    prune_inverse_index_after_instance=0.5, removeHashFunctionWithLessEntriesAs=0, 
+                    hash_algorithm = 0, shingle=0, block_size=4, cuda = 0)
+    # minHash = MinHash(number_of_hash_functions=87, max_bin_size= 42, shingle_size = 1, similarity=False, 
+    #                     bloomierFilter=False, number_of_cores=4,
+    #                  prune_inverse_index=26, remove_value_with_least_sigificant_bit=2, excess_factor=2294,
+    #                 prune_inverse_index_after_instance=-1, removeHashFunctionWithLessEntriesAs=590, 
+    #                 hash_algorithm = 0, shingle=1, block_size=6, cuda = 0)
     # minHash.fit(data[0])
     minHash.fit(datasetBursi)
     minHash.get_distribution_of_inverse_index()

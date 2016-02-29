@@ -51,6 +51,18 @@ def objective(args):
                 hash_algorithm = 0, block_size = int(block_size), shingle=shingle,
                 remove_value_with_least_sigificant_bit=remove_value_with_least_sigificant_bit, 
                 cuda=0)
+    print "Values: "
+    print "number_of_hash_functions ", number_of_hash_functions
+    print "max_bin_size ", max_bin_size
+    print "shingle_size ", shingle_size
+    print "excess_factor ", excess_factor
+    # print "chunk_size ",chunk_size
+    print "prune_inverse_index ", prune_inverse_index
+    print "prune_inverse_index_after_instance ", prune_inverse_index_after_instance
+    print "removeHashFunctionWithLessEntriesAs ", removeHashFunctionWithLessEntriesAs
+    print "block_size ", block_size
+    print "shingle ", shingle
+    print "remove_value_with_least_sigificant_bit ", remove_value_with_least_sigificant_bit
     minHash.fit(datasetBursi)
     distribution = minHash.get_distribution_of_inverse_index()
     memory = 0
@@ -67,25 +79,13 @@ def objective(args):
     print number_of_hash_functions
     # except:
     # print "Exception!" 
-    # print "Values: "
-    # print "number_of_hash_functions ", number_of_hash_functions
-    # print "max_bin_size ", max_bin_size
-    # print "shingle_size ", shingle_size
-    # print "excess_factor ", excess_factor
-    # # print "chunk_size ",chunk_size
-    # print "prune_inverse_index ", prune_inverse_index
-    # print "prune_inverse_index_after_instance ", prune_inverse_index_after_instance
-    # print "removeHashFunctionWithLessEntriesAs ", removeHashFunctionWithLessEntriesAs
-    # print "block_size ", block_size
-    # print "shingle ", shingle
-    # print "remove_value_with_least_sigificant_bit ", remove_value_with_least_sigificant_bit
-    # print error
+    print "error: ", error-0.001
     
         # return 5
     # alpha = args["alpha"]
     # beta = args["beta"]
     # return compute_score(error, memory, time_end, max_memory, max_time, 0.15, 0.25)
-    return error
+    return error-0.001
 
 
 # get data set  
@@ -135,14 +135,14 @@ print "Max memory: ", max_memory
 # define a search space
 from hyperopt import hp
 space = {
-        'number_of_hash_functions': hp.normal('number_of_hash_functions', 3000, 2000),
-        'max_bin_size': hp.normal('max_bin_size', 1000, 300),
+        'number_of_hash_functions': hp.normal('number_of_hash_functions', 400, 350),
+        'max_bin_size': hp.normal('max_bin_size', 50, 45),
         'shingle_size': hp.uniform('shingle_size', 1, 5),
         'excess_factor': hp.normal('excess_factor', 1000, 999),
         # 'chunk_size': hp.uniform('chunk_size', 1, 20),
         'prune_inverse_index': hp.choice('prune_inverse_index', [hp.uniform('prune1',1, 100), -1]),
         'prune_inverse_index_after_instance': hp.choice('prune_inverse_index_after_instance',[ -1.0, hp.normal('prune2',0.5, 0.5)]),
-        'removeHashFunctionWithLessEntriesAs': hp.uniform('removeHashFunctionWithLessEntriesAs', 10, 1000),
+        'removeHashFunctionWithLessEntriesAs': hp.uniform('removeHashFunctionWithLessEntriesAs', 0, 1000),
         'block_size': hp.uniform('block_size', 1, 10), 
         'shingle': hp.choice('shingle', [0,1]), 
         'remove_value_with_least_sigificant_bit': hp.choice('remove_value_with_least_sigificant_bit', [0, 1, 2, 3, 4, 5]),

@@ -75,6 +75,14 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
 }
  
 InverseIndex::~InverseIndex() {
+    for (auto it = mSignatureStorage->begin(); it != mSignatureStorage->end(); ++it) {
+        if ((*it).second.instances != NULL) {
+            delete (*it).second.instances;
+        }
+        if ((*it).second.signature != NULL) {
+            delete (*it).second.signature;
+        }
+    }
     delete mSignatureStorage;
     delete mHash;
     delete mInverseIndexStorage;
@@ -198,10 +206,11 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
     time_t timerEndCuda;
     time_t timerStartCPU;
     time_t timerEndCPU;
-    
+    #ifdef OPENMP
     omp_set_dynamic(0);
     omp_set_num_threads(mNumberOfCores);
     omp_set_nested(1);
+    #endif
     size_t cpuStart = 0;
     size_t cpuEnd = pRawData->size();
     #ifdef CUDA
@@ -350,7 +359,9 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     time(&timerStart);
     // compute how often the inverse index should be pruned 
     size_t pruneEveryNInstances = ceil(signatures->size() * mPruneInverseIndexAfterInstance);
+    #ifdef OPENMP
     omp_set_dynamic(0);
+    #endif
     // store signatures in signatureStorage
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     for (size_t i = 0; i < signatures->size(); ++i) {
@@ -460,6 +471,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                                         const size_t pNneighborhood, 
                                         const bool pDoubleElementsStorageCount,
                                         size_t pFast, size_t pDistance) {
+    std::cout << "searching neighbors" << std::endl;
     #ifdef CUDA
         return kneighborsCuda(pSignaturesMap, pNneighborhood, pDoubleElementsStorageCount,
                                 128,128, 512, 32, pFast, pDistance);
@@ -627,5 +639,8 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
     neighborhood* neighborhood_ = new neighborhood();
     neighborhood_->neighbors = neighbors;
     neighborhood_->distances = distances;
+    std::cout << "searching neighbors DONE" << std::endl;
+    
     return neighborhood_;
+    
 }

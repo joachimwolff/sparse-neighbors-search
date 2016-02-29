@@ -64,6 +64,8 @@ void MinHashBase::partialFit() {
 }
 neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast, int pSimilarity) {
     // std::cout << "kneighbors" << std::endl;
+    std::cout << "searching minhashBase" << std::endl;
+    
     if (pFast == -1) {
         pFast = mFast;
     } 
@@ -86,6 +88,9 @@ neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t 
     neighborhood* neighborhood_ = mInverseIndex->kneighbors(X, pNneighbors, 
                                                             doubleElementsStorageCount,
                                                             pFast, pSimilarity);
+    std::cout << __LINE__ << std::endl;
+
+                                                            
     if (!doubleElementsStorageCount) {
         delete X;
     }
@@ -99,6 +104,8 @@ neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t 
     neighborhood* neighborhoodExact = new neighborhood();
     neighborhoodExact->neighbors = new vvint(neighborhood_->neighbors->size());
     neighborhoodExact->distances = new vvfloat(neighborhood_->neighbors->size());
+    std::cout << __LINE__ << std::endl;
+
 
 if (mChunkSize <= 0) {
         mChunkSize = ceil(neighborhood_->neighbors->size() / static_cast<float>(mNumberOfCores));
@@ -106,62 +113,75 @@ if (mChunkSize <= 0) {
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
-    vvint* neighborsListFirstRound = new vvint(neighborhood_->neighbors->size());
-    vvint* extendedNeighbors = new vvint(neighborhood_->neighbors->size());
-    size_t numberOfRounds = 5;
+    vvint neighborsListFirstRound(neighborhood_->neighbors->size());
+    for (size_t i = 0; i < neighborsListFirstRound.size(); ++i) {
+        neighborsListFirstRound[i] = vint(0);
+    }
+    size_t numberOfRounds = 2;
     for (size_t round = 0; round < numberOfRounds; ++round) {
     #ifdef OPENMP
     #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     #endif
         for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
-            if (neighborhood_->neighbors->operator[](i).size() != 1) {
+            if (neighborhood_->neighbors->operator[](i).size() > 0) {
                 std::vector<sortMapFloat> exactNeighbors;
-                if (0 < neighborhood_->neighbors->operator[](i).size()) {
+                // if (0 < neighborhood_->neighbors->operator[](i).size()) {
                     if (pSimilarity) {
                         exactNeighbors = 
-                            mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), pNneighbors, pRawData);
+                            mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), pNneighbors+mExcessFactor, pRawData);
                     } else {
                         exactNeighbors = 
-                            mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), pNneighbors, pRawData);
+                            mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), pNneighbors+mExcessFactor, pRawData);
                     }
                     
                     size_t vectorSize = exactNeighbors.size();
                     
-                    for (size_t j = 0; j < vectorSize && j < pNneighbors*mExcessFactor; ++j) {
-    #ifdef OPENMP
-    #pragma omp critical
-    #endif
-                        (*neighborsListFirstRound)[i].push_back(exactNeighbors[j].key);
+                    for (size_t j = 0; j < vectorSize && j < pNneighbors+mExcessFactor; ++j) {
+    // #ifdef OPENMP
+    // #pragma omp critical
+    // #endif
+                        neighborsListFirstRound[i].push_back(exactNeighbors[j].key);
                     }
-                }
+                // }
+            } else {
+                neighborsListFirstRound[i].clear();
             }
         }
+        
     #ifdef OPENMP
     #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     #endif   
-        for (size_t i = 0; i < neighborsListFirstRound->size(); ++i) {
-            size_t sizeOfExtended = (*neighborsListFirstRound)[i].size();
+        for (size_t i = 0; i < neighborsListFirstRound.size(); ++i) {
+            size_t sizeOfExtended = neighborsListFirstRound[i].size();
+            vsize_t dublicateElements((neighborhood_->neighbors->size()/sizeof(size_t))+1,0);
+            size_t bucketIndex;
+            size_t element;
+            size_t valueSeen;
+            size_t instance;
+            
             neighborhood_->neighbors->operator[](i).clear();
-            std::set<int> extendedSearchSet;
-            for (size_t j = 0; j < pNneighbors+1 && j < sizeOfExtended; ++j) {
-                size_t instance = (*neighborsListFirstRound)[i][j];
-                size_t extendedSearchSetSize = 0;
-                for (size_t k = 0; k < (*neighborsListFirstRound)[instance].size();  ++k) {
-                    extendedSearchSetSize = extendedSearchSet.size();
-                    extendedSearchSet.insert((*neighborsListFirstRound)[instance][k]);
-                    if (extendedSearchSetSize != extendedSearchSet.size()) {
-                    #ifdef OPENMP
-                    #pragma omp critical
-                    #endif
-                        neighborhood_->neighbors->operator[](i).push_back((*neighborsListFirstRound)[instance][k]);
-                        
+            for (size_t j = 0; j < pNneighbors+mExcessFactor && j < sizeOfExtended; ++j) { 
+                instance = neighborsListFirstRound[i][j];
+                // if (instance > neighborsListFirstRound.size()) continue;
+                // if (neighborsListFirstRound[instance].size() > 1000) continue;
+                for (size_t k = 0; k < neighborsListFirstRound[instance].size();  ++k) {
+                    bucketIndex = neighborsListFirstRound[instance][k] / sizeof(size_t);
+                    element = 1 << (neighborsListFirstRound[instance][k] % sizeof(size_t));
+                    // if (bucketIndex > dublicateElements.size()) continue;
+                    valueSeen = dublicateElements[bucketIndex] & element;
+                    
+                    if (valueSeen != element) {
+                    // #ifdef OPENMP
+                    // #pragma omp critical
+                    // #endif
+                        neighborhood_->neighbors->operator[](i).push_back(neighborsListFirstRound[instance][k]);
+                        dublicateElements[bucketIndex] = dublicateElements[bucketIndex] | element;
                     }
                 }
             }
-            extendedSearchSet.clear();
         }
-    
     }
+    
  #ifdef OPENMP
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
 #endif   
@@ -212,8 +232,7 @@ if (mChunkSize <= 0) {
     delete neighborhood_->neighbors;
     delete neighborhood_->distances;
     delete neighborhood_;
-    delete neighborsListFirstRound;
-    delete extendedNeighbors;
+
     return neighborhoodExact;
 }
 

@@ -50,7 +50,7 @@ MinHash* createMinHashObj(size_t pNumberOfHashFunctions, size_t pShingleSize, si
                     pExcessFactor, pMaximalNumberOfHashCollisions, pFast, pSimilarity, pBloomierFilter,
                     pPrune_inverse_index, pPrune_inverse_index_after_instance,
                     pRemoveHashFunctionWithLessEntriesAs, pHash_algorithm,
-                    pBlock_size, pShingle, pRemoveValueWithLeastSigificantBit, 1);
+                    pBlock_size, pShingle, pRemoveValueWithLeastSigificantBit);
 	return minHashObj;
 }
 
@@ -105,7 +105,7 @@ int main( int argc, const char* argv[] ) {
     std::istream_iterator<size_t> end_addInfo; 
     std::copy(begin_addInfo, end_addInfo, std::back_inserter(addInfo));
 
-    size_t numberOfHashFunctions = 400;
+    size_t numberOfHashFunctions = 150;
     size_t shingleSize = 4;
     
     size_t numberOfCores = 4; 
@@ -114,14 +114,14 @@ int main( int argc, const char* argv[] ) {
     size_t minimalBlocksInCommon = 1; 
     size_t maxBinSize = 50;
     size_t maximalNumberOfHashCollisions = ceil(numberOfHashFunctions / static_cast<float>(shingleSize));
-    size_t excessFactor = 5;
+    size_t excessFactor = 11;
     int fast = 0;
     int similarity = 0;
     size_t bloomierFilter = 0;
-    int prune_inverse_index=-1;
-    float prune_inverse_index_after_instance=-1.0;
-    float removeHashFunctionWithLessEntriesAs=-1.0;
-    size_t hash_algorithm = 1;
+    int prune_inverse_index=2;
+    float prune_inverse_index_after_instance=0.5;
+    float removeHashFunctionWithLessEntriesAs=0;
+    size_t hash_algorithm = 0;
     size_t block_size = 1;
     size_t shingle=0;
 
