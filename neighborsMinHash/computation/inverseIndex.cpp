@@ -76,12 +76,12 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
  
 InverseIndex::~InverseIndex() {
     for (auto it = mSignatureStorage->begin(); it != mSignatureStorage->end(); ++it) {
-        if ((*it).second.instances != NULL) {
+        // if ((*it).second.instances != NULL) {
             delete (*it).second.instances;
-        }
-        if ((*it).second.signature != NULL) {
+        // }
+        // if ((*it).second.signature != NULL) {
             delete (*it).second.signature;
-        }
+        // }
     }
     delete mSignatureStorage;
     delete mHash;
@@ -289,62 +289,33 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     const size_t sizeOfInstances = pRawData->size();
     umap_uniqueElement* instanceSignature = new umap_uniqueElement();
     instanceSignature->reserve(sizeOfInstances);
-    if (mChunkSize <= 0) {
-        mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
-    }
-#ifdef OPENMP 
-    omp_set_dynamic(0);
-#endif
-
-#ifdef OPENMP
+    vvsize_t_p* signatures = computeSignatureVectors(pRawData);
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
-#endif
-    for(size_t index = 0; index < pRawData->size(); ++index) {
-        // compute unique id
-        size_t signatureId = 0;
-        for (size_t j = 0; j < pRawData->getSizeOfInstance(index); ++j) {
-                signatureId = mHash->hash((pRawData->getNextElement(index, j) +1), (signatureId+1), MAX_VALUE);
-        }
-        auto signatureIt = (*mSignatureStorage).find(signatureId);
-        if (signatureIt != (*mSignatureStorage).end() && (instanceSignature->find(signatureId) != instanceSignature->end())) {
-#ifdef OPENMP
-#pragma omp critical
-#endif 
-            {
-                (*instanceSignature)[signatureId] = (*mSignatureStorage)[signatureId];
-                (*instanceSignature)[signatureId].instances->push_back(index);
-                mDoubleElementsQueryCount += (*mSignatureStorage)[signatureId].instances->size();
-            }
-            continue;
-        }
+    for (size_t i = 0; i < signatures->size(); ++i) {
 
-        // for every hash function: compute the hash values of all features and take the minimum of these
-        // as the hash value for one hash function --> h_j(x) = argmin (x_i of x) f_j(x_i)
-        vsize_t* signature;
-        if (mHashAlgorithm == 0) {
-            // use minHash
-            signature = computeSignature(pRawData, index);
-        } else if (mHashAlgorithm == 1) {
-            // use wta hash
-            signature = computeSignatureWTA(pRawData, index);
+        size_t signatureId = 0;
+        for (size_t j = 0; j < pRawData->getSizeOfInstance(i); ++j) {
+                signatureId = mHash->hash((pRawData->getNextElement(i, j) +1), (signatureId+1), MAX_VALUE);
         }
-#ifdef OPENMP
-#pragma omp critical
-#endif
-        {
-            if (instanceSignature->find(signatureId) == instanceSignature->end()) {
+        
+        if (instanceSignature->find(signatureId) == instanceSignature->end()) {
                 vsize_t* doubleInstanceVector = new vsize_t(1);
-                (*doubleInstanceVector)[0] = index;
+                (*doubleInstanceVector)[0] = i;
                 uniqueElement element;
                 element.instances = doubleInstanceVector; 
-                element.signature = signature;
+                element.signature = (*signatures)[i];
+                #pragma omp critical
                 (*instanceSignature)[signatureId] = element;
-            } else {
-                (*instanceSignature)[signatureId].instances->push_back(index);
+        } else {
+            #pragma omp critical
+            {
+                (*instanceSignature)[signatureId].instances->push_back(i);
                 mDoubleElementsQueryCount += 1;
-            } 
-        }
+                // delete (*signatures)[i];
+            }
+        } 
     }
+    delete signatures;
     return instanceSignature;
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
@@ -384,6 +355,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
             {            
                 mSignatureStorage->operator[](signatureId).instances->push_back(i);
                 mDoubleElementsStorageCount += 1;
+                // delete (*signatures)[i];
             }
         }        
         for (size_t j = 0; j < (*signatures)[i]->size(); ++j) {
@@ -407,6 +379,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     }
     time(&timerEnd);
     std::cout << "Inserting in inverse index needs " << difftime(timerEnd, timerStart) << " seconds." << std::endl;
+    delete signatures;
 }
 
 
@@ -524,7 +497,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                     for (size_t k = 0; k < instances->size(); ++k) {
                         neighborhood[(*instances)[k]] += 1;
                     }
-                }
+                } 
             }
         }
         
