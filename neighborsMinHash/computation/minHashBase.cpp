@@ -63,7 +63,6 @@ void MinHashBase::partialFit() {
 
 }
 neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast, int pSimilarity) {
-    // std::cout << "kneighbors" << std::endl;
     std::cout << "searching minhashBase" << std::endl;
     
     if (pFast == -1) {
@@ -76,24 +75,38 @@ neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t 
         pSimilarity = mSimilarity;
     }
 
-    umap_uniqueElement* X;
     bool doubleElementsStorageCount = false;
+    umap_uniqueElement* x_inverseIndex = mInverseIndex->getSignatureStorage();
+    neighborhood* neighborhood_inverseIndex = 
+                            mInverseIndex->kneighbors(x_inverseIndex, 
+                                                    pNneighbors, true,
+                                                    pFast, pSimilarity);
+    // delete x_inverseIndex;
+    std::cout << __LINE__ << std::endl;
+                                                    
+    neighborhood* neighborhood_;
     if (pRawData == NULL) {
         // no query data given, use stored signatures
-        X = mInverseIndex->getSignatureStorage();
+        neighborhood_ = neighborhood_inverseIndex;
         doubleElementsStorageCount = true;
     } else {
-        X = (mInverseIndex->computeSignatureMap(pRawData));
-    }
-    neighborhood* neighborhood_ = mInverseIndex->kneighbors(X, pNneighbors, 
-                                                            doubleElementsStorageCount,
-                                                            pFast, pSimilarity);
-    std::cout << __LINE__ << std::endl;
-
-                                                            
-    if (!doubleElementsStorageCount) {
+        umap_uniqueElement* X = (mInverseIndex->computeSignatureMap(pRawData));
+        neighborhood_ = mInverseIndex->kneighbors(X, pNneighbors, 
+                                                doubleElementsStorageCount,
+                                                pFast, pSimilarity);
+    
+        for (auto it = X->begin(); it != X->end(); ++it) {
+        // if ((*it).second.instances != NULL) {
+            delete (*it).second.instances;
+        // }
+        // if ((*it).second.signature != NULL) {
+            delete (*it).second.signature;
+        // }
+        }
         delete X;
     }
+    std::cout << __LINE__ << std::endl;
+    
     if (pFast) {     
         return neighborhood_;
     }
@@ -101,88 +114,129 @@ neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t 
         return neighborhood_;
     #endif
 
-    neighborhood* neighborhoodExact = new neighborhood();
-    neighborhoodExact->neighbors = new vvint(neighborhood_->neighbors->size());
-    neighborhoodExact->distances = new vvfloat(neighborhood_->neighbors->size());
-    std::cout << __LINE__ << std::endl;
-
-
 if (mChunkSize <= 0) {
         mChunkSize = ceil(neighborhood_->neighbors->size() / static_cast<float>(mNumberOfCores));
     }
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
-    vvint neighborsListFirstRound(neighborhood_->neighbors->size());
-    for (size_t i = 0; i < neighborsListFirstRound.size(); ++i) {
-        neighborsListFirstRound[i] = vint(0);
-    }
-    size_t numberOfRounds = 2;
-    for (size_t round = 0; round < numberOfRounds; ++round) {
+    vvint neighborsListFirstRound(neighborhood_->neighbors->size(), vint(0));
+   
+    neighborhood* neighborhoodCandidates = new neighborhood();
+    neighborhoodCandidates->neighbors = new vvint(neighborhood_inverseIndex->neighbors->size());
+    
+    // compute the exact neighbors based on the candidates given by the inverse index
+    // store the neighborhood in neighborhoodCandidates to reuse neighbor if needed
+    // and store neighbors list per requested instance in neighborsListFirstRound
+    //
+    // neighborsListFirstRound is needed to get replace the candidates in neighborhood_
+    // if it would not be used, it would be iterated over neighborhood_ and manipulated
+    // at the same time
     #ifdef OPENMP
     #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     #endif
-        for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
-            if (neighborhood_->neighbors->operator[](i).size() > 0) {
-                std::vector<sortMapFloat> exactNeighbors;
-                // if (0 < neighborhood_->neighbors->operator[](i).size()) {
-                    if (pSimilarity) {
-                        exactNeighbors = 
-                            mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), pNneighbors+mExcessFactor, pRawData);
-                    } else {
-                        exactNeighbors = 
-                            mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), pNneighbors+mExcessFactor, pRawData);
-                    }
-                    
-                    size_t vectorSize = exactNeighbors.size();
-                    
-                    for (size_t j = 0; j < vectorSize && j < pNneighbors+mExcessFactor; ++j) {
-    // #ifdef OPENMP
-    // #pragma omp critical
-    // #endif
-                        neighborsListFirstRound[i].push_back(exactNeighbors[j].key);
-                    }
-                // }
+    for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
+        if (neighborhood_->neighbors->operator[](i).size() > 0) {
+            std::vector<sortMapFloat> exactNeighbors;
+            if (pSimilarity) {
+                exactNeighbors = 
+                    mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), pNneighbors+mExcessFactor, pRawData);
             } else {
-                neighborsListFirstRound[i].clear();
+                exactNeighbors = 
+                    mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), pNneighbors+mExcessFactor, pRawData);
             }
-        }
-        
-    #ifdef OPENMP
-    #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
-    #endif   
-        for (size_t i = 0; i < neighborsListFirstRound.size(); ++i) {
-            size_t sizeOfExtended = neighborsListFirstRound[i].size();
-            vsize_t dublicateElements((neighborhood_->neighbors->size()/sizeof(size_t))+1,0);
-            size_t bucketIndex;
-            size_t element;
-            size_t valueSeen;
-            size_t instance;
             
-            neighborhood_->neighbors->operator[](i).clear();
-            for (size_t j = 0; j < pNneighbors && j < sizeOfExtended; ++j) { 
-                instance = neighborsListFirstRound[i][j];
-                // if (instance > neighborsListFirstRound.size()) continue;
-                // if (neighborsListFirstRound[instance].size() > 1000) continue;
-                for (size_t k = 0; k < neighborsListFirstRound[instance].size();  ++k) {
-                    bucketIndex = neighborsListFirstRound[instance][k] / sizeof(size_t);
-                    element = 1 << (neighborsListFirstRound[instance][k] % sizeof(size_t));
-                    // if (bucketIndex > dublicateElements.size()) continue;
-                    valueSeen = dublicateElements[bucketIndex] & element;
-                    
-                    if (valueSeen != element) {
-                    // #ifdef OPENMP
-                    // #pragma omp critical
-                    // #endif
-                        neighborhood_->neighbors->operator[](i).push_back(neighborsListFirstRound[instance][k]);
-                        dublicateElements[bucketIndex] = dublicateElements[bucketIndex] | element;
-                    }
+            size_t vectorSize = std::min(exactNeighbors.size(),pNneighbors+mExcessFactor);
+            
+            std::vector<int> neighborsVector(vectorSize);
+            for (size_t j = 0; j < vectorSize; ++j) {
+                neighborsVector[j] = exactNeighbors[j].key;
+                neighborsListFirstRound[i].push_back(exactNeighbors[j].key);
+            }
+            #ifdef OPENMP
+            #pragma omp critical
+            #endif
+            {
+                if (exactNeighbors.size() > 1) {
+                    neighborhoodCandidates->neighbors->operator[](exactNeighbors[0].key) = neighborsVector;
                 }
             }
         }
     }
+    std::cout << __LINE__ << std::endl;
     
- #ifdef OPENMP
+    #ifdef OPENMP
+    #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+    #endif   
+    // for all requested instances get the neighbors+mExcessFactor of the neighbors
+    for (size_t i = 0; i < neighborsListFirstRound.size(); ++i) {
+        size_t sizeOfExtended = neighborsListFirstRound[i].size();
+        vsize_t dublicateElements((neighborhood_->neighbors->size()/sizeof(size_t))+1,0);
+        size_t bucketIndex;
+        size_t element;
+        size_t valueSeen;
+        size_t instance;
+             
+        neighborhood_->neighbors->operator[](i).clear();
+        for (size_t j = 0; j < pNneighbors && j < sizeOfExtended; ++j) { 
+            instance = neighborsListFirstRound[i][j];
+            // neighborhood for instance was already computed?
+            if (neighborhoodCandidates->neighbors->operator[](instance).size() == 0) {
+                if (neighborhood_inverseIndex->neighbors->operator[](instance).size() > 0) { 
+                    std::vector<sortMapFloat> exactNeighbors;
+                    if (pSimilarity) {
+                        exactNeighbors = 
+                            mOriginalData->cosineSimilarity(neighborhood_inverseIndex->neighbors->operator[](instance), pNneighbors+mExcessFactor, pRawData);
+                    } else {
+                        exactNeighbors = 
+                            mOriginalData->euclidianDistance(neighborhood_inverseIndex->neighbors->operator[](instance), pNneighbors+mExcessFactor, pRawData);
+                    }
+                    
+                    size_t vectorSize = std::min(exactNeighbors.size(),pNneighbors+mExcessFactor);
+                    
+                    std::vector<int> neighborsVector(vectorSize);
+                    for (size_t j = 0; j < vectorSize; ++j) {
+                        neighborsVector[j] = exactNeighbors[j].key;
+                    }
+                    #ifdef OPENMP
+                    #pragma omp critical
+                    #endif
+                    {
+                        
+                        if (exactNeighbors.size() > 1) {
+                            neighborhoodCandidates->neighbors->operator[](instance) = neighborsVector;
+                        }
+                    } 
+                }
+            }
+            // add the neighbors + mExcessFactor to the candidate list
+            for (size_t k = 0; k < neighborhoodCandidates->neighbors->operator[](instance).size() && k < pNneighbors+mExcessFactor; ++k) {
+             
+                bucketIndex = neighborhoodCandidates->neighbors->operator[](instance)[k] / sizeof(size_t);
+                element = 1 << neighborhoodCandidates->neighbors->operator[](instance)[k] % sizeof(size_t);
+                valueSeen = dublicateElements[bucketIndex] & element;
+                // if candidate was already inserted, do not inserte it a second time
+                if (valueSeen != element) {
+                    neighborhood_->neighbors->operator[](i).push_back(neighborhoodCandidates->neighbors->operator[](instance)[k]);
+                    dublicateElements[bucketIndex] = dublicateElements[bucketIndex] | element;
+                }
+                
+            }
+        }
+    }
+ 
+    std::cout << __LINE__ << std::endl;
+    
+    delete neighborhoodCandidates->neighbors;
+    delete neighborhoodCandidates;
+    
+    
+    neighborhood* neighborhoodExact = new neighborhood();
+    neighborhoodExact->neighbors = new vvint(neighborhood_inverseIndex->neighbors->size());
+    neighborhoodExact->distances = new vvfloat(neighborhood_->neighbors->size());
+    
+    // compute the exact neighbors based on the candidate selection before.
+#ifdef OPENMP
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
 #endif   
     for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
@@ -228,10 +282,11 @@ if (mChunkSize <= 0) {
             }
         }
     }
-    
     delete neighborhood_->neighbors;
     delete neighborhood_->distances;
     delete neighborhood_;
+    
+    std::cout << __LINE__ << std::endl;
 
     return neighborhoodExact;
 }
