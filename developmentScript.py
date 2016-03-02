@@ -84,9 +84,14 @@ def test(data):
     #   'chunk_size': 2.2477032655582794, 'excess_factor': 18.234021666380613, 
     #   'block_size': 7.880427429793286, 'prune_inverse_index_after_instance': 1, 'shingle_size': 2.393356246460925}
 
-    query = datasetBursi[0::50]
+    # query = datasetBursi[0::86]
+    query_ids = set()
+    for i in range(50):
+        query_ids.add(random.randint(0, datasetBursi.shape[0]))
+    # query_dense = dataset_dense[query_ids]    
+    query = datasetBursi[sorted(list(query_ids))]
     time_build_approx_start = time.time()
-    minHash = MinHash(number_of_hash_functions=1200, max_bin_size= 36, shingle_size = 1, similarity=False, 
+    minHash = MinHash(number_of_hash_functions=200, max_bin_size= 36, shingle_size = 1, similarity=False, 
                         bloomierFilter=False, number_of_cores=4,
                      prune_inverse_index=2, remove_value_with_least_sigificant_bit=1, excess_factor=12,
                     prune_inverse_index_after_instance=0.5, removeHashFunctionWithLessEntriesAs=0, 
@@ -125,7 +130,7 @@ def test(data):
 
 
     time_comp_approx = time.time()
-    approx1 = minHash.kneighbors(n_neighbors=5,fast=True,return_distance=False)
+    approx1 = minHash.kneighbors(X=query, n_neighbors=5,fast=True,return_distance=False)
     print "Approx solution, distance=False: ", approx1
     # print "Approx solution, distance=True: ", minHash_approximate.kneighbors(centroids_neighborhood,return_distance=True)
 
@@ -134,7 +139,7 @@ def test(data):
     print "\n\n"
 
     time_comp_approx = time.time()
-    exact1 = minHash.kneighbors(n_neighbors=5,fast=False,return_distance=False)
+    exact1 = minHash.kneighbors(X=query, n_neighbors=5,fast=False,return_distance=False)
     print "Exact solution, distance=False: ", exact1
     # print "Approx solution, distance=True: ", minHash_approximate.kneighbors(centroids_neighborhood,return_distance=True)
 
@@ -174,7 +179,7 @@ def test(data):
     
     time_comp_exact = time.time()
     # print "Exact solution, distance=True: ", minHash_exact.kneighbors( centroids_neighborhood,return_distance=True)
-    approx_fit = minHash2.kneighbors(n_neighbors=5,fast=True, return_distance=False)
+    approx_fit = minHash2.kneighbors(X=query, n_neighbors=5,fast=True, return_distance=False)
     print "Approx solution, distance=False: ", approx_fit
 
     time_comp_exact_end = time.time()
@@ -182,7 +187,7 @@ def test(data):
     print "\n\n"
 
     time_comp_exact = time.time()
-    exact_fit = minHash2.kneighbors(n_neighbors=5,fast=False, return_distance=False)
+    exact_fit = minHash2.kneighbors(X=query, n_neighbors=5,fast=False, return_distance=False)
     # print "Exact solution, distance=True: ", minHash_exact.kneighbors( centroids_neighborhood,return_distance=True)
     print "Exact solution, distance=False: ", exact_fit
 
@@ -200,13 +205,13 @@ def test(data):
     print "Time to build index exact: ", time_exact_fit_end - time_exact_fit
     #print data.getrow(1)
     time_comp = time.time()
-    sklearn_ = nearest_Neighbors.kneighbors(n_neighbors=5,return_distance=False)
+    sklearn_ = nearest_Neighbors.kneighbors(X=query, n_neighbors=5,return_distance=False)
     print "Exact solution with nearestNeighborsClassifier, distance=False: \n\t", sklearn_
     # print "Exact solution with nearestNeighborsClassifier, distance=True: \n\t" ,nearest_Neighbors.kneighbors(return_distance=True)
     time_comp_end = time.time()
     print "Time: ", time_comp_end - time_comp
     time_comp = time.time()
-    sklearn_10 = nearest_Neighbors.kneighbors(n_neighbors=10, return_distance=False)
+    sklearn_10 = nearest_Neighbors.kneighbors(X=query, n_neighbors=10, return_distance=False)
     print "Exact solution with nearestNeighborsClassifier n=10, distance=False: \n\t", sklearn_
     # print "Exact solution with nearestNeighborsClassifier, distance=True: \n\t" ,nearest_Neighbors.kneighbors(return_distance=True)
     time_comp_end = time.time()

@@ -430,8 +430,8 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
         if size_of_query < dataset.shape[0]:
             query_ids = []
             for i in range(size_of_query):
-                query_ids.append(random.randint(0, centroids * size_of_datasets))
-                query_dense = dataset_dense[query_ids]    
+                query_ids.append(random.randint(0, dataset.shape[0]))
+            query_dense = dataset_dense[query_ids]    
             query = dataset[query_ids]
         else:
             query = dataset
