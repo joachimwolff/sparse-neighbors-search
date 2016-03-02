@@ -443,21 +443,24 @@ neighborhood* InverseIndex::kneighborsCuda(const umap_uniqueElement* pSignatures
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                         const size_t pNneighborhood, 
                                         const bool pDoubleElementsStorageCount,
-                                        size_t pFast, size_t pDistance) {
+                                        size_t pFast, size_t pDistance, const bool pNoneSingleInstance) {
+
     #ifdef CUDA
         return kneighborsCuda(pSignaturesMap, pNneighborhood, pDoubleElementsStorageCount,
                                 128,128, 512, 32, pFast, pDistance);
     #endif                                       
     size_t doubleElements = 0;
-    if (pDoubleElementsStorageCount) {
-        doubleElements = mDoubleElementsStorageCount;
-    } else {
-        doubleElements = mDoubleElementsQueryCount;
+    if (pNoneSingleInstance) {
+        if (pDoubleElementsStorageCount) {
+            doubleElements = mDoubleElementsStorageCount;
+        } else {
+            doubleElements = mDoubleElementsQueryCount;
+        }
     }
+
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
-
     vvint* neighbors = new vvint();
     vvfloat* distances = new vvfloat();
     neighbors->resize(pSignaturesMap->size()+doubleElements);
@@ -465,13 +468,12 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
     if (mChunkSize <= 0) {
         mChunkSize = ceil(mInverseIndexStorage->size() / static_cast<float>(mNumberOfCores));
     }
-    
+
 #ifdef OPENMP
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
 #endif 
 
     for (size_t i = 0; i < pSignaturesMap->size(); ++i) {
-        
         umap_uniqueElement::const_iterator instanceId = pSignaturesMap->begin();
         std::advance(instanceId, i);
         if (instanceId == pSignaturesMap->end()) continue;
@@ -499,7 +501,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 } 
             }
         }
-        
+
         if (neighborhood.size() == 0) {
             vint emptyVectorInt;
             emptyVectorInt.push_back(1);
@@ -517,7 +519,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             }
             continue;
         }
-         
+
         std::vector< sort_map > neighborhoodVectorForSorting;
         for (auto it = neighborhood.begin(); it != neighborhood.end(); ++it) {
             sort_map mapForSorting;
@@ -529,14 +531,14 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         if (numberOfElementsToSort > neighborhoodVectorForSorting.size()) {
             numberOfElementsToSort = neighborhoodVectorForSorting.size();
         }
-        
+
         std::sort(neighborhoodVectorForSorting.begin(), neighborhoodVectorForSorting.end(), mapSortDescByValue);
         
         size_t sizeOfNeighborhoodAdjusted;
         if (pNneighborhood == MAX_VALUE) {
             sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(pNneighborhood), neighborhoodVectorForSorting.size());
         } else {
-            
+ 
             sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(pNneighborhood * mExcessFactor), neighborhoodVectorForSorting.size());
             if (sizeOfNeighborhoodAdjusted == pNneighborhood * mExcessFactor 
                     && pNneighborhood * mExcessFactor < neighborhoodVectorForSorting.size()) {
@@ -551,6 +553,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             }
             
         }
+
         size_t count = 0;
         vvint neighborsForThisInstance(instanceId->second.instances->size());
         vvfloat distancesForThisInstance(instanceId->second.instances->size());
@@ -558,12 +561,6 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         for (size_t j = 0; j < neighborsForThisInstance.size(); ++j) {
             vint neighborhoodVector;
             std::vector<float> distanceVector;
-            // if (neighborhoodVectorForSorting[0].key != (*instanceId->second.instances)[j]) {
-            //     std::cout << "insance: " << (*instanceId->second.instances)[j] << std::endl;
-            //     neighborhoodVector.push_back((*instanceId->second.instances)[j]);
-            //     distanceVector.push_back(0);
-            //     ++count;
-            // }
             for (auto it = neighborhoodVectorForSorting.begin();
                     it != neighborhoodVectorForSorting.end(); ++it) {
                 neighborhoodVector.push_back((*it).key);
@@ -576,25 +573,30 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 }
             }
         }
-        
+
 #ifdef OPENMP
 #pragma omp critical
 #endif
 
         {   // write vector to every instance with identical signatures
-       
-            for (size_t j = 0; j < instanceId->second.instances->size(); ++j) {
-                (*neighbors)[(*instanceId->second.instances)[j]] = neighborsForThisInstance[j];
-                (*distances)[(*instanceId->second.instances)[j]] = distancesForThisInstance[j];
+            if (pNoneSingleInstance) {
+                for (size_t j = 0; j < instanceId->second.instances->size(); ++j) {
+                    
+                    (*neighbors)[(*instanceId->second.instances)[j]] = neighborsForThisInstance[j];
+                    (*distances)[(*instanceId->second.instances)[j]] = distancesForThisInstance[j];
+                }
+            } else {
+                (*neighbors)[0] = neighborsForThisInstance[0];
+                (*distances)[0] = distancesForThisInstance[0];
             }
         
         }
     }
-    
+
     neighborhood* neighborhood_ = new neighborhood();
     neighborhood_->neighbors = neighbors;
     neighborhood_->distances = distances;
-    
+
     return neighborhood_;
     
 }

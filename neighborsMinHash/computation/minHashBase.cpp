@@ -45,6 +45,7 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pShingleSize,
         mChunkSize = pChunkSize;
         mSimilarity = pSimilarity;
         mExcessFactor = pExcessFactor;
+        mHash = new Hash();
                     // printf("foo%i\n", __LINE__);
 
 }
@@ -52,6 +53,7 @@ MinHashBase::MinHashBase(size_t pNumberOfHashFunctions, size_t pShingleSize,
 MinHashBase::~MinHashBase() {
     delete mInverseIndex;
     delete mOriginalData;
+    delete mHash;
 }
 
 void MinHashBase::fit(const SparseMatrixFloat* pRawData) {
@@ -74,15 +76,15 @@ neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t 
     }
 
     bool doubleElementsStorageCount = false;
-    umap_uniqueElement* x_inverseIndex = mInverseIndex->getSignatureStorage();
-    neighborhood* neighborhood_inverseIndex = 
-                            mInverseIndex->kneighbors(x_inverseIndex, 
-                                                    pNneighbors, true,
-                                                    pFast, pSimilarity);
+    
     neighborhood* neighborhood_;
     if (pRawData == NULL) {
         // no query data given, use stored signatures
-        neighborhood_ = neighborhood_inverseIndex;
+        // neighborhood_ = neighborhood_inverseIndex;
+        umap_uniqueElement* x_inverseIndex = mInverseIndex->getSignatureStorage();
+        neighborhood_  = mInverseIndex->kneighbors(x_inverseIndex, 
+                                                    pNneighbors, true,
+                                                    pFast, pSimilarity);
         doubleElementsStorageCount = true;
     } else {
         umap_uniqueElement* X = (mInverseIndex->computeSignatureMap(pRawData));
@@ -117,7 +119,7 @@ if (mChunkSize <= 0) {
     vvint neighborsListFirstRound(neighborhood_->neighbors->size(), vint(0));
    
     neighborhood* neighborhoodCandidates = new neighborhood();
-    neighborhoodCandidates->neighbors = new vvint(neighborhood_inverseIndex->neighbors->size());
+    neighborhoodCandidates->neighbors = new vvint(mOriginalData->size());
     
     // compute the exact neighbors based on the candidates given by the inverse index
     // store the neighborhood in neighborhoodCandidates to reuse neighbor if needed
@@ -159,14 +161,14 @@ if (mChunkSize <= 0) {
             }
         }
     }
-    
+    umap_uniqueElement* x_inverseIndex = mInverseIndex->getSignatureStorage();
     #ifdef OPENMP
     #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     #endif   
     // for all requested instances get the neighbors+mExcessFactor of the neighbors
     for (size_t i = 0; i < neighborsListFirstRound.size(); ++i) {
         size_t sizeOfExtended = neighborsListFirstRound[i].size();
-        vsize_t dublicateElements((neighborhood_inverseIndex->neighbors->size()/sizeof(size_t))+1,0);
+        vsize_t dublicateElements((mOriginalData->size()/sizeof(size_t))+1,0);
         size_t bucketIndex;
         size_t element;
         size_t valueSeen;
@@ -186,14 +188,29 @@ if (mChunkSize <= 0) {
             instance = neighborsListFirstRound[i][j];
             // neighborhood for instance was already computed?
             if (neighborhoodCandidates->neighbors->operator[](instance).size() == 0) {
-                if (neighborhood_inverseIndex->neighbors->operator[](instance).size() != 0) { 
+                
+                
+                umap_uniqueElement* instance_signature = new umap_uniqueElement();
+                
+                size_t signatureId = 0;
+                for (size_t k = 0; k < mOriginalData->getSizeOfInstance(instance); ++k) {
+                        signatureId = mHash->hash((mOriginalData->getNextElement(instance, k) +1), (signatureId+1), MAX_VALUE);
+                }
+                
+                (*instance_signature)[signatureId] = (*x_inverseIndex)[signatureId];
+                 
+                 neighborhood* neighborhood_instance = mInverseIndex->kneighbors(instance_signature, 
+                                                                pNneighbors, false,
+                                                                pFast, pSimilarity, false);
+                                                    
+                if (neighborhood_instance->neighbors->operator[](0).size() != 0) { 
                     std::vector<sortMapFloat> exactNeighbors;
                     if (pSimilarity) {
                         exactNeighbors = 
-                            mOriginalData->cosineSimilarity(neighborhood_inverseIndex->neighbors->operator[](instance), pNneighbors+mExcessFactor, instance, pRawData);
+                            mOriginalData->cosineSimilarity(neighborhood_instance->neighbors->operator[](0), pNneighbors+mExcessFactor, instance, pRawData);
                     } else {
                         exactNeighbors = 
-                            mOriginalData->euclidianDistance(neighborhood_inverseIndex->neighbors->operator[](instance), pNneighbors+mExcessFactor, instance, pRawData);
+                            mOriginalData->euclidianDistance(neighborhood_instance->neighbors->operator[](0), pNneighbors+mExcessFactor, instance, pRawData);
                     }
                     size_t vectorSize = std::min(exactNeighbors.size(), pNneighbors+mExcessFactor);
                     std::vector<int> neighborsVector(vectorSize);
@@ -210,6 +227,10 @@ if (mChunkSize <= 0) {
                         }
                     } 
                 }
+                
+                // delete x_inverseIndex;
+                delete instance_signature;
+                delete neighborhood_instance;
             }
             
             // add the neighbors + mExcessFactor to the candidate list 

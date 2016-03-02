@@ -13,7 +13,7 @@
 #include <Python.h>
 
 #include "inverseIndex.h"
-
+#include "hash.h"
 
 #ifndef MIN_HASH_BASE_H
 #define MIN_HASH_BASE_H
@@ -33,6 +33,7 @@ class MinHashBase {
     size_t mChunkSize;
     size_t mSimilarity;
     size_t mExcessFactor;
+    Hash* mHash;
     public:
     MinHashBase();
 
