@@ -22,6 +22,7 @@ from scipy.sparse import vstack
 
 from sklearn.neighbors import NearestNeighbors
 from sklearn.neighbors import LSHForest
+from sklearn.metrics import accuracy_score
 import sklearn
 from sklearn.random_projection import SparseRandomProjection
 from ..neighbors import MinHash
@@ -397,7 +398,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
                         bloomierFilter=False, number_of_cores=4,
                      prune_inverse_index=2, remove_value_with_least_sigificant_bit=1, excess_factor=11,
                     prune_inverse_index_after_instance=0.5, removeHashFunctionWithLessEntriesAs=0, 
-                    hash_algorithm = 0, shingle=0, block_size=4, cuda = 0)
+                    hash_algorithm = 0, shingle=0, block_size=1, cuda = 0)
         nearest_neighbor_lshf = LSHForest(n_estimators=20, n_candidates=200, n_neighbors=n_neighbors_minHash)
         time_start = time.time()
         nearest_neighbor_sklearn.fit(dataset)
@@ -453,10 +454,28 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
         time_end = time.time()
         time_query_time_1_50_lshf.append(time_end - time_start)
 
-        accuracy_1_50_lshf.append(np.in1d(n_neighbors_lshf_1_50, n_neighbors_sklearn_1_50).mean())
-        exact, approx, _ = accuracy(n_neighbors_minHash_exact_1_50, n_neighbors_minHash_approx_1_50, n_neighbors_sklearn_1_50)
-        accuracy_1_50_minHash_exact.append(exact)
-        accuracy_1_50_minHash_aprox.append(approx)
+        # accuracy score position wise for lshf
+        accuracy_score_ = 0.0
+        for x, y in zip(n_neighbors_lshf_1_50, n_neighbors_sklearn_1_50):
+            accuracy_score_ += accuracy_score(x, y)
+        accuracy_score_ = accuracy_score_ / float(len(n_neighbors_lshf_1_50))
+        accuracy_1_50_lshf.append(accuracy_score_)
+        
+        # accuracy score for minHash fast
+        accuracy_score_ = 0.0
+        for x, y in zip(n_neighbors_minHash_approx_1_50, n_neighbors_sklearn_1_50):
+            accuracy_score_ += accuracy_score(x, y)
+        accuracy_score_ = accuracy_score_ / float(len(n_neighbors_minHash_approx_1_50))
+        accuracy_1_50_minHash_aprox.append(accuracy_score_)
+         
+        # accuracy score for minHash non-fast
+        accuracy_score_ = 0.0
+        for x, y in zip(n_neighbors_minHash_exact_1_50, n_neighbors_sklearn_1_50):
+            accuracy_score_ += accuracy_score(x, y)
+        accuracy_score_ = accuracy_score_ / float(len(n_neighbors_minHash_exact_1_50))
+        accuracy_1_50_minHash_exact.append(accuracy_score_)
+        
+       
 
         time_query_time_50_1_sklearn_loc = []
         time_query_time_50_1_sklearn_loc = []
@@ -500,7 +519,13 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
             time_query_time_50_1_annoy_loc.append(time_end - time_start)
             n_neighbors_annoy_1_50.append(nearest_neighbor_annoy)
         time_query_time_50_1_annoy.append(np.sum(time_query_time_50_1_annoy_loc))
-        accuracy_1_50_annoy.append(np.in1d(n_neighbors_annoy_1_50, n_neighbors_sklearn_1_50).mean())
+        
+        # accuracy score for annoy
+        accuracy_score_ = 0.0
+        for x, y in zip(n_neighbors_annoy_1_50, n_neighbors_sklearn_1_50):
+            accuracy_score_ += accuracy_score(x, y)
+        accuracy_score_ = accuracy_score_ / float(len(n_neighbors_annoy_1_50))
+        accuracy_1_50_annoy.append(accuracy_score_)
 
 
     return  (time_fit_sklearn, 
