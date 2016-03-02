@@ -163,9 +163,9 @@ class SparseMatrixFloat {
             pointerToMatrixElement = 0;
             pointerToVectorElement = 0;
             // square root of the sum
-            // std::cout << "value: " << element.val;
+            std::cout << "value: " << element.val;
             element.val = sqrt(element.val);
-            // std::cout << " valueSqrt: " << element.val << std::endl;;
+            std::cout << " valueSqrt: " << element.val << std::endl; 
             
             returnValue[i] = element;
         }
