@@ -97,9 +97,10 @@ class SparseMatrixFloat {
         }
     };
 
-    std::vector<sortMapFloat> euclidianDistance(const std::vector<int> pRowIdVector, const size_t pNneighbors, const SparseMatrixFloat* pQueryData=NULL) const {
+    std::vector<sortMapFloat> euclidianDistance(const std::vector<int> pRowIdVector, const size_t pNneighbors, 
+                                                const size_t pQueryId, const SparseMatrixFloat* pQueryData=NULL) const {
         const SparseMatrixFloat* queryData = this;
-        const size_t pRowId = pRowIdVector[0];
+        const size_t pRowId = pQueryId;
         if (pQueryData != NULL) {
             queryData = pQueryData;
         }
@@ -162,7 +163,9 @@ class SparseMatrixFloat {
             pointerToMatrixElement = 0;
             pointerToVectorElement = 0;
             // square root of the sum
+            // std::cout << "value: " << element.val;
             element.val = sqrt(element.val);
+            // std::cout << " valueSqrt: " << element.val << std::endl;;
             
             returnValue[i] = element;
         }
@@ -177,9 +180,10 @@ class SparseMatrixFloat {
         return returnValue;
     };
 
-    std::vector<sortMapFloat> cosineSimilarity(const std::vector<int> pRowIdVector, const size_t pNneighbors, const SparseMatrixFloat* pQueryData=NULL) const {
+    std::vector<sortMapFloat> cosineSimilarity(const std::vector<int> pRowIdVector, const size_t pNneighbors, 
+                                                const size_t pQueryId, const SparseMatrixFloat* pQueryData=NULL) const {
         const SparseMatrixFloat* queryData = this;
-        const size_t pRowId = pRowIdVector[0];
+        const size_t pRowId = pQueryId;
         
         if (pQueryData != NULL) {
             queryData = pQueryData;
