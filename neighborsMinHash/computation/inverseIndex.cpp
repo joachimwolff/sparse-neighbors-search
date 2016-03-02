@@ -444,7 +444,6 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                                         const size_t pNneighborhood, 
                                         const bool pDoubleElementsStorageCount,
                                         size_t pFast, size_t pDistance) {
-    std::cout << "searching neighbors" << std::endl;
     #ifdef CUDA
         return kneighborsCuda(pSignaturesMap, pNneighborhood, pDoubleElementsStorageCount,
                                 128,128, 512, 32, pFast, pDistance);
@@ -552,24 +551,6 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             }
             
         }
-        // old
-        // size_t numberOfElementsToSort = pNneighborhood * mExcessFactor;
-        // if (numberOfElementsToSort > neighborhoodVectorForSorting.size()) {
-        //     numberOfElementsToSort = neighborhoodVectorForSorting.size();
-        // }
-        
-        // std::partial_sort(neighborhoodVectorForSorting.begin(), 
-        //                     neighborhoodVectorForSorting.begin()+numberOfElementsToSort, 
-        //                     neighborhoodVectorForSorting.end(), mapSortDescByValue);
-        // size_t sizeOfNeighborhoodAdjusted;
-        // if (pNneighborhood == MAX_VALUE) {
-        //     sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(pNneighborhood), neighborhoodVectorForSorting.size());
-        // } else {
-        //     sizeOfNeighborhoodAdjusted = std::min(static_cast<size_t>(pNneighborhood * mExcessFactor), neighborhoodVectorForSorting.size());
-        // }
-        
-        //end old
-        
         size_t count = 0;
         vvint neighborsForThisInstance(instanceId->second.instances->size());
         vvfloat distancesForThisInstance(instanceId->second.instances->size());
@@ -577,11 +558,12 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         for (size_t j = 0; j < neighborsForThisInstance.size(); ++j) {
             vint neighborhoodVector;
             std::vector<float> distanceVector;
-            if (neighborhoodVectorForSorting[0].key != (*instanceId->second.instances)[j]) {
-                neighborhoodVector.push_back((*instanceId->second.instances)[j]);
-                distanceVector.push_back(0);
-                ++count;
-            }
+            // if (neighborhoodVectorForSorting[0].key != (*instanceId->second.instances)[j]) {
+            //     std::cout << "insance: " << (*instanceId->second.instances)[j] << std::endl;
+            //     neighborhoodVector.push_back((*instanceId->second.instances)[j]);
+            //     distanceVector.push_back(0);
+            //     ++count;
+            // }
             for (auto it = neighborhoodVectorForSorting.begin();
                     it != neighborhoodVectorForSorting.end(); ++it) {
                 neighborhoodVector.push_back((*it).key);
@@ -612,7 +594,6 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
     neighborhood* neighborhood_ = new neighborhood();
     neighborhood_->neighbors = neighbors;
     neighborhood_->distances = distances;
-    std::cout << "searching neighbors DONE" << std::endl;
     
     return neighborhood_;
     
