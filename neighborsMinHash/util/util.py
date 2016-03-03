@@ -432,7 +432,7 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
             query_ids = set()
             query_list = []
             for i in range(50):
-                query_ids.add(random.randint(0, dataset.shape[0]))
+                query_ids.add(random.randint(0, dataset.shape[0]-1))
             query_dense = dataset_dense[list(query_ids)]    
             for i in query_ids:
                 query_list.append(dataset.getrow(i))
