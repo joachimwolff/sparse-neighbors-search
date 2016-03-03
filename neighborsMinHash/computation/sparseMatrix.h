@@ -99,6 +99,8 @@ class SparseMatrixFloat {
 
     std::vector<sortMapFloat> euclidianDistance(const std::vector<int> pRowIdVector, const size_t pNneighbors, 
                                                 const size_t pQueryId, const SparseMatrixFloat* pQueryData=NULL) const {
+        // std::cout << "euclidean distance, queryId: " << pQueryId << std::endl;
+        
         const SparseMatrixFloat* queryData = this;
         const size_t pRowId = pQueryId;
         if (pQueryData != NULL) {
@@ -113,6 +115,7 @@ class SparseMatrixFloat {
             sortMapFloat element; 
             element.key = pRowIdVector[i];
             element.val = 0.0;
+            // std::cout << pRowIdVector[i];
             // features ids are stored in mSparseMatrix. 
             // every instances starts at index indexId*mMaxNnz --> every instance can store maximal mMaxNnz feature ids
             // how many elements per index are stored is stored in mSizesOfInstances[indexID]
@@ -163,13 +166,13 @@ class SparseMatrixFloat {
             pointerToMatrixElement = 0;
             pointerToVectorElement = 0;
             // square root of the sum
-            std::cout << "value: " << element.val;
+            // std::cout << "value: " << element.val;
             element.val = sqrt(element.val);
-            std::cout << " valueSqrt: " << element.val << std::endl; 
+            // std::cout << " : " << element.val << ", ";
             
             returnValue[i] = element;
         }
-
+        // std::cout << std::endl;
         size_t numberOfElementsToSort = pNneighbors;
         if (numberOfElementsToSort > returnValue.size()) {
             numberOfElementsToSort = returnValue.size();
@@ -182,6 +185,8 @@ class SparseMatrixFloat {
 
     std::vector<sortMapFloat> cosineSimilarity(const std::vector<int> pRowIdVector, const size_t pNneighbors, 
                                                 const size_t pQueryId, const SparseMatrixFloat* pQueryData=NULL) const {
+        std::cout << "cosine, queryId: " << pQueryId << std::endl;
+       
         const SparseMatrixFloat* queryData = this;
         const size_t pRowId = pQueryId;
         

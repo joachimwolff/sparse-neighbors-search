@@ -71,6 +71,9 @@ neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t 
     if (pNneighbors == 0) {
         pNneighbors = mNneighbors;
     }
+    // std::cout << "pSimilarity: " << pSimilarity << std::endl;
+    // std::cout << "mSimilarity: " << mSimilarity << std::endl;
+    
     if (pSimilarity == -1) {
         pSimilarity = mSimilarity;
     }
@@ -161,6 +164,7 @@ if (mChunkSize <= 0) {
             }
         }
     }
+    // std::cout << "\n\n\n\n" << std::endl;
     umap_uniqueElement* x_inverseIndex = mInverseIndex->getSignatureStorage();
     #ifdef OPENMP
     #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
@@ -178,7 +182,7 @@ if (mChunkSize <= 0) {
             queryInstance = neighborhood_->neighbors->operator[](i)[0];
         }
         neighborhood_->neighbors->operator[](i).clear();
-        neighborhood_->neighbors->operator[](i).push_back(queryInstance);
+        neighborhood_->neighbors->operator[](i).push_back(queryInstance); 
         // std::cout << "size: " << neighborhood_->neighbors->operator[](i).size() << " element: " << queryInstance << std::endl;
         bucketIndex = queryInstance / sizeof(size_t);
         element = 1 << queryInstance % sizeof(size_t);
@@ -232,7 +236,7 @@ if (mChunkSize <= 0) {
                 delete instance_signature;
                 delete neighborhood_instance;
             }
-            
+             
             // add the neighbors + mExcessFactor to the candidate list 
             for (size_t k = 0; k < neighborhoodCandidates->neighbors->operator[](instance).size() && k < pNneighbors+mExcessFactor; ++k) {
                 bucketIndex = neighborhoodCandidates->neighbors->operator[](instance)[k] / sizeof(size_t);

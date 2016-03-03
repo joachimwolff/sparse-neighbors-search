@@ -220,7 +220,7 @@ class MinHash():
                                     max_number_of_instances, maxFeatures,
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
-                                    fast, 1 if similarity else 0, 
+                                    fast, similarity, 
                                     self._pointer_address_of_minHash_object)
 
         # print result[0]
@@ -300,7 +300,7 @@ class MinHash():
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
                                     fast, 1 if symmetric else 0, 
-                                    1 if similarity else 0, 
+                                    similarity, 
                                     self._pointer_address_of_minHash_object)
         
         return csr_matrix((data, (row, column)))

@@ -86,10 +86,19 @@ def test(data):
 
     # query = datasetBursi[0::86]
     query_ids = set()
+    query_list = []
     for i in range(50):
         query_ids.add(random.randint(0, datasetBursi.shape[0]))
     # query_dense = dataset_dense[query_ids]    
-    query = datasetBursi[sorted(list(query_ids))]
+    for i in query_ids:
+        query_list.append(datasetBursi.getrow(i))
+    query = vstack(query_list)
+        
+    # query = datasetBursi[sorted(list(query_ids))]
+    # print query_ids
+    # print query
+    # query2 = datasetBursi[0::86]
+    # print query2
     time_build_approx_start = time.time()
     minHash = MinHash(number_of_hash_functions=200, max_bin_size= 36, shingle_size = 1, similarity=False, 
                         bloomierFilter=False, number_of_cores=4,

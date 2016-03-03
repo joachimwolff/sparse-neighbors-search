@@ -427,12 +427,16 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
         time_end = time.time()
         time_fit_annoy.append(time_end - time_start)
 
+
         if size_of_query < dataset.shape[0]:
-            query_ids = []
-            for i in range(size_of_query):
-                query_ids.append(random.randint(0, dataset.shape[0]))
-            query_dense = dataset_dense[query_ids]    
-            query = dataset[query_ids]
+            query_ids = set()
+            query_list = []
+            for i in range(50):
+                query_ids.add(random.randint(0, dataset.shape[0]))
+            query_dense = dataset_dense[list(query_ids)]    
+            for i in query_ids:
+                query_list.append(dataset.getrow(i))
+            query = vstack(query_list)
         else:
             query = dataset
             query_dense = dataset_dense
