@@ -1,37 +1,65 @@
-hyperopt: alpha:0.1 beta: 0.3
-{'max_bin_size': 36.189887524302385, 'remove_value_with_least_sigificant_bit': 0, 'prune_inverse_index': 1, 'number_of_hash_functions': 415.88067313520196, 'shingle': 1, 'removeHashFunctionWithLessEntriesAs': 107.08907660001913, 'prune2': 0.16894760968869377, 'chunk_size': 12.926991521897076, 'excess_factor': 11.286649698096753, 'block_size': 2.622734214453821, 'prune_inverse_index_after_instance': 1, 'shingle_size': 3.398546692984647}
+crashed with the following values:
 
-time fit: 2.29
-query time: 0.69
-number of size_t: 230720
-accuracy pos: 0.50
-accuracy nei: 0.64
-5 out of 10:  0.73
-
-alpha = beta = 1
-{'max_bin_size': 10.554517217896512, 'remove_value_with_least_sigificant_bit': 2, 'prune_inverse_index': 1, 'number_of_hash_functions': 916.2479870842994, 'shingle': 0, 'removeHashFunctionWithLessEntriesAs': 852.4239406250763, 'prune2': 0.7166209163906667, 'chunk_size': 4.223266310434894, 'excess_factor': 4.617455619764394, 'block_size': 4.363567155126445, 'prune_inverse_index_after_instance': 1, 'shingle_size': 1.4395852557151325}
-
-time fit: 18.5
-query time: 0.28
-number of size_t: 0
-accuracy pos: 0.0
-accuracy nei: 0.0
-5 out of 10:  0.0
-
-alpha = 0.1 beta = 1
-
-{'max_bin_size': 7.641108848046031, 'remove_value_with_least_sigificant_bit': 4, 'prune_inverse_index': 0, 'number_of_hash_functions': 202.50746378958416, 'shingle': 1, 'chunk_size': 19.270452556579947, 'removeHashFunctionWithLessEntriesAs': 193.21534649101199, 'prune1': 1.0072111644437047, 'excess_factor': 7.053543535915764, 'block_size': 1.7844344949985722, 'prune_inverse_index_after_instance': 0, 'shingle_size': 4.10657093353407}
-
-just smallest error as possible:
-{'max_bin_size': 81.75180015144014, 'remove_value_with_least_sigificant_bit': 3, 'prune_inverse_index': 1, 'number_of_hash_functions': 821.5255214834726, 'shingle': 1, 'removeHashFunctionWithLessEntriesAs': 296.86195432044155, 'prune2': 0.210140563883395, 'chunk_size': 9.694411949113928, 'excess_factor': 13.146537521228502, 'block_size': 2.2904576966692893, 'prune_inverse_index_after_instance': 1, 'shingle_size': 2.4614691829094353}
+crashed while searching k-neighbors
+Values: 
+number_of_hash_functions  629.024579953
+max_bin_size  15.9439713056
+shingle_size  3.026904046
+excess_factor  2.77204044687
+prune_inverse_index  3.29278610022
+prune_inverse_index_after_instance  0.971839378846
+removeHashFunctionWithLessEntriesAs  831.319337565
+block_size  2.82874077758
+shingle  0
+remove_value_with_least_sigificant_bit  7
 
 
-time fit: 18.5
-query time: 0.28
-number of size_t: 0
-accuracy pos: 0.0
-accuracy nei: 0.0
-5 out of 10:  0.0
+Values: 
+number_of_hash_functions  484.254571224
+max_bin_size  49.9793097967
+shingle_size  2.66449118832
+excess_factor  9.54855179696
+prune_inverse_index  -1
+prune_inverse_index_after_instance  0.104988782542
+removeHashFunctionWithLessEntriesAs  0
+block_size  3.47506056499
+shingle  0
+remove_value_with_least_sigificant_bit  8
 
-alpha 0.1 beta 0.2
-{'max_bin_size': 88.95800672570232, 'remove_value_with_least_sigificant_bit': 0, 'prune_inverse_index': 1, 'number_of_hash_functions': 326.0542084649504, 'shingle': 1, 'removeHashFunctionWithLessEntriesAs': 304.29915687592666, 'prune2': 0.7269026886416936, 'chunk_size': 5.123764320219982, 'excess_factor': 13.402262946940926, 'block_size': 1.267516200559707, 'prune_inverse_index_after_instance': 1, 'shingle_size': 2.4053757562202382}
+
+
+
+
+
+crashed at fitting process
+number_of_hash_functions  239.288023937
+max_bin_size  91.1270095545
+shingle_size  2.82734728146
+excess_factor  6.97678426682
+prune_inverse_index  82.8454672485
+prune_inverse_index_after_instance  0.133395636607
+removeHashFunctionWithLessEntriesAs  0
+block_size  3.94521508456
+shingle  1
+remove_value_with_least_sigificant_bit  9
+
+number_of_hash_functions  169.853316095
+max_bin_size  63.6771425086
+shingle_size  4.12502502562
+excess_factor  11.238237906
+prune_inverse_index  -1
+prune_inverse_index_after_instance  -1.0
+removeHashFunctionWithLessEntriesAs  94.4263580376
+block_size  7.46569335827
+shingle  0
+remove_value_with_least_sigificant_bit  5
+
+
+{'max_bin_size': 54.47382240515426, 'remove_value_with_least_sigificant_bit': 0, 'prune_inverse_index': 1, 'removeHashFunctionWithLessEntriesAs2': 210.6542669636088, 'number_of_hash_functions': 208.78619986649178, 'shingle': 0, 'minimal_blocks_in_common': 16.566995520170252, 'removeHashFunctionWithLessEntriesAs': 1, 'prune2': 0.7132590034217914, 'excess_factor': 13.119869581984029, 'block_size': 8.63610787288679, 'prune_inverse_index_after_instance': 1, 'shingle_size': 2.595540205119116}
+
+{'max_bin_size': 60.04407647796002, 'remove_value_with_least_sigificant_bit': 3, 'prune_inverse_index': 0, 
+'number_of_hash_functions': 305.99897584014036,
+ 'shingle': 1,
+  'minimal_blocks_in_common': 3.888721013927136, 'removeHashFunctionWithLessEntriesAs': 0, 'prune2': 0.46651807355820407, 'prune1': 1.7227248891939002, 'excess_factor': 2.0562574790693064,
+   'block_size': 8.05348721414712, 'prune_inverse_index_after_instance': 1,
+    'shingle_size': 3.6453157697998586}

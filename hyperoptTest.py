@@ -39,18 +39,8 @@ def objective(args):
     shingle = args["shingle"]
     remove_value_with_least_sigificant_bit =args["remove_value_with_least_sigificant_bit"]
     minimal_blocks_in_common = args['minimal_blocks_in_common']
-    # try:        
-    minHash = MinHash(n_neighbors=5, radius=1.0, fast=False, number_of_hash_functions=int(number_of_hash_functions),
-                max_bin_size = int(max_bin_size), minimal_blocks_in_common = int(minimal_blocks_in_common),
-                shingle_size = int(shingle_size),
-                excess_factor = int(excess_factor),
-                similarity=False, bloomierFilter=False, number_of_cores=4, 
-                prune_inverse_index=int(prune_inverse_index),
-                prune_inverse_index_after_instance=prune_inverse_index_after_instance,
-                removeHashFunctionWithLessEntriesAs=int(removeHashFunctionWithLessEntriesAs), 
-                hash_algorithm = 0, block_size = int(block_size), shingle=shingle,
-                remove_value_with_least_sigificant_bit=remove_value_with_least_sigificant_bit, 
-                cuda=0)
+    # try:
+    print "\n\n\n"        
     print "Values: "
     print "number_of_hash_functions ", number_of_hash_functions
     print "max_bin_size ", max_bin_size
@@ -63,29 +53,66 @@ def objective(args):
     print "block_size ", block_size
     print "shingle ", shingle
     print "remove_value_with_least_sigificant_bit ", remove_value_with_least_sigificant_bit
+    print "\n\n\n"        
+    
+    print "Create minHash object"
+    minHash = MinHash(n_neighbors=5, radius=1.0, fast=False, number_of_hash_functions=int(number_of_hash_functions),
+                max_bin_size = int(max_bin_size), minimal_blocks_in_common = int(minimal_blocks_in_common),
+                shingle_size = int(shingle_size),
+                excess_factor = int(excess_factor),
+                similarity=False, bloomierFilter=False, number_of_cores=4, 
+                prune_inverse_index=int(prune_inverse_index),
+                prune_inverse_index_after_instance=prune_inverse_index_after_instance,
+                removeHashFunctionWithLessEntriesAs=int(removeHashFunctionWithLessEntriesAs), 
+                hash_algorithm = 1, block_size = int(block_size), shingle=shingle,
+                remove_value_with_least_sigificant_bit=remove_value_with_least_sigificant_bit, 
+                cuda=0)
+    print "Create minHash object...Done"
+                
+    # print "Values: "
+    # print "number_of_hash_functions ", number_of_hash_functions
+    # print "max_bin_size ", max_bin_size
+    # print "shingle_size ", shingle_size
+    # print "excess_factor ", excess_factor
+    # # print "chunk_size ",chunk_size
+    # print "prune_inverse_index ", prune_inverse_index
+    # print "prune_inverse_index_after_instance ", prune_inverse_index_after_instance
+    # print "removeHashFunctionWithLessEntriesAs ", removeHashFunctionWithLessEntriesAs
+    # print "block_size ", block_size
+    # print "shingle ", shingle
+    # print "remove_value_with_least_sigificant_bit ", remove_value_with_least_sigificant_bit
+    print "fitting..."
     minHash.fit(datasetBursi)
+    print "fitting...Done"
+    print "Get Distribution..."
     distribution = minHash.get_distribution_of_inverse_index()
+    print "Get Distribution...Done"
     memory = 0
     for j in distribution[0]:
         memory += j * distribution[0][j]
+    
+    
+    print "Compute k-neihgbors..."    
     time_start = time.time()
     neighbors = minHash.kneighbors(return_distance=False)
     time_end = time.time() - time_start
+    print "Compute k-neihgbors...Done"    
+    
     accuracy = 0.0
     for x, y in zip(neighbors, neighbors_sklearn):
         accuracy += accuracy_score(x, y)
     accuracy = accuracy / float(len(neighbors))
     error = 1 - accuracy
-    print number_of_hash_functions
+    # print number_of_hash_functions
     # except:
     # print "Exception!" 
-    print "error: ", error-0.001
+    # print "error: ", error-0.001
     
         # return 5
     # alpha = args["alpha"]
     # beta = args["beta"]
-    # return compute_score(error, memory, time_end, max_memory, max_time, 0.15, 0.25)
-    return error-0.001
+    return compute_score(error, memory, time_end, max_memory, max_time, 0.18, 0.23)
+    # return error-0.001
 
 
 # get data set  
@@ -107,7 +134,7 @@ minHash_org = MinHash(n_neighbors=5, radius=1.0, fast=False, number_of_hash_func
                  prune_inverse_index=-1,
                  prune_inverse_index_after_instance=-1,
                  removeHashFunctionWithLessEntriesAs=-1, 
-                 hash_algorithm = 0, block_size = 1, shingle=0,
+                 hash_algorithm = 1, block_size = 1, shingle=0,
                  remove_value_with_least_sigificant_bit=0, cuda=0)
 minHash_org.fit(datasetBursi)
 distribution = minHash_org.get_distribution_of_inverse_index()
@@ -135,18 +162,18 @@ print "Max memory: ", max_memory
 # define a search space
 from hyperopt import hp
 space = {
-        'number_of_hash_functions': hp.normal('number_of_hash_functions', 400, 350),
-        'max_bin_size': hp.normal('max_bin_size', 50, 45),
+        'number_of_hash_functions': hp.normal('number_of_hash_functions', 250, 10),
+        'max_bin_size': hp.uniform('max_bin_size', 10, 100),
         'shingle_size': hp.uniform('shingle_size', 1, 5),
-        'excess_factor': hp.normal('excess_factor', 1000, 999),
+        'excess_factor': hp.uniform('excess_factor', 1, 15),
         # 'chunk_size': hp.uniform('chunk_size', 1, 20),
         'prune_inverse_index': hp.choice('prune_inverse_index', [hp.uniform('prune1',1, 100), -1]),
-        'prune_inverse_index_after_instance': hp.choice('prune_inverse_index_after_instance',[ -1.0, hp.normal('prune2',0.5, 0.5)]),
-        'removeHashFunctionWithLessEntriesAs': hp.uniform('removeHashFunctionWithLessEntriesAs', 0, 1000),
+        'prune_inverse_index_after_instance': hp.choice('prune_inverse_index_after_instance',[ -1.0, hp.uniform('prune2',0.1, 1)]),
+        'removeHashFunctionWithLessEntriesAs': hp.choice('removeHashFunctionWithLessEntriesAs', [0, hp.uniform('removeHashFunctionWithLessEntriesAs2', 1, 1000)]),
         'block_size': hp.uniform('block_size', 1, 10), 
         'shingle': hp.choice('shingle', [0,1]), 
         'remove_value_with_least_sigificant_bit': hp.choice('remove_value_with_least_sigificant_bit', [0, 1, 2, 3, 4, 5]),
-        'minimal_blocks_in_common': hp.uniform('minimal_blocks_in_common', 1, 10),
+        'minimal_blocks_in_common': hp.uniform('minimal_blocks_in_common', 1, 20),
         # 'alpha':hp.uniform('alpha', 0, 1),
         # 'beta':hp.uniform('beta', 0,1),    
 }
@@ -154,7 +181,7 @@ space = {
 trials = Trials()
 # minimize the objective over the space
 from hyperopt import fmin, tpe
-best = fmin(objective, space, algo=tpe.suggest, max_evals=10, trials=trials)
+best = fmin(objective, space, algo=tpe.suggest, max_evals=100, trials=trials)
 
 print best
 print trials.results

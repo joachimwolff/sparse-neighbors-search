@@ -93,18 +93,23 @@ def test(data):
     for i in query_ids:
         query_list.append(datasetBursi.getrow(i))
     query = vstack(query_list)
-        
+    query=None
     # query = datasetBursi[sorted(list(query_ids))]
     # print query_ids
     # print query
     # query2 = datasetBursi[0::86]
     # print query2
     time_build_approx_start = time.time()
-    minHash = MinHash(number_of_hash_functions=200, max_bin_size= 36, shingle_size = 1, similarity=False, 
+    minHash = MinHash(number_of_hash_functions=251, max_bin_size= 92, shingle_size = 3, similarity=False, 
                         bloomierFilter=False, number_of_cores=4,
-                     prune_inverse_index=2, remove_value_with_least_sigificant_bit=1, excess_factor=12,
-                    prune_inverse_index_after_instance=0.5, removeHashFunctionWithLessEntriesAs=0, 
-                    hash_algorithm = 0, shingle=0, block_size=1, cuda = 0)
+                     prune_inverse_index=-1, remove_value_with_least_sigificant_bit=5, excess_factor=13,
+                    prune_inverse_index_after_instance=0.13, removeHashFunctionWithLessEntriesAs=0, 
+                    hash_algorithm = 0, shingle=1, block_size=5, cuda = 0)
+    # minHash = MinHash(number_of_hash_functions=208, max_bin_size= 54, shingle_size = 2, similarity=False, 
+    #                     bloomierFilter=False, number_of_cores=4,
+    #                  prune_inverse_index=1, remove_value_with_least_sigificant_bit=0, excess_factor=13,
+    #                 prune_inverse_index_after_instance=0.7, removeHashFunctionWithLessEntriesAs=210, 
+    #                 hash_algorithm = 0, shingle=0, block_size=8, cuda = 0)
     # minHash = MinHash(number_of_hash_functions=87, max_bin_size= 42, shingle_size = 1, similarity=False, 
     #                     bloomierFilter=False, number_of_cores=4,
     #                  prune_inverse_index=26, remove_value_with_least_sigificant_bit=2, excess_factor=2294,
@@ -116,15 +121,15 @@ def test(data):
     print "Fitting time: ",  time.time() - time_build_approx_start
     
     # print "distribution of inverse index: "
-    # distribution =  minHash.get_distribution_of_inverse_index()
+    distribution =  minHash.get_distribution_of_inverse_index()
     # print distribution
-    # dist_count = 0;
-    # for key in distribution[0]:
-    #     if key < 1:
-    #         continue;
-    #     else:
-    #         dist_count += key * distribution[0][key]
-    # print "dist count: ", dist_count
+    dist_count = 0;
+    for key in distribution[0]:
+        if key < 1:
+            continue;
+        else:
+            dist_count += key * distribution[0][key]
+    print "dist count: ", dist_count
     # time_build_approx_end = time.time()
     # print "Build inverse index for approximate... Done!"
     # print "Time: ", time_build_approx_end - time_build_approx_start
@@ -154,14 +159,14 @@ def test(data):
 
     time_comp_approx_end = time.time()
     print "Time: ", time_comp_approx_end  - time_comp_approx
-    print "\n\n"
+    # print "\n\n"
 
-    minHash2 = MinHash(number_of_hash_functions=400, max_bin_size=300, shingle_size = 4,
-     similarity=False, bloomierFilter=False, number_of_cores=4, minimal_blocks_in_common = 1,
-                     prune_inverse_index=1, remove_value_with_least_sigificant_bit=4,
-                      excess_factor=10, prune_inverse_index_after_instance=-1,
-                       removeHashFunctionWithLessEntriesAs=0, hash_algorithm = 0, 
-                       shingle=1, block_size=4)
+    # minHash2 = MinHash(number_of_hash_functions=400, max_bin_size=300, shingle_size = 4,
+    #  similarity=False, bloomierFilter=False, number_of_cores=4, minimal_blocks_in_common = 1,
+    #                  prune_inverse_index=1, remove_value_with_least_sigificant_bit=4,
+    #                   excess_factor=10, prune_inverse_index_after_instance=-1,
+    #                    removeHashFunctionWithLessEntriesAs=0, hash_algorithm = 0, 
+    #                    shingle=1, block_size=4)
                        
     #                     minHash2 = MinHash(number_of_hash_functions=32000, max_bin_size=300, shingle_size = 4,
     #  similarity=False, bloomierFilter=False, number_of_cores=4, minimal_blocks_in_common = 2,
@@ -171,38 +176,38 @@ def test(data):
     #                    shingle=1, block_size=4)
     # fitting time: 439.70797205 seconds
     # query time: 
-    time_fit = time.time()
-    minHash2.fit(datasetBursi)
-    print "Fitting: ", time.time() - time_fit
+    # time_fit = time.time()
+    # minHash2.fit(datasetBursi)
+    # print "Fitting: ", time.time() - time_fit
     
     
-    distribution =  minHash2.get_distribution_of_inverse_index()
-    # print distribution
-    dist_count = 0;
-    for key in distribution[0]:
-        if key < 1:
-            continue;
-        else:
-            dist_count += key * distribution[0][key]
-    print "dist count: ", dist_count
+    # distribution =  minHash2.get_distribution_of_inverse_index()
+    # # print distribution
+    # dist_count = 0;
+    # for key in distribution[0]:
+    #     if key < 1:
+    #         continue;
+    #     else:
+    #         dist_count += key * distribution[0][key]
+    # print "dist count: ", dist_count
     
-    time_comp_exact = time.time()
-    # print "Exact solution, distance=True: ", minHash_exact.kneighbors( centroids_neighborhood,return_distance=True)
-    approx_fit = minHash2.kneighbors(X=query, n_neighbors=5,fast=True, return_distance=False)
-    print "Approx solution, distance=False: ", approx_fit
+    # time_comp_exact = time.time()
+    # # print "Exact solution, distance=True: ", minHash_exact.kneighbors( centroids_neighborhood,return_distance=True)
+    # approx_fit = minHash2.kneighbors(X=query, n_neighbors=5,fast=True, return_distance=False)
+    # print "Approx solution, distance=False: ", approx_fit
 
-    time_comp_exact_end = time.time()
-    print "Time: ", time_comp_exact_end  - time_comp_exact
-    print "\n\n"
+    # time_comp_exact_end = time.time()
+    # print "Time: ", time_comp_exact_end  - time_comp_exact
+    # print "\n\n"
 
-    time_comp_exact = time.time()
-    exact_fit = minHash2.kneighbors(X=query, n_neighbors=5,fast=False, return_distance=False)
-    # print "Exact solution, distance=True: ", minHash_exact.kneighbors( centroids_neighborhood,return_distance=True)
-    print "Exact solution, distance=False: ", exact_fit
+    # time_comp_exact = time.time()
+    # exact_fit = minHash2.kneighbors(X=query, n_neighbors=5,fast=False, return_distance=False)
+    # # print "Exact solution, distance=True: ", minHash_exact.kneighbors( centroids_neighborhood,return_distance=True)
+    # print "Exact solution, distance=False: ", exact_fit
 
-    time_comp_exact_end = time.time()
-    print "Time: ", time_comp_exact_end  - time_comp_exact
-    print "\n\n"
+    # time_comp_exact_end = time.time()
+    # print "Time: ", time_comp_exact_end  - time_comp_exact
+    # print "\n\n"
 
 
     # dataY = self.create_dataset(seed+1, 1,  1, data_instances)
@@ -230,47 +235,47 @@ def test(data):
     accuracy_score_ = 0.0
     for x, y in zip(approx1, sklearn_):
         accuracy_score_ += accuracy_score(x, y)
-    print "\tBloomier filter:"
+    # print "\tBloomier filter:"
     print "\t\tfast: ", accuracy_score_ / float(len(approx1))
 
     accuracy_score_ = 0.0
     for x, y in zip(exact1, sklearn_):
         accuracy_score_ += accuracy_score(x, y)
     print "\t\tnon fast: ", accuracy_score_ / float(len(exact1))
-    print "\tUnordered_map:"
-    accuracy_score_ = 0.0
-    for x, y in zip(approx_fit, sklearn_):
-        accuracy_score_ += accuracy_score(x, y)
-    print "\t\tfast: ", accuracy_score_ / float(len(approx_fit))
+    # print "\tUnordered_map:"
+    # accuracy_score_ = 0.0
+    # for x, y in zip(approx_fit, sklearn_):
+    #     accuracy_score_ += accuracy_score(x, y)
+    # print "\t\tfast: ", accuracy_score_ / float(len(approx_fit))
 
-    accuracy_score_ = 0.0
-    for x, y in zip(exact_fit, sklearn_):
-        accuracy_score_ += accuracy_score(x, y)
-    print "\t\tnon fast: ", accuracy_score_ / float(len(exact_fit))
+    # accuracy_score_ = 0.0
+    # for x, y in zip(exact_fit, sklearn_):
+    #     accuracy_score_ += accuracy_score(x, y)
+    # print "\t\tnon fast: ", accuracy_score_ / float(len(exact_fit))
     
-    print "accuracy np.in1d: ", np.in1d(exact_fit, sklearn_).mean()
+    # print "accuracy np.in1d: ", np.in1d(exact_fit, sklearn_).mean()
     
     exact_a, approx_a, exacr_approx = accuracy(exact1, approx1, sklearn_)
     print "\nAccuracy neighborhood:"
-    print "\tBloomier filter:"
+    # print "\tBloomier filter:"
     print "\t\tfast: ", approx_a
     print "\t\tnon fast: ", exact_a
     
-    exact_a, approx_a, exacr_approx = accuracy(exact_fit, approx_fit, sklearn_)
-    print "\tUnordered map:"
-    print "\t\tfast: ", approx_a
-    print "\t\tnon fast: ", exact_a
+    # exact_a, approx_a, exacr_approx = accuracy(exact_fit, approx_fit, sklearn_)
+    # print "\tUnordered map:"
+    # print "\t\tfast: ", approx_a
+    # print "\t\tnon fast: ", exact_a
     
     exact_a, approx_a, exacr_approx = accuracy(exact1, approx1, sklearn_10)
     print "\nAccuracy neighborhood 5 out of 10: "
-    print "\tBloomier filter:"
+    # print "\tBloomier filter:"
     print "\t\tfast: ", approx_a
     print "\t\tnon fast: ", exact_a
-    
-    exact_a, approx_a, exacr_approx = accuracy(exact_fit, approx_fit, sklearn_10)
-    print "\tUnordered map:"
-    print "\t\tfast: ", approx_a
-    print "\t\tnon fast: ", exact_a
+    print "\ndist count: ", dist_count
+    # exact_a, approx_a, exacr_approx = accuracy(exact_fit, approx_fit, sklearn_10)
+    # print "\tUnordered map:"
+    # print "\t\tfast: ", approx_a
+    # print "\t\tnon fast: ", exact_a
     
     
    
