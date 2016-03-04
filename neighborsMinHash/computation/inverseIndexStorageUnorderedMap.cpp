@@ -47,7 +47,7 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
     if (pRemoveValueWithLeastSigificantBit) {
         size_t leastSignificantBits = 0b11111111111111111111111111111111 << pRemoveValueWithLeastSigificantBit;
         size_t insertValue = pHashValue | leastSignificantBits;
-        if (insertValue == leastSignificantBits) {
+        if (insertValue != leastSignificantBits) {
             return;
         }
     }
