@@ -65,7 +65,8 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
         mShingleSize = 1;
         mBlockSize = 1;
     } else {
-        mInverseIndexSize = ceil(((float) (mNumberOfHashFunctions * mBlockSize) / (float) mShingleSize));        
+        mInverseIndexSize = ceil(((float) (mNumberOfHashFunctions * mBlockSize) / (float) mShingleSize));
+        std::cout << "size inverse index: " << mInverseIndexSize << std::endl;      
     }
         mInverseIndexStorage = new InverseIndexStorageUnorderedMap(mInverseIndexSize, mMaxBinSize);
     mRemoveValueWithLeastSigificantBit = pRemoveValueWithLeastSigificantBit;
@@ -115,31 +116,37 @@ vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const
 
 vsize_t* InverseIndex::shingle(vsize_t* pSignature) {
     
-    vsize_t* signature = new vsize_t(mNumberOfHashFunctions*mBlockSize / mShingleSize);
-    
+    vsize_t* signature = new vsize_t(mInverseIndexSize);
+    size_t iterationSize = (mNumberOfHashFunctions * mBlockSize) / mShingleSize;
     if (mShingle == 1) {
         
         // if 0 than combine hash values inside the block to one new hash value
         size_t signatureBlockValue;
-        size_t count = 0;
-        
-        for (size_t i = 0; i < signature->size(); ++i) {
-            if (i*mShingleSize >= pSignature->size()) break;
+        // size_t count = 0;
+        // std::cout << __LINE__ << std::endl;
+        for (size_t i = 0; i < iterationSize; ++i) {
+            // if (i*mShingleSize >= pSignature->size()) break;
             signatureBlockValue = (*pSignature)[i*mShingleSize];
             
             for (size_t j = 1; j < mShingleSize; ++j) {
                 signatureBlockValue = mHash->hash((*pSignature)[i*mShingleSize+j]+1, signatureBlockValue+1, MAX_VALUE);
             }
             (*signature)[i] = signatureBlockValue;
-            count = i; 
+            // count = i; 
+        }
+        // std::cout << __LINE__ << std::endl;
+        if (iterationSize != mInverseIndexSize) {
+            signatureBlockValue = (*pSignature)[(iterationSize+1) * mShingleSize];
+            for (size_t j = 0; j < mShingleSize && j + (iterationSize+1)*mShingleSize < pSignature->size(); ++j) {
+                signatureBlockValue = mHash->hash((*pSignature)[(iterationSize+1)*mShingleSize + j]+1, signatureBlockValue+1, MAX_VALUE);
+            }
+            // std::cout << __LINE__ << std::endl;
+            // std::cout << "size: " << mInverseIndexSize << std::endl;
+            // std::cout << "count: " << count << std::endl;
+            (*signature)[iterationSize] = signatureBlockValue;
+            // std::cout << __LINE__ << std::endl;
         }
         
-        signatureBlockValue = (*pSignature)[count*mShingleSize];
-        for (size_t j = count; count * mShingleSize + j < pSignature->size(); ++j) {
-            signatureBlockValue = mHash->hash((*pSignature)[count * mShingleSize + j]+1, signatureBlockValue+1, MAX_VALUE);
-        }
-        
-        (*signature)[count+1] = signatureBlockValue;
         
     } else if (mShingle == 2) {
         // if 1 than take the minimum hash values of that block as the hash value
@@ -157,7 +164,11 @@ vsize_t* InverseIndex::shingle(vsize_t* pSignature) {
         //     k += mShingleSize; 
         // }
     }
+        // std::cout << __LINE__ << std::endl;
+    
     delete pSignature;
+        // std::cout << __LINE__ << std::endl;
+    
     return signature; 
 }
 
@@ -258,7 +269,7 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
             std::cout << "start cpu" << std::endl;
             time(&timerStartCPU);
             
-            // timerStartCPU
+            // timerStartCPU 
             #ifdef CUDA
             #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores-1)
             #endif
@@ -268,7 +279,11 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
             for (size_t instance = cpuStart; instance < cpuEnd; ++instance) {
                 if (mHashAlgorithm == 0) {
                     // use minHash
+        // std::cout << __LINE__ << std::endl;
+                    
                     (*signatures)[instance] = computeSignature(pRawData, instance);
+        // std::cout << __LINE__ << std::endl;
+                    
                 } else if (mHashAlgorithm == 1) {
                     // use wta hash
                     (*signatures)[instance] = computeSignatureWTA(pRawData, instance);
@@ -391,7 +406,6 @@ neighborhood* InverseIndex::kneighborsCuda(const umap_uniqueElement* pSignatures
                                         const size_t pNumberOfBlocksDistance,
                                         const size_t pNumberOfThreadsDistance,
                                         size_t pFast, size_t pDistance) {
-                
     std::vector<vvsize_t_p*>* hitsPerInstance 
                             = new std::vector<vvsize_t_p*>(pSignaturesMap->size());                        
 #ifdef OPENMP
@@ -511,10 +525,15 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
 #pragma omp critical
 #endif
             { // write vector to every instance with identical signatures
-
-                for (size_t j = 0; j < instanceId->second.instances->size(); ++j) {
-                    (*neighbors)[(*instanceId->second.instances)[j]] = emptyVectorInt;
-                    (*distances)[(*instanceId->second.instances)[j]] = emptyVectorFloat;
+                if (pNoneSingleInstance) {
+                    for (size_t j = 0; j < instanceId->second.instances->size(); ++j) {
+                        
+                        (*neighbors)[(*instanceId->second.instances)[j]] = emptyVectorInt;
+                        (*distances)[(*instanceId->second.instances)[j]] = emptyVectorFloat;
+                    }
+                } else {
+                    (*neighbors)[0] = emptyVectorInt;
+                    (*distances)[0] = emptyVectorFloat;
                 }
             }
             continue;
