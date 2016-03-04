@@ -66,7 +66,7 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
         mBlockSize = 1;
     } else {
         mInverseIndexSize = ceil(((float) (mNumberOfHashFunctions * mBlockSize) / (float) mShingleSize));
-        std::cout << "size inverse index: " << mInverseIndexSize << std::endl;      
+        // std::cout << "size inverse index: " << mInverseIndexSize << std::endl;      
     }
         mInverseIndexStorage = new InverseIndexStorageUnorderedMap(mInverseIndexSize, mMaxBinSize);
     mRemoveValueWithLeastSigificantBit = pRemoveValueWithLeastSigificantBit;
@@ -234,8 +234,8 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
     // how many blocks, how many threads?
     size_t numberOfBlocksForGpu = 128;
     size_t numberOfThreadsForGpu = 128;
-     std::cout << "gpu start: " << gpuStart << " gpuEnd: " << gpuEnd;
-    std::cout << " cpu start: " << cpuStart << " cpuEnd: " << cpuEnd << std::endl;
+    //  std::cout << "gpu start: " << gpuStart << " gpuEnd: " << gpuEnd;
+    // std::cout << " cpu start: " << cpuStart << " cpuEnd: " << cpuEnd << std::endl;
     #endif
     
    
@@ -246,9 +246,9 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
         #ifdef CUDA
         #pragma omp section
         {
-            time(&timerStartCuda);
+            // time(&timerStartCuda);
             
-            std::cout << "start cuda" << std::endl;
+            // std::cout << "start cuda" << std::endl;
             mInverseIndexCuda->copyDataToGpu(pRawData);
             mInverseIndexCuda->computeSignaturesOnGpu(pRawData, gpuStart,
                                                     gpuEnd, gpuEnd - gpuStart, 
@@ -257,17 +257,17 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
                                                     mShingleSize,
                                                     mBlockSize,
                                                     signatures);
-            std::cout << "end cuda" << std::endl;
-            time(&timerEndCuda);
-            std::cout << "Computing signatures CUDA needs " << difftime(timerEndCuda, timerStartCuda) << " seconds." << std::endl;
+            // std::cout << "end cuda" << std::endl;
+            // time(&timerEndCuda);
+            // std::cout << "Computing signatures CUDA needs " << difftime(timerEndCuda, timerStartCuda) << " seconds." << std::endl;
         }
         #endif
         
         // compute other parts of the signature on the computed
         #pragma omp section
         {
-            std::cout << "start cpu" << std::endl;
-            time(&timerStartCPU);
+            // std::cout << "start cpu" << std::endl;
+            // time(&timerStartCPU);
             
             // timerStartCPU 
             #ifdef CUDA
@@ -289,10 +289,10 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
                     (*signatures)[instance] = computeSignatureWTA(pRawData, instance);
                 }
             }
-            std::cout << "end cpu" << std::endl;
-            time(&timerEndCPU);
+            // std::cout << "end cpu" << std::endl;
+            // time(&timerEndCPU);
             
-            std::cout << "Computing signatures CPU needs " << difftime(timerEndCPU, timerStartCPU) << " seconds." << std::endl;
+            // std::cout << "Computing signatures CPU needs " << difftime(timerEndCPU, timerStartCPU) << " seconds." << std::endl;
             
         }
     } 
@@ -335,14 +335,14 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     mMaxNnz = pRawData->getMaxNnz();
-    time_t timerStart;
-    time_t timerEnd;
+    // time_t timerStart;
+    // time_t timerEnd;
     // compute signatures
-    time(&timerStart);
+    // time(&timerStart);
     vvsize_t_p* signatures = computeSignatureVectors(pRawData);
-    time(&timerEnd);
-    std::cout << "Computing signatures needs " << difftime(timerEnd, timerStart) << " seconds." << std::endl;
-    time(&timerStart);
+    // time(&timerEnd);
+    // std::cout << "Computing signatures needs " << difftime(timerEnd, timerStart) << " seconds." << std::endl;
+    // time(&timerStart);
     // compute how often the inverse index should be pruned 
     size_t pruneEveryNInstances = ceil(signatures->size() * mPruneInverseIndexAfterInstance);
     #ifdef OPENMP
@@ -392,8 +392,8 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     if (mRemoveHashFunctionWithLessEntriesAs > -1) {
         mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
     }
-    time(&timerEnd);
-    std::cout << "Inserting in inverse index needs " << difftime(timerEnd, timerStart) << " seconds." << std::endl;
+    // time(&timerEnd);
+    // std::cout << "Inserting in inverse index needs " << difftime(timerEnd, timerStart) << " seconds." << std::endl;
     delete signatures;
 }
 
