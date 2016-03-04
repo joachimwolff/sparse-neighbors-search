@@ -71,8 +71,6 @@ neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t 
     if (pNneighbors == 0) {
         pNneighbors = mNneighbors;
     }
-    // std::cout << "pSimilarity: " << pSimilarity << std::endl;
-    // std::cout << "mSimilarity: " << mSimilarity << std::endl;
     
     if (pSimilarity == -1) {
         pSimilarity = mSimilarity;
@@ -105,7 +103,7 @@ neighborhood* MinHashBase::kneighbors(const SparseMatrixFloat* pRawData, size_t 
         }
         delete X;
     }
-    
+
     if (pFast) {     
         return neighborhood_;
     }
@@ -158,13 +156,11 @@ if (mChunkSize <= 0) {
             #endif
             {
                 if (exactNeighbors.size() > 1) {
-                    // std::cout << "candidate 0: " << neighborsVector[0] << std::endl;
                     neighborhoodCandidates->neighbors->operator[](exactNeighbors[0].key) = neighborsVector;
                 }
             }
         }
     }
-    // std::cout << "\n\n\n\n" << std::endl;
     umap_uniqueElement* x_inverseIndex = mInverseIndex->getSignatureStorage();
     #ifdef OPENMP
     #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
@@ -250,14 +246,14 @@ if (mChunkSize <= 0) {
             }
         }
     }
-  
+
     delete neighborhoodCandidates->neighbors;
     delete neighborhoodCandidates;
     
     neighborhood* neighborhoodExact = new neighborhood();
     neighborhoodExact->neighbors = new vvint(neighborhood_->neighbors->size());
     neighborhoodExact->distances = new vvfloat(neighborhood_->neighbors->size());
-    
+
     // compute the exact neighbors based on the candidate selection before.
 #ifdef OPENMP
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
@@ -308,7 +304,7 @@ if (mChunkSize <= 0) {
     delete neighborhood_->neighbors;
     delete neighborhood_->distances;
     delete neighborhood_;
-    
+
     return neighborhoodExact;
 }
 
