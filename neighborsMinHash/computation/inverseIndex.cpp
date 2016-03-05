@@ -22,7 +22,6 @@
 #include <time.h>
 #include "inverseIndex.h"
 #include "kSizeSortedMap.h"
-// #include "inverseIndexCuda.h"
 
 class sort_map {
   public:
@@ -37,9 +36,12 @@ InverseIndex::InverseIndex(){};
 InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize, size_t pMinimalBlocksInCommon,
-                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, size_t pBloomierFilter,
-                    int pPruneInverseIndex, float pPruneInverseIndexAfterInstance, int pRemoveHashFunctionWithLessEntriesAs,
-                    size_t pHashAlgorithm, size_t pBlockSize, size_t pShingle, size_t pRemoveValueWithLeastSigificantBit) {   
+                    size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions,
+                    int pPruneInverseIndex, float pPruneInverseIndexAfterInstance,
+                    int pRemoveHashFunctionWithLessEntriesAs, size_t pHashAlgorithm,
+                    size_t pBlockSize, size_t pShingle,
+                    size_t pRemoveValueWithLeastSigificantBit,
+                    float pCpuGpuLoadBalancing) {   
     mNumberOfHashFunctions = pNumberOfHashFunctions;
     mShingleSize = pShingleSize;
     mNumberOfCores = pNumberOfCores;
@@ -56,7 +58,7 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
     mHash = new Hash();
     mBlockSize = pBlockSize;
     mShingle = pShingle;
-    
+    mCpuGpuLoadBalancing = pCpuGpuLoadBalancing;
     if (mShingle == 0) {
         if (mBlockSize == 0) {
             mBlockSize = 1;
@@ -122,53 +124,24 @@ vsize_t* InverseIndex::shingle(vsize_t* pSignature) {
         
         // if 0 than combine hash values inside the block to one new hash value
         size_t signatureBlockValue;
-        // size_t count = 0;
-        // std::cout << __LINE__ << std::endl;
         for (size_t i = 0; i < iterationSize; ++i) {
-            // if (i*mShingleSize >= pSignature->size()) break;
             signatureBlockValue = (*pSignature)[i*mShingleSize];
             
             for (size_t j = 1; j < mShingleSize; ++j) {
                 signatureBlockValue = mHash->hash((*pSignature)[i*mShingleSize+j]+1, signatureBlockValue+1, MAX_VALUE);
             }
             (*signature)[i] = signatureBlockValue;
-            // count = i; 
         }
-        // std::cout << __LINE__ << std::endl;
         if (iterationSize != mInverseIndexSize) {
             signatureBlockValue = (*pSignature)[(iterationSize+1) * mShingleSize];
             for (size_t j = 0; j < mShingleSize && j + (iterationSize+1)*mShingleSize < pSignature->size(); ++j) {
                 signatureBlockValue = mHash->hash((*pSignature)[(iterationSize+1)*mShingleSize + j]+1, signatureBlockValue+1, MAX_VALUE);
             }
-            // std::cout << __LINE__ << std::endl;
-            // std::cout << "size: " << mInverseIndexSize << std::endl;
-            // std::cout << "count: " << count << std::endl;
             (*signature)[iterationSize] = signatureBlockValue;
-            // std::cout << __LINE__ << std::endl;
         }
-        
-        
-    } else if (mShingle == 2) {
-        // if 1 than take the minimum hash values of that block as the hash value
-        // size_t k = 0;
-        
-        // while (k < mNumberOfHashFunctions*mBlockSize) {
-        // // use computed hash value as a seed for the next computation
-        //     size_t minValue = MAX_VALUE;
-        //     for (size_t j = 0; j < mShingleSize  && k+j < mNumberOfHashFunctions*mBlockSize; ++j) {
-        //         if (minValue > pSignature[k+j] ) {
-        //             minValue = pSignature[k+j];
-        //         }
-        //     }
-        //     signature->push_back(minValue);
-        //     k += mShingleSize; 
-        // }
     }
-        // std::cout << __LINE__ << std::endl;
     
     delete pSignature;
-        // std::cout << __LINE__ << std::endl;
-    
     return signature; 
 }
 
@@ -226,7 +199,8 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
     size_t cpuEnd = pRawData->size();
     #ifdef CUDA
     // how to split the data between cpu and gpu?
-    float cpuGpuSplitFactor = 1.0;
+    float cpuGpuSplitFactor = mCpuGpuLoadBalancing;
+    std::cout << "cpu gpu split: " << mCpuGpuLoadBalancing << std::endl;
     size_t gpuStart = 0;
     size_t gpuEnd = floor(pRawData->getNumberOfInstances() * cpuGpuSplitFactor);
     cpuStart = ceil(pRawData->getNumberOfInstances() * cpuGpuSplitFactor);
@@ -234,8 +208,6 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
     // how many blocks, how many threads?
     size_t numberOfBlocksForGpu = 128;
     size_t numberOfThreadsForGpu = 128;
-    //  std::cout << "gpu start: " << gpuStart << " gpuEnd: " << gpuEnd;
-    // std::cout << " cpu start: " << cpuStart << " cpuEnd: " << cpuEnd << std::endl;
     #endif
     
    
@@ -246,54 +218,37 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
         #ifdef CUDA
         #pragma omp section
         {
-            // time(&timerStartCuda);
-            
-            // std::cout << "start cuda" << std::endl;
-            mInverseIndexCuda->copyDataToGpu(pRawData);
-            mInverseIndexCuda->computeSignaturesOnGpu(pRawData, gpuStart,
+            // if (cpuStart != pRawData->size()) {
+                mInverseIndexCuda->copyDataToGpu(pRawData);
+                mInverseIndexCuda->computeSignaturesOnGpu(pRawData, gpuStart,
                                                     gpuEnd, gpuEnd - gpuStart, 
                                                     numberOfBlocksForGpu, 
                                                     numberOfThreadsForGpu, 
                                                     mShingleSize,
                                                     mBlockSize,
                                                     signatures);
-            // std::cout << "end cuda" << std::endl;
-            // time(&timerEndCuda);
-            // std::cout << "Computing signatures CUDA needs " << difftime(timerEndCuda, timerStartCuda) << " seconds." << std::endl;
+            // }
         }
         #endif
         
         // compute other parts of the signature on the computed
         #pragma omp section
         {
-            // std::cout << "start cpu" << std::endl;
-            // time(&timerStartCPU);
-            
-            // timerStartCPU 
-            #ifdef CUDA
-            #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores-1)
-            #endif
-            #ifndef CUDA
-            #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
-            #endif
-            for (size_t instance = cpuStart; instance < cpuEnd; ++instance) {
-                if (mHashAlgorithm == 0) {
-                    // use minHash
-        // std::cout << __LINE__ << std::endl;
-                    
-                    (*signatures)[instance] = computeSignature(pRawData, instance);
-        // std::cout << __LINE__ << std::endl;
-                    
-                } else if (mHashAlgorithm == 1) {
-                    // use wta hash
-                    (*signatures)[instance] = computeSignatureWTA(pRawData, instance);
-                }
-            }
-            // std::cout << "end cpu" << std::endl;
-            // time(&timerEndCPU);
-            
-            // std::cout << "Computing signatures CPU needs " << difftime(timerEndCPU, timerStartCPU) << " seconds." << std::endl;
-            
+            // #ifdef CUDA
+            // #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores-1)
+            // #endif
+            // #ifndef CUDA
+            // #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+            // #endif
+            // for (size_t instance = cpuStart; instance < cpuEnd; ++instance) {
+            //     if (mHashAlgorithm == 0) {
+            //         // use minHash
+            //         (*signatures)[instance] = computeSignature(pRawData, instance);
+            //     } else if (mHashAlgorithm == 1) {
+            //         // use wta hash
+            //         (*signatures)[instance] = computeSignatureWTA(pRawData, instance);
+            //     }
+            // }
         }
     } 
     
@@ -460,8 +415,8 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                                         size_t pFast, size_t pDistance, const bool pNoneSingleInstance) {
 
     #ifdef CUDA
-        return kneighborsCuda(pSignaturesMap, pNneighborhood, pDoubleElementsStorageCount,
-                                128,128, 512, 32, pFast, pDistance);
+        // return kneighborsCuda(pSignaturesMap, pNneighborhood, pDoubleElementsStorageCount,
+                                // 128,128, 512, 32, pFast, pDistance);
     #endif                                       
     size_t doubleElements = 0;
     if (pNoneSingleInstance) {

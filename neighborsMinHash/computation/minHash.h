@@ -10,32 +10,62 @@
  Albert-Ludwig-University Freiburg im Breisgau
 **/
 
-#include "minHashBase.h"
+#include <Python.h>
+
+#include "inverseIndex.h"
+#include "hash.h"
 
 #ifndef MIN_HASH_H
 #define MIN_HASH_H
-class MinHash : public MinHashBase {
-  private:
 
-  public:
+class MinHash {
+  protected:
+    InverseIndex* mInverseIndex;
+    SparseMatrixFloat* mOriginalData;
+
+	neighborhood computeNeighborhood();
+    neighborhood computeExactNeighborhood();
+  	neighborhood computeNeighborhoodGraph();
+
+    size_t mNneighbors;
+    int mFast;
+    size_t mNumberOfCores;
+    size_t mChunkSize;
+    size_t mSimilarity;
+    size_t mExcessFactor;
+    float mCpuGpuLoadBalancing;
+    Hash* mHash;
+    public:
+    MinHash();
+
   	MinHash(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     size_t pNumberOfCores, size_t pChunkSize,
                     size_t pMaxBinSize,
                     size_t pSizeOfNeighborhood, size_t pMinimalBlocksInCommon,
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, 
-                    int pFast, int pSimilarity, size_t pBloomierFilter,
-                    int pPruneInverseIndex, float pPruneInverseIndexAfterInstance,
-                    int pRemoveHashFunctionWithLessEntriesAs, size_t pHashAlgorithm, 
-                    size_t pBlockSize, size_t pShingle,
-                    size_t pRemoveValueWithLeastSigificantBit);
+                    int pFast, int pSimilarity,
+                    int pPruneInverseIndex, float pPruneInverseIndexAfterInstance, 
+                    int pRemoveHashFunctionWithLessEntriesAs,
+                    size_t pHashAlgorithm, size_t pBlockSize,
+                    size_t pShingle, size_t pRemoveValueWithLeastSigificantBit,
+                    float pCpuGpuLoadBalancing);
+
   	~MinHash();
-    // Calculate the neighbors inside a given radius.
-    neighborhood radiusNeighbors();
-    // Calculate the neighbors inside a given radius as a graph.
-    neighborhood radiusNeighborsGraph();
-    // Fits and calculates the neighbors inside a given radius.
-    neighborhood fitRadiusNeighbors();
-    // Fits and calculates the neighbors inside a given radius as a graph.
-    neighborhood fitRadiusNeighborsGraph();
+    // Calculate the inverse index for the given instances.
+    void fit(const SparseMatrixFloat* pRawData); 
+    // Extend the inverse index with the given instances.
+    void partialFit(); 
+    // Calculate k-nearest neighbors.
+    neighborhood* kneighbors(const SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast, int pSimilarity = -1); 
+    // Calculate k-nearest neighbors as a graph.
+
+    void set_mOriginalData(SparseMatrixFloat* pOriginalData) {
+      mOriginalData = pOriginalData;
+      return;
+    }
+    size_t getNneighbors() { return mNneighbors; };
+    
+    distributionInverseIndex* getDistributionOfInverseIndex();
+    
 };
 #endif // MIN_HASH_H
