@@ -93,18 +93,18 @@ def test(data):
     for i in query_ids:
         query_list.append(datasetBursi.getrow(i))
     query = vstack(query_list)
-    query=None
+    # query=None
     # query = datasetBursi[sorted(list(query_ids))]
     # print query_ids
     # print query
     # query2 = datasetBursi[0::86]
     # print query2
     time_build_approx_start = time.time()
-    minHash = MinHash(number_of_hash_functions=251, max_bin_size= 92, shingle_size = 3, similarity=False, 
-                        bloomierFilter=False, number_of_cores=4,
-                     prune_inverse_index=-1, remove_value_with_least_sigificant_bit=5, excess_factor=13,
-                    prune_inverse_index_after_instance=0.13, removeHashFunctionWithLessEntriesAs=0, 
-                    hash_algorithm = 0, shingle=1, block_size=5, cuda = 0)
+    minHash = MinHash(number_of_hash_functions=800, max_bin_size= 92, shingle_size = 1, similarity=False, 
+                      number_of_cores=4, prune_inverse_index=2, store_value_with_least_sigificant_bit=4,
+                      excess_factor=13, prune_inverse_index_after_instance=1, 
+                      remove_hash_function_with_less_entries_as=0, hash_algorithm = 0,
+                      shingle=0, block_size=1, cpu_gpu_load_balancing = 0.0)
     # minHash = MinHash(number_of_hash_functions=208, max_bin_size= 54, shingle_size = 2, similarity=False, 
     #                     bloomierFilter=False, number_of_cores=4,
     #                  prune_inverse_index=1, remove_value_with_least_sigificant_bit=0, excess_factor=13,
