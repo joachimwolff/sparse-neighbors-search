@@ -395,10 +395,10 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
         nearest_neighbor_sklearn = NearestNeighbors(n_neighbors = n_neighbors_sklearn)
         nearest_neighbor_minHash = MinHash(n_neighbors = n_neighbors_minHash, number_of_hash_functions=hash_function,
                          max_bin_size= 36, shingle_size = 4, similarity=False, 
-                        bloomierFilter=False, number_of_cores=4,
-                     prune_inverse_index=2, remove_value_with_least_sigificant_bit=1, excess_factor=11,
-                    prune_inverse_index_after_instance=0.5, removeHashFunctionWithLessEntriesAs=4, 
-                    hash_algorithm = 0, shingle=1, block_size=2, cuda = 0)
+                       number_of_cores=4,
+                     prune_inverse_index=2, store_value_with_least_sigificant_bit=3, excess_factor=11,
+                    prune_inverse_index_after_instance=0.5, remove_hash_function_with_less_entries_as=4, 
+                    hash_algorithm = 0, shingle=0, block_size=2, cpu_gpu_load_balancing = 1.0)
         nearest_neighbor_lshf = LSHForest(n_estimators=20, n_candidates=200, n_neighbors=n_neighbors_minHash)
         time_start = time.time()
         nearest_neighbor_sklearn.fit(dataset)
@@ -432,8 +432,8 @@ def measure_performance(dataset, n_neighbors_sklearn = 5, n_neighbors_minHash = 
         if size_of_query < dataset.shape[0]:
             query_ids = set()
             query_list = []
-            for i in range(50):
-                query_ids.add(random.randint(0, dataset.shape[0]-1))
+            for i in xrange(50):
+                query_ids.add(random.randint(0, dataset.shape[0]-2))
             query_dense = dataset_dense[list(query_ids)]   
             query_dense_annoy = dataset_dense[list(query_ids)]
             for i in query_ids:
