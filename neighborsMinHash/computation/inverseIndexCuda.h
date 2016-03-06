@@ -32,13 +32,13 @@ class InverseIndexCuda {
   	InverseIndexCuda(size_t pNumberOfHashFunctions, size_t pShingle, 
                         size_t pShingleSize, size_t pBlockSize);
     ~InverseIndexCuda();
-  	void computeSignaturesOnGpu(const SparseMatrixFloat* pRawData, 
+  	void computeSignaturesFittingOnGpu(const SparseMatrixFloat* pRawData, 
                                     size_t pStartIndex, size_t pEndIndex, 
                                     size_t pNumberOfInstances, size_t pNumberOfBlocks, 
                                     size_t pNumberOfThreads, size_t pShingleFactor, 
                                     size_t pBlockSizeShingle,
                                     vvsize_t_p* pSignatures);
-    void copyDataToGpu(const SparseMatrixFloat* pRawData);
+    void copyFittingDataToGpu(const SparseMatrixFloat* pRawData);
     void computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstance, 
                                                 neighborhood* pNeighborhood, 
                                                 size_t pNeighborhoodSize,
@@ -49,5 +49,11 @@ class InverseIndexCuda {
                                                 const size_t pNumberOfThreadsDistance,
                                                 size_t pFast, size_t pDistance,
                                                 size_t pExcessFactor, size_t pMaxNnz);
+   void computeSignaturesQueryOnGpu(const SparseMatrixFloat* pRawData, 
+                                                size_t pStartIndex, size_t pEndIndex, 
+                                                size_t pNumberOfInstances, size_t pNumberOfBlocks, 
+                                                size_t pNumberOfThreads, size_t pShingleFactor, 
+                                                size_t pBlockSizeShingle,
+                                                vvsize_t_p* pSignatures);
 };
 #endif // INVERSE_INDEX_CUDA_H 

@@ -50,7 +50,7 @@ class MinHash {
                     size_t pShingle, size_t pRemoveValueWithLeastSigificantBit,
                     float pCpuGpuLoadBalancing);
 
-  	~MinHash();
+  	~MinHash(); 
     // Calculate the inverse index for the given instances.
     void fit(const SparseMatrixFloat* pRawData); 
     // Extend the inverse index with the given instances.

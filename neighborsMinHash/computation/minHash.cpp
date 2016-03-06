@@ -109,9 +109,9 @@ neighborhood* MinHash::kneighbors(const SparseMatrixFloat* pRawData, size_t pNne
     if (pFast) {     
         return neighborhood_;
     }
-    #ifdef CUDA
-        return neighborhood_;
-    #endif
+    // #ifdef CUDA
+    //     return neighborhood_;
+    // #endif
 
 if (mChunkSize <= 0) {
         mChunkSize = ceil(neighborhood_->neighbors->size() / static_cast<float>(mNumberOfCores));

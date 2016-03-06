@@ -182,7 +182,7 @@ vsize_t* InverseIndex::computeSignatureWTA(const SparseMatrixFloat* pRawData, co
 }
 
 
-vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawData) {
+vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawData, const bool pFitting) {
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
@@ -201,56 +201,101 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
     // how to split the data between cpu and gpu?
     float cpuGpuSplitFactor = mCpuGpuLoadBalancing;
     std::cout << "cpu gpu split: " << mCpuGpuLoadBalancing << std::endl;
+    
     size_t gpuStart = 0;
-    size_t gpuEnd = floor(pRawData->getNumberOfInstances() * cpuGpuSplitFactor);
-    cpuStart = ceil(pRawData->getNumberOfInstances() * cpuGpuSplitFactor);
-    cpuEnd = pRawData->getNumberOfInstances();
+    size_t gpuEnd = 0;
+    if (pRawData->getNumberOfInstances() > 10) {
+        gpuEnd = floor(pRawData->getNumberOfInstances() * cpuGpuSplitFactor);
+        cpuStart = gpuEnd;
+        cpuEnd = pRawData->getNumberOfInstances();
+    }
     // how many blocks, how many threads?
     size_t numberOfBlocksForGpu = 128;
     size_t numberOfThreadsForGpu = 128;
+    std::cout << "gpuStart: " << gpuStart << " gpuEnd: " << gpuEnd << " cpuStart: " << cpuStart << " cpuEnd: " << cpuEnd << std::endl;
     #endif
     
    
+    // vvsize_t_p* signaturesGpu = new vvsize_t_p(pRawData->size());
+    // vvsize_t_p* signaturesCpu = new vvsize_t_p(pRawData->size());
     vvsize_t_p* signatures = new vvsize_t_p(pRawData->size());
+    
     #pragma omp parallel sections num_threads(mNumberOfCores)
     {
         // compute part of the signature on the gpu
         #ifdef CUDA
         #pragma omp section
         {
-            // if (cpuStart != pRawData->size()) {
-                mInverseIndexCuda->copyDataToGpu(pRawData);
-                mInverseIndexCuda->computeSignaturesOnGpu(pRawData, gpuStart,
+            // vvsize_t_p* signaturesLocal = new vvsize_t_p(pRawData->size());
+            
+            if (pFitting) {
+                if (cpuStart != 0) {
+                std::cout << __LINE__ << std::endl;
+                mInverseIndexCuda->copyFittingDataToGpu(pRawData);
+                // std::cout << __LINE__ << std::endl;
+                
+                mInverseIndexCuda->computeSignaturesFittingOnGpu(pRawData, gpuStart,
                                                     gpuEnd, gpuEnd - gpuStart, 
                                                     numberOfBlocksForGpu, 
                                                     numberOfThreadsForGpu, 
                                                     mShingleSize,
                                                     mBlockSize,
                                                     signatures);
+        }
+            std::cout << __LINE__ << std::endl;
+                                                
+                                                    
+        } else { 
+            mInverseIndexCuda->computeSignaturesQueryOnGpu(pRawData, gpuStart,
+                                                    gpuEnd, gpuEnd - gpuStart, 
+                                                    numberOfBlocksForGpu, 
+                                                    numberOfThreadsForGpu, 
+                                                    mShingleSize,
+                                                    mBlockSize,
+                                                    signatures);
+            } 
+            // for (size_t i = gpuStart; i < gpuEnd; ++i) {
+            //     #pragma omp critical
+            //     (*signatures)[i] = (*signaturesLocal)[i];
             // }
+            
         }
         #endif
         
         // compute other parts of the signature on the computed
-        #pragma omp section
+        #pragma omp section 
         {
-            // #ifdef CUDA
-            // #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores-1)
-            // #endif
-            // #ifndef CUDA
-            // #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
-            // #endif
-            // for (size_t instance = cpuStart; instance < cpuEnd; ++instance) {
-            //     if (mHashAlgorithm == 0) {
-            //         // use minHash
-            //         (*signatures)[instance] = computeSignature(pRawData, instance);
-            //     } else if (mHashAlgorithm == 1) {
-            //         // use wta hash
-            //         (*signatures)[instance] = computeSignatureWTA(pRawData, instance);
-            //     }
-            // }
+            #ifdef CUDA
+            #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores-1) if (cpuEnd-cpuStart > 100)
+            #endif
+            #ifndef CUDA
+            #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+            #endif
+            for (size_t instance = cpuStart; instance < cpuEnd; ++instance) {
+                if (mHashAlgorithm == 0) {
+                    // use minHash
+                    // std::cout << "instance: " << instance << std::endl;
+                    #pragma omp critical
+                    (*signatures)[instance] = computeSignature(pRawData, instance);
+                    // std::cout << "instance end " << std::endl;
+                    
+                } else if (mHashAlgorithm == 1) {
+                    // use wta hash
+                    (*signatures)[instance] = computeSignatureWTA(pRawData, instance);
+                }
+            }
         }
     } 
+    // for (size_t i = gpuStart; i < gpuEnd; ++i) {
+    //     (*signatures)[i] = (*signaturesGpu)[i];
+    // }
+    // for (size_t i = cpuStart; i < cpuEnd; ++i) {
+    //     (*signatures)[i] = (*signaturesCpu)[i];
+    // }
+    // delete signaturesGpu;
+    // delete signaturesCpu;
+    
+    std::cout << "End of signature computation" << std::endl;
     
     return signatures;
 }
@@ -259,7 +304,7 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     const size_t sizeOfInstances = pRawData->size();
     umap_uniqueElement* instanceSignature = new umap_uniqueElement();
     instanceSignature->reserve(sizeOfInstances);
-    vvsize_t_p* signatures = computeSignatureVectors(pRawData);
+    vvsize_t_p* signatures = computeSignatureVectors(pRawData, false);
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     for (size_t i = 0; i < signatures->size(); ++i) {
 
@@ -290,11 +335,12 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     mMaxNnz = pRawData->getMaxNnz();
+    std::cout << "Start of fitting" << std::endl;
     // time_t timerStart;
     // time_t timerEnd;
     // compute signatures
     // time(&timerStart);
-    vvsize_t_p* signatures = computeSignatureVectors(pRawData);
+    vvsize_t_p* signatures = computeSignatureVectors(pRawData, true);
     // time(&timerEnd);
     // std::cout << "Computing signatures needs " << difftime(timerEnd, timerStart) << " seconds." << std::endl;
     // time(&timerStart);
@@ -328,9 +374,13 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
                 // delete (*signatures)[i];
             }
         }        
+                // std::cout << __LINE__ << std::endl;
+        // std::cout << "i: " << i << std::endl;
         for (size_t j = 0; j < (*signatures)[i]->size(); ++j) {
             mInverseIndexStorage->insert(j, (*(*signatures)[i])[j], i, mRemoveValueWithLeastSigificantBit);
         }
+                // std::cout << __LINE__ << std::endl;
+        
         if (signatures->size() == pruneEveryNInstances) {
             pruneEveryNInstances += pruneEveryNInstances;
             if (mPruneInverseIndex > -1) {
@@ -348,6 +398,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
         mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
     }
     // time(&timerEnd);
+    std::cout << "ENd of fitting" << std::endl;
     // std::cout << "Inserting in inverse index needs " << difftime(timerEnd, timerStart) << " seconds." << std::endl;
     delete signatures;
 }

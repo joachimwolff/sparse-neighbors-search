@@ -172,8 +172,8 @@ __global__ void createSortedHistogramsCuda(size_t* pHitsPerInstance, size_t* pEl
             pHistogramSortedWithId[blockIdx.x * pNumberOfInstances*2 + threadId*2 + 1] = threadId;
             threadId += blockDim.x;  
         }
-        __syncthreads();
-        // return;
+        __syncthreads(); 
+        return;
         radixSortDesc(blockIdx.x * pNumberOfInstances*2, MAX_VALUE, pRadixSortMemory,
                         pHistogramSortedWithId, pNumberOfInstances);
         return;

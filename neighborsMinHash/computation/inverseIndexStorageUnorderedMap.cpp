@@ -51,12 +51,14 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
             return;
         }
     }
+
     if ((*mInverseIndex)[pVectorId] == NULL) return;
+
 #ifdef OPENMP
 #pragma omp critical
 #endif
    {
-        
+
         auto itHashValue_InstanceVector = (*mInverseIndex)[pVectorId]->find(pHashValue);
 
         // if for hash function h_i() the given hash values is already stored
