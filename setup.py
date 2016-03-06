@@ -42,6 +42,7 @@ sources_list = ['neighborsMinHash/computation/interface/minHash_PythonInterface.
 depends_list = ['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/computation/inverseIndex.h', 'neighborsMinHash/computation/kSizeSortedMap.h',
          'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h', 'neighborsMinHash/computation/sparseMatrix.h',
           'neighborsMinHash/computation/inverseIndexStorage.h', 'neighborsMinHash/computation/inverseIndexStorageUnorderedMap.h','neighborsMinHash/computation/hash.h']
+openmp = True
 if "--openmp" in sys.argv:
     module1 = Extension('_minHash', sources = sources_list, depends = depends_list,
          define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
@@ -50,12 +51,14 @@ if "--openmp" in sys.argv:
 elif platform.system() == 'Darwin' or "--noopenmp" in sys.argv:
     module1 = Extension('_minHash', sources = sources_list, depends = depends_list, 
         extra_compile_args=["-O3", "-std=c++11"])
+    openmp = False
 
 else:
     module1 = Extension('_minHash', sources = sources_list, depends = depends_list,
         define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"],
          extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])
 no_cuda = False
+
 if "--nocuda" in sys.argv:
     no_cuda = True
     sys.argv.remove("--nocuda")
@@ -199,24 +202,44 @@ else:
     # Extension('_minHash', sources = sources_list, depends = depends_list,
     #      define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
     #     extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])
-    ext = Extension('_minHash',
-                sources = sources_list, depends = depends_list,
-                library_dirs=[CUDA['lib64']],
-                libraries=['cudart'],
-                language='c++',
-                runtime_library_dirs=[CUDA['lib64']],
-                # this syntax is specific to this build system
-                # we're only going to use certain compiler args with nvcc and not with gcc
-                # the implementation of this trick is in customize_compiler() below
-                define_macros=[('OPENMP', None), ('CUDA', None)],
-                # extra_link_args={'gcc': ["-lm", "-lrt","-lgomp"], 
-                #                   'nvcc' :[]  },
-                extra_link_args=["-lm", "-lrt","-lgomp"],
-                extra_compile_args={'gcc': ["-fopenmp", "-O3", "-std=c++11"],
-                                    'nvcc': ['-arch=sm_20', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
-                include_dirs = [CUDA['include'], 'src'],#, '/home/joachim/Software/cub-1.5.1'],
-                platforms = "Linux, Mac OS X"
-                )
+    if openmp:
+        ext = Extension('_minHash',
+                    sources = sources_list, depends = depends_list,
+                    library_dirs=[CUDA['lib64']],
+                    libraries=['cudart'],
+                    language='c++',
+                    runtime_library_dirs=[CUDA['lib64']],
+                    # this syntax is specific to this build system
+                    # we're only going to use certain compiler args with nvcc and not with gcc
+                    # the implementation of this trick is in customize_compiler() below
+                    define_macros=[('OPENMP', None), ('CUDA', None)],
+                    # extra_link_args={'gcc': ["-lm", "-lrt","-lgomp"], 
+                    #                   'nvcc' :[]  },
+                    extra_link_args=["-lm", "-lrt","-lgomp"],
+                    extra_compile_args={'gcc': ["-fopenmp", "-O3", "-std=c++11"],
+                                        'nvcc': ['-arch=sm_20', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
+                    include_dirs = [CUDA['include'], 'src'],#, '/home/joachim/Software/cub-1.5.1'],
+                    platforms = "Linux, Mac OS X"
+                    )
+    else:
+        ext = Extension('_minHash',
+                    sources = sources_list, depends = depends_list,
+                    library_dirs=[CUDA['lib64']],
+                    libraries=['cudart'],
+                    language='c++',
+                    runtime_library_dirs=[CUDA['lib64']],
+                    # this syntax is specific to this build system
+                    # we're only going to use certain compiler args with nvcc and not with gcc
+                    # the implementation of this trick is in customize_compiler() below
+                    define_macros=[('CUDA', None)],
+                    # extra_link_args={'gcc': ["-lm", "-lrt","-lgomp"], 
+                    #                   'nvcc' :[]  },
+                    extra_link_args=["-lm", "-lrt","-lgomp"],
+                    extra_compile_args={'gcc': ["-O3", "-std=c++11"],
+                                        'nvcc': ['-arch=sm_20', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
+                    include_dirs = [CUDA['include'], 'src'],#, '/home/joachim/Software/cub-1.5.1'],
+                    platforms = "Linux, Mac OS X"
+                    )
                 
     setup(name='neighborsMinHash',
         # random metadata. there's more you can supploy
