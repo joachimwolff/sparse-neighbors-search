@@ -186,10 +186,6 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
-    time_t timerStartCuda;
-    time_t timerEndCuda;
-    time_t timerStartCPU;
-    time_t timerEndCPU;
     #ifdef OPENMP
     omp_set_dynamic(0);
     omp_set_num_threads(mNumberOfCores);
@@ -200,7 +196,6 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
     #ifdef CUDA
     // how to split the data between cpu and gpu?
     float cpuGpuSplitFactor = mCpuGpuLoadBalancing;
-    std::cout << "cpu gpu split: " << mCpuGpuLoadBalancing << std::endl;
     
     size_t gpuStart = 0;
     size_t gpuEnd = 0;
@@ -212,12 +207,9 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
     // how many blocks, how many threads?
     size_t numberOfBlocksForGpu = 128;
     size_t numberOfThreadsForGpu = 128;
-    std::cout << "gpuStart: " << gpuStart << " gpuEnd: " << gpuEnd << " cpuStart: " << cpuStart << " cpuEnd: " << cpuEnd << std::endl;
     #endif
     
    
-    // vvsize_t_p* signaturesGpu = new vvsize_t_p(pRawData->size());
-    // vvsize_t_p* signaturesCpu = new vvsize_t_p(pRawData->size());
     vvsize_t_p* signatures = new vvsize_t_p(pRawData->size());
     
     #pragma omp parallel sections num_threads(mNumberOfCores)
@@ -226,14 +218,10 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
         #ifdef CUDA
         #pragma omp section
         {
-            // vvsize_t_p* signaturesLocal = new vvsize_t_p(pRawData->size());
-            
             if (pFitting) {
                 if (cpuStart != 0) {
                 std::cout << __LINE__ << std::endl;
                 mInverseIndexCuda->copyFittingDataToGpu(pRawData);
-                // std::cout << __LINE__ << std::endl;
-                
                 mInverseIndexCuda->computeSignaturesFittingOnGpu(pRawData, gpuStart,
                                                     gpuEnd, gpuEnd - gpuStart, 
                                                     numberOfBlocksForGpu, 
@@ -242,8 +230,6 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
                                                     mBlockSize,
                                                     signatures);
         }
-            std::cout << __LINE__ << std::endl;
-                                                
                                                     
         } else { 
             mInverseIndexCuda->computeSignaturesQueryOnGpu(pRawData, gpuStart,
@@ -254,11 +240,6 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
                                                     mBlockSize,
                                                     signatures);
             } 
-            // for (size_t i = gpuStart; i < gpuEnd; ++i) {
-            //     #pragma omp critical
-            //     (*signatures)[i] = (*signaturesLocal)[i];
-            // }
-            
         }
         #endif
         
@@ -274,10 +255,8 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
             for (size_t instance = cpuStart; instance < cpuEnd; ++instance) {
                 if (mHashAlgorithm == 0) {
                     // use minHash
-                    // std::cout << "instance: " << instance << std::endl;
                     #pragma omp critical
                     (*signatures)[instance] = computeSignature(pRawData, instance);
-                    // std::cout << "instance end " << std::endl;
                     
                 } else if (mHashAlgorithm == 1) {
                     // use wta hash
@@ -286,17 +265,6 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
             }
         }
     } 
-    // for (size_t i = gpuStart; i < gpuEnd; ++i) {
-    //     (*signatures)[i] = (*signaturesGpu)[i];
-    // }
-    // for (size_t i = cpuStart; i < cpuEnd; ++i) {
-    //     (*signatures)[i] = (*signaturesCpu)[i];
-    // }
-    // delete signaturesGpu;
-    // delete signaturesCpu;
-    
-    std::cout << "End of signature computation" << std::endl;
-    
     return signatures;
 }
 umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* pRawData) {
@@ -411,7 +379,8 @@ neighborhood* InverseIndex::kneighborsCuda(const umap_uniqueElement* pSignatures
                                         const size_t pNumberOfThreadsHistogram,
                                         const size_t pNumberOfBlocksDistance,
                                         const size_t pNumberOfThreadsDistance,
-                                        size_t pFast, size_t pDistance) {
+                                        size_t pFast, size_t pDistance,
+                                        const size_t pNumberOfInstances) {
     std::vector<vvsize_t_p*>* hitsPerInstance 
                             = new std::vector<vvsize_t_p*>(pSignaturesMap->size());                        
 #ifdef OPENMP
@@ -449,7 +418,7 @@ neighborhood* InverseIndex::kneighborsCuda(const umap_uniqueElement* pSignatures
     neighborhood* neighbors = new neighborhood();
     #ifdef CUDA    
     mInverseIndexCuda->computeHitsOnGpu(hitsPerInstance, neighbors,
-                                        pNneighborhood, hitsPerInstance->size(),
+                                        pNneighborhood, pNumberOfInstances,
                                         pNumberOfBlocksHistogram,
                                         pNumberOfThreadsHistogram,
                                         pNumberOfBlocksDistance,
@@ -465,10 +434,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                                         const bool pDoubleElementsStorageCount,
                                         size_t pFast, size_t pDistance, const bool pNoneSingleInstance) {
 
-    #ifdef CUDA
-        // return kneighborsCuda(pSignaturesMap, pNneighborhood, pDoubleElementsStorageCount,
-                                // 128,128, 512, 32, pFast, pDistance);
-    #endif                                       
+                                           
     size_t doubleElements = 0;
     if (pNoneSingleInstance) {
         if (pDoubleElementsStorageCount) {

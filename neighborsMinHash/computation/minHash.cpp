@@ -85,15 +85,23 @@ neighborhood* MinHash::kneighbors(const SparseMatrixFloat* pRawData, size_t pNne
         // no query data given, use stored signatures
         // neighborhood_ = neighborhood_inverseIndex;
         umap_uniqueElement* x_inverseIndex = mInverseIndex->getSignatureStorage();
-        neighborhood_  = mInverseIndex->kneighbors(x_inverseIndex, 
-                                                    pNneighbors, true,
-                                                    pFast, pSimilarity);
+        #ifdef CUDA
+            neighborhood_ = mInverseIndex->kneighborsCuda(x_inverseIndex, pNneighbors, doubleElementsStorageCount,
+                                128,128, 512, 32, pFast, pSimilarity, mOriginalData->size());
+        #endif
+        // neighborhood_  = mInverseIndex->kneighbors(x_inverseIndex, 
+                                                    // pNneighbors, true,
+                                                    // pFast, pSimilarity);
         doubleElementsStorageCount = true;
     } else {
         umap_uniqueElement* X = (mInverseIndex->computeSignatureMap(pRawData));
-        neighborhood_ = mInverseIndex->kneighbors(X, pNneighbors, 
-                                                doubleElementsStorageCount,
-                                                pFast, pSimilarity);
+        #ifdef CUDA
+        neighborhood_ = mInverseIndex->kneighborsCuda(X, pNneighbors, doubleElementsStorageCount,
+                                128,128, 512, 32, pFast, pSimilarity, mOriginalData->size());
+        #endif
+        // neighborhood_ = mInverseIndex->kneighbors(X, pNneighbors, 
+        //                                         doubleElementsStorageCount,
+        //                                         pFast, pSimilarity);
     
         for (auto it = X->begin(); it != X->end(); ++it) {
         // if ((*it).second.instances != NULL) {

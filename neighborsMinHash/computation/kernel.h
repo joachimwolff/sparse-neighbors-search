@@ -11,16 +11,16 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
                     size_t* pSignaturesBlockSize);
 __global__ void createSortedHistogramsCuda(size_t* pHitsPerInstance, size_t* pElementsPerInstance,
                                             const size_t pNumberOfInstances,
-                                            int* pHistogram, int* pRadixSortMemory,
-                                            int* pSortedInstancesByNumberOfHits, 
-                                            int* pNumberOfPossibleNeighbors,
+                                            size_t* pHistogram, size_t* pRadixSortMemory,
+                                            size_t* pSortedInstancesByNumberOfHits, 
+                                            size_t* pNumberOfPossibleNeighbors,
                                             size_t pNumberOfNeighbors, size_t pExcessFactor,
                                             size_t* pNeighborhood, float* pDistances, size_t pFast);
-__global__ void euclideanDistanceCuda(int* pHitsPerQueryInstance, int* pNumberInstancesToConsider, 
+__global__ void euclideanDistanceCuda(size_t* pHitsPerQueryInstance, size_t* pNumberInstancesToConsider, 
                                         size_t pRangeBetweenInstances, size_t pNumberOfInstances,
                                         size_t* pFeatureList, float* pValuesList,
                                         size_t* pSizeOfInstanceList, size_t pMaxNnz, 
-                                        int* pRadixSortMemory, int pNumberOfNeighbors,
+                                        size_t* pRadixSortMemory, size_t pNumberOfNeighbors,
                                         size_t* neighborhood, float* distances);
 __global__ void cosineSimilarityCuda(int* pHitsPerQueryInstance, int* pNumberInstancesToConsider, 
                                         size_t pRangeBetweenInstances, size_t pNumberOfInstances,

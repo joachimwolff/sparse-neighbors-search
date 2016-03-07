@@ -96,7 +96,8 @@ class InverseIndex {
                                         const size_t pNumberOfThreadsHistogram,
                                         const size_t pNumberOfBlocksDistance,
                                         const size_t pNumberOfThreadsDistance,
-                                        size_t pFast, size_t pDistance);
+                                        size_t pFast, size_t pDistanceconst,
+                                        const size_t pNumberOfInstances);
                                         
                                         
 };
