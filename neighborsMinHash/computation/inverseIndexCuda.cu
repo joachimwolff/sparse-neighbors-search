@@ -299,7 +299,7 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
     size_t rangeBetweenInstances = pNumberOfInstances * 2;
     size_t* dev_HitsPerInstances;
     size_t* dev_ElementsPerInstances;
-    size_t* dev_Histogram;
+    int* dev_Histogram;
     size_t* dev_HistogramSortedWithId;
     size_t* dev_RadixSortMemory;
     size_t* dev_NumberOfPossibleNeighbors;
@@ -309,7 +309,7 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
     cudaMalloc((void **) &dev_ElementsPerInstances,
             pHitsPerInstance->size() * sizeof(size_t));
     cudaMalloc((void **) &dev_Histogram,
-            pNumberOfBlocksHistogram*pNumberOfInstances * sizeof(size_t));
+            pNumberOfBlocksHistogram*pNumberOfInstances * sizeof(int));
     // cudaMemset(dev_Histogram, 0, pNumberOfBlocksHistogram*pNumberOfInstances*sizeof(int));
     cudaMalloc((void **) &dev_HistogramSortedWithId,
             pNumberOfBlocksHistogram * pNumberOfInstances * 2 * sizeof(size_t));

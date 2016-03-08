@@ -60,13 +60,13 @@ def objective(args):
                 max_bin_size = int(max_bin_size), minimal_blocks_in_common = int(minimal_blocks_in_common),
                 shingle_size = int(shingle_size),
                 excess_factor = int(excess_factor),
-                similarity=False, bloomierFilter=False, number_of_cores=4, 
+                similarity=False, number_of_cores=4, 
                 prune_inverse_index=int(prune_inverse_index),
                 prune_inverse_index_after_instance=prune_inverse_index_after_instance,
-                removeHashFunctionWithLessEntriesAs=int(removeHashFunctionWithLessEntriesAs), 
+                remove_hash_function_with_less_entries_as=int(removeHashFunctionWithLessEntriesAs), 
                 hash_algorithm = 1, block_size = int(block_size), shingle=shingle,
-                remove_value_with_least_sigificant_bit=remove_value_with_least_sigificant_bit, 
-                cuda=0)
+                store_value_with_least_sigificant_bit=remove_value_with_least_sigificant_bit, 
+                cpu_gpu_load_balancing=0)
     print "Create minHash object...Done"
                 
     # print "Values: "
@@ -111,7 +111,7 @@ def objective(args):
         # return 5
     # alpha = args["alpha"]
     # beta = args["beta"]
-    return compute_score(error, memory, time_end, max_memory, max_time, 0.18, 0.23)
+    return compute_score(error, memory, time_end, max_memory, max_time, 0.1, 0.23)
     # return error-0.001
 
 
@@ -128,14 +128,14 @@ else:
     datasetBursi = pickle.load(fileObject)
 
 # get values with out
-minHash_org = MinHash(n_neighbors=5, radius=1.0, fast=False, number_of_hash_functions=400,
+minHash_org = MinHash(n_neighbors=5, radius=1.0, fast=False, number_of_hash_functions=800,
                  max_bin_size = 50, minimal_blocks_in_common = 1, shingle_size = 1, excess_factor = 1,
-                 similarity=False, bloomierFilter=False, number_of_cores=4, chunk_size=1, 
+                 similarity=False, number_of_cores=4, chunk_size=1, 
                  prune_inverse_index=-1,
                  prune_inverse_index_after_instance=-1,
-                 removeHashFunctionWithLessEntriesAs=-1, 
+                 remove_hash_function_with_less_entries_as=-1, 
                  hash_algorithm = 1, block_size = 1, shingle=0,
-                 remove_value_with_least_sigificant_bit=0, cuda=0)
+                 store_value_with_least_sigificant_bit=0, cpu_gpu_load_balancing=0)
 minHash_org.fit(datasetBursi)
 distribution = minHash_org.get_distribution_of_inverse_index()
 # print distribution
@@ -162,7 +162,7 @@ print "Max memory: ", max_memory
 # define a search space
 from hyperopt import hp
 space = {
-        'number_of_hash_functions': hp.normal('number_of_hash_functions', 250, 10),
+        'number_of_hash_functions': hp.normal('number_of_hash_functions', 800, 10),
         'max_bin_size': hp.uniform('max_bin_size', 10, 100),
         'shingle_size': hp.uniform('shingle_size', 1, 5),
         'excess_factor': hp.uniform('excess_factor', 1, 15),
