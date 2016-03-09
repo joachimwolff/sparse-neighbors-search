@@ -1,8 +1,7 @@
-#!/usr/bin/python
 #! /usr/bin/python
-# Copyright 2015 Joachim Wolff
+# Copyright 2016 Joachim Wolff
 # Master Thesis
-# Tutors: Fabrizio Costa
+# Tutors: Fabrizio Costa, Milad Miladi
 # Winter semester 2015/2016
 #
 # Chair of Bioinformatics
@@ -37,24 +36,24 @@ import subprocess
 import numpy
 
 
-sources_list = ['neighborsMinHash/computation/interface/minHash_PythonInterface.cpp', 'neighborsMinHash/computation/minHash.cpp', 
-                 'neighborsMinHash/computation/inverseIndex.cpp', 'neighborsMinHash/computation/inverseIndexStorageUnorderedMap.cpp']
-depends_list = ['neighborsMinHash/computation/minHash.h', 'neighborsMinHash/computation/inverseIndex.h', 'neighborsMinHash/computation/kSizeSortedMap.h',
-         'neighborsMinHash/computation/typeDefinitions.h', 'neighborsMinHash/computation/parsePythonToCpp.h', 'neighborsMinHash/computation/sparseMatrix.h',
-          'neighborsMinHash/computation/inverseIndexStorage.h', 'neighborsMinHash/computation/inverseIndexStorageUnorderedMap.h','neighborsMinHash/computation/hash.h']
+sources_list = ['bioinf_learn/computation/interface/nearestNeighbors_PythonInterface.cpp', 'bioinf_learn/computation/nearestNeighbors.cpp', 
+                 'bioinf_learn/computation/inverseIndex.cpp', 'bioinf_learn/computation/inverseIndexStorageUnorderedMap.cpp']
+depends_list = ['bioinf_learn/computation/nearestNeighbors.h', 'bioinf_learn/computation/inverseIndex.h', 'bioinf_learn/computation/kSizeSortedMap.h',
+         'bioinf_learn/computation/typeDefinitions.h', 'bioinf_learn/computation/parsePythonToCpp.h', 'bioinf_learn/computation/sparseMatrix.h',
+          'bioinf_learn/computation/inverseIndexStorage.h', 'bioinf_learn/computation/inverseIndexStorageUnorderedMap.h','bioinf_learn/computation/hash.h']
 openmp = True
 if "--openmp" in sys.argv:
-    module1 = Extension('_minHash', sources = sources_list, depends = depends_list,
+    module1 = Extension('_nearestNeighbors', sources = sources_list, depends = depends_list,
          define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
         extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])#, include_dirs=['/home/wolffj/Software/boost_1_59_0', '/home/wolffj/Software/mtl4'])
 # extra_link_args=(['-Wl,--no-undefined'])
 elif platform.system() == 'Darwin' or "--noopenmp" in sys.argv:
-    module1 = Extension('_minHash', sources = sources_list, depends = depends_list, 
+    module1 = Extension('_nearestNeighbors', sources = sources_list, depends = depends_list, 
         extra_compile_args=["-O3", "-std=c++11"])
     openmp = False
 
 else:
-    module1 = Extension('_minHash', sources = sources_list, depends = depends_list,
+    module1 = Extension('_nearestNeighbors', sources = sources_list, depends = depends_list,
         define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"],
          extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])
 no_cuda = False
@@ -174,7 +173,7 @@ class custom_build_ext(build_ext):
 
 
 if (locate_cuda == None or no_cuda):
-    setup (name = 'neighborsMinHash',
+    setup (name = 'bioinf_learn',
             author = 'Joachim Wolff',
             author_email = 'wolffj@informatik.uni-freiburg.de',
             url='https://github.com/joachimwolff/minHashNearestNeighbors',
@@ -186,24 +185,24 @@ if (locate_cuda == None or no_cuda):
             "scipy >= 0.14.0",
             "scikit-learn >= 0.16.0",],
             ext_modules = [module1],
-            packages=['neighborsMinHash',
-                        'neighborsMinHash.neighbors',
-                        'neighborsMinHash.util',
-                        'neighborsMinHash.clustering',
-                        #  'neighborsMinHash.computation',
+            packages=['bioinf_learn',
+                        'bioinf_learn.neighbors',
+                        'bioinf_learn.util',
+                        'bioinf_learn.cluster',
+                        #  'bioinf.computation',
                     ],
             platforms = "Linux, Mac OS X",
             version = '0.1.dev'
             )
 else:
     print "CUDA found on system. Installing MinHash with CUDA-Support."
-    sources_list.extend(['neighborsMinHash/computation/kernel.cu', 'neighborsMinHash/computation/inverseIndexCuda.cu'])
-    depends_list.extend(['neighborsMinHash/computation/kernel.h', 'neighborsMinHash/computation/inverseIndexCuda.h'])
-    # Extension('_minHash', sources = sources_list, depends = depends_list,
+    sources_list.extend(['bioinf_learn/computation/kernel.cu', 'bioinf_learn/computation/inverseIndexCuda.cu'])
+    depends_list.extend(['bioinf_learn/computation/kernel.h', 'bioinf_learn/computation/inverseIndexCuda.h'])
+    # Extension('_nearestNeighbors', sources = sources_list, depends = depends_list,
     #      define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
     #     extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])
     if openmp:
-        ext = Extension('_minHash',
+        ext = Extension('_nearestNeighbors',
                     sources = sources_list, depends = depends_list,
                     library_dirs=[CUDA['lib64']],
                     libraries=['cudart'],
@@ -222,7 +221,7 @@ else:
                     platforms = "Linux, Mac OS X"
                     )
     else:
-        ext = Extension('_minHash',
+        ext = Extension('_nearestNeighbors',
                     sources = sources_list, depends = depends_list,
                     library_dirs=[CUDA['lib64']],
                     libraries=['cudart'],
@@ -241,7 +240,7 @@ else:
                     platforms = "Linux, Mac OS X"
                     )
                 
-    setup(name='neighborsMinHash',
+    setup(name='bioinf_learn',
         # random metadata. there's more you can supploy
         author='Joachim Wolff',
         ext_modules = [ext],
@@ -261,11 +260,11 @@ else:
         "scipy >= 0.14.0",
         "scikit-learn >= 0.16.0",],
         # ext_modules = [module1],
-        packages=['neighborsMinHash',
-                    'neighborsMinHash.neighbors',
-                    'neighborsMinHash.util',
-                    'neighborsMinHash.clustering',
-                    #  'neighborsMinHash.computation',
+        packages=['bioinf_learn',
+                    'bioinf_learn.neighbors',
+                    'bioinf_learn.util',
+                    'bioinf_learn.cluster',
+                    #  'bioinf.computation',
                 ],
         platforms = "Linux, Mac OS X",
         version = '0.1.dev')
