@@ -1,5 +1,5 @@
 /**
- Copyright 2015 Joachim Wolff
+ Copyright 2016 Joachim Wolff
  Master Thesis
  Tutors: Milad Miladi, Fabrizio Costa
  Winter semester 2015/2016
@@ -7,7 +7,7 @@
  Chair of Bioinformatics
  Department of Computer Science
  Faculty of Engineering
- Albert-Ludwig-University Freiburg im Breisgau
+ Albert-Ludwigs-University Freiburg im Breisgau
 **/
 #ifndef TYPE_DEFINTIONS_BASIC_H
 #define TYPE_DEFINTIONS_BASIC_H
@@ -70,10 +70,6 @@ struct distributionInverseIndex {
     size_t standardDeviation;
 };
 
-struct hits {
-    size_t* instances;
-    size_t size;
-};
 static bool mapSortDescByValueFloat(const sortMapFloat& a, const sortMapFloat& b) {
         return a.val > b.val;
 };

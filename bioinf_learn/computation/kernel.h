@@ -1,5 +1,5 @@
 #include "typeDefinitionsBasic.h"
-
+#include "typeDefinitionsCuda.cuh"
 #ifndef KERNEL_CUDA
 #define KERNEL_CUDA
 #define A 0.414213562 // sqrt(2) - 1
@@ -13,9 +13,9 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
                     size_t* pSignaturesBlockSize);
 __global__ void createSortedHistogramsCuda(hits* pHitsPerInstance,
                                             const size_t pNumberOfInstances,
-                                            int* pHistogram, int2* pRadixSortMemory,
-                                            int2* pHistogramSorted, 
-                                            size_t* pNumberOfPossibleNeighbors,
+                                            histogram* pHistogram, radixSortingMemory* pRadixSortMemory,
+                                            sortedHistogram* pHistogramSorted, 
+                                            // size_t* pNumberOfPossibleNeighbors,
                                             size_t pNumberOfNeighbors, size_t pExcessFactor,
                                             size_t* pNeighborhood, float* pDistances, size_t pFast);
 __global__ void euclideanDistanceCuda(int2* pHitsPerQueryInstance, size_t* pNumberInstancesToConsider, 
@@ -30,8 +30,6 @@ __global__ void cosineSimilarityCuda(int2* pHitsPerQueryInstance, size_t* pNumbe
                                         size_t* pSizeOfInstanceList, size_t pMaxNnz, 
                                         int2* pRadixSortMemory, int pNumberOfNeighbors,
                                         size_t* neighborhood, float* distances);
-__device__ void radixSortDesc(size_t pStartPosition, int2* pRadixSortMemory,
-                                int2* pSortingMemory, size_t pNumberOfInstances);
-__device__ void radixSortAsc(size_t pStartPosition, int2* pRadixSortMemory,
-                                int2* pSortingMemory, size_t pNumberOfInstances);
+__device__ void radixSortDesc(sortedHistogram* pSortedHistogram, radixSortingMemory* pRadixSortMemory);
+__device__ void radixSortAsc(sortedHistogram* pSortedHistogram, radixSortingMemory* pRadixSortMemory);
 #endif // KERNEL_CUDA
