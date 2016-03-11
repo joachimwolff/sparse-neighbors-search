@@ -106,7 +106,7 @@ class MinHash():
             block_size = 1
             shingle = 1
             store_value_with_least_sigificant_bit = 4
-       elif accuracy_optimized:
+        elif accuracy_optimized:
             number_of_hash_functions = 400
             max_bin_size = 12
             minimal_blocks_in_common = 1

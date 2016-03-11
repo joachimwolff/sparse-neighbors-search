@@ -79,12 +79,8 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
  
 InverseIndex::~InverseIndex() {
     for (auto it = mSignatureStorage->begin(); it != mSignatureStorage->end(); ++it) {
-        // if ((*it).second.instances != NULL) {
             delete (*it).second.instances;
-        // }
-        // if ((*it).second.signature != NULL) {
             delete (*it).second.signature;
-        // }
     }
     delete mSignatureStorage;
     delete mHash;
@@ -352,7 +348,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
             mInverseIndexStorage->insert(j, (*(*signatures)[i])[j], i, mRemoveValueWithLeastSigificantBit);
         }
                 // std::cout << __LINE__ << std ::endl;
-    std::cout << __LINE__ << std::endl;
+    // std::cout << __LINE__ << std::endl; 
         
         if (signatures->size() == pruneEveryNInstances) {
             pruneEveryNInstances += pruneEveryNInstances;
@@ -389,13 +385,16 @@ neighborhood* InverseIndex::kneighborsCuda(const umap_uniqueElement* pSignatures
                                         size_t pFast, size_t pDistance,
                                         const size_t pNumberOfInstances,
                                         size_t pStart, size_t pEnd) {
+                                                    std::cout << __LINE__ << std::endl;
+
     size_t doubleElements; 
     if (pDoubleElementsStorageCount) {
         doubleElements = mDoubleElementsStorageCount;
     } else {
         doubleElements = mDoubleElementsQueryCount;
     }
-    
+            std::cout << __LINE__ << std::endl;
+
     std::vector<vvsize_t_p*>* hitsPerInstance 
                             = new std::vector<vvsize_t_p*>(pEnd - pStart + doubleElements);                        
 #ifdef OPENMP
@@ -435,6 +434,7 @@ neighborhood* InverseIndex::kneighborsCuda(const umap_uniqueElement* pSignatures
     
     
     neighborhood* neighbors = new neighborhood();
+        std::cout << __LINE__ << std::endl;
 
     mInverseIndexCuda->computeHitsOnGpu(hitsPerInstance, neighbors,
                                         pNneighborhood, pNumberOfInstances,
@@ -444,14 +444,26 @@ neighborhood* InverseIndex::kneighborsCuda(const umap_uniqueElement* pSignatures
                                         pNumberOfThreadsDistance,
                                         pFast, pDistance,
                                         mExcessFactor, mMaxNnz);
-                                        
-    for (auto it = hitsPerInstance->begin(); it != hitsPerInstance->end(); ++it) {
-        for (auto it2 = (*it)->begin(); it2 != (*it)->end(); ++it2) {
-            delete (*it2);
-        }
-        delete (*it);
-    }
-    delete hitsPerInstance;
+                 std::cout << __LINE__ << std::endl;
+                               
+    // for (auto it = hitsPerInstance->begin(); it != hitsPerInstance->end(); ++it) {
+    //     for (auto it2 = (*it)->begin(); it2 != (*it)->end(); ++it2) {
+    //         delete (*it2);
+    //     }
+    //     delete (*it);
+    // }
+    // std::cout << "[";
+    // for (size_t i = 0; i < pNumberOfInstances; ++i) {
+    //     std::cout << "[";
+    //     for (size_t j = 0; j < pNneighborhood; ++j) {
+    //         std::cout << neighbors->neighbors->operator[](i)[j] << ",";
+    //     }    
+    //     std::cout << "]" << std::endl;
+    // }
+    // std::cout << "]" << std::endl;
+    //         std::cout << __LINE__ << std::endl;
+
+    // delete hitsPerInstance;
     return neighbors;                                  
 
 }

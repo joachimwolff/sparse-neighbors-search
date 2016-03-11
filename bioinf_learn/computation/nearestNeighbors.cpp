@@ -287,13 +287,21 @@ neighborhood* NearestNeighbors::kneighborsGpu(const SparseMatrixFloat* pRawData,
     neighborhood* neighborhood_;
      if (pRawData == NULL) {
         // no query data given, use stored signatures
+        std::cout << __LINE__ << std::endl;
         neighborhood_  = mInverseIndex->kneighborsCuda(pSignaturesMap, pNneighbors, true, 128,128, 512, 32,
                                                         pFast, pSimilarity, mOriginalData->size(), 
                                                         pStart, pEnd);
+                                                        
+        std::cout << __LINE__ << std::endl;
+        
     } else {
+        std::cout << __LINE__ << std::endl;
+        
         neighborhood_ = mInverseIndex->kneighborsCuda(pSignaturesMap, pNneighbors, false, 128,128, 512, 32,
                                                         pFast, pSimilarity, mOriginalData->size(), 
                                                         pStart, pEnd);
+        std::cout << __LINE__ << std::endl;
+                                                        
     }
     return neighborhood_;
 }
@@ -367,10 +375,11 @@ neighborhood* NearestNeighbors::kneighbors(const SparseMatrixFloat* pRawData, si
         #pragma omp section 
         {
     std::cout << __LINE__ << std::endl;
-            
+            if (cpuEnd != 0) {
             neighborsCpu = kneighborsCpu(pRawData, x_inverseIndex, pNneighbors,
                                             pFast, pSimilarity,
                                             cpuStart, cpuEnd);
+            }
         }
     } 
     

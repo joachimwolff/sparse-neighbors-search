@@ -17,15 +17,14 @@ struct hits {
 };
 
 struct histogram {
-    size_t* instances;
+    int* instances;
 };
 struct sortedHistogram {
     int2* instances;
     size_t size;
 };
-struct radixSortingMemory {
-    int2* bucketNull;
-    int2* bucketOne;
+struct mergeSortingMemory {
+    int2* instances;
 };
 
 #endif // TYPE_DEFINTIONS_CUDA_H

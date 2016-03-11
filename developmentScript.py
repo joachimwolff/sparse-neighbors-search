@@ -31,7 +31,7 @@ import random
 import time
 import cPickle as pickle
 # from neighborsMinHash import MinHashKNeighborsClassifier
-from bioinf.neighbors import MinHash
+from bioinf_learn.neighbors import MinHash
 # from neighborsMinHash.computation import InverseIndex
 import inspect
 from scipy.sparse import csr_matrix
@@ -40,7 +40,7 @@ from eden.converter.graph.gspan import gspan_to_eden
 from eden.graph import Vectorizer
 
 from sklearn.metrics import accuracy_score
-from bioinf.util import neighborhood_accuracy
+from bioinf_learn.util import neighborhood_accuracy
 import os.path
 
 def parameter_optimization():
@@ -104,7 +104,7 @@ def test(data):
                       number_of_cores=4, prune_inverse_index=2, store_value_with_least_sigificant_bit=3,
                       excess_factor=13, prune_inverse_index_after_instance=1, 
                       remove_hash_function_with_less_entries_as=0,
-                      shingle=0, block_size=4, cpu_gpu_load_balancing = 0.0)
+                      shingle=0, block_size=4, cpu_gpu_load_balancing = 1.0)
     # minHash = MinHash(number_of_hash_functions=208, max_bin_size= 54, shingle_size = 2, similarity=False, 
     #                     bloomierFilter=False, number_of_cores=4,
     #                  prune_inverse_index=1, remove_value_with_least_sigificant_bit=0, excess_factor=13,

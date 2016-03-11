@@ -328,7 +328,7 @@ def benchmarkNearestNeighorAlgorithms(dataset, n_neighbors = 10, reduce_dimensio
     
     # nearpy
     time_start = time.time()
-    nearpy_obj = 
+    # nearpy_obj = 
     
     time_start = time.time()
     time_start = time.time()
