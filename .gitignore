@@ -30,7 +30,7 @@ developmentScript2.py
 developmentScript3.py
 example/minHash.prof
 init_values
-kernel.cu
+
 max_value_init
 neighborsMinHash/clustering/minHashClustering.pyc
 neighborsMinHash/clustering/minHashDBSCAN.pyc
