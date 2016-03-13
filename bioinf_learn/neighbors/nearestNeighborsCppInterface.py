@@ -216,7 +216,7 @@ class NearestNeighborsCppInterface():
                                     0, 0,
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
-                                    1 if fast else 0, similarity, self._pointer_address_of_nearestNeighbors_object)
+                                    fast, similarity, self._pointer_address_of_nearestNeighbors_object)
         else:
             X_csr = csr_matrix(X)
             instances, features = X_csr.nonzero()
@@ -293,7 +293,7 @@ class NearestNeighborsCppInterface():
                                     0, 0,
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
-                                    1 if fast else 0, 1 if symmetric else 0,
+                                    fast, 1 if symmetric else 0,
                                     similarity, 
                                     self._pointer_address_of_nearestNeighbors_object)
         else:

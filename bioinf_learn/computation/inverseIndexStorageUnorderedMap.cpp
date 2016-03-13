@@ -100,6 +100,7 @@ vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, size_t pH
 }
 
 distributionInverseIndex* InverseIndexStorageUnorderedMap::getDistribution() {
+    if (mInverseIndex == NULL) return new distributionInverseIndex();
     distributionInverseIndex* retVal = new distributionInverseIndex();
     std::map<size_t, size_t> distribution;
     vsize_t numberOfCreatedHashValuesPerHashFunction;
@@ -114,6 +115,7 @@ distributionInverseIndex* InverseIndexStorageUnorderedMap::getDistribution() {
         size_t mean = 0;
         
         for (auto itMap = (*it)->begin(); itMap != (*it)->end(); ++itMap) {
+            if (itMap->second == NULL) continue;
             distribution[itMap->second->size()] += 1;
             mean += itMap->second->size();
         }
@@ -124,6 +126,7 @@ distributionInverseIndex* InverseIndexStorageUnorderedMap::getDistribution() {
         
         size_t variance = 0;
         for (auto itMap = (*it)->begin(); itMap != (*it)->end(); ++itMap) {
+            if (itMap->second == NULL) continue;
             variance += pow(static_cast<int>(itMap->second->size()) - mean, 2);
         }
         
@@ -134,7 +137,7 @@ distributionInverseIndex* InverseIndexStorageUnorderedMap::getDistribution() {
     
     size_t varianceForNumberOfHashValues = 0;
     for (auto it = mInverseIndex->begin(); it != mInverseIndex->end(); ++it) {
-        if (*it == NULL) continue;
+       if (*it == NULL) continue;
        varianceForNumberOfHashValues += pow((*it)->size() - meanForNumberHashValues, 2);
     }
     
@@ -150,6 +153,7 @@ distributionInverseIndex* InverseIndexStorageUnorderedMap::getDistribution() {
     return retVal;
 }
 void InverseIndexStorageUnorderedMap::prune(size_t pValue) { 
+    if (mInverseIndex == NULL) return;
     for (auto it = mInverseIndex->begin(); it != mInverseIndex->end(); ++it) {
         vsize_t elementsToDelete;
         for (auto itMap = (*it)->begin(); itMap != (*it)->end(); ++itMap) {
@@ -160,6 +164,7 @@ void InverseIndexStorageUnorderedMap::prune(size_t pValue) {
             }
         }
         for (size_t i = 0; i < elementsToDelete.size(); ++i) {
+            if ((*it) == NULL) continue;
             (*it)->erase(elementsToDelete[i]);
         }
         elementsToDelete.clear();
@@ -170,19 +175,23 @@ void InverseIndexStorageUnorderedMap::prune(size_t pValue) {
 // which has less entries than mean+standard deviation
 // else: remove every hash function which has less entries than pRemoveHashFunctionWithLessEntriesAs
 void InverseIndexStorageUnorderedMap::removeHashFunctionWithLessEntriesAs(size_t pRemoveHashFunctionWithLessEntriesAs) {
+    if (mInverseIndex == NULL) return;
     if (pRemoveHashFunctionWithLessEntriesAs == 0) {
         size_t mean = 0;
         size_t variance = 0;
         for (size_t i = 0; i < mInverseIndex->size(); ++i) {
+            if ((*mInverseIndex)[i] == NULL) continue;
             mean += (*mInverseIndex)[i]->size();
         }
         mean = mean / mInverseIndex->size();
         for (size_t i = 0; i < mInverseIndex->size(); ++i) {
+            if ((*mInverseIndex)[i] == NULL) continue;            
             variance += pow(static_cast<int>((*mInverseIndex)[i]->size()) - mean, 2);
         }
         variance = variance / mInverseIndex->size();
         size_t standardDeviation = sqrt(variance);
         for (size_t i = 0; i < mInverseIndex->size(); ++i) {
+            if ((*mInverseIndex)[i] == NULL) continue;            
             if ((*mInverseIndex)[i]->size() < mean + standardDeviation) {
                 for (auto it = (*mInverseIndex)[i]->begin(); it != (*mInverseIndex)[i]->end(); ++it) {
                     delete it->second;
@@ -194,6 +203,7 @@ void InverseIndexStorageUnorderedMap::removeHashFunctionWithLessEntriesAs(size_t
         }
     } else {
         for (size_t i = 0; i < mInverseIndex->size(); ++i) {
+            if ((*mInverseIndex)[i] == NULL) continue;            
             if ((*mInverseIndex)[i] != NULL && (*mInverseIndex)[i]->size() < pRemoveHashFunctionWithLessEntriesAs) {
                 for (auto it = (*mInverseIndex)[i]->begin(); it != (*mInverseIndex)[i]->end(); ++it) {
                     if (it->second != NULL) {

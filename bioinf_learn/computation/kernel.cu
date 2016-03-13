@@ -91,10 +91,9 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
 __global__ void createSortedHistogramsCuda(hits* pHitsPerInstance,
                                             const size_t pNumberOfInstances,
                                             histogram* pHistogram, 
-                                            mergeSortingMemory* pMergeSortMemory,
+                                            // mergeSortingMemory* pMergeSortMemory,
                                             sortedHistogram* pHistogramSorted,
-                                            size_t pNumberOfNeighbors, size_t pFast, size_t pExcessFactor,
-                                            size_t* pNeighborhood, float* pDistances) {
+                                            size_t pNneighbors, size_t pFast, size_t pExcessFactor) {
     // sort hits per instances
     // count instances
     // take highest pNeighborhood*excessfaktor + same hits count
@@ -110,14 +109,15 @@ __global__ void createSortedHistogramsCuda(hits* pHitsPerInstance,
     // size_t numberOfElementsToBeConsidered = pNumberOfNeighbors * pExcessFactor;
     __shared__ int elements;
     __shared__ int sizeOfHistogram;
+    uint index = 0;
     // size_t index;
     // create histogram
     while (instanceId < pNumberOfInstances) {
         while (threadId < pNumberOfInstances) {
             // clear arrays to 0
             pHistogram[blockIdx.x].instances[threadId] = 0;
-            pHistogramSorted[blockIdx.x].instances[threadId].x = 0;
-            pHistogramSorted[blockIdx.x].instances[threadId].y = 0;
+            // pHistogramSorted[blockIdx.x].instances[threadId].x = 0;
+            // pHistogramSorted[blockIdx.x].instances[threadId].y = 0;
             
             threadId += blockDim.x;
         }
@@ -132,38 +132,58 @@ __global__ void createSortedHistogramsCuda(hits* pHitsPerInstance,
         
         
         threadId = threadIdx.x;
+        if (threadIdx.x == 0) {
+            elements = 0;
+        }
+        __syncthreads();
         while (threadId < pNumberOfInstances) {
-            // instance id
-            pHistogramSorted[blockIdx.x].instances[threadId].x = threadId;
-            // number of hits
-            pHistogramSorted[blockIdx.x].instances[threadId].y = pHistogram[blockIdx.x].instances[threadId];
+            if (pHistogram[blockIdx.x].instances[threadId] > 0) {
+                index = atomicAdd(&elements, addValue);
+                if (index > pNneighbors * pExcessFactor*2) {
+                    // realloc!!!
+                }
+                // instance id
+                pHistogramSorted[instanceId].instances[index].x = threadId;
+                // number of hits
+                pHistogramSorted[instanceId].instances[index].y = pHistogram[blockIdx.x].instances[threadId];
+                
+            }
             threadId += blockDim.x;  
         }
+        __syncthreads(); 
         if (threadIdx.x == 0) {
-            pHistogramSorted[blockIdx.x].size = pNumberOfInstances;
+            pHistogramSorted[instanceId].size = elements;
+            elements = 0;
         }
         __syncthreads(); 
-        mergeSortDesc(pHistogramSorted, pMergeSortMemory);
+        // return;
+        // printf("fast: %i", pFast);
+        
+        mergeSortDesc(pHistogramSorted, instanceId);
         __syncthreads(); 
         threadId = threadIdx.x;
-        return;
+        // return;
         
         // insert the k neighbors and distances to the neighborhood and distances vector
-        if (pFast) {       
-            while (threadId < pNumberOfNeighbors && threadId < pHistogramSorted[blockIdx.x].size) {
-                pNeighborhood[instanceId*pNumberOfNeighbors+threadId] 
-                    = pHistogramSorted[blockIdx.x].instances[threadId].x;
-                pDistances[instanceId*pNumberOfNeighbors+threadId] 
-                    = (float) pHistogramSorted[blockIdx.x].instances[threadId].y;
-                threadId += blockDim.x;
-            }
-        } else {
+        // printf("fast: %i", pFast);
+        // if (pFast) {       
+        //     // printf("FAST");
+        //     while (threadId < pNumberOfNeighbors * pExcessFactor && threadId < pHistogramSorted[blockIdx.x].size) {
+        //         // if 
+        //         pNeighborhood[instanceId*pNumberOfNeighbors+threadId] 
+        //             = pHistogramSorted[blockIdx.x].instances[threadId].x;
+        //         pDistances[instanceId*pNumberOfNeighbors+threadId] 
+        //             = (float) pHistogramSorted[blockIdx.x].instances[threadId].y;
+        //         threadId += blockDim.x;
+        //     }
+        //     __syncthreads();
+        // } else {
             // count number of elements that should be considered in the euclidean distance 
             // or cosine similarity computation
             if (threadIdx.x == 0) {
                 sizeOfHistogram = pHistogramSorted[blockIdx.x].size;
-                if (pNumberOfNeighbors * pExcessFactor < sizeOfHistogram) {
-                    elements = pNumberOfNeighbors * pExcessFactor;
+                if (pNneighbors * pExcessFactor < sizeOfHistogram) {
+                    elements = pNneighbors * pExcessFactor;
                     while (elements + 1 < sizeOfHistogram
                         && pHistogramSorted[blockIdx.x].instances[elements].y == pHistogramSorted[blockIdx.x].instances[elements + 1].y) {
                         ++elements;
@@ -171,7 +191,7 @@ __global__ void createSortedHistogramsCuda(hits* pHitsPerInstance,
                     pHistogramSorted[blockIdx.x].size = elements;
                 }
             }
-        }
+        // }
         __syncthreads();
         
         instanceId += gridDim.x;
@@ -179,109 +199,162 @@ __global__ void createSortedHistogramsCuda(hits* pHitsPerInstance,
     }
 }
 
-__device__ void mergeSortDesc(sortedHistogram* pSortedHistogram, mergeSortingMemory* pMergeSortMemory) {
-    size_t iterations = ceilf(log2((float)pSortedHistogram[blockIdx.x].size));
-    size_t instanceId = blockIdx.x;
-    size_t threadId = threadIdx.x;
-    size_t index0 = 0;
-    size_t index1 = 0;
-    __shared__ size_t pow;
-    for (size_t i = 1; i < iterations; ++i) {
-        if (threadIdx.x == 0) {
-            pow = powf(2, i);
-        }
-        __syncthreads();
-        while (threadId < pSortedHistogram[instanceId].size) {
-            if ((threadId % pow) == 0) {
-                index0 = threadId;
-                index1 = threadId + threadId/2;
-                int j = 0;
-                while (j < pow && j < pSortedHistogram[instanceId].size) {
-                    if (pSortedHistogram[instanceId].instances[index0].y > pSortedHistogram[instanceId].instances[index1].y) {
-                        pMergeSortMemory[blockIdx.x].instances[threadId + j].x = pSortedHistogram[instanceId].instances[index0].x;
-                        pMergeSortMemory[blockIdx.x].instances[threadId + j].y = pSortedHistogram[instanceId].instances[index0].y;
-                        ++index0;
-                        ++j;
-                    } else if (pSortedHistogram[instanceId].instances[index0].y < pSortedHistogram[instanceId].instances[index1].y){
-                        pMergeSortMemory[blockIdx.x].instances[threadId + j].x = pSortedHistogram[instanceId].instances[index1].x;
-                        pMergeSortMemory[blockIdx.x].instances[threadId + j].y = pSortedHistogram[instanceId].instances[index1].y;
-                        ++index1;
-                        ++j;
-                    } else {
-                        pMergeSortMemory[blockIdx.x].instances[threadId + j].x = pSortedHistogram[instanceId].instances[index0].x;
-                        pMergeSortMemory[blockIdx.x].instances[threadId + j].y = pSortedHistogram[instanceId].instances[index0].y;
-                        pMergeSortMemory[blockIdx.x].instances[threadId + j + 1].x = pSortedHistogram[instanceId].instances[index1].x;
-                        pMergeSortMemory[blockIdx.x].instances[threadId + j + 1].y = pSortedHistogram[instanceId].instances[index1].y;
-                        ++index0;
-                        ++index1;
-                        j += 2;
-                    }
-                }
+__device__ void mergeSortDesc(sortedHistogram* pSortedHistogram, uint pInstanceId) {
+    
+    uint threadId = threadIdx.x;
+    for (uint i = 0; i < pSortedHistogram[pInstanceId].size / 2; ++i) {
+        while (threadId < pSortedHistogram[pInstanceId].size) {
+            if (threadId + 1 < pSortedHistogram[pInstanceId].size 
+                    && pSortedHistogram[pInstanceId].instances[threadId+1].y > pSortedHistogram[pInstanceId].instances[threadId].y) {
+                        int2 tmp;
+                        tmp.x = pSortedHistogram[pInstanceId].instances[threadId].x;
+                        tmp.y = pSortedHistogram[pInstanceId].instances[threadId].y;
+                        pSortedHistogram[pInstanceId].instances[threadId].x = pSortedHistogram[pInstanceId].instances[threadId + 1].x;
+                        pSortedHistogram[pInstanceId].instances[threadId].y = pSortedHistogram[pInstanceId].instances[threadId + 1].y;
+                        pSortedHistogram[pInstanceId].instances[threadId + 1].x = tmp.x;
+                        pSortedHistogram[pInstanceId].instances[threadId + 1].y = tmp.y;
             }
-            
+            if (threadId + 2 < pSortedHistogram[pInstanceId].size 
+                    && pSortedHistogram[pInstanceId].instances[threadId+2].y > pSortedHistogram[pInstanceId].instances[threadId+1].y) {
+                        int2 tmp;
+                        tmp.x = pSortedHistogram[pInstanceId].instances[threadId+1].x;
+                        tmp.y = pSortedHistogram[pInstanceId].instances[threadId+1].y;
+                        pSortedHistogram[pInstanceId].instances[threadId+1].x = pSortedHistogram[pInstanceId].instances[threadId + 2].x;
+                        pSortedHistogram[pInstanceId].instances[threadId+1].y = pSortedHistogram[pInstanceId].instances[threadId + 2].y;
+                        pSortedHistogram[pInstanceId].instances[threadId + 2].x = tmp.x;
+                        pSortedHistogram[pInstanceId].instances[threadId + 2].y = tmp.y;
+            }
+            __syncthreads();
             threadId += blockDim.x;
         }
         __syncthreads();
-        threadId = threadIdx.x;
-        while (threadId < pSortedHistogram[instanceId].size) {
-            pSortedHistogram[instanceId].instances[threadId].x = pMergeSortMemory[blockIdx.x].instances[threadId].x;
-            pSortedHistogram[instanceId].instances[threadId].y = pMergeSortMemory[blockIdx.x].instances[threadId].y;
-            threadId += blockDim.x;
-        }
         threadId = threadIdx.x;
     }
+    // int iterations = ceilf(log2((float)pSortedHistogram[blockIdx.x].size));
+    // int instanceId = blockIdx.x;
+    // int threadId = threadIdx.x;
+    // int index0 = 0;
+    // int index1 = 0;
+    // __shared__ int pow;
+    // for (size_t i = 0; i < iterations; ++i) {
+    //     if (threadIdx.x == 0) {
+    //         pow = powf(2, i);
+    //     }
+    //     __syncthreads();
+    //     // printf("pow: %i", pow);
+    //     int indexDestination = pow * threadId * 2 ;
+    //     index0 = pow * threadId * 2 ;
+    //     index1 = pow * threadId * 2 + pow;
+    //     while (threadId < pSortedHistogram[instanceId].size 
+    //                 && index0 < pSortedHistogram[instanceId].size
+    //                 && index1 < pSortedHistogram[instanceId].size) {
+                
+    //             int j = 0;
+    //             int counter0 = 0;
+    //             int counter1 = 0;
+    //             // if (blockIdx.x == 0 && threadIdx.x == 0) {
+    //             //         printf("111j: %i, pow: %i, index0: %i, index1: %i\n", j, pow, index0, index1);
+    //             //         printf("\nsize: %i\n", pSortedHistogram[instanceId].size);
+    //             //     }
+    //             while (j < pow*2 && counter0 < pow && counter1 < pow 
+    //                         && index0 < pSortedHistogram[instanceId].size 
+    //                         && index1 < pSortedHistogram[instanceId].size) {
+    //                 if (blockIdx.x == 0 && threadIdx.x == 0) {
+    //                     printf("j: %i, pow: %i, counter0: %i, counter1: %i\n", j, pow, counter0, counter1);
+    //                     printf("index0: %i , Index1: %i, size: %i\n", index0, index1, pSortedHistogram[instanceId].size);
+    //                 }
+    //                 if (pSortedHistogram[instanceId].instances[index0].y > pSortedHistogram[instanceId].instances[index1].y) {
+    //                     pMergeSortMemory[blockIdx.x].instances[indexDestination + j].x = pSortedHistogram[instanceId].instances[index0].x;
+    //                     pMergeSortMemory[blockIdx.x].instances[indexDestination + j].y = pSorkktedHistogram[instanceId].instances[index0].y;
+    //                     ++index0;
+    //                     ++counter0;
+    //                     ++j;
+    //                 } else if (pSortedHistogram[instanceId].instances[index0].y < pSortedHistogram[instanceId].instances[index1].y){
+    //                     pMergeSortMemory[blockIdx.x].instances[indexDestination + j].x = pSortedHistogram[instanceId].instances[index1].x;
+    //                     pMergeSortMemory[blockIdx.x].instances[indexDestination + j].y = pSortedHistogram[instanceId].instances[index1].y;
+    //                     ++index1;
+    //                     ++counter1;
+    //                     ++j;
+    //                 } else {
+    //                     pMergeSortMemory[blockIdx.x].instances[indexDestination + j].x = pSortedHistogram[instanceId].instances[index0].x;
+    //                     pMergeSortMemory[blockIdx.x].instances[indexDestination + j].y = pSortedHistogram[instanceId].instances[index0].y;
+    //                     pMergeSortMemory[blockIdx.x].instances[indexDestination+ j + 1].x = pSortedHistogram[instanceId].instances[index1].x;
+    //                     pMergeSortMemory[blockIdx.x].instances[indexDestination + j + 1].y = pSortedHistogram[instanceId].instances[index1].y;
+    //                     ++index0;
+    //                     ++index1;
+    //                     ++counter0;
+    //                     ++counter1;
+    //                     j += 2;
+    //                 }
+    //             }
+    //             while (j < pow*2 && counter0 < pow && index0 < pSortedHistogram[instanceId].size) {
+    //                 pMergeSortMemory[blockIdx.x].instances[indexDestination + j].x = pSortedHistogram[instanceId].instances[index0].x;
+    //                 pMergeSortMemory[blockIdx.x].instances[indexDestination + j].y = pSortedHistogram[instanceId].instances[index0].y;
+    //                 ++index0;
+    //                 ++counter0;
+    //                 ++j;
+    //             }
+    //             while (j < pow*2 && counter1 < pow && index1 < pSortedHistogram[instanceId].size) {
+    //                 pMergeSortMemory[blockIdx.x].instances[indexDestination + j].x = pSortedHistogram[instanceId].instances[index1].x;
+    //                 pMergeSortMemory[blockIdx.x].instances[indexDestination + j].y = pSortedHistogram[instanceId].instances[index1].y;
+    //                 ++index1;
+    //                 ++counter1;
+    //                 ++j;
+    //             }
+    //         __syncthreads();
+    //         threadId += blockDim.x;
+    //         index0 = pow * threadId * 2 ;
+    //         index1 = pow * threadId * 2 + pow;
+    //     }
+    //     __syncthreads();
+    //     // return;
+    //     threadId = threadIdx.x;
+    //     while (threadId < pSortedHistogram[instanceId].size) {
+    //         pSortedHistogram[instanceId].instances[threadId].x = pMergeSortMemory[blockIdx.x].instances[threadId].x;
+    //         pSortedHistogram[instanceId].instances[threadId].y = pMergeSortMemory[blockIdx.x].instances[threadId].y;
+    //         threadId += blockDim.x;
+    //     }
+    //     // return;
+    //     threadId = threadIdx.x;
+    // }
 }
-__device__ void mergeSortAsc(sortedHistogram* pSortedHistogram, mergeSortingMemory* pMergeSortMemory) {
-    size_t iterations = ceilf(log2((float)pSortedHistogram[blockIdx.x].size));
-    size_t instanceId = blockIdx.x;
-    size_t threadId = threadIdx.x;
-    size_t index0 = 0;
-    size_t index1 = 0;
-    __shared__ size_t pow;
-    for (size_t i = 1; i < iterations; ++i) {
-        if (threadIdx.x == 0) {
-            pow = powf(2, i);
-        }
-        __syncthreads();
-        while (threadId < pSortedHistogram[instanceId].size) {
-            if ((threadId % pow) == 0) {
-                index0 = threadId;
-                index1 = threadId + threadId/2;
-                int j = threadId;
-                while (j < pow && j < pSortedHistogram[instanceId].size) {
-                    if (pSortedHistogram[instanceId].instances[index0].y < pSortedHistogram[instanceId].instances[index1].y) {
-                        pMergeSortMemory[blockIdx.x].instances[threadId + j].x = pSortedHistogram[instanceId].instances[index0].x;
-                        pMergeSortMemory[blockIdx.x].instances[threadId + j].y = pSortedHistogram[instanceId].instances[index0].y;
-                        ++index0;
-                        ++j;
-                    } else if (pSortedHistogram[instanceId].instances[index0].y > pSortedHistogram[instanceId].instances[index1].y){
-                        pMergeSortMemory[blockIdx.x].instances[threadId + j].x = pSortedHistogram[instanceId].instances[index1].x;
-                        pMergeSortMemory[blockIdx.x].instances[threadId + j].y = pSortedHistogram[instanceId].instances[index1].y;
-                        ++index1;
-                        ++j;
-                    } else {
-                        pMergeSortMemory[blockIdx.x].instances[threadId + j].x = pSortedHistogram[instanceId].instances[index0].x;
-                        pMergeSortMemory[blockIdx.x].instances[threadId + j].y = pSortedHistogram[instanceId].instances[index0].y;
-                        pMergeSortMemory[blockIdx.x].instances[threadId + j + 1].x = pSortedHistogram[instanceId].instances[index1].x;
-                        pMergeSortMemory[blockIdx.x].instances[threadId + j + 1].y = pSortedHistogram[instanceId].instances[index1].y;
-                        ++index0;
-                        ++index1;
-                        j += 2;
-                    }
-                }
+__device__ void mergeSortAsc(sortedHistogram* pSortedHistogram, uint pInstanceId) {
+    
+    uint threadId = threadIdx.x;
+    for (uint i = 0; i < pSortedHistogram[pInstanceId].size / 2; ++i) {
+        while (threadId < pSortedHistogram[pInstanceId].size) {
+            if (threadId + 1 < pSortedHistogram[pInstanceId].size 
+                    && pSortedHistogram[pInstanceId].instances[threadId+1].y < pSortedHistogram[pInstanceId].instances[threadId].y) {
+                        int2 tmp;
+                        tmp.x = pSortedHistogram[pInstanceId].instances[threadId].x;
+                        tmp.y = pSortedHistogram[pInstanceId].instances[threadId].y;
+                        pSortedHistogram[pInstanceId].instances[threadId].x = pSortedHistogram[pInstanceId].instances[threadId + 1].x;
+                        pSortedHistogram[pInstanceId].instances[threadId].y = pSortedHistogram[pInstanceId].instances[threadId + 1].y;
+                        pSortedHistogram[pInstanceId].instances[threadId + 1].x = tmp.x;
+                        pSortedHistogram[pInstanceId].instances[threadId + 1].y = tmp.y;
             }
-            pSortedHistogram[instanceId].instances[threadId].x = pMergeSortMemory[blockIdx.x].instances[threadId].x;
-            pSortedHistogram[instanceId].instances[threadId].y = pMergeSortMemory[blockIdx.x].instances[threadId].y;
+            if (threadId + 2 < pSortedHistogram[pInstanceId].size 
+                    && pSortedHistogram[pInstanceId].instances[threadId+2].y < pSortedHistogram[pInstanceId].instances[threadId+1].y) {
+                        int2 tmp;
+                        tmp.x = pSortedHistogram[pInstanceId].instances[threadId+1].x;
+                        tmp.y = pSortedHistogram[pInstanceId].instances[threadId+1].y;
+                        pSortedHistogram[pInstanceId].instances[threadId+1].x = pSortedHistogram[pInstanceId].instances[threadId + 2].x;
+                        pSortedHistogram[pInstanceId].instances[threadId+1].y = pSortedHistogram[pInstanceId].instances[threadId + 2].y;
+                        pSortedHistogram[pInstanceId].instances[threadId + 2].x = tmp.x;
+                        pSortedHistogram[pInstanceId].instances[threadId + 2].y = tmp.y;
+            }
+            __syncthreads();
             threadId += blockDim.x;
         }
+        __syncthreads();
         threadId = threadIdx.x;
     }
 }
 __global__ void euclideanDistanceCuda(sortedHistogram* pSortedHistogram, size_t pSizeSortedHistogram,
-                                        mergeSortingMemory* pMergeSortMemory,
+                                        // mergeSortingMemory* pMergeSortMemory,
                                         size_t* pFeatureList, float* pValuesList,
                                         size_t* pSizeOfInstanceList, size_t pMaxNnz, 
-                                        size_t* pNeighborhood, float* pDistances,
+                                        // size_t* pNeighborhood, float* pDistances,
                                         size_t pNneighbors) {
     int instanceId = blockIdx.x;
     int threadId = threadIdx.x;
@@ -382,16 +455,16 @@ __global__ void euclideanDistanceCuda(sortedHistogram* pSortedHistogram, size_t 
         }
         __syncthreads();
         // sort instances by euclidean distance
-        mergeSortDesc(pSortedHistogram, pMergeSortMemory);
+        mergeSortDesc(pSortedHistogram, instanceId);
         threadId = threadIdx.x;
         // insert the k neighbors and distances to the neighborhood and distances vector
-        while (threadId < pNneighbors) {
-            pNeighborhood[instanceId*pNneighbors+threadId] 
-                = pSortedHistogram[instanceId].instances[threadId].x;
-            pDistances[instanceId*pNneighbors+threadId] 
-                = (float) pSortedHistogram[instanceId].instances[threadId].y / (float) 1000;
-            threadId += blockDim.x;
-        }
+        // while (threadId < pNneighbors) {
+        //     pNeighborhood[instanceId*pNneighbors+threadId] 
+        //         = pSortedHistogram[instanceId].instances[threadId].x;
+        //     pDistances[instanceId*pNneighbors+threadId] 
+        //         = (float) pSortedHistogram[instanceId].instances[threadId].y / (float) 1000;
+        //     threadId += blockDim.x;
+        // }
         __syncthreads();
         instanceId += gridDim.x;
         threadId = threadIdx.x;
@@ -400,10 +473,10 @@ __global__ void euclideanDistanceCuda(sortedHistogram* pSortedHistogram, size_t 
 }
 
 __global__ void cosineSimilarityCuda(sortedHistogram* pSortedHistogram, size_t pSizeSortedHistogram,
-                                        mergeSortingMemory* pMergeSortMemory,
+                                        // mergeSortingMemory* pMergeSortMemory,
                                         size_t* pFeatureList, float* pValuesList,
                                         size_t* pSizeOfInstanceList, size_t pMaxNnz, 
-                                        size_t* pNeighborhood, float* pDistances,
+                                        // size_t* pNeighborhood, float* pDistances,
                                         size_t pNneighbors) {
     // int blockId = blockIdx.x;
     // int threadId = threadIdx.x;

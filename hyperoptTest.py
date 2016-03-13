@@ -1,5 +1,6 @@
 #! /usr/bin/python
-from neighborsMinHash import MinHash
+from bioinf_learn.neighbors import MinHash
+from bioinf_learn.util import neighborhood_accuracy
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
@@ -11,17 +12,32 @@ import gc
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 import os.path
 import cPickle as pickle
+
 def compute_score(error, memory, time, max_memory, max_time, alpha, beta):
-    if error == 0:
-        return 10
+    print "error1: ", error
+    # if error > 0.1:
+    #     return 5
+    # if error > 0.15:
+    #     return 10
+    # if error > 0.2:
+    #     return 20
+    # if error > 0.25:
+    #     return 30
+    # if error > 0.3:
+    #     return 40
     if memory == 0:
         return 10
     if time == 0:
         return 10
-    error = error/(float (max_error))
-    memory = math.log(memory/float(max_memory), 10)*alpha
-    time = math.log(time/float(max_time), 10)*beta
-    return error + memory  + time
+    # error = error/(float (max_error))
+    # memory = math.log(memory/float(max_memory), 10)*alpha
+    # time = math.log(time/float(max_time), 10)*beta
+    memory = math.log(memory, 10)*alpha
+    time = math.log(time, 10)*beta
+    print "memory: ", memory
+    print "time: ", time
+    print "score: ", error + memory  + time
+    return error #+ memory  + time
 
  
 
@@ -56,7 +72,7 @@ def objective(args):
     print "\n\n\n"        
     
     print "Create minHash object"
-    minHash = MinHash(n_neighbors=5, radius=1.0, fast=False, number_of_hash_functions=int(number_of_hash_functions),
+    minHash = MinHash(n_neighbors=10, radius=1.0, fast=False, number_of_hash_functions=int(number_of_hash_functions),
                 max_bin_size = int(max_bin_size), minimal_blocks_in_common = int(minimal_blocks_in_common),
                 shingle_size = int(shingle_size),
                 excess_factor = int(excess_factor),
@@ -64,7 +80,7 @@ def objective(args):
                 prune_inverse_index=int(prune_inverse_index),
                 prune_inverse_index_after_instance=prune_inverse_index_after_instance,
                 remove_hash_function_with_less_entries_as=int(removeHashFunctionWithLessEntriesAs), 
-                hash_algorithm = 1, block_size = int(block_size), shingle=shingle,
+                 block_size = int(block_size), shingle=shingle,
                 store_value_with_least_sigificant_bit=remove_value_with_least_sigificant_bit, 
                 cpu_gpu_load_balancing=0)
     print "Create minHash object...Done"
@@ -94,15 +110,16 @@ def objective(args):
     
     print "Compute k-neihgbors..."    
     time_start = time.time()
-    neighbors = minHash.kneighbors(return_distance=False)
+    neighbors = minHash.kneighbors(n_neighbors = 10, return_distance=False)
     time_end = time.time() - time_start
+    print neighbors
     print "Compute k-neihgbors...Done"    
     
-    accuracy = 0.0
-    for x, y in zip(neighbors, neighbors_sklearn):
-        accuracy += accuracy_score(x, y)
-    accuracy = accuracy / float(len(neighbors))
-    error = 1 - accuracy
+    # accuracy = 0.0
+    # for x, y in zip(neighbors, neighbors_sklearn):
+    #     accuracy += accuracy_score(x, y)
+    # accuracy = accuracy / float(len(neighbors))
+    error = 1 - neighborhood_accuracy(neighbors, neighbors_sklearn)
     # print number_of_hash_functions
     # except:
     # print "Exception!" 
@@ -128,13 +145,13 @@ else:
     datasetBursi = pickle.load(fileObject)
 
 # get values with out
-minHash_org = MinHash(n_neighbors=5, radius=1.0, fast=False, number_of_hash_functions=800,
+minHash_org = MinHash(n_neighbors=10, radius=1.0, fast=False, number_of_hash_functions=800,
                  max_bin_size = 50, minimal_blocks_in_common = 1, shingle_size = 1, excess_factor = 1,
                  similarity=False, number_of_cores=4, chunk_size=1, 
                  prune_inverse_index=-1,
                  prune_inverse_index_after_instance=-1,
                  remove_hash_function_with_less_entries_as=-1, 
-                 hash_algorithm = 1, block_size = 1, shingle=0,
+                 block_size = 1, shingle=0,
                  store_value_with_least_sigificant_bit=0, cpu_gpu_load_balancing=0)
 minHash_org.fit(datasetBursi)
 distribution = minHash_org.get_distribution_of_inverse_index()
@@ -149,31 +166,31 @@ max_time = time.time() - time_start
 
 nearest_Neighbors = NearestNeighbors(n_jobs=4)
 nearest_Neighbors.fit(datasetBursi)
-neighbors_sklearn = nearest_Neighbors.kneighbors(return_distance=False)
+neighbors_sklearn = nearest_Neighbors.kneighbors(n_neighbors=10, return_distance=False)
 
 max_error = 0.0
-for x, y in zip(neighbors_org, neighbors_sklearn):
-    max_error += accuracy_score(x, y)
-max_error = max_error / float(len(neighbors_org))
-
+# for x, y in zip(neighbors_org, neighbors_sklearn):
+#     max_error += accuracy_score(x, y)
+# max_error = max_error / float(len(neighbors_org))
+max_error = 1 - neighborhood_accuracy(neighbors_org, neighbors_sklearn)
 print "Max error: ", max_error
 print "Max time: ", max_time
 print "Max memory: ", max_memory
 # define a search space
 from hyperopt import hp
 space = {
-        'number_of_hash_functions': hp.normal('number_of_hash_functions', 800, 10),
+        'number_of_hash_functions': hp.uniform('number_of_hash_functions', 50, 1000),
         'max_bin_size': hp.uniform('max_bin_size', 10, 100),
-        'shingle_size': hp.uniform('shingle_size', 1, 5),
+        'shingle_size': hp.choice('shingle_size', [1, 2, 3, 4, 5]),
         'excess_factor': hp.uniform('excess_factor', 1, 15),
         # 'chunk_size': hp.uniform('chunk_size', 1, 20),
-        'prune_inverse_index': hp.choice('prune_inverse_index', [hp.uniform('prune1',1, 100), -1]),
-        'prune_inverse_index_after_instance': hp.choice('prune_inverse_index_after_instance',[ -1.0, hp.uniform('prune2',0.1, 1)]),
-        'removeHashFunctionWithLessEntriesAs': hp.choice('removeHashFunctionWithLessEntriesAs', [0, hp.uniform('removeHashFunctionWithLessEntriesAs2', 1, 1000)]),
-        'block_size': hp.uniform('block_size', 1, 10), 
+        'prune_inverse_index': hp.uniform('prune_inverse_index',-1, 100),
+        'prune_inverse_index_after_instance':  hp.uniform('prune_inverse_index_after_instance',0.0, 1),
+        'removeHashFunctionWithLessEntriesAs': hp.uniform('removeHashFunctionWithLessEntriesAs', -1, 1000),
+        'block_size': hp.choice('block_size', [1, 2, 3, 4, 5]), 
         'shingle': hp.choice('shingle', [0,1]), 
-        'remove_value_with_least_sigificant_bit': hp.choice('remove_value_with_least_sigificant_bit', [0, 1, 2, 3, 4, 5]),
-        'minimal_blocks_in_common': hp.uniform('minimal_blocks_in_common', 1, 20),
+        'remove_value_with_least_sigificant_bit': hp.choice('remove_value_with_least_sigificant_bit', [1, 2, 3, 4, 5]),
+        'minimal_blocks_in_common': hp.uniform('minimal_blocks_in_common', 1, 15),
         # 'alpha':hp.uniform('alpha', 0, 1),
         # 'beta':hp.uniform('beta', 0,1),    
 }

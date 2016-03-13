@@ -100,11 +100,19 @@ def test(data):
     # query2 = datasetBursi[0::86]
     # print query2
     time_build_approx_start = time.time()
-    minHash = MinHash(number_of_hash_functions=400, max_bin_size= 92, shingle_size = 4, similarity=False, 
-                      number_of_cores=4, prune_inverse_index=2, store_value_with_least_sigificant_bit=3,
-                      excess_factor=13, prune_inverse_index_after_instance=1, 
+    minHash = MinHash(number_of_hash_functions=753, max_bin_size= 73, shingle_size = 1,
+    				  similarity=False, 
+                      number_of_cores=4, prune_inverse_index=35, 
+                      store_value_with_least_sigificant_bit=0,
+                      excess_factor=8, prune_inverse_index_after_instance=0.66, 
                       remove_hash_function_with_less_entries_as=0,
-                      shingle=0, block_size=4, cpu_gpu_load_balancing = 1.0)
+                      shingle=0, block_size=3, cpu_gpu_load_balancing = 1.0)
+    # minHash = MinHash(number_of_hash_functions=815, max_bin_size= 62, shingle_size = 4, similarity=False, 
+    #                   number_of_cores=4, prune_inverse_index=1, 
+    #                   store_value_with_least_sigificant_bit=3,
+    #                   excess_factor=12, prune_inverse_index_after_instance=0.5, 
+    #                   remove_hash_function_with_less_entries_as=0,
+    #                   shingle=0, block_size=4, cpu_gpu_load_balancing = 0.0)
     # minHash = MinHash(number_of_hash_functions=208, max_bin_size= 54, shingle_size = 2, similarity=False, 
     #                     bloomierFilter=False, number_of_cores=4,
     #                  prune_inverse_index=1, remove_value_with_least_sigificant_bit=0, excess_factor=13,
@@ -144,7 +152,7 @@ def test(data):
 
 
     time_comp_approx = time.time()
-    approx1 = minHash.kneighbors(X=query, n_neighbors=5,fast=True,return_distance=False)
+    approx1 = minHash.kneighbors(X=query, n_neighbors=10,fast=True,return_distance=False)
     print "Approx solution, distance=False: ", approx1
     # print "Approx solution, distance=True: ", minHash_approximate.kneighbors(centroids_neighborhood,return_distance=True)
 
@@ -153,7 +161,7 @@ def test(data):
     print "\n\n"
 
     time_comp_approx = time.time()
-    exact1 = minHash.kneighbors(X=query, n_neighbors=5,fast=False,return_distance=False)
+    exact1 = minHash.kneighbors(X=query, n_neighbors=10,fast=False,return_distance=False)
     print "Exact solution, distance=False: ", exact1
     # print "Approx solution, distance=True: ", minHash_approximate.kneighbors(centroids_neighborhood,return_distance=True)
 
@@ -219,14 +227,8 @@ def test(data):
     print "Time to build index exact: ", time_exact_fit_end - time_exact_fit
     #print data.getrow(1)
     time_comp = time.time()
-    sklearn_ = nearest_Neighbors.kneighbors(X=query, n_neighbors=5,return_distance=False)
+    sklearn_ = nearest_Neighbors.kneighbors(X=query, n_neighbors=10,return_distance=False)
     print "Exact solution with nearestNeighborsClassifier, distance=False: \n\t", sklearn_
-    # print "Exact solution with nearestNeighborsClassifier, distance=True: \n\t" ,nearest_Neighbors.kneighbors(return_distance=True)
-    time_comp_end = time.time()
-    print "Time: ", time_comp_end - time_comp
-    time_comp = time.time()
-    sklearn_10 = nearest_Neighbors.kneighbors(X=query, n_neighbors=10, return_distance=False)
-    print "Exact solution with nearestNeighborsClassifier n=10, distance=False: \n\t", sklearn_
     # print "Exact solution with nearestNeighborsClassifier, distance=True: \n\t" ,nearest_Neighbors.kneighbors(return_distance=True)
     time_comp_end = time.time()
     print "Time: ", time_comp_end - time_comp
@@ -255,10 +257,11 @@ def test(data):
     
     # print "accuracy np.in1d: ", np.in1d(exact_fit, sklearn_).mean()
     
-    exact_a, approx_a, exacr_approx = accuracy(exact1, approx1, sklearn_)
+    approx_a = neighborhood_accuracy(approx1, sklearn_)
     print "\nAccuracy neighborhood:"
     # print "\tBloomier filter:"
     print "\t\tfast: ", approx_a
+    exact_a = neighborhood_accuracy(exact1, sklearn_)
     print "\t\tnon fast: ", exact_a
     
     # exact_a, approx_a, exacr_approx = accuracy(exact_fit, approx_fit, sklearn_)
@@ -266,17 +269,7 @@ def test(data):
     # print "\t\tfast: ", approx_a
     # print "\t\tnon fast: ", exact_a
     
-    exact_a, approx_a, exacr_approx = accuracy(exact1, approx1, sklearn_10)
-    print "\nAccuracy neighborhood 5 out of 10: "
-    # print "\tBloomier filter:"
-    print "\t\tfast: ", approx_a
-    print "\t\tnon fast: ", exact_a
-    print "\ndist count: ", dist_count
-    # exact_a, approx_a, exacr_approx = accuracy(exact_fit, approx_fit, sklearn_10)
-    # print "\tUnordered map:"
-    # print "\t\tfast: ", approx_a
-    # print "\t\tnon fast: ", exact_a
-    
+   
     
    
 def create_dataset(seed=None,

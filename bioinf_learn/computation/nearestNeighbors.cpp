@@ -72,10 +72,8 @@ neighborhood* NearestNeighbors::kneighborsCpu(const SparseMatrixFloat* pRawData,
     
     bool doubleElementsStorageCount = false;
     neighborhood* neighborhood_;
-    std::cout << __LINE__ << std::endl;
     
     if (pRawData == NULL) {
-    std::cout << __LINE__ << std::endl;
         
         // no query data given, use stored signatures
         neighborhood_  = mInverseIndex->kneighbors(pSignaturesMap, 
@@ -83,14 +81,11 @@ neighborhood* NearestNeighbors::kneighborsCpu(const SparseMatrixFloat* pRawData,
                                                     pFast, pSimilarity, pStart, pEnd);
         doubleElementsStorageCount = true;
     } else {
-    std::cout << __LINE__ << std::endl;
         
         neighborhood_ = mInverseIndex->kneighbors(pSignaturesMap, pNneighbors, 
                                                 doubleElementsStorageCount,
                                                 pFast, pSimilarity, pStart, pEnd);
     }
-    std::cout << "pStart: " << pStart << " pEnd: " << pEnd << std::endl;
-    std::cout << __LINE__ << std::endl;
     
     if (pFast) {     
         return neighborhood_;
@@ -161,7 +156,7 @@ neighborhood* NearestNeighbors::kneighborsCpu(const SparseMatrixFloat* pRawData,
         neighborhood_->neighbors->operator[](i).clear();
         neighborhood_->neighbors->operator[](i).push_back(queryInstance); 
         bucketIndex = queryInstance / sizeof(size_t);
-        element = 1 << queryInstance % sizeof(size_t);
+        element = 1 << queryInstance % sizeof(size_t); 
         dublicateElements[bucketIndex] = dublicateElements[bucketIndex] | element;
         
         for (size_t j = 0; j < pNneighbors && j < sizeOfExtended; ++j) { 
@@ -287,20 +282,16 @@ neighborhood* NearestNeighbors::kneighborsGpu(const SparseMatrixFloat* pRawData,
     neighborhood* neighborhood_;
      if (pRawData == NULL) {
         // no query data given, use stored signatures
-        std::cout << __LINE__ << std::endl;
         neighborhood_  = mInverseIndex->kneighborsCuda(pSignaturesMap, pNneighbors, true, 128,128, 512, 32,
                                                         pFast, pSimilarity, mOriginalData->size(), 
                                                         pStart, pEnd);
                                                         
-        std::cout << __LINE__ << std::endl;
         
     } else {
-        std::cout << __LINE__ << std::endl;
         
         neighborhood_ = mInverseIndex->kneighborsCuda(pSignaturesMap, pNneighbors, false, 128,128, 512, 32,
                                                         pFast, pSimilarity, mOriginalData->size(), 
                                                         pStart, pEnd);
-        std::cout << __LINE__ << std::endl;
                                                         
     }
     return neighborhood_;
@@ -316,7 +307,6 @@ neighborhood* NearestNeighbors::kneighbors(const SparseMatrixFloat* pRawData, si
     if (pSimilarity == -1) {
         pSimilarity = mSimilarity;
     }
-    std::cout << __LINE__ << std::endl;
     
     size_t numberOfInstances;
     bool doubleElementsStorageCount = false;
@@ -331,7 +321,6 @@ neighborhood* NearestNeighbors::kneighbors(const SparseMatrixFloat* pRawData, si
         x_inverseIndex = (mInverseIndex->computeSignatureMap(pRawData));
         numberOfInstances = x_inverseIndex->size();
     } 
-    std::cout << __LINE__ << std::endl;
     
     #ifdef OPENMP
     omp_set_dynamic(0);
@@ -352,7 +341,6 @@ neighborhood* NearestNeighbors::kneighbors(const SparseMatrixFloat* pRawData, si
         cpuEnd = numberOfInstances;
     }
     #endif // CUDA
-    std::cout << __LINE__ << std::endl;
     
     neighborhood* neighborsGpu;
     neighborhood* neighborsCpu;
@@ -362,7 +350,6 @@ neighborhood* NearestNeighbors::kneighbors(const SparseMatrixFloat* pRawData, si
         #ifdef CUDA
         #pragma omp section
         {
-    std::cout << __LINE__ << std::endl;
             if (gpuEnd != 0) {
                 neighborsGpu = kneighborsGpu(pRawData, x_inverseIndex, pNneighbors, 
                                             pFast, pSimilarity, 
@@ -374,7 +361,6 @@ neighborhood* NearestNeighbors::kneighbors(const SparseMatrixFloat* pRawData, si
         // compute other parts of the signature on the computed
         #pragma omp section 
         {
-    std::cout << __LINE__ << std::endl;
             if (cpuEnd != 0) {
             neighborsCpu = kneighborsCpu(pRawData, x_inverseIndex, pNneighbors,
                                             pFast, pSimilarity,
@@ -383,15 +369,13 @@ neighborhood* NearestNeighbors::kneighbors(const SparseMatrixFloat* pRawData, si
         }
     } 
     
-    std::cout << __LINE__ << std::endl;
     if (pRawData == NULL) {
-        for (auto it = x_inverseIndex->begin(); it != x_inverseIndex->end(); ++it) {
-            delete (*it).second.instances;
-            delete (*it).second.signature;
-        }
-        delete x_inverseIndex;
+        // for (auto it = x_inverseIndex->begin(); it != x_inverseIndex->end(); ++it) {
+        //     delete (*it).second.instances;
+        //     delete (*it).second.signature;
+        // }
+        // delete x_inverseIndex; 
     }
-    std::cout << __LINE__ << std::endl;
     
     // be carefule with non initalized pointers
     size_t sizeNeighborhood;
@@ -400,13 +384,10 @@ neighborhood* NearestNeighbors::kneighbors(const SparseMatrixFloat* pRawData, si
     } else {
         sizeNeighborhood = pRawData->size();
     }
-    std::cout << __LINE__ << std::endl;
     
     neighborhood* neighbors = new neighborhood();
-    std::cout << "size of neighborhood: " << sizeNeighborhood << std::endl;
     neighbors->neighbors = new vvint(sizeNeighborhood);
     neighbors->distances = new vvfloat(sizeNeighborhood);
-    std::cout << __LINE__ << std::endl;
     
     // (sizeNeighborhood);
     #ifdef CUDA
@@ -418,7 +399,6 @@ neighborhood* NearestNeighbors::kneighbors(const SparseMatrixFloat* pRawData, si
     }
     
     #endif // CUDA
-    std::cout << __LINE__ << std::endl;
     
     for (size_t i = 0; i < sizeNeighborhood; ++i) {
         if (neighbors->neighbors->operator[](i).size() == 0) {
@@ -426,11 +406,9 @@ neighborhood* NearestNeighbors::kneighbors(const SparseMatrixFloat* pRawData, si
             neighbors->distances->operator[](i) = neighborsCpu->distances->operator[](i);
         }
     }
-    std::cout << __LINE__ << std::endl;
     
     // delete neighborsGpu;
     // delete neighborsCpu;
-    std::cout << __LINE__ << std::endl;
     
     return neighbors;
 }
