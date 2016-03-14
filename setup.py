@@ -99,8 +99,9 @@ def locate_cuda():
         # otherwise, search the PATH for NVCC
         nvcc = find_in_path('nvcc', os.environ['PATH'])
         if nvcc is None:
-            raise EnvironmentError('The nvcc binary could not be '
+            print ('The nvcc binary could not be '
                 'located in your $PATH. Either add it to your path, or set $CUDAHOME')
+            return None
         home = os.path.dirname(os.path.dirname(nvcc))
 
     cudaconfig = {'home':home, 'nvcc':nvcc,
@@ -172,7 +173,7 @@ class custom_build_ext(build_ext):
 
 
 
-if (locate_cuda == None or no_cuda):
+if (locate_cuda() == None or no_cuda):
     setup (name = 'bioinf_learn',
             author = 'Joachim Wolff',
             author_email = 'wolffj@informatik.uni-freiburg.de',

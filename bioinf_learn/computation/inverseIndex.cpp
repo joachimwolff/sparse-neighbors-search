@@ -428,7 +428,7 @@ neighborhood* InverseIndex::kneighborsCuda(const umap_uniqueElement* pSignatures
     
     
     neighborhood* neighbors = new neighborhood();
-
+#ifdef CUDA
     mInverseIndexCuda->computeHitsOnGpu(hitsPerInstance, neighbors,
                                         pNneighborhood, pNumberOfInstances,
                                         pNumberOfBlocksHistogram,
@@ -437,7 +437,7 @@ neighborhood* InverseIndex::kneighborsCuda(const umap_uniqueElement* pSignatures
                                         pNumberOfThreadsDistance,
                                         pFast, pDistance,
                                         mExcessFactor, mMaxNnz);
-                               
+#endif                             
     // for (auto it = hitsPerInstance->begin(); it != hitsPerInstance->end(); ++it) {
     //     for (auto it2 = (*it)->begin(); it2 != (*it)->end(); ++it2) {
     //         delete (*it2);
