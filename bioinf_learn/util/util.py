@@ -200,7 +200,7 @@ def create_dataset_fixed_nonzero(seed=None,
     return csr_matrix(dataset), y
 
 
-def benchmarkNearestNeighorAlgorithms(dataset, n_neighbors = 10, reduce_dimensions_to=400):
+def benchmarkNearestNeighborAlgorithms(dataset, n_neighbors = 10, reduce_dimensions_to=400):
     """Function to measure the performance for the given input data.
         If the nearest neighbor algorithm does not support sparse datasets
         a random projection is used to create a dense dataset.
@@ -273,8 +273,8 @@ def benchmarkNearestNeighorAlgorithms(dataset, n_neighbors = 10, reduce_dimensio
     minHash_obj = MinHash(n_neighbors = n_neighbors, number_of_hash_functions=hash_function,
                          max_bin_size= 36, shingle_size = 4, similarity=False, 
                     prune_inverse_index=2, store_value_with_least_sigificant_bit=3, excess_factor=11,
-                    prune_inverse_index_after_instance=0.5, remove_hash_function_with_less_entries_as=4, 
-                    hash_algorithm = 0, shingle=0, block_size=2, cpu_gpu_load_balancing = 1.0)
+                    prune_inverse_index_after_instance=0.5, store_hash_function_with_less_entries_as=4, 
+                     shingle=0, block_size=2, cpu_gpu_load_balancing = 1.0)
     minHash_obj.fit(dataset)
     time_fitting_minHash = time.time() - time_start
     
@@ -283,8 +283,8 @@ def benchmarkNearestNeighorAlgorithms(dataset, n_neighbors = 10, reduce_dimensio
     minHash_fast_obj = MinHash(n_neighbors = n_neighbors, number_of_hash_functions=hash_function,
                          max_bin_size= 36, shingle_size = 4, similarity=False, fast=True,
                     prune_inverse_index=2, store_value_with_least_sigificant_bit=3, excess_factor=11,
-                    prune_inverse_index_after_instance=0.5, remove_hash_function_with_less_entries_as=4, 
-                    hash_algorithm = 0, shingle=0, block_size=2, cpu_gpu_load_balancing = 1.0)      
+                    prune_inverse_index_after_instance=0.5, store_hash_function_with_less_entries_as=4, 
+                     shingle=0, block_size=2, cpu_gpu_load_balancing = 1.0)      
     minHash_fast_obj.fit(dataset)
     time_fitting_minHashFast = time.time() - time_start
     
@@ -496,3 +496,211 @@ def plotDataBenchmark(data, color, label, title, xticks, ylabel,
     plt.legend(loc='upper left', fontsize='small')
     plt.grid(True)
     plt.show()
+
+def measure_performance(dataset, n_neighbors_sklearn = 10, n_neighbors_minHash = 10, size_of_query = 50, number_of_hashfunctions=[400]):
+    """Function to measure and plot the performance for the given input data.
+        For the query times two methods are measured:
+            - All queries at once
+            - One query after another
+        For example:
+            - For 50 queries kneighbors is called once with 50 instances to get all neighbors of these instances
+            - For 50 queries kneighbors is called 50 times with only one instance."""
+
+    time_fit_sklearn = []
+    time_fit_minHash = []
+    time_fit_lshf = []
+    time_fit_annoy = []
+    time_fit_flann = []
+
+    time_query_time_50_1_sklearn = []
+    time_query_time_50_1_minHash_exact = []
+    time_query_time_50_1_minHash_approx = []
+    time_query_time_50_1_lshf = []
+    time_query_time_50_1_annoy = []
+    time_query_time_50_1_flann = []
+
+    time_query_time_1_50_sklearn = []
+    time_query_time_1_50_minHash_exact = []
+    time_query_time_1_50_minHash_approx = []
+    time_query_time_1_50_lshf = []
+    time_query_time_1_50_annoy = []
+    time_query_time_1_50_flann = []
+
+    accuracy_1_50_lshf = []
+    accuracy_1_50_minHash_exact = []
+    accuracy_1_50_minHash_aprox = []
+    accuracy_1_50_annoy = []
+    accuracy_1_50_flann = []
+
+    centroids = 8
+    size_of_datasets = 7
+    # length_of_dataset = len(dataset)
+    iteration_of_dataset = 0
+
+    for hash_function in number_of_hashfunctions:
+        iteration_of_dataset += 1
+        # print "Dataset processing: ", iteration_of_dataset, "/", length_of_dataset
+        nearest_neighbor_sklearn = NearestNeighbors(n_neighbors = n_neighbors_sklearn)
+        nearest_neighbor_minHash = MinHash(n_neighbors = n_neighbors_minHash, number_of_hash_functions=hash_function,
+                         max_bin_size= 36, shingle_size = 4, similarity=False, 
+                        number_of_cores=4,
+                     prune_inverse_index=2, store_value_with_least_sigificant_bit=1, excess_factor=11,
+                    prune_inverse_index_after_instance=0.5, remove_hash_function_with_less_entries_as=4, 
+                     shingle=1, block_size=2)
+        nearest_neighbor_lshf = LSHForest(n_estimators=20, n_candidates=200, n_neighbors=n_neighbors_minHash)
+        time_start = time.time()
+        nearest_neighbor_sklearn.fit(dataset)
+        time_end = time.time()
+        time_fit_sklearn.append(time_end - time_start)
+        # print "Fitting of sklearn_nneighbors done!"
+        time_start = time.time()
+        nearest_neighbor_minHash.fit(dataset)
+        time_end = time.time()
+        time_fit_minHash.append(time_end - time_start)
+        # print "Fitting of minHash_nneighbors done!"
+        data_projection = SparseRandomProjection(n_components=hash_function, random_state=1)
+        dataset_dense = data_projection.fit_transform(dataset)
+        
+        time_start = time.time()
+        nearest_neighbor_lshf.fit(dataset_dense)
+        time_end = time.time()
+        time_fit_lshf.append(time_end - time_start)
+        # print "Fitting of LSHF done!"
+
+        time_start = time.time()
+        annoy_ = annoy.AnnoyIndex(f=dataset_dense.shape[1])
+        for i, x in enumerate(dataset_dense):
+            annoy_.add_item(i, x.toarray()[0])
+        annoy_.build(100) # ntrees = 100
+        time_end = time.time()
+        time_fit_annoy.append(time_end - time_start)
+
+        if size_of_query is None:
+            size_of_query = dataset.shape[0]
+        if size_of_query < dataset.shape[0]:
+            query_ids = set()
+            query_list = []
+            for i in range(50):
+                query_ids.add(random.randint(0, dataset.shape[0]-1))
+            query_dense = dataset_dense[list(query_ids)]   
+            query_dense_annoy = dataset_dense[list(query_ids)]
+            for i in query_ids:
+                query_list.append(dataset.getrow(i))
+            query = vstack(query_list)
+        else:
+            query = None
+            query_dense = None
+            query_dense_annoy = dataset_dense
+        time_start = time.time()
+        n_neighbors_sklearn_1_50 = nearest_neighbor_sklearn.kneighbors(query, return_distance=False)
+        time_end = time.time()
+        time_query_time_1_50_sklearn.append(time_end - time_start)
+        time_start = time.time()
+        n_neighbors_minHash_exact_1_50 = nearest_neighbor_minHash.kneighbors(query, return_distance=False)
+        time_end = time.time()
+        time_query_time_1_50_minHash_exact.append(time_end - time_start)
+
+        time_start = time.time()
+        n_neighbors_minHash_approx_1_50 = nearest_neighbor_minHash.kneighbors(query, fast=True, return_distance=False)
+        time_end = time.time()
+        time_query_time_1_50_minHash_approx.append(time_end - time_start)
+        time_start = time.time()
+        n_neighbors_lshf_1_50 = nearest_neighbor_lshf.kneighbors(query_dense_annoy,return_distance=False)
+        time_end = time.time()
+        time_query_time_1_50_lshf.append(time_end - time_start)
+
+        # accuracy score position wise for lshf
+        accuracy_score_ = 0.0
+        for x, y in zip(n_neighbors_lshf_1_50, n_neighbors_sklearn_1_50):
+            accuracy_score_ += accuracy_score(x, y)
+        accuracy_score_ = accuracy_score_ / float(len(n_neighbors_lshf_1_50))
+        accuracy_1_50_lshf.append(accuracy_score_)
+        
+        # accuracy score for minHash fast
+        accuracy_score_ = 0.0
+        for x, y in zip(n_neighbors_minHash_approx_1_50, n_neighbors_sklearn_1_50):
+            accuracy_score_ += accuracy_score(x, y)
+        accuracy_score_ = accuracy_score_ / float(len(n_neighbors_minHash_approx_1_50))
+        accuracy_1_50_minHash_aprox.append(accuracy_score_)
+         
+        # accuracy score for minHash non-fast
+        accuracy_score_ = 0.0
+        for x, y in zip(n_neighbors_minHash_exact_1_50, n_neighbors_sklearn_1_50):
+            accuracy_score_ += accuracy_score(x, y)
+        accuracy_score_ = accuracy_score_ / float(len(n_neighbors_minHash_exact_1_50))
+        accuracy_1_50_minHash_exact.append(accuracy_score_)
+        
+       
+        if size_of_query >= dataset.shape[0]:
+            query = dataset
+            query_dense = dataset_dense
+            query_dense_annoy = dataset_dense
+            
+        time_query_time_50_1_sklearn_loc = []
+        time_query_time_50_1_sklearn_loc = []
+        for i in xrange(size_of_query-1):
+            time_start = time.time()
+            nearest_neighbor_sklearn.kneighbors(query[i],return_distance=False)
+            time_end = time.time()
+            time_query_time_50_1_sklearn_loc.append(time_end - time_start)
+        time_query_time_50_1_sklearn.append(np.sum(time_query_time_50_1_sklearn_loc))
+
+        time_query_time_50_1_minHash_exact_loc = []
+        for i in xrange(size_of_query-1):
+            time_start = time.time()
+            nearest_neighbor_minHash.kneighbors(query[i], return_distance=False)
+            time_end = time.time()
+            time_query_time_50_1_minHash_exact_loc.append(time_end - time_start)
+        time_query_time_50_1_minHash_exact.append(np.sum(time_query_time_50_1_minHash_exact_loc))
+
+        time_query_time_50_1_minHash_approx_loc = []
+        for i in xrange(size_of_query-1):
+            time_start = time.time()
+            nearest_neighbor_minHash.kneighbors(query[i], fast=True,return_distance=False)
+            time_end = time.time()
+            time_query_time_50_1_minHash_approx_loc.append(time_end - time_start)
+        time_query_time_50_1_minHash_approx.append(np.sum(time_query_time_50_1_minHash_approx_loc))
+
+        time_query_time_50_1_lshf_loc = []
+        for i in xrange(size_of_query-1):
+            time_start = time.time()
+            nearest_neighbor_lshf.kneighbors(query_dense[i], return_distance=False)
+            time_end = time.time()
+            time_query_time_50_1_lshf_loc.append(time_end - time_start)
+        time_query_time_50_1_lshf.append(np.sum(time_query_time_50_1_lshf_loc))
+
+        time_query_time_50_1_annoy_loc = []
+        n_neighbors_annoy_1_50 = []
+        for i in xrange(size_of_query-1):
+            time_start = time.time()
+            nearest_neighbor_annoy = annoy_.get_nns_by_vector(query_dense_annoy[i].toarray()[0], n_neighbors_sklearn, 100)
+            time_end = time.time()
+            time_query_time_50_1_annoy_loc.append(time_end - time_start)
+            n_neighbors_annoy_1_50.append(nearest_neighbor_annoy)
+        time_query_time_50_1_annoy.append(np.sum(time_query_time_50_1_annoy_loc))
+        
+        # accuracy score for annoy
+        accuracy_score_ = 0.0
+        for x, y in zip(n_neighbors_annoy_1_50, n_neighbors_sklearn_1_50):
+            accuracy_score_ += accuracy_score(x, y)
+        accuracy_score_ = accuracy_score_ / float(len(n_neighbors_annoy_1_50))
+        accuracy_1_50_annoy.append(accuracy_score_)
+
+
+    return  (time_fit_sklearn, 
+                time_fit_minHash, 
+                time_fit_lshf,
+                time_fit_annoy,
+            time_query_time_50_1_sklearn,
+            time_query_time_50_1_minHash_exact, 
+            time_query_time_50_1_minHash_approx, 
+            time_query_time_50_1_lshf, 
+            time_query_time_50_1_annoy,
+            time_query_time_1_50_sklearn,
+            time_query_time_1_50_minHash_exact, 
+            time_query_time_1_50_minHash_approx,
+            time_query_time_1_50_lshf, 
+            accuracy_1_50_lshf,
+            accuracy_1_50_minHash_exact, 
+            accuracy_1_50_minHash_aprox, 
+            accuracy_1_50_annoy)
