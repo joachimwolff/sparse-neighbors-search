@@ -181,14 +181,16 @@ __global__ void createSortedHistogramsCuda(hits* pHitsPerInstance,
             // count number of elements that should be considered in the euclidean distance 
             // or cosine similarity computation
             if (threadIdx.x == 0) {
-                sizeOfHistogram = pHistogramSorted[blockIdx.x].size;
+                sizeOfHistogram = pHistogramSorted[instanceId].size;
                 if (pNneighbors * pExcessFactor < sizeOfHistogram) {
                     elements = pNneighbors * pExcessFactor;
                     while (elements + 1 < sizeOfHistogram
-                        && pHistogramSorted[blockIdx.x].instances[elements].y == pHistogramSorted[blockIdx.x].instances[elements + 1].y) {
+                        && pHistogramSorted[instanceId].instances[elements].y > 1
+                        && pHistogramSorted[instanceId].instances[elements].y == pHistogramSorted[instanceId].instances[elements + 1].y) {
                         ++elements;
                     }
-                    pHistogramSorted[blockIdx.x].size = elements;
+                    printf("sizeFFF: %i", elements);
+                    pHistogramSorted[instanceId].size = elements;
                 }
             }
         // }
@@ -349,6 +351,9 @@ __device__ void mergeSortAsc(sortedHistogram* pSortedHistogram, uint pInstanceId
         __syncthreads();
         threadId = threadIdx.x;
     }
+}
+__global__ void kneighborsExact() {
+    
 }
 __global__ void euclideanDistanceCuda(sortedHistogram* pSortedHistogram, size_t pSizeSortedHistogram,
                                         // mergeSortingMemory* pMergeSortMemory,

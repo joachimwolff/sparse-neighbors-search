@@ -207,12 +207,12 @@ def benchmarkNearestNeighorAlgorithms(dataset, n_neighbors = 10, reduce_dimensio
         """
     
     import sklearn.neighbors
-    import pyflann
+    # import pyflann
     import annoy
     import panns
     import nearpy, nearpy.hashes, nearpy.distances
-    import pykgraph
-    import nmslib
+    # import pykgraph
+    # import nmslib
     from rpforest import RPForest
     accuracy_minHash = 0
     accuracy_minHashFast = 0
@@ -296,45 +296,148 @@ def benchmarkNearestNeighorAlgorithms(dataset, n_neighbors = 10, reduce_dimensio
     
     # ball tree
     time_start = time.time()
-    ballTree_obj = sklearn.neighbors.BallTree(X, leaf_size=self._leaf_size)
+    ballTree_obj = sklearn.neighbors.BallTree(dataset, leaf_size=20)
     time_fitting_ballTree = time.time() - time_start
     
     
     # kd tree
     time_start = time.time()
-    kdTree_obj = sklearn.neighbors.KDTree(X, leaf_size=self._leaf_size)
+    kdTree_obj = sklearn.neighbors.KDTree(dataset, leaf_size=20)
     time_fitting_KDTree = time.time() - time_start
     
     # flann
     time_start = time.time()
-    flann_obj = pyflann.FLANN(target_precision=self._target_precision, algorithm='autotuned', log_level='info')
-    flann.build_index(X)
-    
+    # flann_obj = pyflann.FLANN(target_precision=0.9, algorithm='autotuned', log_level='info')
+    # flann.build_index(dataset)
+    time_fitting_FLANN = time.time() - time_start
     # annoy
     time_start = time.time()    
-    annoy_obj = annoy.AnnoyIndex(f=X.shape[1], metric=self._metric)
+    annoy_obj = annoy.AnnoyIndex(f=dataset.shape[1], metric='euclidean')
     for i, x in enumerate(X):
         self._annoy.add_item(i, x.tolist())
-    self._annoy.build(self._n_trees)
+    self._annoy.build(100)
     time_fitting_annoy = time.time() - time_start
     
     # panns    
     time_start = time.time()
-    panns_obj = panns.PannsIndex(X.shape[1], metric=self._metric)
-    for x in X:
+    panns_obj = panns.PannsIndex(dataset.shape[1], metric='euclidean')
+    for x in dataset:
         panns_obj.add_vector(x)
-    panns_obj.build(n_trees)
+    panns_obj.build(100)
     time_fitting_PANNS = time.time() - time_start
     
     # nearpy
     time_start = time.time()
-    # nearpy_obj = 
+    hashes = []
+    hash_counts = 10
+    n_bits = 10
+    # TODO: doesn't seem like the NearPy code is using the metric??
+    for k in xrange(hash_counts):
+        nearpy_rbp = nearpy.hashes.RandomBinaryProjections('rbp_%d' % k, n_bits)
+        hashes.append(nearpy_rbp)
+
+    nearpy_obj = nearpy.Engine(dataset.shape[1], lshashes=hashes)
+
+    for i, x in enumerate(dataset):
+        nearpy_obj.store_vector(x.tolist(), i)
+    time_fitting_NearPy = time.time() - time_start
     
+    # kgraph
     time_start = time.time()
+    kgraph_obj = pykgraph.KGraph()
+    kgraph_obj.build(dataset, iterations=30, L=100, delta=0.002, recall=0.99, K=25)
+    time_fitting_KGraph = time.time() - time_start
+    
+    #nmslib
     time_start = time.time()
+    # Nmslib(m, 'lsh_multiprobe', ['desiredRecall=0.90','H=1200001','T=10','L=50','tuneK=10']),
+    nmslib_obj = nmslib.initIndex(dataset.shape[0], 'l2', [], 'lsh_multiprobe', ['desiredRecall=0.90','H=1200001','T=10','L=50','tuneK=10'], nmslib.DataType.VECTOR, nmslib.DistType.FLOAT)
+	
+    for i, x in enumerate(dataset):
+        nmslib.setData(nmslib_obj, i, x.tolist())
+    nmslib.buildIndex(nmslib_obj)
+    time_fitting_Nmslib = time.time() - time_start
+    
+    
+    # rpforest
     time_start = time.time()
+    rpforest_obj = RPForest(leaf_size=10, no_trees=100)
+    rpforest_obj.fit(dataset)
+    time_fitting_RPForest = time.time() - time_start
+  
+  
+  
+    # query part
+    # brute force
     time_start = time.time()
+    neighbors_bruteforce = brute_force_obj.kneighbors(n_neighbors=n_neighbors, return_distance=False)
+    time_query_bruteforce = time.time() - time_start
+    
+    # minHash
     time_start = time.time()
+    neighbors_minHash = minHash_obj.kneighbors(n_neighbors=n_neighbors, return_distance=False)
+    time_query_minHash = time.time() - time_start
+    accuracy_minHash = neighborhood_accuracy(neighbors_minHash, neighbors_bruteforce)
+    # minHash fast
+    time_start = time.time()
+    neighbors_minHash_fast = minHash_fast_obj.kneighbors(n_neighbors=n_neighbors, return_distance=False)
+    time_query_minHashFast = time.time() - time_start 
+    accuracy_minHashFast = neighborhood_accuracy(neighbors_minHash_fast, neighbors_bruteforce)
+    # lshf
+    time_start = time.time()
+    neighbors_lshf = lshf_obj.kneighbors(dataset_dense, n_neighbors=n_neighbors, return_distance=False)
+    time_query_lshf = time.time() - time_start
+    accuracy_lshf = neighborhood_accuracy(neighbors_lshf, neighbors_bruteforce)
+    # annnoy
+    time_start = time.time()
+    neighbors_annoy = []
+    for i in xrange(dataset_dense.shape[0]):
+    # annoy_.get_nns_by_vector(dataset_dense.getrow(i).toarray(), n_neighbors_sklearn, 100)
+        neighbors_annoy.append(annoy_obj.get_nns_by_vector(dataset_dense.getrow(i).toarray(), n_neighbors, 100))
+    time_query_annoy = time.time() - time_start 
+    accuracy_annoy = neighborhood_accuracy(neighbors_annoy, neighbors_bruteforce)
+    # ball tree
+    time_start = time.time()
+    dist, ind = ballTree_obj.query(dataset, k=n_neighbors)
+    neighbors_balltree = ind
+    time_query_ballTree = time.time() - time_start
+    accuracy_ballTree = neighborhood_accuracy(neighbors_balltree, neighbors_bruteforce)
+    # kd tree
+    time_start = time.time()
+    neighbors_kdTree = kdTree_obj.query(dataset, k=n_neighbors)
+    time_query_KDTree = time.time() - time_start
+    accuracy_KDTree = neighborhood_accuracy(neighbors_kdTree, neighbors_bruteforce)
+    # flann
+    time_start = time.time()
+    # neighbors_flann = flann_obj.nn_index(dataset, n_neighbors)
+    time_query_FLANN  = time.time() - time_start
+    # accuracy_FLANN = neighborhood_accuracy(neighbors_flann, neighbors_bruteforce)
+    # panns
+    time_start = time.time()
+    neigbors_panns = panns_obj.query(dataset, n_neighbors)
+    time_query_PANNS  = time.time() - time_start
+    accuracy_PANNS = neighborhood_accuracy(neigbors_panns, neighbors_bruteforce)
+    # nearpy
+    time_start = time.time()
+    neighbors_nearpy = nearpy_obj.neighbours(dataset)
+    time_query_NearPy  = time.time() - time_start
+    accuracy_NearPy = neighborhood_accuracy(neighbors_nearpy, neighbors_bruteforce)
+    # kgraph
+    time_start = time.time()
+    neighbors_kgraph = kgraph_obj.search(dataset, dataset, K=n_neighbors, threads=4, P=200)
+    time_query_KGraph  = time.time() - time_start
+    accuracy_KGraph = neighborhood_accuracy(neighbors_kgraph, neighbors_bruteforce)
+    # nmslib
+    time_start = time.time()
+    neighbors_nmslib = nmslib.knnQuery(nmslib_obj, n_neighbors, dataset)
+    time_query_Nmslib  = time.time() - time_start
+    accuracy_Nmslib = neighborhood_accuracy(neighbors_nmslib, neighbors_bruteforce)
+    # rpforest
+    time_start = time.time()
+    neighbors_rpforest = rpforest_obj.query(dataset, n_neighbors)
+    time_query_RPForest  = time.time() - time_start
+    accuracy_RPForest = neighborhood_accuracy(neighbors_rpforest, neighbors_bruteforce)
+    
     accuracy_list = [accuracy_minHash, accuracy_minHashFast, accuracy_lshf, accuracy_annoy, accuracy_ballTree,
                         accuracy_KDTree, accuracy_FLANN, accuracy_PANNS, accuracy_NearPy, accuracy_KGraph, 
                         accuracy_Nmslib, accuracy_RPForest]

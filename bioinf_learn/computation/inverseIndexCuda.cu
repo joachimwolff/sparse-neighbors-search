@@ -225,7 +225,8 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
                                                 const size_t pNumberOfThreadsDistance,
                                                 size_t pFast, size_t pDistance,
                                                 size_t pExcessFactor, size_t pMaxNnz) {
-                                                    
+    printf("Foo 228");
+    fflush(stdout);                    
 //     struct hits {
 //     size_t* instances;
 //     size_t size;
@@ -286,7 +287,8 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
     cudaMalloc(&dev_histogram, pNumberOfBlocksHistogram*sizeof(histogram));
     cudaMemcpy(dev_histogram, dev_histogram_inner, pNumberOfBlocksHistogram*sizeof(histogram), cudaMemcpyHostToDevice);
     
-    
+    printf("Foo 290");
+    fflush(stdout); 
     // reserve for sorting on device
     // mergeSortingMemory* dev_mergeSortingMemory_inner = (mergeSortingMemory*) malloc(pNumberOfBlocksHistogram*sizeof(mergeSortingMemory));
     // for (size_t i = 0; i < pNumberOfBlocksHistogram; ++i) {
@@ -298,7 +300,7 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
     // cudaMemcpy(dev_mergeSortingMemory, dev_mergeSortingMemory_inner, pNumberOfBlocksHistogram*sizeof(mergeSortingMemory), cudaMemcpyHostToDevice);
     
     // space for sorted histogram
-    sortedHistogram* dev_sortedHistogram_inner = (sortedHistogram*) malloc(pNumberOfBlocksHistogram*sizeof(sortedHistogram));
+    sortedHistogram* dev_sortedHistogram_inner = (sortedHistogram*) malloc(pNumberOfInstances*sizeof(sortedHistogram));
     for (size_t i = 0; i < pNumberOfInstances; ++i) {
         cudaMalloc(&(dev_sortedHistogram_inner[i].instances), pNeighborhoodSize * pExcessFactor*2*sizeof(int2));
     }
@@ -307,7 +309,8 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
     cudaMalloc(&dev_sortedHistogram, pNumberOfInstances*sizeof(sortedHistogram));
     cudaMemcpy(dev_sortedHistogram, dev_sortedHistogram_inner, pNumberOfInstances*sizeof(sortedHistogram), cudaMemcpyHostToDevice);
     
-    
+    printf("Foo 312");
+    fflush(stdout); 
     // printf("foo"); 
     size_t memory_free;
     size_t memory_total;
@@ -341,7 +344,8 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
     //         instancesPerIteration.push_back(numberOfElements);
     //     }
     // }
-    
+    printf("Foo 347");
+    fflush(stdout); 
     // size_t* dev_Neighborhood;
     // float* dev_Distances;
     // float* distances = (float*) malloc(pHitsPerInstance->size() * pNeighborhoodSize * sizeof(float));
@@ -356,6 +360,8 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
     vvint* neighborsVector = new vvint(pHitsPerInstance->size());
     vvfloat* distancesVector = new vvfloat(pHitsPerInstance->size());
     for (size_t i = 0; i < iterations; ++i) {
+        printf("Foo 359");
+    fflush(stdout);
         createSortedHistogramsCuda<<<pNumberOfBlocksHistogram, pNumberOfThreadsHistogram>>>
                     (dev_data, 
                     pNumberOfInstances, 
@@ -367,34 +373,47 @@ void InverseIndexCuda::computeHitsOnGpu(std::vector<vvsize_t_p*>* pHitsPerInstan
                     pExcessFactor);
                     // dev_Neighborhood, 
                     // dev_Distances);
-         cudaError err = cudaGetLastError();
-        if ( cudaSuccess != err )
-        {
-            printf("cudaCheckError() failed at: %s\n",
-                    cudaGetErrorString( err ) );
+        //  cudaError err = cudaGetLastError();
+        // if ( cudaSuccess != err )
+        // {
+        //     printf("cudaCheckError() failed at: %s\n",
+        //             cudaGetErrorString( err ) );
             
-        }       
-        // cudaMemcpy(histogram, dev_sortedHistogram, pNumberOfBlocksHistogram *sizeof(sortedHistogram)
-        //                 ,cudaMemcpyDeviceToHost); 
+        // }       
+        printf("Foo 377");
+    fflush(stdout);
+        
+        cudaMemcpy(histogram, dev_sortedHistogram, pNumberOfInstances *sizeof(sortedHistogram)
+                        ,cudaMemcpyDeviceToHost); 
+         printf("\npNumberOfInstances: %i", pNumberOfInstances);
+    fflush(stdout);
                         
-    //     for (size_t j = 0; j < pNumberOfBlocksHistogram; ++j) {
+        for (size_t j = 0; j < pNumberOfInstances; ++j) {
             
-    //         histogram[j].instances = (int2*) malloc(pNumberOfInstances * sizeof(int2));
-    //         cudaMemcpy(histogram[j].instances, dev_sortedHistogram_inner[j].instances, pNumberOfInstances * sizeof(int2), cudaMemcpyDeviceToHost);
-    //     }
-        
-    //     printf("pNumberOfInstances: %i", pNumberOfInstances);
-    //     printf("\n\nunsorted histogram: ");
+            // printf("j: %i", j);
     // fflush(stdout);
+            
+            histogram[j].instances = (int2*) malloc(pNeighborhoodSize * pExcessFactor*2*sizeof(int2));
+            cudaMemcpy(histogram[j].instances, dev_sortedHistogram_inner[j].instances, pNeighborhoodSize * pExcessFactor*2*sizeof(int2), cudaMemcpyDeviceToHost);
+            fflush(stdout);
         
-    //     for (size_t j = 0; j <  pNumberOfInstances; j += 1) {
-    //         // if (histogram[0].instances[j].y != 0)
-    //             printf("(%i, %i) ", histogram[0].instances[j].x, histogram[0].instances[j].y);
-    // fflush(stdout);
+        }
         
-        // }
-        // printf("\n\n"); 
+        printf("pNumberOfInstances: %i", pNumberOfInstances);
+        printf("\n\nunsorted histogram: ");
+    fflush(stdout);
+        
+        for (size_t j = 0; j <  pNeighborhoodSize; j += 1) {
+            // if (histogram[0].instances[j].y != 0)
+            // printf("size[%i]: %i", j, histogram[j].size);
     // fflush(stdout);
+            
+                printf("(%i, %i) ", histogram[0].instances[j].x, histogram[0].instances[j].y);
+    fflush(stdout);
+        
+        }
+        printf("\n\n"); 
+    fflush(stdout);
         
         if (!pFast) {
             if (pDistance) {
