@@ -30,7 +30,13 @@ developmentScript2.py
 developmentScript3.py
 example/minHash.prof
 init_values
-
+bioinf_learn/__init__.pyc
+bioinf_learn/cluster/__init__.pyc
+bioinf_learn/cluster/minHashClustering.pyc
+bioinf_learn/cluster/minHashDBSCAN.pyc
+bioinf_learn/cluster/minHashSpectralClustering.pyc
+bioinf_learn/neighbors/__init__.pyc
+bioinf_learn/neighbors/nearestNeighborsCppInterface.pyc
 max_value_init
 neighborsMinHash/clustering/minHashClustering.pyc
 neighborsMinHash/clustering/minHashDBSCAN.pyc
