@@ -88,281 +88,192 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
 
 
 
-__global__ void createSortedHistogramsCuda(hits* pHitsPerInstance,
-                                            const size_t pNumberOfInstances,
-                                            histogram* pHistogram, 
-                                            // mergeSortingMemory* pMergeSortMemory,
-                                            sortedHistogram* pHistogramSorted,
-                                            size_t pNneighbors, size_t pFast, size_t pExcessFactor) {
-    // sort hits per instances
-    // count instances
-    // take highest pNeighborhood*excessfaktor + same hits count
-    // to compute euclidean distance or cosine similarity
+// __global__ void createSortedHistogramsCuda(hits* pHitsPerInstance,
+//                                             const size_t pNumberOfInstances,
+//                                             histogram* pHistogram, 
+//                                             // mergeSortingMemory* pMergeSortMemory,
+//                                             sortedHistogram* pHistogramSorted,
+//                                             size_t pNneighbors, size_t pFast, size_t pExcessFactor) {
+//     // sort hits per instances
+//     // count instances
+//     // take highest pNeighborhood*excessfaktor + same hits count
+//     // to compute euclidean distance or cosine similarity
     
-    // per block query one instance
-    // sort these with the threads
+//     // per block query one instance
+//     // sort these with the threads
     
-    int instanceId = blockIdx.x;
-    int threadId = threadIdx.x;
-    int addValue = 1;
-    // int similarValues = 0;
-    // size_t numberOfElementsToBeConsidered = pNumberOfNeighbors * pExcessFactor;
-    __shared__ int elements;
-    __shared__ int sizeOfHistogram;
-    uint index = 0;
-    // size_t index;
-    // create histogram
-    while (instanceId < pNumberOfInstances) {
-        while (threadId < pNumberOfInstances) {
-            // clear arrays to 0
-            pHistogram[blockIdx.x].instances[threadId] = 0;
-            // pHistogramSorted[blockIdx.x].instances[threadId].x = 0;
-            // pHistogramSorted[blockIdx.x].instances[threadId].y = 0;
+//     int instanceId = blockIdx.x;
+//     int threadId = threadIdx.x;
+//     int addValue = 1;
+//     // int similarValues = 0;
+//     // size_t numberOfElementsToBeConsidered = pNumberOfNeighbors * pExcessFactor;
+//     __shared__ int elements;
+//     __shared__ int sizeOfHistogram;
+//     uint index = 0;
+//     // size_t index;
+//     // create histogram
+//     while (instanceId < pNumberOfInstances) {
+//         while (threadId < pNumberOfInstances) {
+//             // clear arrays to 0
+//             pHistogram[blockIdx.x].instances[threadId] = 0;
+//             // pHistogramSorted[blockIdx.x].instances[threadId].x = 0;
+//             // pHistogramSorted[blockIdx.x].instances[threadId].y = 0;
             
-            threadId += blockDim.x;
-        }
-        __syncthreads();
-        threadId = threadIdx.x;
+//             threadId += blockDim.x;
+//         }
+//         __syncthreads();
+//         threadId = threadIdx.x;
        
-        while (threadId < pHitsPerInstance[instanceId].size) {
-            atomicAdd(&(pHistogram[blockIdx.x].instances[pHitsPerInstance[instanceId].instances[threadId]]), addValue);
+//         while (threadId < pHitsPerInstance[instanceId].size) {
+//             atomicAdd(&(pHistogram[blockIdx.x].instances[pHitsPerInstance[instanceId].instances[threadId]]), addValue);
+//             threadId += blockDim.x;
+//         }
+//         __syncthreads();
+        
+        
+//         threadId = threadIdx.x;
+//         if (threadIdx.x == 0) {
+//             elements = 0;
+//         }
+//         __syncthreads();
+//         while (threadId < pNumberOfInstances) {
+//             if (pHistogram[blockIdx.x].instances[threadId] > 0) {
+//                 index = atomicAdd(&elements, addValue);
+//                 if (index > pNneighbors * pExcessFactor*2) {
+//                     // realloc!!!
+//                 }
+//                 // instance id
+//                 pHistogramSorted[instanceId].instances[index].x = threadId;
+//                 // number of hits
+//                 pHistogramSorted[instanceId].instances[index].y = pHistogram[blockIdx.x].instances[threadId];
+                
+//             }
+//             threadId += blockDim.x;  
+//         }
+//         __syncthreads(); 
+//         if (threadIdx.x == 0) {
+//             pHistogramSorted[instanceId].size = elements;
+//             elements = 0;
+//         }
+//         __syncthreads(); 
+//         // return;
+//         // printf("fast: %i", pFast);
+        
+//         mergeSortDesc(pHistogramSorted, instanceId);
+//         __syncthreads(); 
+//         threadId = threadIdx.x;
+//         // return;
+        
+//         // insert the k neighbors and distances to the neighborhood and distances vector
+//         // printf("fast: %i", pFast);
+//         // if (pFast) {       
+//         //     // printf("FAST");
+//         //     while (threadId < pNumberOfNeighbors * pExcessFactor && threadId < pHistogramSorted[blockIdx.x].size) {
+//         //         // if 
+//         //         pNeighborhood[instanceId*pNumberOfNeighbors+threadId] 
+//         //             = pHistogramSorted[blockIdx.x].instances[threadId].x;
+//         //         pDistances[instanceId*pNumberOfNeighbors+threadId] 
+//         //             = (float) pHistogramSorted[blockIdx.x].instances[threadId].y;
+//         //         threadId += blockDim.x;
+//         //     }
+//         //     __syncthreads();
+//         // } else {
+//             // count number of elements that should be considered in the euclidean distance 
+//             // or cosine similarity computation
+//             if (threadIdx.x == 0) {
+//                 sizeOfHistogram = pHistogramSorted[instanceId].size;
+//                 if (pNneighbors * pExcessFactor < sizeOfHistogram) {
+//                     elements = pNneighbors * pExcessFactor;
+//                     while (elements + 1 < sizeOfHistogram
+//                         && pHistogramSorted[instanceId].instances[elements].y > 1
+//                         && pHistogramSorted[instanceId].instances[elements].y == pHistogramSorted[instanceId].instances[elements + 1].y) {
+//                         ++elements;
+//                     }
+//                     printf("sizeFFF: %i", elements);
+//                     pHistogramSorted[instanceId].size = elements;
+//                 }
+//             }
+//         // }
+//         __syncthreads();
+        
+//         instanceId += gridDim.x;
+//         threadId = threadIdx.x;
+//     }
+// }
+
+__device__ void sortDesc(cudaInstanceVector* pCandidates, uint pInstanceId, uint pSize) {
+    
+    uint threadId = threadIdx.x;
+    uint instance_tmp;
+    float value_tmp;
+    for (uint i = 0; i < pSize / 2; ++i) {
+        while (threadId < pSize) {
+            if (threadId + 1 < pSize 
+                    && pCandidates[pInstanceId].instance[threadId+1].y > pCandidates[pInstanceId].instance[threadId].y) {
+                        instance_tmp = pCandidates[pInstanceId].instance[threadId].x;
+                        value_tmp = pCandidates[pInstanceId].instance[threadId].y;
+                        pCandidates[pInstanceId].instance[threadId].x = pCandidates[pInstanceId].instance[threadId + 1].x;
+                        pCandidates[pInstanceId].instance[threadId].y = pCandidates[pInstanceId].instance[threadId + 1].y;
+                        pCandidates[pInstanceId].instance[threadId + 1].x = instance_tmp;
+                        pCandidates[pInstanceId].instance[threadId + 1].y = value_tmp;
+            }
+            if (threadId + 2 < pSize 
+                    && pCandidates[pInstanceId].instance[threadId+2].y > pCandidates[pInstanceId].instance[threadId+1].y) {
+                        instance_tmp = pCandidates[pInstanceId].instance[threadId+1].x;
+                        value_tmp = pCandidates[pInstanceId].instance[threadId+1].y;
+                        pCandidates[pInstanceId].instance[threadId+1].x = pCandidates[pInstanceId].instance[threadId + 2].x;
+                        pCandidates[pInstanceId].instance[threadId+1].y = pCandidates[pInstanceId].instance[threadId + 2].y;
+                        pCandidates[pInstanceId].instance[threadId + 2].x = instance_tmp;
+                        pCandidates[pInstanceId].instance[threadId + 2].y = value_tmp;
+            }
+            __syncthreads();
             threadId += blockDim.x;
         }
         __syncthreads();
-        
-        
         threadId = threadIdx.x;
-        if (threadIdx.x == 0) {
-            elements = 0;
+    }
+}
+__device__ void sortAsc(cudaInstanceVector* pCandidates, uint pInstanceId, uint pSize) {
+    
+    uint threadId = threadIdx.x;
+    uint instance_tmp;
+    float value_tmp;
+    for (uint i = 0; i < pSize / 2; ++i) {
+        while (threadId < pSize) {
+            if (threadId + 1 < pSize 
+                    && pCandidates[pInstanceId].instance[threadId+1].y < pCandidates[pInstanceId].instance[threadId].y) {
+                        instance_tmp = pCandidates[pInstanceId].instance[threadId].x;
+                        value_tmp = pCandidates[pInstanceId].instance[threadId].y;
+                        pCandidates[pInstanceId].instance[threadId].x = pCandidates[pInstanceId].instance[threadId + 1].x;
+                        pCandidates[pInstanceId].instance[threadId].y = pCandidates[pInstanceId].instance[threadId + 1].y;
+                        pCandidates[pInstanceId].instance[threadId + 1].x = instance_tmp;
+                        pCandidates[pInstanceId].instance[threadId + 1].y = value_tmp;
+            }
+            if (threadId + 2 < pSize 
+                    && pCandidates[pInstanceId].instance[threadId+2].y < pCandidates[pInstanceId].instance[threadId+1].y) {
+                        // int2 tmp;
+                        instance_tmp = pCandidates[pInstanceId].instance[threadId+1].x;
+                        value_tmp = pCandidates[pInstanceId].instance[threadId+1].y;
+                        pCandidates[pInstanceId].instance[threadId+1].x = pCandidates[pInstanceId].instance[threadId + 2].x;
+                        pCandidates[pInstanceId].instance[threadId+1].y = pCandidates[pInstanceId].instance[threadId + 2].y;
+                        pCandidates[pInstanceId].instance[threadId + 2].x = instance_tmp;
+                        pCandidates[pInstanceId].instance[threadId + 2].y = value_tmp;
+            }
+            __syncthreads();
+            threadId += blockDim.x;
         }
         __syncthreads();
-        while (threadId < pNumberOfInstances) {
-            if (pHistogram[blockIdx.x].instances[threadId] > 0) {
-                index = atomicAdd(&elements, addValue);
-                if (index > pNneighbors * pExcessFactor*2) {
-                    // realloc!!!
-                }
-                // instance id
-                pHistogramSorted[instanceId].instances[index].x = threadId;
-                // number of hits
-                pHistogramSorted[instanceId].instances[index].y = pHistogram[blockIdx.x].instances[threadId];
-                
-            }
-            threadId += blockDim.x;  
-        }
-        __syncthreads(); 
-        if (threadIdx.x == 0) {
-            pHistogramSorted[instanceId].size = elements;
-            elements = 0;
-        }
-        __syncthreads(); 
-        // return;
-        // printf("fast: %i", pFast);
-        
-        mergeSortDesc(pHistogramSorted, instanceId);
-        __syncthreads(); 
-        threadId = threadIdx.x;
-        // return;
-        
-        // insert the k neighbors and distances to the neighborhood and distances vector
-        // printf("fast: %i", pFast);
-        // if (pFast) {       
-        //     // printf("FAST");
-        //     while (threadId < pNumberOfNeighbors * pExcessFactor && threadId < pHistogramSorted[blockIdx.x].size) {
-        //         // if 
-        //         pNeighborhood[instanceId*pNumberOfNeighbors+threadId] 
-        //             = pHistogramSorted[blockIdx.x].instances[threadId].x;
-        //         pDistances[instanceId*pNumberOfNeighbors+threadId] 
-        //             = (float) pHistogramSorted[blockIdx.x].instances[threadId].y;
-        //         threadId += blockDim.x;
-        //     }
-        //     __syncthreads();
-        // } else {
-            // count number of elements that should be considered in the euclidean distance 
-            // or cosine similarity computation
-            if (threadIdx.x == 0) {
-                sizeOfHistogram = pHistogramSorted[instanceId].size;
-                if (pNneighbors * pExcessFactor < sizeOfHistogram) {
-                    elements = pNneighbors * pExcessFactor;
-                    while (elements + 1 < sizeOfHistogram
-                        && pHistogramSorted[instanceId].instances[elements].y > 1
-                        && pHistogramSorted[instanceId].instances[elements].y == pHistogramSorted[instanceId].instances[elements + 1].y) {
-                        ++elements;
-                    }
-                    printf("sizeFFF: %i", elements);
-                    pHistogramSorted[instanceId].size = elements;
-                }
-            }
-        // }
-        __syncthreads();
-        
-        instanceId += gridDim.x;
         threadId = threadIdx.x;
     }
 }
 
-__device__ void mergeSortDesc(sortedHistogram* pSortedHistogram, uint pInstanceId) {
-    
-    uint threadId = threadIdx.x;
-    for (uint i = 0; i < pSortedHistogram[pInstanceId].size / 2; ++i) {
-        while (threadId < pSortedHistogram[pInstanceId].size) {
-            if (threadId + 1 < pSortedHistogram[pInstanceId].size 
-                    && pSortedHistogram[pInstanceId].instances[threadId+1].y > pSortedHistogram[pInstanceId].instances[threadId].y) {
-                        int2 tmp;
-                        tmp.x = pSortedHistogram[pInstanceId].instances[threadId].x;
-                        tmp.y = pSortedHistogram[pInstanceId].instances[threadId].y;
-                        pSortedHistogram[pInstanceId].instances[threadId].x = pSortedHistogram[pInstanceId].instances[threadId + 1].x;
-                        pSortedHistogram[pInstanceId].instances[threadId].y = pSortedHistogram[pInstanceId].instances[threadId + 1].y;
-                        pSortedHistogram[pInstanceId].instances[threadId + 1].x = tmp.x;
-                        pSortedHistogram[pInstanceId].instances[threadId + 1].y = tmp.y;
-            }
-            if (threadId + 2 < pSortedHistogram[pInstanceId].size 
-                    && pSortedHistogram[pInstanceId].instances[threadId+2].y > pSortedHistogram[pInstanceId].instances[threadId+1].y) {
-                        int2 tmp;
-                        tmp.x = pSortedHistogram[pInstanceId].instances[threadId+1].x;
-                        tmp.y = pSortedHistogram[pInstanceId].instances[threadId+1].y;
-                        pSortedHistogram[pInstanceId].instances[threadId+1].x = pSortedHistogram[pInstanceId].instances[threadId + 2].x;
-                        pSortedHistogram[pInstanceId].instances[threadId+1].y = pSortedHistogram[pInstanceId].instances[threadId + 2].y;
-                        pSortedHistogram[pInstanceId].instances[threadId + 2].x = tmp.x;
-                        pSortedHistogram[pInstanceId].instances[threadId + 2].y = tmp.y;
-            }
-            __syncthreads();
-            threadId += blockDim.x;
-        }
-        __syncthreads();
-        threadId = threadIdx.x;
-    }
-    // int iterations = ceilf(log2((float)pSortedHistogram[blockIdx.x].size));
-    // int instanceId = blockIdx.x;
-    // int threadId = threadIdx.x;
-    // int index0 = 0;
-    // int index1 = 0;
-    // __shared__ int pow;
-    // for (size_t i = 0; i < iterations; ++i) {
-    //     if (threadIdx.x == 0) {
-    //         pow = powf(2, i);
-    //     }
-    //     __syncthreads();
-    //     // printf("pow: %i", pow);
-    //     int indexDestination = pow * threadId * 2 ;
-    //     index0 = pow * threadId * 2 ;
-    //     index1 = pow * threadId * 2 + pow;
-    //     while (threadId < pSortedHistogram[instanceId].size 
-    //                 && index0 < pSortedHistogram[instanceId].size
-    //                 && index1 < pSortedHistogram[instanceId].size) {
-                
-    //             int j = 0;
-    //             int counter0 = 0;
-    //             int counter1 = 0;
-    //             // if (blockIdx.x == 0 && threadIdx.x == 0) {
-    //             //         printf("111j: %i, pow: %i, index0: %i, index1: %i\n", j, pow, index0, index1);
-    //             //         printf("\nsize: %i\n", pSortedHistogram[instanceId].size);
-    //             //     }
-    //             while (j < pow*2 && counter0 < pow && counter1 < pow 
-    //                         && index0 < pSortedHistogram[instanceId].size 
-    //                         && index1 < pSortedHistogram[instanceId].size) {
-    //                 if (blockIdx.x == 0 && threadIdx.x == 0) {
-    //                     printf("j: %i, pow: %i, counter0: %i, counter1: %i\n", j, pow, counter0, counter1);
-    //                     printf("index0: %i , Index1: %i, size: %i\n", index0, index1, pSortedHistogram[instanceId].size);
-    //                 }
-    //                 if (pSortedHistogram[instanceId].instances[index0].y > pSortedHistogram[instanceId].instances[index1].y) {
-    //                     pMergeSortMemory[blockIdx.x].instances[indexDestination + j].x = pSortedHistogram[instanceId].instances[index0].x;
-    //                     pMergeSortMemory[blockIdx.x].instances[indexDestination + j].y = pSorkktedHistogram[instanceId].instances[index0].y;
-    //                     ++index0;
-    //                     ++counter0;
-    //                     ++j;
-    //                 } else if (pSortedHistogram[instanceId].instances[index0].y < pSortedHistogram[instanceId].instances[index1].y){
-    //                     pMergeSortMemory[blockIdx.x].instances[indexDestination + j].x = pSortedHistogram[instanceId].instances[index1].x;
-    //                     pMergeSortMemory[blockIdx.x].instances[indexDestination + j].y = pSortedHistogram[instanceId].instances[index1].y;
-    //                     ++index1;
-    //                     ++counter1;
-    //                     ++j;
-    //                 } else {
-    //                     pMergeSortMemory[blockIdx.x].instances[indexDestination + j].x = pSortedHistogram[instanceId].instances[index0].x;
-    //                     pMergeSortMemory[blockIdx.x].instances[indexDestination + j].y = pSortedHistogram[instanceId].instances[index0].y;
-    //                     pMergeSortMemory[blockIdx.x].instances[indexDestination+ j + 1].x = pSortedHistogram[instanceId].instances[index1].x;
-    //                     pMergeSortMemory[blockIdx.x].instances[indexDestination + j + 1].y = pSortedHistogram[instanceId].instances[index1].y;
-    //                     ++index0;
-    //                     ++index1;
-    //                     ++counter0;
-    //                     ++counter1;
-    //                     j += 2;
-    //                 }
-    //             }
-    //             while (j < pow*2 && counter0 < pow && index0 < pSortedHistogram[instanceId].size) {
-    //                 pMergeSortMemory[blockIdx.x].instances[indexDestination + j].x = pSortedHistogram[instanceId].instances[index0].x;
-    //                 pMergeSortMemory[blockIdx.x].instances[indexDestination + j].y = pSortedHistogram[instanceId].instances[index0].y;
-    //                 ++index0;
-    //                 ++counter0;
-    //                 ++j;
-    //             }
-    //             while (j < pow*2 && counter1 < pow && index1 < pSortedHistogram[instanceId].size) {
-    //                 pMergeSortMemory[blockIdx.x].instances[indexDestination + j].x = pSortedHistogram[instanceId].instances[index1].x;
-    //                 pMergeSortMemory[blockIdx.x].instances[indexDestination + j].y = pSortedHistogram[instanceId].instances[index1].y;
-    //                 ++index1;
-    //                 ++counter1;
-    //                 ++j;
-    //             }
-    //         __syncthreads();
-    //         threadId += blockDim.x;
-    //         index0 = pow * threadId * 2 ;
-    //         index1 = pow * threadId * 2 + pow;
-    //     }
-    //     __syncthreads();
-    //     // return;
-    //     threadId = threadIdx.x;
-    //     while (threadId < pSortedHistogram[instanceId].size) {
-    //         pSortedHistogram[instanceId].instances[threadId].x = pMergeSortMemory[blockIdx.x].instances[threadId].x;
-    //         pSortedHistogram[instanceId].instances[threadId].y = pMergeSortMemory[blockIdx.x].instances[threadId].y;
-    //         threadId += blockDim.x;
-    //     }
-    //     // return;
-    //     threadId = threadIdx.x;
-    // }
-}
-__device__ void mergeSortAsc(sortedHistogram* pSortedHistogram, uint pInstanceId) {
-    
-    uint threadId = threadIdx.x;
-    for (uint i = 0; i < pSortedHistogram[pInstanceId].size / 2; ++i) {
-        while (threadId < pSortedHistogram[pInstanceId].size) {
-            if (threadId + 1 < pSortedHistogram[pInstanceId].size 
-                    && pSortedHistogram[pInstanceId].instances[threadId+1].y < pSortedHistogram[pInstanceId].instances[threadId].y) {
-                        int2 tmp;
-                        tmp.x = pSortedHistogram[pInstanceId].instances[threadId].x;
-                        tmp.y = pSortedHistogram[pInstanceId].instances[threadId].y;
-                        pSortedHistogram[pInstanceId].instances[threadId].x = pSortedHistogram[pInstanceId].instances[threadId + 1].x;
-                        pSortedHistogram[pInstanceId].instances[threadId].y = pSortedHistogram[pInstanceId].instances[threadId + 1].y;
-                        pSortedHistogram[pInstanceId].instances[threadId + 1].x = tmp.x;
-                        pSortedHistogram[pInstanceId].instances[threadId + 1].y = tmp.y;
-            }
-            if (threadId + 2 < pSortedHistogram[pInstanceId].size 
-                    && pSortedHistogram[pInstanceId].instances[threadId+2].y < pSortedHistogram[pInstanceId].instances[threadId+1].y) {
-                        int2 tmp;
-                        tmp.x = pSortedHistogram[pInstanceId].instances[threadId+1].x;
-                        tmp.y = pSortedHistogram[pInstanceId].instances[threadId+1].y;
-                        pSortedHistogram[pInstanceId].instances[threadId+1].x = pSortedHistogram[pInstanceId].instances[threadId + 2].x;
-                        pSortedHistogram[pInstanceId].instances[threadId+1].y = pSortedHistogram[pInstanceId].instances[threadId + 2].y;
-                        pSortedHistogram[pInstanceId].instances[threadId + 2].x = tmp.x;
-                        pSortedHistogram[pInstanceId].instances[threadId + 2].y = tmp.y;
-            }
-            __syncthreads();
-            threadId += blockDim.x;
-        }
-        __syncthreads();
-        threadId = threadIdx.x;
-    }
-}
-__global__ void kneighborsExact() {
-    
-}
-__global__ void euclideanDistanceCuda(sortedHistogram* pSortedHistogram, size_t pSizeSortedHistogram,
-                                        // mergeSortingMemory* pMergeSortMemory,
+__global__ void euclideanDistanceCuda(cudaInstanceVector* candidates, uint pSize,
+                                        uint* pSizeOfCandidates,
                                         size_t* pFeatureList, float* pValuesList,
-                                        size_t* pSizeOfInstanceList, size_t pMaxNnz, 
-                                        // size_t* pNeighborhood, float* pDistances,
-                                        size_t pNneighbors) {
+                                        size_t* pSizeOfInstanceList, size_t pMaxNnz) {                                        // size_t* pNeighborhood, float* pDistances,
     int instanceId = blockIdx.x;
     int threadId = threadIdx.x;
+
     size_t pointerToFeatureInstance, pointerToFeatureNeighbor, queryIndexInstance,
         queryIndexNeighbor, instanceIdNeighbor, indexSparseMatrixInstance,
         indexSparseMatrixNeighbor, numberOfFeaturesInstance, numberOfFeaturesNeighbor,
@@ -370,7 +281,7 @@ __global__ void euclideanDistanceCuda(sortedHistogram* pSortedHistogram, size_t 
     bool endOfInstanceNotReached, endOfNeighborNotReached;
     float euclideanDistance, value;
     
-    while (instanceId < pSizeSortedHistogram) {
+    while (instanceId < pSize) {
         // pointer to feature ids in sparse matrix
         pointerToFeatureInstance = 0;
         pointerToFeatureNeighbor = 0;
@@ -383,8 +294,8 @@ __global__ void euclideanDistanceCuda(sortedHistogram* pSortedHistogram, size_t 
         
         // get the two instance ids
         queryIndexNeighbor = threadId + 1;
-        instanceId = pSortedHistogram[instanceId].instances[0].x;
-        instanceIdNeighbor = pSortedHistogram[instanceId].instances[queryIndexNeighbor].x;
+        instanceId = candidates[instanceId].instance[0].x;
+        instanceIdNeighbor = candidates[instanceId].instance[queryIndexNeighbor].x;
         // instanceId = pHitsPerQueryInstance[queryIndexInstance].y;
         // instanceIdNeighbor = pHitsPerQueryInstance[queryIndexNeighbor].y;
         
@@ -400,7 +311,7 @@ __global__ void euclideanDistanceCuda(sortedHistogram* pSortedHistogram, size_t 
         endOfNeighborNotReached = pointerToFeatureNeighbor < numberOfFeaturesNeighbor;
         euclideanDistance = 0;
         value = 0;
-        while (threadId < pSortedHistogram[instanceId].size) {
+        while (threadId < pSizeOfCandidates[instanceId]) {
             
             while (endOfInstanceNotReached && endOfNeighborNotReached) {
                 featureIdInstance = pFeatureList[indexSparseMatrixInstance+pointerToFeatureInstance];
@@ -443,14 +354,17 @@ __global__ void euclideanDistanceCuda(sortedHistogram* pSortedHistogram, size_t 
             }
             
             // square root of the sum
+            printf("blockId: %i, threadId: %i\n", blockIdx.x, threadIdx.x);
+            
+            printf("instanceId: %i, neighborId: %i,  euclidean distance: %f, sizeOfCandidates: %i\n",instanceId, queryIndexNeighbor, euclideanDistance, pSizeOfCandidates[instanceId]);
             euclideanDistance = sqrtf(euclideanDistance);
             // store euclidean distance and neighbor id
-            pSortedHistogram[instanceId].instances[queryIndexNeighbor].y = (int) euclideanDistance * 1000;
+            candidates[instanceId].instance[queryIndexNeighbor].y =  euclideanDistance;
             threadId += blockIdx.x;
             euclideanDistance = 0;
             value = 0;
             queryIndexNeighbor += blockIdx.x;
-            instanceIdNeighbor = pSortedHistogram[instanceId].instances[queryIndexNeighbor].x ;
+            instanceIdNeighbor = candidates[instanceId].instance[queryIndexNeighbor].x ;
             indexSparseMatrixNeighbor = instanceIdNeighbor*pMaxNnz;
             numberOfFeaturesNeighbor = pSizeOfInstanceList[instanceIdNeighbor];
             pointerToFeatureInstance = 0;
@@ -460,7 +374,7 @@ __global__ void euclideanDistanceCuda(sortedHistogram* pSortedHistogram, size_t 
         }
         __syncthreads();
         // sort instances by euclidean distance
-        mergeSortDesc(pSortedHistogram, instanceId);
+        sortDesc(candidates, instanceId, pSizeOfCandidates[instanceId]);
         threadId = threadIdx.x;
         // insert the k neighbors and distances to the neighborhood and distances vector
         // while (threadId < pNneighbors) {
@@ -477,12 +391,10 @@ __global__ void euclideanDistanceCuda(sortedHistogram* pSortedHistogram, size_t 
     
 }
 
-__global__ void cosineSimilarityCuda(sortedHistogram* pSortedHistogram, size_t pSizeSortedHistogram,
-                                        // mergeSortingMemory* pMergeSortMemory,
+__global__ void cosineSimilarityCuda(cudaInstanceVector* candidates, uint pSize,
+                                        uint* pSizeOfCandidates,
                                         size_t* pFeatureList, float* pValuesList,
-                                        size_t* pSizeOfInstanceList, size_t pMaxNnz, 
-                                        // size_t* pNeighborhood, float* pDistances,
-                                        size_t pNneighbors) {
+                                        size_t* pSizeOfInstanceList, size_t pMaxNnz) {
     // int blockId = blockIdx.x;
     // int threadId = threadIdx.x;
     // size_t pointerToFeatureInstance, pointerToFeatureNeighbor, queryIndexInstance,

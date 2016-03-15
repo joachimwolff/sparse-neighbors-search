@@ -13,6 +13,8 @@
 #include <iostream>
 #include <set>
 #include "nearestNeighbors.h"
+
+
 #include "sparseMatrix.h"
 
 #ifdef OPENMP
@@ -47,6 +49,9 @@ NearestNeighbors::NearestNeighbors(size_t pNumberOfHashFunctions, size_t pShingl
         mExcessFactor = pExcessFactor;
         mCpuGpuLoadBalancing = pCpuGpuLoadBalancing;
         mHash = new Hash();
+        #ifdef CUDA
+        mNearestNeighborsCuda = new NearestNeighborsCuda();
+        #endif
                     // printf("foo%i\n", __LINE__);
 
 }
@@ -55,10 +60,19 @@ NearestNeighbors::~NearestNeighbors() {
     delete mInverseIndex;
     delete mOriginalData;
     delete mHash;
+    #ifdef CUDA
+    delete mNearestNeighborsCuda;
+    #endif
 }
 
 void NearestNeighbors::fit(const SparseMatrixFloat* pRawData) {
     mInverseIndex->fit(pRawData);
+    #ifdef CUDA
+    mNearestNeighborsCuda->setFeatureList(mInverseIndex->get_dev_FeatureList());
+    mNearestNeighborsCuda->setValuesList(mInverseIndex->get_dev_ValuesList());
+    mNearestNeighborsCuda->setSizeOfInstanceList(mInverseIndex->get_dev_SizeOfInstanceList());
+    mNearestNeighborsCuda->setMaxNnz(mOriginalData->getMaxNnz());
+    #endif
     return;
 }
 
@@ -66,25 +80,37 @@ void NearestNeighbors::partialFit() {
 
 }
 
-neighborhood* NearestNeighbors::kneighborsCpu(const SparseMatrixFloat* pRawData, const umap_uniqueElement* pSignaturesMap,
-                                                size_t pNneighbors, int pFast, int pSimilarity,
-                                                size_t pStart, size_t pEnd) {
+neighborhood* NearestNeighbors::kneighbors(const SparseMatrixFloat* pRawData,
+                                                size_t pNneighbors, int pFast, int pSimilarity) {
+    if (pFast == -1) {
+        pFast = mFast;
+    } 
+    if (pNneighbors == 0) {
+        pNneighbors = mNneighbors;
+    }
     
+    if (pSimilarity == -1) {
+        pSimilarity = mSimilarity;
+    }
     bool doubleElementsStorageCount = false;
     neighborhood* neighborhood_;
-    
+    umap_uniqueElement* x_inverseIndex;
     if (pRawData == NULL) {
         
         // no query data given, use stored signatures
-        neighborhood_  = mInverseIndex->kneighbors(pSignaturesMap, 
-                                                    pNneighbors, true,
-                                                    pFast, pSimilarity, pStart, pEnd);
+        x_inverseIndex = mInverseIndex->getSignatureStorage();
+        neighborhood_  = mInverseIndex->kneighbors(x_inverseIndex, 
+                                                    pNneighbors, true);
         doubleElementsStorageCount = true;
     } else {
-        
-        neighborhood_ = mInverseIndex->kneighbors(pSignaturesMap, pNneighbors, 
-                                                doubleElementsStorageCount,
-                                                pFast, pSimilarity, pStart, pEnd);
+        x_inverseIndex = (mInverseIndex->computeSignatureMap(pRawData));
+        neighborhood_ = mInverseIndex->kneighbors(x_inverseIndex, pNneighbors, 
+                                                doubleElementsStorageCount);
+       for (auto it = x_inverseIndex->begin(); it != x_inverseIndex->end(); ++it) {
+            delete (*it).second.instances;
+            delete (*it).second.signature;
+       }
+       delete x_inverseIndex;                                          
     }
     
     if (pFast) {     
@@ -108,36 +134,63 @@ neighborhood* NearestNeighbors::kneighborsCpu(const SparseMatrixFloat* pRawData,
     // neighborsListFirstRound is needed to get replace the candidates in neighborhood_
     // if it would not be used, it would be iterated over neighborhood_ and manipulated
     // at the same time
-    #ifdef OPENMP
-    #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+    #ifdef CUDA
+    if (mCpuGpuLoadBalancing == 0) {
     #endif
-    for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
-        if (neighborhood_->neighbors->operator[](i).size() > 0) {
-            std::vector<sortMapFloat> exactNeighbors;
-            if (pSimilarity) {
-                exactNeighbors = 
-                    mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), pNneighbors+mExcessFactor, i, pRawData);
-            } else {
-                exactNeighbors = 
-                    mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), pNneighbors+mExcessFactor, i, pRawData);
-            }
-            size_t vectorSize = std::min(exactNeighbors.size(),pNneighbors+mExcessFactor);
-            std::vector<int> neighborsVector(vectorSize);
-            for (size_t j = 0; j < vectorSize; ++j) {
-                neighborsVector[j] = exactNeighbors[j].key;
-                neighborsListFirstRound[i].push_back(exactNeighbors[j].key);
-            } 
-            #ifdef OPENMP
-            #pragma omp critical
-            #endif
-            {
-                if (exactNeighbors.size() > 1) {
-                    neighborhoodCandidates->neighbors->operator[](exactNeighbors[0].key) = neighborsVector;
+        #ifdef OPENMP
+        #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+        #endif
+        for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
+            if (neighborhood_->neighbors->operator[](i).size() > 0) {
+                std::vector<sortMapFloat> exactNeighbors;
+                if (pSimilarity) {
+                    exactNeighbors = 
+                        mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), pNneighbors+mExcessFactor, i, pRawData);
+                } else {
+                    exactNeighbors = 
+                        mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), pNneighbors+mExcessFactor, i, pRawData);
+                }
+                size_t vectorSize = std::min(exactNeighbors.size(),pNneighbors+mExcessFactor);
+                std::vector<int> neighborsVector(vectorSize);
+                for (size_t j = 0; j < vectorSize; ++j) {
+                    neighborsVector[j] = exactNeighbors[j].key;
+                    neighborsListFirstRound[i].push_back(exactNeighbors[j].key);
+                } 
+                #ifdef OPENMP
+                #pragma omp critical
+                #endif
+                {
+                    if (exactNeighbors.size() > 1) {
+                        neighborhoodCandidates->neighbors->operator[](exactNeighbors[0].key) = neighborsVector;
+                    }
                 }
             }
         }
+    #ifdef CUDA
+    } else {
+        // call gpu code
+        std::cout << "GPU code is running! " << std::endl;
+        cudaInstanceVector* cudaInstanceVector;
+        cudaInstanceVector = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity);
+       
+        #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+        for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
+            size_t vectorSize = std::min(neighborhood_->neighbors->operator[](i).size(),pNneighbors+mExcessFactor);
+            std::vector<int> neighborsVector(vectorSize);
+            for (size_t j = 0; j < vectorSize; ++j) {
+                neighborsVector[j] = cudaInstanceVector[i].instance[j].x;
+                neighborsListFirstRound[i].push_back(cudaInstanceVector[i].instance[j].x);
+            } 
+            if (neighborhood_->neighbors->operator[](i).size() > 1) {
+                neighborhoodCandidates->neighbors->operator[](cudaInstanceVector[i].instance[0].x) = neighborsVector;
+            }
+            free(cudaInstanceVector[i].instance);
+        }
+        free(cudaInstanceVector);
+        std::cout << "GPU code was used! " << std::endl;
     }
-    umap_uniqueElement* x_inverseIndex = mInverseIndex->getSignatureStorage();
+    #endif
+    x_inverseIndex = mInverseIndex->getSignatureStorage();
     #ifdef OPENMP
     #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     #endif   
@@ -171,8 +224,7 @@ neighborhood* NearestNeighbors::kneighborsCpu(const SparseMatrixFloat* pRawData,
                 
                 (*instance_signature)[signatureId] = (*x_inverseIndex)[signatureId];
                  neighborhood* neighborhood_instance = mInverseIndex->kneighbors(instance_signature, 
-                                                                pNneighbors, false,
-                                                                pFast, pSimilarity, 0, 1, false);
+                                                                pNneighbors, false, false);
                                                     
                 if (neighborhood_instance->neighbors->operator[](0).size() != 0) { 
                     std::vector<sortMapFloat> exactNeighbors;
@@ -222,23 +274,64 @@ neighborhood* NearestNeighbors::kneighborsCpu(const SparseMatrixFloat* pRawData,
     neighborhoodExact->distances = new vvfloat(neighborhood_->neighbors->size());
 
     // compute the exact neighbors based on the candidate selection before.
-#ifdef OPENMP
-#pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
-#endif   
-    for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
-       if (neighborhood_->neighbors->operator[](i).size() != 1) {
-                std::vector<sortMapFloat> exactNeighbors;
-                if (0 < neighborhood_->neighbors->operator[](i).size()) {
-                    if (pSimilarity) {
-                        exactNeighbors = 
-                            mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), pNneighbors, i, pRawData);
-                    } else {
-                        exactNeighbors = 
-                            mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), pNneighbors, i, pRawData);
+    #ifdef CUDA
+    if (mCpuGpuLoadBalancing == 0) {
+    #endif
+    #ifdef OPENMP
+    #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+    #endif   
+        for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
+        if (neighborhood_->neighbors->operator[](i).size() != 1) {
+                    std::vector<sortMapFloat> exactNeighbors;
+                    if (0 < neighborhood_->neighbors->operator[](i).size()) {
+                        if (pSimilarity) {
+                            exactNeighbors = 
+                                mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), pNneighbors, i, pRawData);
+                        } else {
+                            exactNeighbors = 
+                                mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), pNneighbors, i, pRawData);
+                        }
                     }
+                size_t vectorSize = exactNeighbors.size();
+                
+                std::vector<int> neighborsVector(vectorSize);
+                std::vector<float> distancesVector(vectorSize);
+                if (vectorSize == 0) {
+                    neighborsVector.push_back(i);
+                    distancesVector.push_back(0.0);
                 }
-            size_t vectorSize = exactNeighbors.size();
-            
+                for (size_t j = 0; j < vectorSize; ++j) {
+                        neighborsVector[j] = exactNeighbors[j].key;
+                        distancesVector[j] = exactNeighbors[j].val;
+                }
+    #ifdef OPENMP
+    #pragma omp critical
+    #endif
+                {
+                    neighborhoodExact->neighbors->operator[](i) = neighborsVector;
+                    neighborhoodExact->distances->operator[](i) = distancesVector;
+                }
+            } else {
+    #ifdef OPENMP
+    #pragma omp critical
+    #endif
+                {
+                    std::vector<int> neighborsVector(1, i);
+                    std::vector<float> distancesVector(1, 0.0);
+                    neighborhoodExact->neighbors->operator[](i) = neighborsVector;
+                    neighborhoodExact->distances->operator[](i) = distancesVector;
+                }
+            }
+        }
+    #ifdef CUDA
+    } else {
+        std::cout << "GPU code is running! Part2" << std::endl;
+        
+        cudaInstanceVector* cudaInstanceVector;
+        cudaInstanceVector = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity);
+        #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+        for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
+            size_t vectorSize = std::min(neighborhood_->neighbors->operator[](i).size(),pNneighbors+mExcessFactor);
             std::vector<int> neighborsVector(vectorSize);
             std::vector<float> distancesVector(vectorSize);
             if (vectorSize == 0) {
@@ -246,171 +339,24 @@ neighborhood* NearestNeighbors::kneighborsCpu(const SparseMatrixFloat* pRawData,
                 distancesVector.push_back(0.0);
             }
             for (size_t j = 0; j < vectorSize; ++j) {
-                    neighborsVector[j] = exactNeighbors[j].key;
-                    distancesVector[j] = exactNeighbors[j].val;
-            }
-#ifdef OPENMP
-#pragma omp critical
-#endif
-            {
-                neighborhoodExact->neighbors->operator[](i) = neighborsVector;
-                neighborhoodExact->distances->operator[](i) = distancesVector;
-            }
-        } else {
-#ifdef OPENMP
-#pragma omp critical
-#endif
-            {
-                std::vector<int> neighborsVector(1, i);
-                std::vector<float> distancesVector(1, 0.0);
-                neighborhoodExact->neighbors->operator[](i) = neighborsVector;
-                neighborhoodExact->distances->operator[](i) = distancesVector;
-            }
+                neighborsVector[j] = cudaInstanceVector[i].instance[j].x;
+                distancesVector[j] = cudaInstanceVector[i].instance[j].y;
+                
+            } 
+            neighborhoodExact->neighbors->operator[](i) = neighborsVector;
+            neighborhoodExact->distances->operator[](i) = distancesVector;
+            free(cudaInstanceVector[i].instance);
         }
+        free(cudaInstanceVector);
+        std::cout << "GPU code is running! Part2 DONE" << std::endl;
+        
     }
+    #endif
     delete neighborhood_->neighbors;
     delete neighborhood_->distances;
     delete neighborhood_;
 
     return neighborhoodExact;
-}
-
-neighborhood* NearestNeighbors::kneighborsGpu(const SparseMatrixFloat* pRawData, const umap_uniqueElement* pSignaturesMap,
-                                                size_t pNneighbors, int pFast, int pSimilarity,
-                                                size_t pStart, size_t pEnd) {
-                                                    
-    neighborhood* neighborhood_;
-     if (pRawData == NULL) {
-        // no query data given, use stored signatures
-        neighborhood_  = mInverseIndex->kneighborsCuda(pSignaturesMap, pNneighbors, true, 128,128, 512, 32,
-                                                        pFast, pSimilarity, mOriginalData->size(), 
-                                                        pStart, pEnd);
-                                                        
-        
-    } else {
-        
-        neighborhood_ = mInverseIndex->kneighborsCuda(pSignaturesMap, pNneighbors, false, 128,128, 512, 32,
-                                                        pFast, pSimilarity, mOriginalData->size(), 
-                                                        pStart, pEnd);
-                                                        
-    }
-    return neighborhood_;
-}
-neighborhood* NearestNeighbors::kneighbors(const SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast, int pSimilarity) {
-    if (pFast == -1) {
-        pFast = mFast;
-    } 
-    if (pNneighbors == 0) {
-        pNneighbors = mNneighbors;
-    }
-    
-    if (pSimilarity == -1) {
-        pSimilarity = mSimilarity;
-    }
-    
-    size_t numberOfInstances;
-    bool doubleElementsStorageCount = false;
-    neighborhood* neighborhood_;
-    umap_uniqueElement* x_inverseIndex;
-    if (pRawData == NULL) {
-        // no query data given, use stored signatures
-        x_inverseIndex = mInverseIndex->getSignatureStorage();
-        numberOfInstances = x_inverseIndex->size();
-        doubleElementsStorageCount = true;
-    } else {
-        x_inverseIndex = (mInverseIndex->computeSignatureMap(pRawData));
-        numberOfInstances = x_inverseIndex->size();
-    } 
-    
-    #ifdef OPENMP
-    omp_set_dynamic(0);
-    omp_set_num_threads(mNumberOfCores);
-    omp_set_nested(1);
-    #endif // OPENMP
-    size_t cpuStart = 0;
-    size_t cpuEnd = numberOfInstances;
-    #ifdef CUDA
-    // how to split the data between cpu and gpu?
-    float cpuGpuSplitFactor = mCpuGpuLoadBalancing;
-    
-    size_t gpuStart = 0;
-    size_t gpuEnd = 0;
-    if (numberOfInstances > 10) {
-        gpuEnd = floor(numberOfInstances * cpuGpuSplitFactor);
-        cpuStart = gpuEnd;
-        cpuEnd = numberOfInstances;
-    }
-    #endif // CUDA
-    
-    neighborhood* neighborsGpu;
-    neighborhood* neighborsCpu;
-    #pragma omp parallel sections num_threads(mNumberOfCores)
-    {
-        // compute part of the signature on the gpu
-        #ifdef CUDA
-        #pragma omp section
-        {
-            if (gpuEnd != 0) {
-                neighborsGpu = kneighborsGpu(pRawData, x_inverseIndex, pNneighbors, 
-                                            pFast, pSimilarity, 
-                                            gpuStart, gpuEnd);
-            }
-        }
-        #endif // CUDA
-        
-        // compute other parts of the signature on the computed
-        #pragma omp section 
-        {
-            if (cpuEnd != 0) {
-            neighborsCpu = kneighborsCpu(pRawData, x_inverseIndex, pNneighbors,
-                                            pFast, pSimilarity,
-                                            cpuStart, cpuEnd);
-            }
-        }
-    } 
-    
-    if (pRawData == NULL) {
-        // for (auto it = x_inverseIndex->begin(); it != x_inverseIndex->end(); ++it) {
-        //     delete (*it).second.instances;
-        //     delete (*it).second.signature;
-        // }
-        // delete x_inverseIndex; 
-    }
-    
-    // be carefule with non initalized pointers
-    size_t sizeNeighborhood;
-    if (pRawData == NULL) {
-        sizeNeighborhood = mOriginalData->size();
-    } else {
-        sizeNeighborhood = pRawData->size();
-    }
-    
-    neighborhood* neighbors = new neighborhood();
-    neighbors->neighbors = new vvint(sizeNeighborhood);
-    neighbors->distances = new vvfloat(sizeNeighborhood);
-    
-    // (sizeNeighborhood);
-    #ifdef CUDA
-    if (gpuEnd != 0) {
-        for (size_t i = 0; i < sizeNeighborhood; ++i) {
-            neighbors->neighbors->operator[](i) = neighborsGpu->neighbors->operator[](i);
-            neighbors->distances->operator[](i) = neighborsGpu->distances->operator[](i);
-        }
-    }
-    
-    #endif // CUDA
-    
-    for (size_t i = 0; i < sizeNeighborhood; ++i) {
-        if (neighbors->neighbors->operator[](i).size() == 0) {
-            neighbors->neighbors->operator[](i) = neighborsCpu->neighbors->operator[](i);
-            neighbors->distances->operator[](i) = neighborsCpu->distances->operator[](i);
-        }
-    }
-    
-    // delete neighborsGpu;
-    // delete neighborsCpu;
-    
-    return neighbors;
 }
 
 distributionInverseIndex* NearestNeighbors::getDistributionOfInverseIndex() {

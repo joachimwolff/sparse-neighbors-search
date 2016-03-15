@@ -197,8 +197,8 @@ if (locate_cuda() == None or no_cuda):
             )
 else:
     print "CUDA found on system. Installing MinHash with CUDA-Support."
-    sources_list.extend(['bioinf_learn/computation/kernel.cu', 'bioinf_learn/computation/inverseIndexCuda.cu'])
-    depends_list.extend(['bioinf_learn/computation/kernel.h', 'bioinf_learn/computation/inverseIndexCuda.h'])
+    sources_list.extend(['bioinf_learn/computation/kernel.cu', 'bioinf_learn/computation/inverseIndexCuda.cu', 'bioinf_learn/computation/nearestNeighborsCuda.cu'])
+    depends_list.extend(['bioinf_learn/computation/typeDefinitionsCuda.h', 'bioinf_learn/computation/kernel.h', 'bioinf_learn/computation/inverseIndexCuda.h', 'bioinf_learn/computation/nearestNeighborsCuda.h', ])
     # Extension('_nearestNeighbors', sources = sources_list, depends = depends_list,
     #      define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
     #     extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])

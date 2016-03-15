@@ -10,10 +10,13 @@
  Albert-Ludwigs-University Freiburg im Breisgau
 **/
 
-#include <Python.h>
 
 #include "inverseIndex.h"
 #include "hash.h"
+
+#ifdef CUDA
+#include "nearestNeighborsCuda.h"
+#endif
 
 #ifndef NEAREST_NEIGHBORS_H
 #define NEAREST_NEIGHBORS_H
@@ -35,6 +38,9 @@ class NearestNeighbors {
     size_t mExcessFactor;
     float mCpuGpuLoadBalancing;
     Hash* mHash;
+    #ifdef CUDA
+    NearestNeighborsCuda* mNearestNeighborsCuda;
+    #endif
     public:
     NearestNeighbors();
 
@@ -45,7 +51,7 @@ class NearestNeighbors {
                     size_t pExcessFactor, size_t pMaximalNumberOfHashCollisions, 
                     int pFast, int pSimilarity,
                     int pPruneInverseIndex, float pPruneInverseIndexAfterInstance, 
-                    int pRemoveHashFunctionWithLessEntriesAs,
+                    int pRemoveHashFunctionWithLessEntriesAs, 
                     size_t pHashAlgorithm, size_t pBlockSize,
                     size_t pShingle, size_t pRemoveValueWithLeastSigificantBit,
                     float pCpuGpuLoadBalancing);
@@ -57,12 +63,6 @@ class NearestNeighbors {
     void partialFit(); 
     // Calculate k-nearest neighbors.
     neighborhood* kneighbors(const SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast, int pSimilarity = -1); 
-    neighborhood* kneighborsGpu(const SparseMatrixFloat* pRawData, const umap_uniqueElement* pSignaturesMap,
-                                size_t pNneighbors, int pFast, int pSimilarity,
-                                size_t pStart, size_t pEnd);
-    neighborhood* kneighborsCpu(const SparseMatrixFloat* pRawData, const umap_uniqueElement* pSignaturesMap,
-                                size_t pNneighbors, int pFast, int pSimilarity,
-                                size_t pStart, size_t pEnd);
 
     void set_mOriginalData(SparseMatrixFloat* pOriginalData) {
       mOriginalData = pOriginalData;

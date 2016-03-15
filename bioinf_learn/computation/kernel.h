@@ -1,5 +1,5 @@
 #include "typeDefinitionsBasic.h"
-#include "typeDefinitionsCuda.cuh"
+#include "typeDefinitionsCuda.h"
 #ifndef KERNEL_CUDA
 #define KERNEL_CUDA
 #define A 0.414213562 // sqrt(2) - 1
@@ -11,24 +11,14 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
                     const size_t pNumberOfInstances, const size_t pStartInstance,
                     const size_t pBlockSize, const size_t pShingleSize,
                     size_t* pSignaturesBlockSize);
-__global__ void createSortedHistogramsCuda(hits* pHitsPerInstance,
-                                            const size_t pNumberOfInstances,
-                                            histogram* pHistogram, 
-                                            // mergeSortingMemory* pMergeSortMemory,
-                                            sortedHistogram* pHistogramSorted,
-                                            size_t pNneighbors, size_t pFast, size_t pExcessFactor);
-__global__ void euclideanDistanceCuda(sortedHistogram* pSortedHistogram, size_t pSizeSortedHistogram,
-                                        // mergeSortingMemory* pMergeSortMemory,
+__global__ void euclideanDistanceCuda(cudaInstanceVector* candidates, uint pSize,
+                                        uint* pSizeOfCandidates,
                                         size_t* pFeatureList, float* pValuesList,
-                                        size_t* pSizeOfInstanceList, size_t pMaxNnz, 
-                                        // size_t* pNeighborhood, float* pDistances,
-                                        size_t pNneighbors);
-__global__ void cosineSimilarityCuda(sortedHistogram* pSortedHistogram, size_t pSizeSortedHistogram,
-                                        // mergeSortingMemory* pMergeSortMemory,
+                                        size_t* pSizeOfInstanceList, size_t pMaxNnz);
+__global__ void cosineSimilarityCuda(cudaInstanceVector* candidates, uint pSize,
+                                        uint* pSizeOfCandidates,
                                         size_t* pFeatureList, float* pValuesList,
-                                        size_t* pSizeOfInstanceList, size_t pMaxNnz, 
-                                        // size_t* pNeighborhood, float* pDistances,
-                                        size_t pNneighbors);
-__device__ void mergeSortDesc(sortedHistogram* pSortedHistogram, uint pInstanceId);
-__device__ void mergeSortAsc(sortedHistogram* pSortedHistogram, uint pInstanceId);
+                                        size_t* pSizeOfInstanceList, size_t pMaxNnz);
+__device__ void sortDesc(cudaInstanceVector* pCandidates, uint pInstanceId, uint pSize);
+__device__ void sortAsc(cudaInstanceVector* pCandidates, uint pInstanceId, uint pSize);
 #endif // KERNEL_CUDA

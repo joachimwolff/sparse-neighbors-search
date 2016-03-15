@@ -52,8 +52,6 @@ class InverseIndex {
     size_t* mDev_SizeOfInstanceList;
     size_t* mDev_ComputedSignaturesPerInstance;
     float* mDev_ValuesList;
-    
-    
 
     InverseIndexStorageUnorderedMap* mInverseIndexStorage;
   	umap_uniqueElement* mSignatureStorage;
@@ -79,11 +77,9 @@ class InverseIndex {
     vvsize_t_p* computeSignatureVectors(const SparseMatrixFloat* pRawData, const bool pFitting);
   	umap_uniqueElement* computeSignatureMap(const SparseMatrixFloat* pRawData);
   	void fit(const SparseMatrixFloat* pRawData);
-  	neighborhood* kneighbors(const umap_uniqueElement* signaturesMap, 
+  	neighborhood* kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                 const size_t pNneighborhood, 
                                 const bool pDoubleElementsStorageCount,
-                                size_t pFast, size_t pDistance, 
-                                size_t pStart, size_t pEnd,
                                 const bool pNoneSingleInstance=true);
   	umap_uniqueElement* getSignatureStorage() { 
       return mSignatureStorage;
@@ -91,17 +87,19 @@ class InverseIndex {
     distributionInverseIndex* getDistribution();
     vvsize_t_p* computeSignaturesOnGpu(const SparseMatrixFloat* pRawData, size_t pStartIndex, size_t pEndIndex, size_t pNumberOfInstances,
     size_t pNumberOfBlocks, size_t pNumberOfThreads);
-    neighborhood* kneighborsCuda(const umap_uniqueElement* pSignaturesMap, 
-                                        const size_t pNneighborhood, 
-                                        const bool pDoubleElementsStorageCount,
-                                        const size_t pNumberOfBlocksHistogram,
-                                        const size_t pNumberOfThreadsHistogram,
-                                        const size_t pNumberOfBlocksDistance,
-                                        const size_t pNumberOfThreadsDistance,
-                                        size_t pFast, size_t pDistanceconst,
-                                        const size_t pNumberOfInstances,
-                                        size_t pStart, size_t pEnd);
-                                        
+    
+   size_t* get_dev_FeatureList() {
+       return mInverseIndexCuda->get_mDev_FeatureList();
+   };
+   size_t* get_dev_SizeOfInstanceList() {
+       return mInverseIndexCuda->get_mDev_SizeOfInstanceList();
+   };
+   size_t* get_dev_ComputedSignaturesPerInstance() {
+       return mInverseIndexCuda->get_mDev_ComputedSignaturesPerInstance();
+   };
+   float* get_dev_ValuesList() {
+       return mInverseIndexCuda->get_mDev_ValuesList();
+   };                                   
                                         
 };
 #endif // INVERSE_INDEX_H

@@ -91,7 +91,7 @@ distributionInverseIndex* InverseIndex::getDistribution() {
     return mInverseIndexStorage->getDistribution();
 }
 
- // compute the signature for one instance
+// compute the signature for one instance
 vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance) {
     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
 
@@ -177,92 +177,47 @@ vsize_t* InverseIndex::computeSignatureWTA(const SparseMatrixFloat* pRawData, co
     return signature;
 }
 
-
 vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawData, const bool pFitting) {
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
     #ifdef OPENMP
     omp_set_dynamic(0);
-    omp_set_num_threads(mNumberOfCores);
-    omp_set_nested(1);
-    #endif
-    size_t cpuStart = 0;
-    size_t cpuEnd = pRawData->size();
-    #ifdef CUDA
-    // how to split the data between cpu and gpu?
-    float cpuGpuSplitFactor = mCpuGpuLoadBalancing;
-    
-    size_t gpuStart = 0;
-    size_t gpuEnd = 0;
-    if (pRawData->getNumberOfInstances() > 10) {
-        gpuEnd = floor(pRawData->getNumberOfInstances() * cpuGpuSplitFactor);
-        cpuStart = gpuEnd;
-        cpuEnd = pRawData->getNumberOfInstances();
-    }
-    // how many blocks, how many threads?
-    size_t numberOfBlocksForGpu = 128;
-    size_t numberOfThreadsForGpu = 128;
-    std::cout << "gpuStart" <<gpuStart << "gpuEnd" << gpuEnd<< "cpuStart" << cpuStart<< "cpuEnd" <<cpuEnd<< std::endl;
     #endif
     
-   
     vvsize_t_p* signatures = new vvsize_t_p(pRawData->size(), NULL);
-    
-    #pragma omp parallel sections num_threads(mNumberOfCores)
-    {
-        // compute part of the signature on the gpu
-        #ifdef CUDA
-        #pragma omp section
-        {
-            if (pFitting) {
-                if (gpuEnd != 0) {
-                std::cout << __LINE__ << std::endl;
-                mInverseIndexCuda->copyFittingDataToGpu(pRawData);
-                mInverseIndexCuda->computeSignaturesFittingOnGpu(pRawData, gpuStart,
-                                                    gpuEnd, gpuEnd - gpuStart, 
-                                                    numberOfBlocksForGpu, 
-                                                    numberOfThreadsForGpu, 
+    #ifdef CUDA
+    if (mCpuGpuLoadBalancing == 0) {
+    #endif
+        #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+        for (size_t instance = 0; instance < pRawData->size(); ++instance) {
+            if (mHashAlgorithm == 0) {
+                // use nearestNeighbors
+                (*signatures)[instance] = computeSignature(pRawData, instance);
+            } else if (mHashAlgorithm == 1) {
+                // use wta hash
+                (*signatures)[instance] = computeSignatureWTA(pRawData, instance);
+            }
+        }
+    #ifdef CUDA
+    } else {
+        if (pFitting) {
+            mInverseIndexCuda->computeSignaturesFittingOnGpu(pRawData, 0,
+                                                    pRawData->size(), pRawData->size(),
+                                                    128, 128, 
                                                     mShingleSize,
                                                     mBlockSize,
                                                     signatures);
-        }
-                                                    
         } else { 
-            mInverseIndexCuda->computeSignaturesQueryOnGpu(pRawData, gpuStart,
-                                                    gpuEnd, gpuEnd - gpuStart, 
-                                                    numberOfBlocksForGpu, 
-                                                    numberOfThreadsForGpu, 
+            mInverseIndexCuda->computeSignaturesQueryOnGpu(pRawData,  0,
+                                                    pRawData->size(), pRawData->size(), 
+                                                    128, 128, 
                                                     mShingleSize,
                                                     mBlockSize,
                                                     signatures);
             } 
-        }
-        #endif
-        
-        // compute other parts of the signature on the computed
-        #pragma omp section 
-        {
-            #ifdef CUDA
-            #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
-            #endif
-            #ifndef CUDA
-            #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
-            #endif
-            for (size_t instance = cpuStart; instance < cpuEnd; ++instance) {
-                if (mHashAlgorithm == 0) {
-                    // use nearestNeighbors
-                    // #pragma omp critical
-                    (*signatures)[instance] = computeSignature(pRawData, instance);
-                    
-                } else if (mHashAlgorithm == 1) {
-                    // use wta hash
-                    (*signatures)[instance] = computeSignatureWTA(pRawData, instance);
-                }
-            }
-        }
-    } 
-    std::cout << "signatures computed" << std::endl;
+    }
+    #endif
     return signatures;
 }
 umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* pRawData) {
@@ -292,7 +247,6 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
             {
                 (*instanceSignature)[signatureId].instances->push_back(i);
                 mDoubleElementsQueryCount += 1;
-                // delete (*signatures)[i];
             }
         } 
     }
@@ -301,14 +255,10 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
 }
 void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     mMaxNnz = pRawData->getMaxNnz();
-    // time_t timerStart;
-    // time_t timerEnd;
-    // compute signatures
-    // time(&timerStart);
+    #ifdef CUDA
+    mInverseIndexCuda->copyFittingDataToGpu(pRawData);
+    #endif
     vvsize_t_p* signatures = computeSignatureVectors(pRawData, true);
-    // time(&timerEnd);
-    // std::cout << "Computing signatures needs " << difftime(timerEnd, timerStart) << " seconds." << std::endl;
-    // time(&timerStart);
     // compute how often the inverse index should be pruned 
     size_t pruneEveryNInstances = ceil(signatures->size() * mPruneInverseIndexAfterInstance);
     #ifdef OPENMP
@@ -337,15 +287,12 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
             {            
                 mSignatureStorage->operator[](signatureId).instances->push_back(i);
                 mDoubleElementsStorageCount += 1;
-                // delete (*signatures)[i];
             }
         }      
-        std::cout << "i: " << i << std::endl;  
         for (size_t j = 0; j < (*signatures)[i]->size(); ++j) {
             mInverseIndexStorage->insert(j, (*(*signatures)[i])[j], i, mRemoveValueWithLeastSigificantBit);
             
         }
-        std::cout << "insert success" << std::endl;  
         
         if (signatures->size() == pruneEveryNInstances) {
             pruneEveryNInstances += pruneEveryNInstances;
@@ -364,109 +311,13 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     if (mRemoveHashFunctionWithLessEntriesAs > -1) {
         mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
     }
-    // time(&timerEnd);
-    // std::cout << "Inserting in inverse index needs " << difftime(timerEnd, timerStart) << " seconds." << std::endl;
     delete signatures;
 }
 
-
-neighborhood* InverseIndex::kneighborsCuda(const umap_uniqueElement* pSignaturesMap, 
-                                        const size_t pNneighborhood, 
-                                        const bool pDoubleElementsStorageCount,
-                                        const size_t pNumberOfBlocksHistogram,
-                                        const size_t pNumberOfThreadsHistogram,
-                                        const size_t pNumberOfBlocksDistance,
-                                        const size_t pNumberOfThreadsDistance,
-                                        size_t pFast, size_t pDistance,
-                                        const size_t pNumberOfInstances,
-                                        size_t pStart, size_t pEnd) {
-                                                    std::cout << __LINE__ << std::endl;
-
-    size_t doubleElements; 
-    if (pDoubleElementsStorageCount) {
-        doubleElements = mDoubleElementsStorageCount;
-    } else {
-        doubleElements = mDoubleElementsQueryCount;
-    }
-
-    std::vector<vvsize_t_p*>* hitsPerInstance 
-                            = new std::vector<vvsize_t_p*>(pEnd - pStart + doubleElements);                        
-#ifdef OPENMP
-#pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
-#endif 
-    for (size_t i = pStart; i < pEnd; ++i) {
-        umap_uniqueElement::const_iterator instanceId = pSignaturesMap->begin();
-        std::advance(instanceId, i);
-        if (instanceId == pSignaturesMap->end()) continue;
-        std::unordered_map<size_t, size_t> neighborhood;
-        vvsize_t_p* hits = new vvsize_t_p();
-        const vsize_t* signature = instanceId->second.signature; 
-        for (size_t j = 0; j < signature->size(); ++j) {
-            size_t hashID = (*signature)[j];
-            if (hashID != 0 && hashID != MAX_VALUE) {
-                size_t collisionSize = 0; 
-                
-                vsize_t* instances = mInverseIndexStorage->getElement(j, hashID);
-                
-                if (instances == NULL) continue;
-                if (instances->size() != 0) {
-                    collisionSize = instances->size();
-                } else { 
-                    continue;
-                }
-                
-                if (collisionSize < mMaxBinSize && collisionSize > 0) {
-                    hits->push_back(instances);
-                }
-            }
-        }
-        
-        for (size_t j = 0; j < instanceId->second.instances->size(); ++j) {
-            (*hitsPerInstance)[(*instanceId->second.instances)[j] - pStart] = hits;
-        }
-    }
-    
-    
-    neighborhood* neighbors = new neighborhood();
-#ifdef CUDA
-    mInverseIndexCuda->computeHitsOnGpu(hitsPerInstance, neighbors,
-                                        pNneighborhood, pNumberOfInstances,
-                                        pNumberOfBlocksHistogram,
-                                        pNumberOfThreadsHistogram,
-                                        pNumberOfBlocksDistance,
-                                        pNumberOfThreadsDistance,
-                                        pFast, pDistance,
-                                        mExcessFactor, mMaxNnz);
-#endif                             
-    // for (auto it = hitsPerInstance->begin(); it != hitsPerInstance->end(); ++it) {
-    //     for (auto it2 = (*it)->begin(); it2 != (*it)->end(); ++it2) {
-    //         delete (*it2);
-    //     }
-    //     delete (*it);
-    // }
-    // std::cout << "[";
-    // for (size_t i = 0; i < pNumberOfInstances; ++i) {
-    //     std::cout << "[";
-    //     for (size_t j = 0; j < pNneighborhood; ++j) {
-    //         std::cout << neighbors->neighbors->operator[](i)[j] << ",";
-    //     }    
-    //     std::cout << "]" << std::endl;
-    // }
-    // std::cout << "]" << std::endl;
-    //         std::cout << __LINE__ << std::endl;
-
-    // delete hitsPerInstance;
-    return neighbors;                                  
-
-}
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                         const size_t pNneighborhood, 
                                         const bool pDoubleElementsStorageCount,
-                                        size_t pFast, size_t pDistance,
-                                        size_t pStart, size_t pEnd,
                                         const bool pNoneSingleInstance) {
-
-    size_t indexShift = pStart;
     size_t doubleElements = 0;
     if (pNoneSingleInstance) {
         if (pDoubleElementsStorageCount) {
@@ -481,8 +332,8 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
 #endif
     vvint* neighbors = new vvint();
     vvfloat* distances = new vvfloat();
-    neighbors->resize(pEnd - pStart + doubleElements);
-    distances->resize(pEnd - pStart + doubleElements);
+    neighbors->resize(pSignaturesMap->size() + doubleElements);
+    distances->resize(pSignaturesMap->size() + doubleElements);
     if (mChunkSize <= 0) {
         mChunkSize = ceil(mInverseIndexStorage->size() / static_cast<float>(mNumberOfCores));
     }
@@ -491,7 +342,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
 #endif 
 
-    for (size_t i = pStart; i < pEnd; ++i) {
+    for (size_t i = 0; i < pSignaturesMap->size(); ++i) {
         umap_uniqueElement::const_iterator instanceId = pSignaturesMap->begin();
         
         std::advance(instanceId, i);
@@ -537,8 +388,8 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                     
                     for (size_t j = 0; j < instanceId->second.instances->size(); ++j) {
                         
-                        (*neighbors)[(*instanceId->second.instances)[j] - indexShift] = emptyVectorInt;
-                        (*distances)[(*instanceId->second.instances)[j] - indexShift] = emptyVectorFloat;
+                        (*neighbors)[(*instanceId->second.instances)[j]] = emptyVectorInt;
+                        (*distances)[(*instanceId->second.instances)[j]] = emptyVectorFloat;
                     }
                 } else {
                     (*neighbors)[0] = emptyVectorInt;
@@ -607,8 +458,8 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             if (pNoneSingleInstance) {
                 for (size_t j = 0; j < instanceId->second.instances->size(); ++j) {
                     
-                    (*neighbors)[(*instanceId->second.instances)[j] - indexShift] = neighborsForThisInstance[j];
-                    (*distances)[(*instanceId->second.instances)[j] - indexShift] = distancesForThisInstance[j];
+                    (*neighbors)[(*instanceId->second.instances)[j]] = neighborsForThisInstance[j];
+                    (*distances)[(*instanceId->second.instances)[j]] = distancesForThisInstance[j];
                 }
             } else {
                 (*neighbors)[0] = neighborsForThisInstance[0];
