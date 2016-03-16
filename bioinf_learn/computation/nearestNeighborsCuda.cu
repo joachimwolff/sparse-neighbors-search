@@ -33,7 +33,7 @@ cudaInstanceVector* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* 
     for (size_t i = 0; i < neighbors->neighbors->size(); ++i) {
         candidates[i].instance = (cudaInstance*) malloc(sizeof(cudaInstance) * neighbors->neighbors->operator[](i).size());
         sizeOfCandidates[i] = neighbors->neighbors->operator[](i).size();
-        printf ("size: %i", sizeOfCandidates[i]);
+        // printf ("size: %i", sizeOfCandidates[i]);
         for (size_t j = 0; j < neighbors->neighbors->operator[](i).size(); ++j) {
             candidates[i].instance[j].x = neighbors->neighbors->operator[](i)[j];
             candidates[i].instance[j].y = neighbors->distances->operator[](i)[j];
@@ -54,10 +54,10 @@ cudaInstanceVector* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* 
     cudaMalloc(&sizeOfCandidatesCuda, sizeof(uint) * neighbors->neighbors->size());
     cudaMemcpy(sizeOfCandidatesCuda, sizeOfCandidates, sizeof(uint) * neighbors->neighbors->size(), cudaMemcpyHostToDevice);
     if (pSimilarity) {
-        cosineSimilarityCuda<<<512, 32>>>(candidatesCuda, size, sizeOfCandidatesCuda, mDev_FeatureList,
+        cosineSimilarityCuda<<<128, 128>>>(candidatesCuda, size, sizeOfCandidatesCuda, mDev_FeatureList,
                                         mDev_ValuesList, mDev_SizeOfInstanceList, mMaxNnz);
     } else {
-        euclideanDistanceCuda<<<512, 32>>>(candidatesCuda, size, sizeOfCandidatesCuda, mDev_FeatureList,
+        euclideanDistanceCuda<<<128, 128>>>(candidatesCuda, size, sizeOfCandidatesCuda, mDev_FeatureList,
                                         mDev_ValuesList, mDev_SizeOfInstanceList, mMaxNnz);
     }
     for (size_t i = 0; i < neighbors->neighbors->size(); ++i) {

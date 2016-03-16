@@ -270,125 +270,247 @@ __device__ void sortAsc(cudaInstanceVector* pCandidates, uint pInstanceId, uint 
 __global__ void euclideanDistanceCuda(cudaInstanceVector* candidates, uint pSize,
                                         uint* pSizeOfCandidates,
                                         size_t* pFeatureList, float* pValuesList,
-                                        size_t* pSizeOfInstanceList, size_t pMaxNnz) {                                        // size_t* pNeighborhood, float* pDistances,
+                                        size_t* pSizeOfInstanceList, size_t pMaxNnz) {
     int instanceId = blockIdx.x;
     int threadId = threadIdx.x;
-
-    size_t pointerToFeatureInstance, pointerToFeatureNeighbor, queryIndexInstance,
-        queryIndexNeighbor, instanceIdNeighbor, indexSparseMatrixInstance,
-        indexSparseMatrixNeighbor, numberOfFeaturesInstance, numberOfFeaturesNeighbor,
-        featureIdNeighbor, featureIdInstance;
-    bool endOfInstanceNotReached, endOfNeighborNotReached;
-    float euclideanDistance, value;
+    int pointerToFeatureInstance, pointerToFeatureNeighbor;
+    // uint pointerToFeatureInstance, pointerToFeatureNeighbor, queryIndexInstance,
+    //     queryIndexNeighbor, instanceIdNeighbor, indexSparseMatrixInstance,
+    //     indexSparseMatrixNeighbor, numberOfFeaturesInstance, numberOfFeaturesNeighbor,
+    //     featureIdInstance, featureIdInstance;
+    __shared__ bool endOfInstanceNotReached[128];
+    __shared__ bool endOfNeighborNotReached[128];
+    // one value per thread
+    __shared__ float euclideanDistance[128];
+    __shared__ float value[128];
+    __shared__ uint numberOfCandidates;
+    // __shared__ uint sizeOfInstanceInSparseMatrix;
+    // __shared__ uint sizeOfNeighborInSparseMatrix;
     
+    __shared__ uint counter_sparseMatrixInstance[128];
+    __shared__ uint counter_sparseMatrixNeighbor[128];
+    __shared__ uint startValue_sparseMatrixInstance;
+    __shared__ uint startValue_sparseMatrixNeighbor[128];
+    __shared__ uint endValue_sparseMatrixInstance;
+    __shared__ uint endValue_sparseMatrixNeighbor[128];
+    __shared__ uint queryIndexInstance;
+    __shared__ uint queryIndexNeighbor[128];
+    __shared__ uint featureIdInstance[128];
+    __shared__ uint featureIdNeighbor[128];
     while (instanceId < pSize) {
-        // pointer to feature ids in sparse matrix
-        pointerToFeatureInstance = 0;
-        pointerToFeatureNeighbor = 0;
+        if (threadIdx.x == 0) {
+            numberOfCandidates = pSizeOfCandidates[instanceId];
+            printf("Instance: %i, sizeOfCandidates: %i\n", instanceId, numberOfCandidates);
         
-        // get the instance ids of the query instance and the possible neighbor
-        // it is assumed that the first instance is the query instance and 
-        // all others are possible neighbors
-        // queryIndexInstance = blockId * pRangeBetweenInstances;
-        // queryIndexNeighbor = blockId * pRangeBetweenInstances + threadId;
+            if (numberOfCandidates > 0) {
+                queryIndexInstance = candidates[instanceId].instance[0].x;
+                startValue_sparseMatrixInstance = queryIndexInstance*pMaxNnz;
+                endValue_sparseMatrixInstance = pSizeOfInstanceList[queryIndexInstance];
+            } else {
+                instanceId += gridDim.x;
+                continue;
+            }
+            printf("Instance: %i, instanceReal: %i, sizeOfCandidates: %i\n", instanceId, queryIndexInstance, numberOfCandidates);
+        }
         
-        // get the two instance ids
-        queryIndexNeighbor = threadId + 1;
-        instanceId = candidates[instanceId].instance[0].x;
-        instanceIdNeighbor = candidates[instanceId].instance[queryIndexNeighbor].x;
-        // instanceId = pHitsPerQueryInstance[queryIndexInstance].y;
-        // instanceIdNeighbor = pHitsPerQueryInstance[queryIndexNeighbor].y;
         
-        // get the index positons for the two instances in the sparse matrix
-        indexSparseMatrixInstance = instanceId*pMaxNnz;
-        indexSparseMatrixNeighbor = instanceIdNeighbor*pMaxNnz;
+        // numberOfFeaturesInstance = pSizeOfInstanceList[queryIndexInstance];
+        // pointerToFeatureInstance = 0;
+        // pointerToFeatureNeighbor = 0;
+        __syncthreads();
         
-        // get the number of features for every instance
-        numberOfFeaturesInstance = pSizeOfInstanceList[instanceId];
-        numberOfFeaturesNeighbor = pSizeOfInstanceList[instanceIdNeighbor];
-        
-        endOfInstanceNotReached = pointerToFeatureInstance < numberOfFeaturesInstance;
-        endOfNeighborNotReached = pointerToFeatureNeighbor < numberOfFeaturesNeighbor;
-        euclideanDistance = 0;
-        value = 0;
-        while (threadId < pSizeOfCandidates[instanceId]) {
+        threadId = threadIdx.x;
+        while (threadId < numberOfCandidates) {
+            // init all counters to 0
+            counter_sparseMatrixInstance[threadIdx.x] = 0;
+            counter_sparseMatrixNeighbor[threadIdx.x] = 0;
+            // get real id of neighbor instance
+            queryIndexNeighbor[threadIdx.x] = candidates[instanceId].instance[threadId].x;
+            // get id in sparse matrix for this neighbor instance
+            startValue_sparseMatrixNeighbor[threadIdx.x] = queryIndexNeighbor[threadIdx.x]*pMaxNnz;
+            // get size in sparse matrix for this neighbor instance
             
-            while (endOfInstanceNotReached && endOfNeighborNotReached) {
-                featureIdInstance = pFeatureList[indexSparseMatrixInstance+pointerToFeatureInstance];
-                featureIdNeighbor = pFeatureList[indexSparseMatrixNeighbor+pointerToFeatureNeighbor];
+            endValue_sparseMatrixNeighbor[threadIdx.x] = pSizeOfInstanceList[queryIndexNeighbor[threadIdx.x]];
+            endOfInstanceNotReached[threadIdx.x] = counter_sparseMatrixInstance[threadIdx.x] < endValue_sparseMatrixInstance;
+            endOfNeighborNotReached[threadIdx.x] = counter_sparseMatrixNeighbor[threadIdx.x] < endValue_sparseMatrixNeighbor[threadIdx.x];
+            euclideanDistance[threadIdx.x] = 0;
+            value[threadIdx.x] = 0;
+            while (endOfInstanceNotReached[threadIdx.x] && endOfNeighborNotReached[threadIdx.x]) {
+                featureIdInstance[threadIdx.x] = pFeatureList[startValue_sparseMatrixInstance +counter_sparseMatrixInstance[threadIdx.x]];
+                featureIdNeighbor[threadIdx.x] = pFeatureList[startValue_sparseMatrixNeighbor[threadIdx.x]+counter_sparseMatrixNeighbor[threadIdx.x]];
                 
-                if (featureIdInstance == featureIdNeighbor) {
+                if (featureIdInstance[threadIdx.x] == featureIdNeighbor[threadIdx.x]) {
                     // if they are the same substract the values, compute the square and sum it up
-                    value = pValuesList[indexSparseMatrixInstance+pointerToFeatureInstance] 
-                                    - pValuesList[indexSparseMatrixNeighbor+pointerToFeatureNeighbor];
-                    //this->getNextValue(pRowIdVector[i], pointerToMatrixElement) - queryData->getNextValue(pRowId, pointerToVectorElement);
-                    euclideanDistance += value * value;
+                    value[threadIdx.x] = pValuesList[startValue_sparseMatrixInstance +counter_sparseMatrixInstance[threadIdx.x]] 
+                                    - pValuesList[startValue_sparseMatrixNeighbor[threadIdx.x]+counter_sparseMatrixNeighbor[threadIdx.x]];
+                    euclideanDistance[threadIdx.x] += value[threadIdx.x] * value[threadIdx.x];
                     // increase both counters to the next element 
-                    ++pointerToFeatureInstance;
-                    ++pointerToFeatureNeighbor;
-                } else if (featureIdInstance < featureIdNeighbor) {
+                    ++counter_sparseMatrixInstance[threadIdx.x];
+                    ++counter_sparseMatrixNeighbor[threadIdx.x];
+                } else if (featureIdInstance[threadIdx.x] < featureIdNeighbor[threadIdx.x]) {
                     // if the feature ids are unequal square only the smaller one and add it to the sum
-                    value = pValuesList[indexSparseMatrixInstance+pointerToFeatureInstance];
-                    euclideanDistance += value * value;
+                    value[threadIdx.x] = pValuesList[startValue_sparseMatrixInstance +counter_sparseMatrixInstance[threadIdx.x]];
+                    euclideanDistance[threadIdx.x] += value[threadIdx.x] * value[threadIdx.x];
                     // increase counter for first vector
-                    ++pointerToFeatureInstance;
+                    ++counter_sparseMatrixInstance[threadIdx.x];
                 } else {
-                    value = pValuesList[indexSparseMatrixNeighbor+pointerToFeatureNeighbor];
-                    euclideanDistance += value * value;
-                    ++pointerToFeatureNeighbor;
+                    value[threadIdx.x] = pValuesList[startValue_sparseMatrixNeighbor[threadIdx.x]+counter_sparseMatrixNeighbor[threadIdx.x]];
+                    euclideanDistance[threadIdx.x] += value[threadIdx.x] * value[threadIdx.x];
+                    ++counter_sparseMatrixNeighbor[threadIdx.x];
                 }
-                endOfInstanceNotReached = pointerToFeatureInstance < numberOfFeaturesInstance;
-                endOfNeighborNotReached = pointerToFeatureNeighbor < numberOfFeaturesNeighbor;
+                endOfInstanceNotReached[threadIdx.x]= counter_sparseMatrixInstance[threadIdx.x] < endValue_sparseMatrixInstance;
+                endOfNeighborNotReached[threadIdx.x] = counter_sparseMatrixNeighbor[threadIdx.x] < endValue_sparseMatrixNeighbor[threadIdx.x];
             }
-            while (endOfInstanceNotReached) {
-                value = pValuesList[indexSparseMatrixInstance + pointerToFeatureInstance];
-                euclideanDistance += value * value;
-                ++pointerToFeatureInstance;
-                endOfInstanceNotReached = pointerToFeatureInstance < numberOfFeaturesInstance;
+            while (endOfInstanceNotReached[threadIdx.x]) {
+                value[threadIdx.x] = pValuesList[startValue_sparseMatrixInstance +counter_sparseMatrixInstance[threadIdx.x]];
+                euclideanDistance[threadIdx.x] += value[threadIdx.x] * value[threadIdx.x];
+                ++counter_sparseMatrixInstance[threadIdx.x];
+                endOfInstanceNotReached[threadIdx.x] = counter_sparseMatrixInstance[threadIdx.x] < endValue_sparseMatrixInstance;
             }
-            while (endOfNeighborNotReached) {
-                value = pValuesList[indexSparseMatrixNeighbor + pointerToFeatureNeighbor];
-                euclideanDistance += value * value;
-                ++pointerToFeatureNeighbor;
-                endOfNeighborNotReached = pointerToFeatureNeighbor < numberOfFeaturesNeighbor;
+            while (endOfNeighborNotReached[threadIdx.x]) {
+                value[threadIdx.x] = pValuesList[startValue_sparseMatrixNeighbor[threadIdx.x]+counter_sparseMatrixNeighbor[threadIdx.x]];
+                euclideanDistance[threadIdx.x] += value[threadIdx.x] * value[threadIdx.x];
+                ++counter_sparseMatrixNeighbor[threadIdx.x];
+                endOfNeighborNotReached[threadIdx.x] = counter_sparseMatrixNeighbor[threadIdx.x] < endValue_sparseMatrixNeighbor[threadIdx.x];
             }
             
             // square root of the sum
-            printf("blockId: %i, threadId: %i\n", blockIdx.x, threadIdx.x);
+            // printf("blockId: %i, threadId: %i\n", blockIdx.x, threadIdx.x);
             
-            printf("instanceId: %i, neighborId: %i,  euclidean distance: %f, sizeOfCandidates: %i\n",instanceId, queryIndexNeighbor, euclideanDistance, pSizeOfCandidates[instanceId]);
-            euclideanDistance = sqrtf(euclideanDistance);
+            // printf("instanceId: %i, neighborId: %i,  threadId: %i, euclidean distance: %f, sizeOfCandidates: %i\n",queryIndexInstance, queryIndexNeighbor, threadId, euclideanDistance, numberOfCandidates);
+            // return;
+            candidates[instanceId].instance[threadId].y = sqrtf(euclideanDistance[threadIdx.x]);
             // store euclidean distance and neighbor id
-            candidates[instanceId].instance[queryIndexNeighbor].y =  euclideanDistance;
-            threadId += blockIdx.x;
-            euclideanDistance = 0;
-            value = 0;
-            queryIndexNeighbor += blockIdx.x;
-            instanceIdNeighbor = candidates[instanceId].instance[queryIndexNeighbor].x ;
-            indexSparseMatrixNeighbor = instanceIdNeighbor*pMaxNnz;
-            numberOfFeaturesNeighbor = pSizeOfInstanceList[instanceIdNeighbor];
-            pointerToFeatureInstance = 0;
-            pointerToFeatureNeighbor = 0;
-            endOfInstanceNotReached = pointerToFeatureInstance < numberOfFeaturesInstance;
-            endOfNeighborNotReached = pointerToFeatureNeighbor < numberOfFeaturesNeighbor;
+            // candidates[instanceId].instance[threadId].y =  euclideanDistance;
+            threadId += blockDim.x;
+            __syncthreads();
         }
         __syncthreads();
         // sort instances by euclidean distance
         sortDesc(candidates, instanceId, pSizeOfCandidates[instanceId]);
-        threadId = threadIdx.x;
-        // insert the k neighbors and distances to the neighborhood and distances vector
-        // while (threadId < pNneighbors) {
-        //     pNeighborhood[instanceId*pNneighbors+threadId] 
-        //         = pSortedHistogram[instanceId].instances[threadId].x;
-        //     pDistances[instanceId*pNneighbors+threadId] 
-        //         = (float) pSortedHistogram[instanceId].instances[threadId].y / (float) 1000;
-        //     threadId += blockDim.x;
-        // }
+        // return;
+        // threadId = threadIdx.x;
         __syncthreads();
         instanceId += gridDim.x;
         threadId = threadIdx.x;
     }
+    // int instanceId = blockIdx.x;
+    // int threadId = threadIdx.x;
+
+    // size_t pointerToFeatureInstance, pointerToFeatureNeighbor, queryIndexInstance,
+    //     queryIndexNeighbor, instanceIdNeighbor, indexSparseMatrixInstance,
+    //     indexSparseMatrixNeighbor, numberOfFeaturesInstance, numberOfFeaturesNeighbor,
+    //     featureIdNeighbor, featureIdInstance;
+    // bool endOfInstanceNotReached, endOfNeighborNotReached;
+    // float euclideanDistance, value;
     
+    // while (instanceId < pSize) {
+    //     // pointer to feature ids in sparse matrix
+    //     pointerToFeatureInstance = 0;
+    //     pointerToFeatureNeighbor = 0;
+        
+    //     // get the instance ids of the query instance and the possible neighbor
+    //     // it is assumed that the first instance is the query instance and 
+    //     // all others are possible neighbors
+    //     // queryIndexInstance = blockId * pRangeBetweenInstances;
+    //     // queryIndexNeighbor = blockId * pRangeBetweenInstances + threadId;
+        
+    //     // get the two instance ids
+    //     queryIndexNeighbor = threadId + 1;
+    //     instanceId = candidates[instanceId].instance[0].x;
+    //     instanceIdNeighbor = candidates[instanceId].instance[queryIndexNeighbor].x;
+    //     // instanceId = pHitsPerQueryInstance[queryIndexInstance].y;
+    //     // instanceIdNeighbor = pHitsPerQueryInstance[queryIndexNeighbor].y;
+        
+    //     // get the index positons for the two instances in the sparse matrix
+    //     indexSparseMatrixInstance = instanceId*pMaxNnz;
+    //     indexSparseMatrixNeighbor = instanceIdNeighbor*pMaxNnz;
+        
+    //     // get the number of features for every instance
+    //     numberOfFeaturesInstance = pSizeOfInstanceList[instanceId];
+    //     numberOfFeaturesNeighbor = pSizeOfInstanceList[instanceIdNeighbor];
+        
+    //     endOfInstanceNotReached = pointerToFeatureInstance < numberOfFeaturesInstance;
+    //     endOfNeighborNotReached = pointerToFeatureNeighbor < numberOfFeaturesNeighbor;
+    //     euclideanDistance = 0;
+    //     value = 0;
+    //     while (threadId < pSizeOfCandidates[instanceId]) {
+            
+    //         while (endOfInstanceNotReached && endOfNeighborNotReached) {
+    //             featureIdInstance = pFeatureList[indexSparseMatrixInstance+pointerToFeatureInstance];
+    //             featureIdNeighbor = pFeatureList[indexSparseMatrixNeighbor+pointerToFeatureNeighbor];
+                
+    //             if (featureIdInstance == featureIdNeighbor) {
+    //                 // if they are the same substract the values, compute the square and sum it up
+    //                 value = pValuesList[indexSparseMatrixInstance+pointerToFeatureInstance] 
+    //                                 - pValuesList[indexSparseMatrixNeighbor+pointerToFeatureNeighbor];
+    //                 //this->getNextValue(pRowIdVector[i], pointerToMatrixElement) - queryData->getNextValue(pRowId, pointerToVectorElement);
+    //                 euclideanDistance += value * value;
+    //                 // increase both counters to the next element 
+    //                 ++pointerToFeatureInstance;
+    //                 ++pointerToFeatureNeighbor;
+    //             } else if (featureIdInstance < featureIdNeighbor) {
+    //                 // if the feature ids are unequal square only the smaller one and add it to the sum
+    //                 value = pValuesList[indexSparseMatrixInstance+pointerToFeatureInstance];
+    //                 euclideanDistance += value * value;
+    //                 // increase counter for first vector
+    //                 ++pointerToFeatureInstance;
+    //             } else {
+    //                 value = pValuesList[indexSparseMatrixNeighbor+pointerToFeatureNeighbor];
+    //                 euclideanDistance += value * value;
+    //                 ++pointerToFeatureNeighbor;
+    //             }
+    //             endOfInstanceNotReached = pointerToFeatureInstance < numberOfFeaturesInstance;
+    //             endOfNeighborNotReached = pointerToFeatureNeighbor < numberOfFeaturesNeighbor;
+    //         }
+    //         while (endOfInstanceNotReached) {
+    //             value = pValuesList[indexSparseMatrixInstance + pointerToFeatureInstance];
+    //             euclideanDistance += value * value;
+    //             ++pointerToFeatureInstance;
+    //             endOfInstanceNotReached = pointerToFeatureInstance < numberOfFeaturesInstance;
+    //         }
+    //         while (endOfNeighborNotReached) {
+    //             value = pValuesList[indexSparseMatrixNeighbor + pointerToFeatureNeighbor];
+    //             euclideanDistance += value * value;
+    //             ++pointerToFeatureNeighbor;
+    //             endOfNeighborNotReached = pointerToFeatureNeighbor < numberOfFeaturesNeighbor;
+    //         }
+            
+    //         // square root of the sum
+    //         // printf("blockId: %i, threadId: %i\n", blockIdx.x, threadIdx.x);
+            
+    //         // printf("instanceId: %i, neighborId: %i,  euclidean distance: %f, sizeOfCandidates: %i\n",instanceId, queryIndexNeighbor, euclideanDistance, pSizeOfCandidates[instanceId]);
+    //         euclideanDistance = sqrtf(euclideanDistance);
+    //         // store euclidean distance and neighbor id
+    //         candidates[instanceId].instance[queryIndexNeighbor].y =  euclideanDistance;
+    //         threadId += blockDim.x;
+    //         euclideanDistance = 0;
+    //         value = 0;
+    //         queryIndexNeighbor += blockDim.x;
+    //         instanceIdNeighbor = candidates[instanceId].instance[queryIndexNeighbor].x ;
+    //         indexSparseMatrixNeighbor = instanceIdNeighbor*pMaxNnz;
+    //         numberOfFeaturesNeighbor = pSizeOfInstanceList[instanceIdNeighbor];
+    //         pointerToFeatureInstance = 0;
+    //         pointerToFeatureNeighbor = 0;
+    //         endOfInstanceNotReached = pointerToFeatureInstance < numberOfFeaturesInstance;
+    //         endOfNeighborNotReached = pointerToFeatureNeighbor < numberOfFeaturesNeighbor;
+    //     }
+    //     __syncthreads();
+    //     // sort instances by euclidean distance
+    //     sortDesc(candidates, instanceId, pSizeOfCandidates[instanceId]);
+    //     threadId = threadIdx.x;
+    //     // insert the k neighbors and distances to the neighborhood and distances vector
+    //     // while (threadId < pNneighbors) {
+    //     //     pNeighborhood[instanceId*pNneighbors+threadId] 
+    //     //         = pSortedHistogram[instanceId].instances[threadId].x;
+    //     //     pDistances[instanceId*pNneighbors+threadId] 
+    //     //         = (float) pSortedHistogram[instanceId].instances[threadId].y / (float) 1000;
+    //     //     threadId += blockDim.x;
+    //     // }
+    //     __syncthreads();
+    //     instanceId += gridDim.x;
+    //     threadId = threadIdx.x;
+    // }
 }
 
 __global__ void cosineSimilarityCuda(cudaInstanceVector* candidates, uint pSize,
