@@ -207,12 +207,12 @@ def benchmarkNearestNeighborAlgorithms(dataset, n_neighbors = 10, reduce_dimensi
         """
     
     import sklearn.neighbors
-    # import pyflann
+    import pyflann
     import annoy
     import panns
     import nearpy, nearpy.hashes, nearpy.distances
-    # import pykgraph
-    # import nmslib
+    import pykgraph
+    import nmslib
     from rpforest import RPForest
     accuracy_minHash = 0
     accuracy_minHashFast = 0
