@@ -45,9 +45,12 @@ void InverseIndexCuda::copyFittingDataToGpu(const SparseMatrixFloat* pRawData) {
     cudaMemcpy(mDev_FeatureList, dev_index,
                 pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(int),
             cudaMemcpyHostToDevice);
-    free(dev_index);
     // copy instances and their values for each feature to the gpu
-    cudaMemcpy(mDev_ValuesList, pRawData->getSparseMatrixValues(),
+    float* dev_values = (float*) malloc(sizeof(float) * pRawData->getMaxNnz() * pRawData->getNumberOfInstances());
+    for (unsigned int i = 0; i < pRawData->getMaxNnz() * pRawData->getNumberOfInstances(); ++i) {
+        dev_values[i] = static_cast<float>(pRawData->getSparseMatrixValues()[i]);
+    }
+    cudaMemcpy(mDev_ValuesList, dev_values,
                 pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(float),
             cudaMemcpyHostToDevice);
             
@@ -62,6 +65,20 @@ void InverseIndexCuda::copyFittingDataToGpu(const SparseMatrixFloat* pRawData) {
      for (unsigned int i = 0; i < pRawData->getNumberOfInstances(); ++i) {
         // printf ("instanceId: %i, size: %i\n", i, dev_sizes[i]);
      }
+     
+     
+    //   for (int i = 0; i < pRawData->getMaxNnz(); ++i) {
+    //         // if (i % 100 == 0) {
+    //             // for (int j = 0; j < pSizeOfCandidates[i]; ++j) {
+    //                 // if (j % 20 == 0) {
+    //                     printf ("feature: %i, value: %f\n", dev_index[i], pRawData->getSparseMatrixValues()[i]);
+                        
+    //                 // }
+    //             // }
+    //         // }   
+    //     }
+    free(dev_index);
+        free(dev_values);
      free(dev_sizes);
 }
 void InverseIndexCuda::computeSignaturesFittingOnGpu(const SparseMatrixFloat* pRawData, 

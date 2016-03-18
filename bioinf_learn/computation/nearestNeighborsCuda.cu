@@ -26,7 +26,61 @@ NearestNeighborsCuda::~NearestNeighborsCuda() {
     
 }
 
-cudaInstanceVector* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighbors, size_t pSimilarity) {
+cudaInstanceVector* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighbors, size_t pSimilarity, const SparseMatrixFloat* pRawData) {
+    // cudaMalloc((void **) &mDev_FeatureList,
+    //         pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(int));
+    // // memory for the values of the features of the instances
+    // cudaMalloc((void **) &mDev_ValuesList, 
+    //             pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(float));
+    // // memory for the number of features per instance
+    // cudaMalloc((void **) &mDev_SizeOfInstanceList,
+    //         pRawData->getNumberOfInstances() * sizeof(int));
+    
+    // int* dev_index = (int*) malloc(sizeof(int) * pRawData->getMaxNnz() * pRawData->getNumberOfInstances());
+    // for (unsigned int i = 0; i < pRawData->getMaxNnz() * pRawData->getNumberOfInstances(); ++i) {
+    //     dev_index[i] = static_cast<int>(pRawData->getSparseMatrixIndex()[i]);
+    // }
+    // // copy instances and their feature ids to the gpu
+    // cudaMemcpy(mDev_FeatureList, dev_index,
+    //             pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(int),
+    //         cudaMemcpyHostToDevice);
+    // // copy instances and their values for each feature to the gpu
+    // float* dev_values = (float*) malloc(sizeof(float) * pRawData->getMaxNnz() * pRawData->getNumberOfInstances());
+    // for (unsigned int i = 0; i < pRawData->getMaxNnz() * pRawData->getNumberOfInstances(); ++i) {
+    //     dev_values[i] = static_cast<float>(pRawData->getSparseMatrixValues()[i]);
+    // }
+    // cudaMemcpy(mDev_ValuesList, dev_values,
+    //             pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(float),
+    //         cudaMemcpyHostToDevice);
+            
+    // int* dev_sizes = (int*) malloc(sizeof(int) * pRawData->getNumberOfInstances());
+    // for (unsigned int i = 0; i < pRawData->getNumberOfInstances(); ++i) {
+    //     dev_sizes[i] = static_cast<int>(pRawData->getSparseMatrixSizeOfInstances()[i]);
+    // }
+    // // copy the size of all instances to the gpu               
+    // cudaMemcpy(mDev_SizeOfInstanceList, dev_sizes,
+    //         pRawData->getNumberOfInstances() * sizeof(int),
+    //         cudaMemcpyHostToDevice);
+    //  for (unsigned int i = 0; i < pRawData->getNumberOfInstances(); ++i) {
+    //     // printf ("instanceId: %i, size: %i\n", i, dev_sizes[i]);
+    //  }
+     
+     
+    //   for (int i = 0; i < pRawData->getMaxNnz(); ++i) {
+    //         // if (i % 100 == 0) {
+    //             // for (int j = 0; j < pSizeOfCandidates[i]; ++j) {
+    //                 // if (j % 20 == 0) {
+    //                     printf ("feature: %i, value: %f\n", dev_index[i], pRawData->getSparseMatrixValues()[i]);
+                        
+    //                 // }
+    //             // }
+    //         // }   
+    //     }
+    // free(dev_index);
+    //     free(dev_values);
+    //  free(dev_sizes);
+   
+   
     printf("30");
     fflush(stdout);
     cudaInstanceVector* candidates = (cudaInstanceVector*) malloc(sizeof(cudaInstanceVector) * neighbors->neighbors->size());
@@ -60,21 +114,21 @@ cudaInstanceVector* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* 
         // if (i == 130) {
         // printf("size instance: %i",  neighbors->neighbors->operator[](i).size());
         // }
-        cudaMalloc(&(h_data[i].instance), sizeof(cudaInstance) * neighbors->neighbors->operator[](i).size());
+        cudaMalloc((void **) &(h_data[i].instance), sizeof(cudaInstance) * neighbors->neighbors->operator[](i).size());
         cudaMemcpy(h_data[i].instance, candidates[i].instance, sizeof(cudaInstance) * neighbors->neighbors->operator[](i).size(), cudaMemcpyHostToDevice);
     }
     printf("57");
     fflush(stdout);
     
     cudaInstanceVector* d_data;
-    cudaMalloc(&d_data, sizeof(cudaInstanceVector) * neighbors->neighbors->size());
+    cudaMalloc((void **) &d_data, sizeof(cudaInstanceVector) * neighbors->neighbors->size());
     cudaMemcpy(d_data, h_data, sizeof(cudaInstanceVector) * neighbors->neighbors->size(), cudaMemcpyHostToDevice);
     printf("62");
     fflush(stdout);
     
     int* sizeOfCandidatesCuda;
     int size = neighbors->neighbors->size();
-    cudaMalloc(&sizeOfCandidatesCuda, sizeof(int) * neighbors->neighbors->size());
+    cudaMalloc((void **) &sizeOfCandidatesCuda, sizeof(int) * neighbors->neighbors->size());
     cudaMemcpy(sizeOfCandidatesCuda, sizeOfCandidates, sizeof(int) * neighbors->neighbors->size(), cudaMemcpyHostToDevice);
     if (pSimilarity) {
         cosineSimilarityCuda<<<32, 96>>>(d_data, size, sizeOfCandidatesCuda, mDev_FeatureList,
@@ -91,7 +145,7 @@ cudaInstanceVector* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* 
     fflush(stdout);
     
     for (size_t i = 0; i < neighbors->neighbors->size(); ++i) {
-        cudaMemcpy(candidates[i].instance, h_data[i].instance, sizeof(cudaInstance) * neighbors->neighbors->operator[](i).size(), cudaMemcpyDeviceToHost);
+        cudaMemcpy((void **) candidates[i].instance, h_data[i].instance, sizeof(cudaInstance) * neighbors->neighbors->operator[](i).size(), cudaMemcpyDeviceToHost);
         cudaFree(h_data[i].instance);
     }
     printf("84");

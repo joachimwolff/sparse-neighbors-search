@@ -269,21 +269,21 @@ def benchmarkNearestNeighborAlgorithms(dataset, n_neighbors = 10, reduce_dimensi
     time_fitting_bruteforce = time.time() - time_start
     
     # minHash
-    time_start = time.time(dataset)
-    minHash_obj = MinHash(n_neighbors = n_neighbors, number_of_hash_functions=hash_function,
+    time_start = time.time()
+    minHash_obj = MinHash(n_neighbors = n_neighbors, number_of_hash_functions=reduce_dimensions_to,
                          max_bin_size= 36, shingle_size = 4, similarity=False, 
                     prune_inverse_index=2, store_value_with_least_sigificant_bit=3, excess_factor=11,
-                    prune_inverse_index_after_instance=0.5, store_hash_function_with_less_entries_as=4, 
+                    prune_inverse_index_after_instance=0.5, remove_hash_function_with_less_entries_as=4, 
                      shingle=0, block_size=2, cpu_gpu_load_balancing = 1.0)
     minHash_obj.fit(dataset)
     time_fitting_minHash = time.time() - time_start
     
     # minHash fast
     time_start = time.time()
-    minHash_fast_obj = MinHash(n_neighbors = n_neighbors, number_of_hash_functions=hash_function,
+    minHash_fast_obj = MinHash(n_neighbors = n_neighbors, number_of_hash_functions=reduce_dimensions_to,
                          max_bin_size= 36, shingle_size = 4, similarity=False, fast=True,
                     prune_inverse_index=2, store_value_with_least_sigificant_bit=3, excess_factor=11,
-                    prune_inverse_index_after_instance=0.5, store_hash_function_with_less_entries_as=4, 
+                    prune_inverse_index_after_instance=0.5, remove_hash_function_with_less_entries_as=4, 
                      shingle=0, block_size=2, cpu_gpu_load_balancing = 1.0)      
     minHash_fast_obj.fit(dataset)
     time_fitting_minHashFast = time.time() - time_start
@@ -296,19 +296,19 @@ def benchmarkNearestNeighborAlgorithms(dataset, n_neighbors = 10, reduce_dimensi
     
     # ball tree
     time_start = time.time()
-    ballTree_obj = sklearn.neighbors.BallTree(dataset, leaf_size=20)
+    ballTree_obj = sklearn.neighbors.BallTree(X=dataset_dense, leaf_size=20)
     time_fitting_ballTree = time.time() - time_start
     
     
     # kd tree
     time_start = time.time()
-    kdTree_obj = sklearn.neighbors.KDTree(dataset, leaf_size=20)
+    kdTree_obj = sklearn.neighbors.KDTree(X=dataset, leaf_size=20)
     time_fitting_KDTree = time.time() - time_start
     
     # flann
     time_start = time.time()
-    # flann_obj = pyflann.FLANN(target_precision=0.9, algorithm='autotuned', log_level='info')
-    # flann.build_index(dataset)
+    flann_obj = pyflann.FLANN(target_precision=0.9, algorithm='autotuned', log_level='info')
+    flann.build_index(dataset)
     time_fitting_FLANN = time.time() - time_start
     # annoy
     time_start = time.time()    

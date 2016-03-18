@@ -171,7 +171,7 @@ neighborhood* NearestNeighbors::kneighbors(const SparseMatrixFloat* pRawData,
         // call gpu code
         std::cout << "GPU code is running! " << std::endl;
         cudaInstanceVector* cudaInstanceVector;
-        cudaInstanceVector = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity);
+        cudaInstanceVector = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData);
        
         #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
         for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
@@ -328,7 +328,7 @@ neighborhood* NearestNeighbors::kneighbors(const SparseMatrixFloat* pRawData,
         std::cout << "GPU code is running! Part2" << std::endl;
         
         cudaInstanceVector* cudaInstanceVector;
-        cudaInstanceVector = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity);
+        cudaInstanceVector = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData);
         #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
         for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
             size_t vectorSize = std::min(neighborhood_->neighbors->operator[](i).size(),pNneighbors+mExcessFactor);
