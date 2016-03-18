@@ -17,9 +17,9 @@
 class InverseIndexCuda {
 
   private: 
-    size_t* mDev_FeatureList;
-    size_t* mDev_SizeOfInstanceList;
-    size_t* mDev_ComputedSignaturesPerInstance;
+    int* mDev_FeatureList;
+    int* mDev_SizeOfInstanceList;
+    int* mDev_ComputedSignaturesPerInstance;
     float* mDev_ValuesList;
     
     size_t mNumberOfHashFunctions;
@@ -46,13 +46,13 @@ class InverseIndexCuda {
                                                 size_t pNumberOfThreads, size_t pShingleFactor, 
                                                 size_t pBlockSizeShingle,
                                                 vvsize_t_p* pSignatures);
-   size_t* get_mDev_FeatureList() {
+   int* get_mDev_FeatureList() {
        return mDev_FeatureList;
    };
-   size_t* get_mDev_SizeOfInstanceList() {
+   int* get_mDev_SizeOfInstanceList() {
        return mDev_SizeOfInstanceList;
    };
-   size_t* get_mDev_ComputedSignaturesPerInstance() {
+   int* get_mDev_ComputedSignaturesPerInstance() {
        return mDev_ComputedSignaturesPerInstance;
    };
    float* get_mDev_ValuesList() {

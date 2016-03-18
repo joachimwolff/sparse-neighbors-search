@@ -88,13 +88,13 @@ class InverseIndex {
     vvsize_t_p* computeSignaturesOnGpu(const SparseMatrixFloat* pRawData, size_t pStartIndex, size_t pEndIndex, size_t pNumberOfInstances,
     size_t pNumberOfBlocks, size_t pNumberOfThreads);
     
-   size_t* get_dev_FeatureList() {
+   int* get_dev_FeatureList() {
        return mInverseIndexCuda->get_mDev_FeatureList();
    };
-   size_t* get_dev_SizeOfInstanceList() {
+   int* get_dev_SizeOfInstanceList() {
        return mInverseIndexCuda->get_mDev_SizeOfInstanceList();
    };
-   size_t* get_dev_ComputedSignaturesPerInstance() {
+   int* get_dev_ComputedSignaturesPerInstance() {
        return mInverseIndexCuda->get_mDev_ComputedSignaturesPerInstance();
    };
    float* get_dev_ValuesList() {

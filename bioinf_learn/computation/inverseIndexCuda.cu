@@ -29,26 +29,40 @@ InverseIndexCuda::~InverseIndexCuda() {
 void InverseIndexCuda::copyFittingDataToGpu(const SparseMatrixFloat* pRawData) {
     // memory for instances and their featureIds
     cudaMalloc((void **) &mDev_FeatureList,
-            pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(size_t));
+            pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(int));
     // memory for the values of the features of the instances
     cudaMalloc((void **) &mDev_ValuesList, 
                 pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(float));
     // memory for the number of features per instance
     cudaMalloc((void **) &mDev_SizeOfInstanceList,
-            pRawData->getNumberOfInstances() * sizeof(size_t));
+            pRawData->getNumberOfInstances() * sizeof(int));
     
+    int* dev_index = (int*) malloc(sizeof(int) * pRawData->getMaxNnz() * pRawData->getNumberOfInstances());
+    for (unsigned int i = 0; i < pRawData->getMaxNnz() * pRawData->getNumberOfInstances(); ++i) {
+        dev_index[i] = static_cast<int>(pRawData->getSparseMatrixIndex()[i]);
+    }
     // copy instances and their feature ids to the gpu
-    cudaMemcpy(mDev_FeatureList, pRawData->getSparseMatrixIndex(),
-                pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(size_t),
+    cudaMemcpy(mDev_FeatureList, dev_index,
+                pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(int),
             cudaMemcpyHostToDevice);
+    free(dev_index);
     // copy instances and their values for each feature to the gpu
     cudaMemcpy(mDev_ValuesList, pRawData->getSparseMatrixValues(),
                 pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(float),
             cudaMemcpyHostToDevice);
+            
+    int* dev_sizes = (int*) malloc(sizeof(int) * pRawData->getNumberOfInstances());
+    for (unsigned int i = 0; i < pRawData->getNumberOfInstances(); ++i) {
+        dev_sizes[i] = static_cast<int>(pRawData->getSparseMatrixSizeOfInstances()[i]);
+    }
     // copy the size of all instances to the gpu               
-    cudaMemcpy(mDev_SizeOfInstanceList, pRawData->getSparseMatrixSizeOfInstances(),
-            pRawData->getNumberOfInstances() * sizeof(size_t),
+    cudaMemcpy(mDev_SizeOfInstanceList, dev_sizes,
+            pRawData->getNumberOfInstances() * sizeof(int),
             cudaMemcpyHostToDevice);
+     for (unsigned int i = 0; i < pRawData->getNumberOfInstances(); ++i) {
+        // printf ("instanceId: %i, size: %i\n", i, dev_sizes[i]);
+     }
+     free(dev_sizes);
 }
 void InverseIndexCuda::computeSignaturesFittingOnGpu(const SparseMatrixFloat* pRawData, 
                                                 size_t pStartIndex, size_t pEndIndex, 
@@ -64,8 +78,8 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(const SparseMatrixFloat* pR
     size_t signaturesSize = mNumberOfHashFunctions * pBlockSizeShingle / pShingleFactor;
     
     // memory for all signatures and memory for signatures on each block
-    size_t neededMemory = numberOfInstances / iterations  * signaturesSize * sizeof(size_t);
-    neededMemory += pNumberOfBlocks * mNumberOfHashFunctions * pBlockSizeShingle * sizeof(size_t);
+    size_t neededMemory = numberOfInstances / iterations  * signaturesSize * sizeof(int);
+    neededMemory += pNumberOfBlocks * mNumberOfHashFunctions * pBlockSizeShingle * sizeof(int);
     cudaMemGetInfo(&memory_free, &memory_total);
     // do i need more memory than it is free?
     if (neededMemory > memory_free) {
@@ -76,17 +90,17 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(const SparseMatrixFloat* pR
     size_t end = numberOfInstances / iterations;
   
     size_t windowSize = numberOfInstances / iterations;
-    size_t* instancesHashValues = (size_t*) malloc(numberOfInstances / iterations * mNumberOfHashFunctions * sizeof(size_t));
+    int* instancesHashValues = (int*) malloc(numberOfInstances / iterations * mNumberOfHashFunctions * sizeof(int));
     
     // memory for the inverse index on the gpu.
     // for each instance the number of hash functions
     cudaMalloc((void **) &mDev_ComputedSignaturesPerInstance,
-            numberOfInstances / iterations  * signaturesSize * sizeof(size_t));
-    size_t* dev_SignaturesBlockSize;
+            numberOfInstances / iterations  * signaturesSize * sizeof(int));
+    int* dev_SignaturesBlockSize;
     cudaMalloc((void **) &dev_SignaturesBlockSize,
-           pNumberOfBlocks * mNumberOfHashFunctions * pBlockSizeShingle * sizeof(size_t));
+           pNumberOfBlocks * mNumberOfHashFunctions * pBlockSizeShingle * sizeof(int));
      
-    printf("start: %i, end: %i, iterations: %i\n", start, end, iterations);
+    // printf("start: %i, end: %i, iterations: %i\n", start, end, iterations);
     // compute the signatures on the gpu
     // do it in n iterations with equal sized chunks 
     // if the data would not fit on the ram of the gpu
@@ -101,13 +115,13 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(const SparseMatrixFloat* pR
                 end, start, mBlockSize, mShingleSize, dev_SignaturesBlockSize);
         // copy results back to host      
         cudaMemcpy(instancesHashValues, mDev_ComputedSignaturesPerInstance, 
-                    numberOfInstances/iterations * signaturesSize * sizeof(size_t),
+                    numberOfInstances/iterations * signaturesSize * sizeof(int),
                     cudaMemcpyDeviceToHost);
         // copy values into one vector per instance
         for(size_t i = start; i < end; ++i) {
             vsize_t* instance = new vsize_t(signaturesSize);
             for (size_t j = 0; j < signaturesSize; ++j) {
-                (*instance)[j] = instancesHashValues[i*signaturesSize + j];
+                (*instance)[j] = static_cast<size_t>(instancesHashValues[i*signaturesSize + j]);
             }
             // printf("instance: %i\n", i);
 
@@ -127,24 +141,24 @@ void InverseIndexCuda::computeSignaturesQueryOnGpu(const SparseMatrixFloat* pRaw
                                                 size_t pNumberOfThreads, size_t pShingleFactor, 
                                                 size_t pBlockSizeShingle,
                                                 vvsize_t_p* pSignatures) {
-    size_t* dev_featureList;
-    size_t* dev_sizeOfInstanceList;
-    size_t* dev_computedSignaturesPerInstance;
-    size_t numberOfInstances = pEndIndex - pStartIndex;
-    size_t signaturesSize = mNumberOfHashFunctions * pBlockSizeShingle / pShingleFactor;
+    int* dev_featureList;
+    int* dev_sizeOfInstanceList;
+    int* dev_computedSignaturesPerInstance;
+    int numberOfInstances = pEndIndex - pStartIndex;
+    int signaturesSize = mNumberOfHashFunctions * pBlockSizeShingle / pShingleFactor;
     
     size_t memory_total = 0;
     size_t memory_free = 0;
-    size_t iterations = 1;
+    int iterations = 1;
     // memory for all signatures and memory for signatures on each block
     // feature list memory
-    size_t neededMemory = pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(size_t);
+    int neededMemory = pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(int);
     // memory for the number of features per instance
-    neededMemory += pRawData->getNumberOfInstances() * sizeof(size_t);
+    neededMemory += pRawData->getNumberOfInstances() * sizeof(int);
     // memory for the signatures per instance
-    neededMemory += numberOfInstances / iterations  * signaturesSize * sizeof(size_t);
+    neededMemory += numberOfInstances / iterations  * signaturesSize * sizeof(int);
     // memory for the signatures per instance for each block before shingle
-    neededMemory += pNumberOfBlocks * mNumberOfHashFunctions * pBlockSizeShingle * sizeof(size_t);
+    neededMemory += pNumberOfBlocks * mNumberOfHashFunctions * pBlockSizeShingle * sizeof(int);
     cudaMemGetInfo(&memory_free, &memory_total);
     // do i need more memory than it is free?
     if (neededMemory > memory_free) {
@@ -152,34 +166,43 @@ void InverseIndexCuda::computeSignaturesQueryOnGpu(const SparseMatrixFloat* pRaw
     }
     // memory for instances and their featureIds
     cudaMalloc((void **) &dev_featureList,
-            pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(size_t));
+            pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(int));
     // memory for the number of features per instance
     cudaMalloc((void **) &dev_sizeOfInstanceList,
-            pRawData->getNumberOfInstances() * sizeof(size_t));
+            pRawData->getNumberOfInstances() * sizeof(int));
     
     // copy instances and their feature ids to the gpu
-    cudaMemcpy(dev_featureList, pRawData->getSparseMatrixIndex(),
-                pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(size_t),
+    int* dev_index = (int*) malloc(sizeof(int) * pRawData->getMaxNnz() * pRawData->getNumberOfInstances());
+    for (unsigned int i = 0; i < pRawData->getMaxNnz() * pRawData->getNumberOfInstances(); ++i) {
+        dev_index[i] = static_cast<int>(pRawData->getSparseMatrixIndex()[i]);
+    }
+    cudaMemcpy(dev_featureList, dev_index,
+                pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(int),
             cudaMemcpyHostToDevice);
-    // copy the size of all instances to the gpu               
-    cudaMemcpy(dev_sizeOfInstanceList, pRawData->getSparseMatrixSizeOfInstances(),
-            pRawData->getNumberOfInstances() * sizeof(size_t),
+    free(dev_index);
+    // copy the size of all instances to the gpu    
+    int* dev_sizes = (int*) malloc(sizeof(int) * pRawData->getNumberOfInstances());
+    for (unsigned int i = 0; i < pRawData->getNumberOfInstances(); ++i) {
+        dev_sizes[i] = static_cast<int>(pRawData->getSparseMatrixSizeOfInstances()[i]);
+    }           
+    cudaMemcpy(dev_sizeOfInstanceList, dev_sizes,
+            pRawData->getNumberOfInstances() * sizeof(int),
             cudaMemcpyHostToDevice);
-            
+     free(dev_sizes);       
     
-    size_t start = 0;
-    size_t end = numberOfInstances / iterations;
-    size_t windowSize = numberOfInstances / iterations;
-    size_t* instancesHashValues = (size_t*) malloc(numberOfInstances / iterations * mNumberOfHashFunctions * sizeof(size_t));
+    int start = 0;
+    int end = numberOfInstances / iterations;
+    int windowSize = numberOfInstances / iterations;
+    int* instancesHashValues = (int*) malloc(numberOfInstances / iterations * mNumberOfHashFunctions * sizeof(int));
     
     // size_t signaturesSize = mNumberOfHashFunctions * pBlockSizeShingle / pShingleFactor;
     // memory for the signatures on the gpu.
     // for each instance the number of hash functions
     cudaMalloc((void **) &dev_computedSignaturesPerInstance,
-            numberOfInstances / iterations  * signaturesSize * sizeof(size_t));
-    size_t* dev_signaturesBlockSize;
+            numberOfInstances / iterations  * signaturesSize * sizeof(int));
+    int* dev_signaturesBlockSize;
     cudaMalloc((void **) &dev_signaturesBlockSize,
-           pNumberOfBlocks * mNumberOfHashFunctions * pBlockSizeShingle * sizeof(size_t));
+           pNumberOfBlocks * mNumberOfHashFunctions * pBlockSizeShingle * sizeof(int));
     // compute the signatures on the gpu
     // do it in n iterations with equal sized chunks 
     // if the data would not fit on the ram of the gpu
@@ -194,13 +217,13 @@ void InverseIndexCuda::computeSignaturesQueryOnGpu(const SparseMatrixFloat* pRaw
                 end, start, mBlockSize, mShingleSize, dev_signaturesBlockSize);
         // copy results back to host      
         cudaMemcpy(instancesHashValues, dev_computedSignaturesPerInstance, 
-                    numberOfInstances/iterations * signaturesSize * sizeof(size_t),
+                    numberOfInstances/iterations * signaturesSize * sizeof(int),
                     cudaMemcpyDeviceToHost);
         // copy values into one vector per instance
         for(size_t i = start; i < end; ++i) {
             vsize_t* instance = new vsize_t(signaturesSize);
             for (size_t j = 0; j < signaturesSize; ++j) {
-                (*instance)[j] = instancesHashValues[i*signaturesSize + j];
+                (*instance)[j] = static_cast<size_t>(instancesHashValues[i*signaturesSize + j]);
             }
             (*pSignatures)[i] = instance;
         }

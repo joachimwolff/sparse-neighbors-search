@@ -18,27 +18,27 @@
 class NearestNeighborsCuda {
 
   private: 
-   size_t* mDev_FeatureList;
+   int* mDev_FeatureList;
    float* mDev_ValuesList;
-   size_t* mDev_SizeOfInstanceList;
-   size_t mMaxNnz;
+   int* mDev_SizeOfInstanceList;
+   int mMaxNnz;
     
   public:
     NearestNeighborsCuda();
-  	NearestNeighborsCuda(size_t* pFeatureList, float* pValuesList,
-                          size_t* pSizeOfInstanceList, size_t pMaxNnz);
+  	NearestNeighborsCuda(int* pFeatureList, float* pValuesList,
+                          int* pSizeOfInstanceList, int pMaxNnz);
     ~NearestNeighborsCuda();
     cudaInstanceVector* computeNearestNeighbors(neighborhood* neighbors, size_t pSimilarity);
-    void setFeatureList(size_t* pFeatureList) {
+    void setFeatureList(int* pFeatureList) {
         mDev_FeatureList = pFeatureList;
     };
     void setValuesList(float* pValuesList) {
         mDev_ValuesList = pValuesList;
     };
-    void setSizeOfInstanceList(size_t* pSizeOfInstanceList) {
+    void setSizeOfInstanceList(int* pSizeOfInstanceList) {
         mDev_SizeOfInstanceList = pSizeOfInstanceList;
     };
-    void setMaxNnz(size_t pMaxNnz) {
+    void setMaxNnz(int pMaxNnz) {
         mMaxNnz = pMaxNnz;
     };
 };

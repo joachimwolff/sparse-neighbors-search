@@ -13,7 +13,7 @@
 #define TYPE_DEFINTIONS_CUDA_H
 
 struct cudaInstance{
-    uint x;
+    int x;
     float y;
 };
 

@@ -28,32 +28,35 @@ __device__ size_t computeHashValueCuda(size_t key, size_t aModulo) {
     return key % aModulo;
 }
 
-__global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInstanceList,
-                    const size_t pNumberOfHashFunctions, const size_t pMaxNnz,
-                    size_t* pComputedSignatures, 
-                    const size_t pNumberOfInstances, const size_t pStartInstance, 
-                    const size_t pBlockSize, const size_t pShingleSize,
-                    size_t* pSignaturesBlockSize) {
+__global__ void fitCuda(const int* pFeatureIdList, const int* pSizeOfInstanceList,
+                    const int pNumberOfHashFunctions, const int pMaxNnz,
+                    int* pComputedSignatures, 
+                    const int pNumberOfInstances, const int pStartInstance, 
+                    const int pBlockSize, const int pShingleSize,
+                    int* pSignaturesBlockSize) {
                         
     int instanceId = blockIdx.x + pStartInstance;
-    size_t nearestNeighborsValue = MAX_VALUE;
-    size_t hashValue = 0;
-    size_t signatureSize = pNumberOfHashFunctions * pBlockSize / pShingleSize;
+    int nearestNeighborsValue = MAX_VALUE;
+    int hashValue = 0;
+    int signatureSize = pNumberOfHashFunctions * pBlockSize / pShingleSize;
     int featureId = blockIdx.x * pMaxNnz;
     int hashFunctionId = threadIdx.x;
-    size_t sizeOfInstance;
-    size_t signatureBlockValue;
-    size_t shingleId;
-    size_t signatureBlockId = blockIdx.x * pNumberOfHashFunctions * pBlockSize;
+    int sizeOfInstance;
+    int signatureBlockValue;
+    int shingleId;
+    int signatureBlockId = blockIdx.x * pNumberOfHashFunctions * pBlockSize;
     // compute one instance per block
     // if one instance is computed, block takes next instance
     while (instanceId < pNumberOfInstances) {
         // compute the nearestNeighborsValue for every hash function
         // if pBlockSize is greater as 1, hash functions * pBlockSize values 
         // are computed. They will be merged together by a factor of pShingleSize
+        // if (threadIdx.x == 0) {
+        //     printf ("instanceId: %i, size: %i\n", instanceId, pSizeOfInstanceList[instanceId]);
+        // }
         sizeOfInstance = pSizeOfInstanceList[instanceId];
         while (hashFunctionId < pNumberOfHashFunctions * pBlockSize && featureId < pNumberOfInstances*pMaxNnz) {
-            for (size_t i = 0; i < sizeOfInstance; ++i) {
+            for (unsigned int i = 0; i < sizeOfInstance; ++i) {
                 hashValue = computeHashValueCuda((pFeatureIdList[featureId + i]+1) * (hashFunctionId+1), MAX_VALUE);
                 if (hashValue < nearestNeighborsValue) {
                     nearestNeighborsValue = hashValue;
@@ -71,7 +74,7 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
         shingleId = threadIdx.x;
         while (hashFunctionId < pNumberOfHashFunctions * pBlockSize ) {
             signatureBlockValue = pSignaturesBlockSize[signatureBlockId + hashFunctionId];
-            for (size_t i = 1; i < pShingleSize && hashFunctionId+i < pNumberOfHashFunctions * pBlockSize; ++i) {
+            for (unsigned int i = 1; i < pShingleSize && hashFunctionId+i < pNumberOfHashFunctions * pBlockSize; ++i) {
                 signatureBlockValue = computeHashValueCuda((pSignaturesBlockSize[signatureBlockId + hashFunctionId+i]+1) * (signatureBlockValue+1), MAX_VALUE);
             }
             pComputedSignatures[(instanceId-pStartInstance)*signatureSize + shingleId] = signatureBlockValue;
@@ -201,12 +204,12 @@ __global__ void fitCuda(const size_t* pFeatureIdList, const size_t* pSizeOfInsta
 //     }
 // }
 
-__device__ void sortDesc(cudaInstanceVector* pCandidates, uint pInstanceId, uint pSize) {
+__device__ void sortDesc(cudaInstanceVector* pCandidates, int pInstanceId, int pSize) {
     
-    uint threadId = threadIdx.x;
-    uint instance_tmp;
+    int threadId = threadIdx.x;
+    int instance_tmp;
     float value_tmp;
-    for (uint i = 0; i < pSize / 2; ++i) {
+    for (int i = 0; i < pSize / 2; ++i) {
         while (threadId < pSize) {
             if (threadId + 1 < pSize 
                     && pCandidates[pInstanceId].instance[threadId+1].y > pCandidates[pInstanceId].instance[threadId].y) {
@@ -233,12 +236,12 @@ __device__ void sortDesc(cudaInstanceVector* pCandidates, uint pInstanceId, uint
         threadId = threadIdx.x;
     }
 }
-__device__ void sortAsc(cudaInstanceVector* pCandidates, uint pInstanceId, uint pSize) {
+__device__ void sortAsc(cudaInstanceVector* pCandidates, int pInstanceId, int pSize) {
     
-    uint threadId = threadIdx.x;
-    uint instance_tmp;
+    int threadId = threadIdx.x;
+    int instance_tmp;
     float value_tmp;
-    for (uint i = 0; i < pSize / 2; ++i) {
+    for (int i = 0; i < pSize / 2; ++i) {
         while (threadId < pSize) {
             if (threadId + 1 < pSize 
                     && pCandidates[pInstanceId].instance[threadId+1].y < pCandidates[pInstanceId].instance[threadId].y) {
@@ -267,154 +270,44 @@ __device__ void sortAsc(cudaInstanceVector* pCandidates, uint pInstanceId, uint 
     }
 }
 
-__global__ void euclideanDistanceCuda(cudaInstanceVector* candidates, uint pSize,
-                                        uint* pSizeOfCandidates,
-                                        size_t* pFeatureList, float* pValuesList,
-                                        size_t* pSizeOfInstanceList, size_t pMaxNnz) {
-    // int instanceId = blockIdx.x;
-    // int threadId = threadIdx.x;
-    // int pointerToFeatureInstance, pointerToFeatureNeighbor;
-    // // uint pointerToFeatureInstance, pointerToFeatureNeighbor, queryIndexInstance,
-    // //     queryIndexNeighbor, instanceIdNeighbor, indexSparseMatrixInstance,
-    // //     indexSparseMatrixNeighbor, numberOfFeaturesInstance, numberOfFeaturesNeighbor,
-    // //     featureIdInstance, featureIdInstance;
-    // __shared__ bool endOfInstanceNotReached[128];
-    // __shared__ bool endOfNeighborNotReached[128];
-    // // one value per thread
-    // __shared__ float euclideanDistance[128];
-    // __shared__ float value[128];
-    // __shared__ uint numberOfCandidates;
-    // // __shared__ uint sizeOfInstanceInSparseMatrix;
-    // // __shared__ uint sizeOfNeighborInSparseMatrix;
-    
-    // __shared__ uint counter_sparseMatrixInstance[128];
-    // __shared__ uint counter_sparseMatrixNeighbor[128];
-    // __shared__ uint startValue_sparseMatrixInstance;
-    // __shared__ uint startValue_sparseMatrixNeighbor[128];
-    // __shared__ uint endValue_sparseMatrixInstance;
-    // __shared__ uint endValue_sparseMatrixNeighbor[128];
-    // __shared__ uint queryIndexInstance;
-    // __shared__ uint queryIndexNeighbor[128];
-    // __shared__ uint featureIdInstance[128];
-    // __shared__ uint featureIdNeighbor[128];
-    // while (instanceId < pSize) {
-    //     if (threadIdx.x == 0) {
-    //         numberOfCandidates = pSizeOfCandidates[instanceId];
-    //         // printf("Instance: %i, sizeOfCandidates: %i\n", instanceId, numberOfCandidates);
-        
-    //         if (numberOfCandidates > 0) {
-    //             queryIndexInstance = candidates[instanceId].instance[0].x;
-    //             startValue_sparseMatrixInstance = queryIndexInstance*pMaxNnz;
-    //             endValue_sparseMatrixInstance = pSizeOfInstanceList[queryIndexInstance];
-    //         } else {
-    //             instanceId += gridDim.x;
-    //             continue;
-    //         }
-    //         // printf("Instance: %i, instanceReal: %i, sizeOfCandidates: %i\n", instanceId, queryIndexInstance, numberOfCandidates);
-    //     }
-        
-        
-    //     // numberOfFeaturesInstance = pSizeOfInstanceList[queryIndexInstance];
-    //     // pointerToFeatureInstance = 0;
-    //     // pointerToFeatureNeighbor = 0;
-    //     __syncthreads();
-        
-    //     threadId = threadIdx.x;
-    //     if (threadIdx.x == 0) {
-    //         // printf("\n");
-    //     }
-    //     while (threadId < numberOfCandidates) {
-    //         // init all counters to 0
-    //         counter_sparseMatrixInstance[threadIdx.x] = 0;
-    //         counter_sparseMatrixNeighbor[threadIdx.x] = 0;
-    //         // get real id of neighbor instance
-    //         queryIndexNeighbor[threadIdx.x] = candidates[instanceId].instance[threadId].x;
-    //         // if (instanceId == 130) {
-    //             printf("size: %i, instanceId: %i, threadId: %i, threadIdx.x: %i, queryIndexneighbor: %i part2: %i ",pSizeOfCandidates[instanceId], instanceId, threadId, threadIdx.x, queryIndexNeighbor[threadIdx.x], candidates[instanceId].instance[threadId].x);
-    //         // }
-    //         // get id in sparse matrix for this neighbor instance
-    //         startValue_sparseMatrixNeighbor[threadIdx.x] = queryIndexNeighbor[threadIdx.x]*pMaxNnz;
-    //         // get size in sparse matrix for this neighbor instance
-            
-    //         endValue_sparseMatrixNeighbor[threadIdx.x] = pSizeOfInstanceList[queryIndexNeighbor[threadIdx.x]];
-    //         endOfInstanceNotReached[threadIdx.x] = counter_sparseMatrixInstance[threadIdx.x] < endValue_sparseMatrixInstance;
-    //         endOfNeighborNotReached[threadIdx.x] = counter_sparseMatrixNeighbor[threadIdx.x] < endValue_sparseMatrixNeighbor[threadIdx.x];
-    //         euclideanDistance[threadIdx.x] = 0;
-    //         value[threadIdx.x] = 0;
-    //         while (endOfInstanceNotReached[threadIdx.x] && endOfNeighborNotReached[threadIdx.x]) {
-    //             featureIdInstance[threadIdx.x] = pFeatureList[startValue_sparseMatrixInstance +counter_sparseMatrixInstance[threadIdx.x]];
-    //             featureIdNeighbor[threadIdx.x] = pFeatureList[startValue_sparseMatrixNeighbor[threadIdx.x]+counter_sparseMatrixNeighbor[threadIdx.x]];
-                
-    //             if (featureIdInstance[threadIdx.x] == featureIdNeighbor[threadIdx.x]) {
-    //                 // if they are the same substract the values, compute the square and sum it up
-    //                 value[threadIdx.x] = pValuesList[startValue_sparseMatrixInstance +counter_sparseMatrixInstance[threadIdx.x]] 
-    //                                 - pValuesList[startValue_sparseMatrixNeighbor[threadIdx.x]+counter_sparseMatrixNeighbor[threadIdx.x]];
-    //                 euclideanDistance[threadIdx.x] += value[threadIdx.x] * value[threadIdx.x];
-    //                 // increase both counters to the next element 
-    //                 ++counter_sparseMatrixInstance[threadIdx.x];
-    //                 ++counter_sparseMatrixNeighbor[threadIdx.x];
-    //             } else if (featureIdInstance[threadIdx.x] < featureIdNeighbor[threadIdx.x]) {
-    //                 // if the feature ids are unequal square only the smaller one and add it to the sum
-    //                 value[threadIdx.x] = pValuesList[startValue_sparseMatrixInstance +counter_sparseMatrixInstance[threadIdx.x]];
-    //                 euclideanDistance[threadIdx.x] += value[threadIdx.x] * value[threadIdx.x];
-    //                 // increase counter for first vector
-    //                 ++counter_sparseMatrixInstance[threadIdx.x];
-    //             } else {
-    //                 value[threadIdx.x] = pValuesList[startValue_sparseMatrixNeighbor[threadIdx.x]+counter_sparseMatrixNeighbor[threadIdx.x]];
-    //                 euclideanDistance[threadIdx.x] += value[threadIdx.x] * value[threadIdx.x];
-    //                 ++counter_sparseMatrixNeighbor[threadIdx.x];
-    //             }
-    //             endOfInstanceNotReached[threadIdx.x]= counter_sparseMatrixInstance[threadIdx.x] < endValue_sparseMatrixInstance;
-    //             endOfNeighborNotReached[threadIdx.x] = counter_sparseMatrixNeighbor[threadIdx.x] < endValue_sparseMatrixNeighbor[threadIdx.x];
-    //         }
-    //         while (endOfInstanceNotReached[threadIdx.x]) {
-    //             value[threadIdx.x] = pValuesList[startValue_sparseMatrixInstance +counter_sparseMatrixInstance[threadIdx.x]];
-    //             euclideanDistance[threadIdx.x] += value[threadIdx.x] * value[threadIdx.x];
-    //             ++counter_sparseMatrixInstance[threadIdx.x];
-    //             endOfInstanceNotReached[threadIdx.x] = counter_sparseMatrixInstance[threadIdx.x] < endValue_sparseMatrixInstance;
-    //         }
-    //         while (endOfNeighborNotReached[threadIdx.x]) {
-    //             value[threadIdx.x] = pValuesList[startValue_sparseMatrixNeighbor[threadIdx.x]+counter_sparseMatrixNeighbor[threadIdx.x]];
-    //             euclideanDistance[threadIdx.x] += value[threadIdx.x] * value[threadIdx.x];
-    //             ++counter_sparseMatrixNeighbor[threadIdx.x];
-    //             endOfNeighborNotReached[threadIdx.x] = counter_sparseMatrixNeighbor[threadIdx.x] < endValue_sparseMatrixNeighbor[threadIdx.x];
-    //         }
-            
-    //         // square root of the sum
-    //         // printf("blockId: %i, threadId: %i\n", blockIdx.x, threadIdx.x);
-            
-    //         // printf("instanceId: %i, neighborId: %i,  threadId: %i, euclidean distance: %f, sizeOfCandidates: %i\n",queryIndexInstance, queryIndexNeighbor, threadId, euclideanDistance, numberOfCandidates);
-    //         // return;
-    //         candidates[instanceId].instance[threadId].y = sqrtf(euclideanDistance[threadIdx.x]);
-    //         // store euclidean distance and neighbor id
-    //         // candidates[instanceId].instance[threadId].y =  euclideanDistance;
-    //         threadId += blockDim.x;
-    //         __syncthreads();
-    //     }
-    //     __syncthreads();
-    //     // sort instances by euclidean distance
-    //     sortDesc(candidates, instanceId, pSizeOfCandidates[instanceId]);
-    //     // return;
-    //     // threadId = threadIdx.x;
-    //     __syncthreads();
-    //     instanceId += gridDim.x;
-    //     threadId = threadIdx.x;
-    // }
+__global__ void euclideanDistanceCuda(cudaInstanceVector* candidates, int pSize,
+                                        int* pSizeOfCandidates,
+                                        int* pFeatureList, float* pValuesList,
+                                        int* pSizeOfInstanceList, int pMaxNnz) {
     int instanceIdCandidates = blockIdx.x;
     int threadId = threadIdx.x;
 
-    size_t pointerToFeatureInstance, pointerToFeatureNeighbor, queryIndexInstance,
+    int pointerToFeatureInstance, pointerToFeatureNeighbor, queryIndexInstance,
         queryIndexNeighbor, instanceIdNeighbor, instanceId, indexSparseMatrixInstance,
-        indexSparseMatrixNeighbor, numberOfFeaturesInstance, numberOfFeaturesNeighbor;
+        indexSparseMatrixNeighbor;
         // featureIdNeighbor, featureIdInstance;
     // bool endOfInstanceNotReached, endOfNeighborNotReached;
-    const uint threads = 96;
+    __syncthreads();
+    if (blockIdx.x == 0 && threadIdx.x == 0) {
+        for (int i = 0; i < pSize; ++i) {
+            if (i % 100 == 0) {
+                for (int j = 0; j < pSizeOfCandidates[i]; ++j) {
+                    if (j % 20 == 0) {
+                        printf ("instanceId: %i, size: %i candidateInstance: %i\n", i, pSizeOfCandidates[i], candidates[i].instance[j].x);
+                        
+                    }
+                }
+            }   
+        }
+        // numberOfFeaturesInstance = pSizeOfInstanceList[instanceId];
+    }
+    __syncthreads();
+    // return;
+    const int threads = 96;
     __shared__ float euclideanDistance[threads];
     __shared__ float value[threads];
     __shared__ int featureIdNeighbor[threads];
     __shared__ int featureIdInstance[threads];
     __shared__ bool endOfInstanceNotReached[threads];
     __shared__ bool endOfNeighborNotReached[threads];
+    __shared__ int numberOfFeaturesInstance;
+    __shared__ int numberOfFeaturesNeighbor[threads];
+    // printf("pSize: %i ", pSize);
     
     while (instanceIdCandidates < pSize) {
         // pointer to feature ids in sparse matrix
@@ -436,10 +329,12 @@ __global__ void euclideanDistanceCuda(cudaInstanceVector* candidates, uint pSize
         
         // get the index positons for the two instances in the sparse matrix
         indexSparseMatrixInstance = instanceId*pMaxNnz;
-        
+        if (threadIdx.x == 0) {
+            numberOfFeaturesInstance = pSizeOfCandidates[instanceIdCandidates];
+        }
         
         // get the number of features for every instance
-        numberOfFeaturesInstance = pSizeOfInstanceList[instanceId];
+       
         
         
         endOfInstanceNotReached[threadIdx.x] = pointerToFeatureInstance < numberOfFeaturesInstance;
@@ -452,11 +347,11 @@ __global__ void euclideanDistanceCuda(cudaInstanceVector* candidates, uint pSize
         while (threadId < pSizeOfCandidates[instanceIdCandidates]) {
             instanceIdNeighbor = candidates[instanceIdCandidates].instance[threadId].x;
             indexSparseMatrixNeighbor = instanceIdNeighbor*pMaxNnz;
-            numberOfFeaturesNeighbor = pSizeOfInstanceList[instanceIdNeighbor];
+            numberOfFeaturesNeighbor[threadIdx.x] = pSizeOfInstanceList[instanceIdNeighbor];
             pointerToFeatureInstance = 0;
             pointerToFeatureNeighbor = 0;
             endOfInstanceNotReached[threadIdx.x] = pointerToFeatureInstance < numberOfFeaturesInstance;
-            endOfNeighborNotReached[threadIdx.x] = pointerToFeatureNeighbor < numberOfFeaturesNeighbor;
+            endOfNeighborNotReached[threadIdx.x] = pointerToFeatureNeighbor < numberOfFeaturesNeighbor[threadIdx.x];
             euclideanDistance[threadIdx.x] = 0;
             value[threadIdx.x] = 0;
             
@@ -483,7 +378,7 @@ __global__ void euclideanDistanceCuda(cudaInstanceVector* candidates, uint pSize
                     ++pointerToFeatureNeighbor;
                 }
                 endOfInstanceNotReached[threadIdx.x] = pointerToFeatureInstance < numberOfFeaturesInstance;
-                endOfNeighborNotReached[threadIdx.x] = pointerToFeatureNeighbor < numberOfFeaturesNeighbor;
+                endOfNeighborNotReached[threadIdx.x] = pointerToFeatureNeighbor < numberOfFeaturesNeighbor[threadIdx.x];
             }
             while (endOfInstanceNotReached[threadIdx.x]) {
                 value[threadIdx.x] = pValuesList[indexSparseMatrixInstance + pointerToFeatureInstance];
@@ -495,7 +390,7 @@ __global__ void euclideanDistanceCuda(cudaInstanceVector* candidates, uint pSize
                 value[threadIdx.x] = pValuesList[indexSparseMatrixNeighbor + pointerToFeatureNeighbor];
                 euclideanDistance[threadIdx.x] += value[threadIdx.x] * value[threadIdx.x];
                 ++pointerToFeatureNeighbor;
-                endOfNeighborNotReached[threadIdx.x] = pointerToFeatureNeighbor < numberOfFeaturesNeighbor;
+                endOfNeighborNotReached[threadIdx.x] = pointerToFeatureNeighbor < numberOfFeaturesNeighbor[threadIdx.x];
             }
             
             // square root of the sum
@@ -518,15 +413,22 @@ __global__ void euclideanDistanceCuda(cudaInstanceVector* candidates, uint pSize
         // sort instances by euclidean distance
         sortDesc(candidates, instanceIdCandidates, pSizeOfCandidates[instanceIdCandidates]);
         __syncthreads();
+        // if (blockIdx.x == 0 && threadIdx.x == 0) {
+        //     for (int i = 0; i < pSizeOfCandidates[instanceIdCandidates]; ++i) {
+        //         printf("candidate: %i, value: %f\n", candidates[instanceIdCandidates].instance[threadId].x, candidates[instanceIdCandidates].instance[threadId].y);
+        //     }
+        // }
+        __syncthreads();
+        return;
         instanceIdCandidates += gridDim.x;
         threadId = threadIdx.x;
     }
 }
 
-__global__ void cosineSimilarityCuda(cudaInstanceVector* candidates, uint pSize,
-                                        uint* pSizeOfCandidates,
-                                        size_t* pFeatureList, float* pValuesList,
-                                        size_t* pSizeOfInstanceList, size_t pMaxNnz) {
+__global__ void cosineSimilarityCuda(cudaInstanceVector* candidates, int pSize,
+                                        int* pSizeOfCandidates,
+                                        int* pFeatureList, float* pValuesList,
+                                        int* pSizeOfInstanceList, int pMaxNnz) {
     // int blockId = blockIdx.x;
     // int threadId = threadIdx.x;
     // size_t pointerToFeatureInstance, pointerToFeatureNeighbor, queryIndexInstance,
