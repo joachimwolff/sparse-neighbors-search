@@ -24,7 +24,8 @@ import numpy as np
 from scipy.sparse import dok_matrix
 from scipy.sparse import rand
 from scipy.sparse import vstack
-
+from sklearn.datasets import fetch_20newsgroups
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neighbors import NearestNeighbors
 import random
@@ -64,6 +65,35 @@ def parameter_optimization():
 #     'prune2': 0.16894760968869377, 'chunk_size': 12.926991521897076, 
 #     'excess_factor': 11.286649698096753, 'block_size': 2.622734214453821, 
 #     'prune_inverse_index_after_instance': 1, 'shingle_size': 3.398546692984647}
+from eden.converter.rna.rnafold import rnafold_to_eden
+from eden.converter.fasta import fasta_to_sequence
+from eden.graph import Vectorizer
+from itertools import islice
+import numpy as np
+from scipy.sparse import vstack
+
+def rfam_uri(family_id):
+    return 'http://rfam.xfam.org/family/%s/alignment?acc=%s&format=fastau&download=0'%(family_id,family_id)
+
+def rfam_to_matrix(rfam_id, n_max=50, complexity=2, nbits=10):
+    seqs = fasta_to_sequence(rfam_uri(rfam_id))
+    seqs = islice(seqs,n_max)
+    seqs = list(seqs)
+    graphs = rnafold_to_eden(seqs)
+    vectorizer = Vectorizer(complexity=complexity, nbits=nbits, positional=True)
+    X = vectorizer.transform(graphs)
+    return X
+
+def rfam_data(rfam_ids, n_max=300, complexity=3, nbits=13):
+    Xs = []
+    targets = []
+    for i,rfam_id in enumerate(rfam_ids):
+        X=rfam_to_matrix(rfam_id, n_max=n_max, complexity=complexity, nbits=nbits)
+        Xs.append(X)
+        targets += [i] * X.shape[0]
+    data_matrix = vstack(Xs, format="csr")
+    targets = np.array(targets)    
+    return data_matrix, targets
 def test(data):
 
     if not os.path.isfile("bursiDataset"):
@@ -77,6 +107,21 @@ def test(data):
         fileObject = open("bursiDataset",'r')
         datasetBursi = pickle.load(fileObject)  
     # if not os.path.exists("inverse_index.approx"):
+    categories = ['alt.atheism', 'talk.religion.misc', 'comp.graphics', 'sci.space']
+    newsgroups_train = fetch_20newsgroups(subset='train',remove=('headers', 'footers', 'quotes'), categories=categories)
+    vectorizer = TfidfVectorizer()
+    vectors_training = vectorizer.fit_transform(newsgroups_train.data)
+
+    newsgroups_test = fetch_20newsgroups(subset='test',remove=('headers', 'footers', 'quotes'), categories=categories)
+    vectors_test = vectorizer.transform(newsgroups_test.data)
+    datasetBursi = vectors_training
+
+    # rfam_ids=['RF00004','RF00005','RF00015','RF00020','RF00026','RF00169',
+    #       'RF00380','RF00386','RF01051','RF01055','RF01234','RF01699',
+    #       'RF01701','RF01705','RF01731','RF01734','RF01745','RF01750',
+    #       'RF01942','RF01998','RF02005','RF02012','RF02034']
+    # X, y = rfam_data(rfam_ids[:3], n_max=100, complexity=3, nbits=16)
+    # datasetBursi = X      
     print "Build inverse index for approximate..."
     #{'max_bin_size': 66.3710562451178, 'remove_value_with_least_sigificant_bit': 5, 
     # 'prune_inverse_index': 1, 'number_of_hash_functions': 253.3929503190519, 'shingle': 1,
@@ -100,29 +145,24 @@ def test(data):
     # query2 = datasetBursi[0::86]
     # print query2
     time_build_approx_start = time.time()
-    minHash = MinHash(number_of_hash_functions=753, max_bin_size= 73, shingle_size = 1,
-    				  similarity=False, 
-                      number_of_cores=4, prune_inverse_index=35, 
-                      store_value_with_least_sigificant_bit=0,
-                      excess_factor=8, prune_inverse_index_after_instance=0.66, 
-                      remove_hash_function_with_less_entries_as=0,
-                      shingle=0, block_size=3, cpu_gpu_load_balancing = 1.0)
-    # minHash = MinHash(number_of_hash_functions=815, max_bin_size= 62, shingle_size = 4, similarity=False, 
-    #                   number_of_cores=4, prune_inverse_index=1, 
-    #                   store_value_with_least_sigificant_bit=3,
-    #                   excess_factor=12, prune_inverse_index_after_instance=0.5, 
+    # best
+    # minHash = MinHash(number_of_hash_functions=719, max_bin_size= 86, shingle_size = 1,
+    #                   similarity=False, minimal_blocks_in_common=4,
+    #                   number_of_cores=4, prune_inverse_index=10, 
+    #                   store_value_with_least_sigificant_bit=0,
+    #                   excess_factor=5, prune_inverse_index_after_instance=0.96, 
     #                   remove_hash_function_with_less_entries_as=0,
-    #                   shingle=0, block_size=4, cpu_gpu_load_balancing = 0.0)
-    # minHash = MinHash(number_of_hash_functions=208, max_bin_size= 54, shingle_size = 2, similarity=False, 
-    #                     bloomierFilter=False, number_of_cores=4,
-    #                  prune_inverse_index=1, remove_value_with_least_sigificant_bit=0, excess_factor=13,
-    #                 prune_inverse_index_after_instance=0.7, removeHashFunctionWithLessEntriesAs=210, 
-    #                 hash_algorithm = 0, shingle=0, block_size=8, cuda = 0)
-    # minHash = MinHash(number_of_hash_functions=87, max_bin_size= 42, shingle_size = 1, similarity=False, 
-    #                     bloomierFilter=False, number_of_cores=4,
-    #                  prune_inverse_index=26, remove_value_with_least_sigificant_bit=2, excess_factor=2294,
-    #                 prune_inverse_index_after_instance=-1, removeHashFunctionWithLessEntriesAs=590, 
-    #                 hash_algorithm = 0, shingle=1, block_size=6, cuda = 0)
+    #                   shingle=1, block_size=3, cpu_gpu_load_balancing = 0.0)
+    
+    # 0.9
+    print "fitting..."
+    minHash = MinHash(number_of_hash_functions=200, max_bin_size= 45, shingle_size = 1,
+                      similarity=False, minimal_blocks_in_common=4,
+                      number_of_cores=4, prune_inverse_index=14, 
+                      store_value_with_least_sigificant_bit=0,
+                      excess_factor=10, prune_inverse_index_after_instance=0.0, 
+                      remove_hash_function_with_less_entries_as=0,
+                      shingle=0, block_size=1, cpu_gpu_load_balancing = 0.0)
     # minHash.fit(data[0])
     minHash.fit(datasetBursi)
     minHash.get_distribution_of_inverse_index()

@@ -40,7 +40,7 @@ void InverseIndexStorageUnorderedMap::reserveSpaceForMaps(size_t pNumberOfInstan
     } 
 }
 void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue, size_t pInstance, size_t pRemoveValueWithLeastSigificantBit) {
-
+    if (mInverseIndex == NULL) return;
     if (pVectorId >= mInverseIndex->size()) {
         return;
     } 
@@ -87,7 +87,7 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
 
 vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, size_t pHashValue) {
 
-
+    if (mInverseIndex == NULL) return NULL;
     if (pVectorId < mInverseIndex->size() && (*mInverseIndex)[pVectorId] != NULL) {
                 (*mInverseIndex)[pVectorId];
         auto iterator = (*mInverseIndex)[pVectorId]->find(pHashValue);
@@ -100,56 +100,59 @@ vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, size_t pH
 }
 
 distributionInverseIndex* InverseIndexStorageUnorderedMap::getDistribution() {
+   
     if (mInverseIndex == NULL) return new distributionInverseIndex();
     distributionInverseIndex* retVal = new distributionInverseIndex();
-    std::map<size_t, size_t> distribution;
-    vsize_t numberOfCreatedHashValuesPerHashFunction;
-    vsize_t averageNumberOfValuesPerHashValue;
-    vsize_t standardDeviationPerNumberOfValuesPerHashValue;
-    size_t meanForNumberHashValues = 0;
-    
-    for (auto it = mInverseIndex->begin(); it != mInverseIndex->end(); ++it) {
+    #pragma omp critical
+    {   
+        std::map<size_t, size_t> distribution;
+        vsize_t numberOfCreatedHashValuesPerHashFunction;
+        vsize_t averageNumberOfValuesPerHashValue;
+        vsize_t standardDeviationPerNumberOfValuesPerHashValue;
+        size_t meanForNumberHashValues = 0;
+        
+        for (auto it = mInverseIndex->begin(); it != mInverseIndex->end(); ++it) {
+            if (*it == NULL) continue;
+            numberOfCreatedHashValuesPerHashFunction.push_back((*it)->size());
+            meanForNumberHashValues += (*it)->size();
+            size_t mean = 0;
+            
+            for (auto itMap = (*it)->begin(); itMap != (*it)->end(); ++itMap) {
+                if (itMap->second == NULL) continue;
+                distribution[itMap->second->size()] += 1;
+                mean += itMap->second->size();
+            }
+            if ((*it)->size() != 0 || mean != 0) {
+                mean = mean / (*it)->size();       
+            }
+            averageNumberOfValuesPerHashValue.push_back(mean);
+            
+            size_t variance = 0;
+            for (auto itMap = (*it)->begin(); itMap != (*it)->end(); ++itMap) {
+                if (itMap->second == NULL) continue;
+                variance += pow(static_cast<int>(itMap->second->size()) - mean, 2);
+            }
+            
+            variance = variance / mInverseIndex->size();
+            int standardDeviation = sqrt(variance);
+            standardDeviationPerNumberOfValuesPerHashValue.push_back(standardDeviation);
+        }
+        
+        size_t varianceForNumberOfHashValues = 0;
+        for (auto it = mInverseIndex->begin(); it != mInverseIndex->end(); ++it) {
         if (*it == NULL) continue;
-        numberOfCreatedHashValuesPerHashFunction.push_back((*it)->size());
-        meanForNumberHashValues += (*it)->size();
-        size_t mean = 0;
-        
-        for (auto itMap = (*it)->begin(); itMap != (*it)->end(); ++itMap) {
-            if (itMap->second == NULL) continue;
-            distribution[itMap->second->size()] += 1;
-            mean += itMap->second->size();
+        varianceForNumberOfHashValues += pow((*it)->size() - meanForNumberHashValues, 2);
         }
-        if ((*it)->size() != 0 || mean != 0) {
-            mean = mean / (*it)->size();       
-        }
-        averageNumberOfValuesPerHashValue.push_back(mean);
+    
+        retVal->mean = meanForNumberHashValues;
+        retVal->standardDeviation = sqrt(varianceForNumberOfHashValues);
         
-        size_t variance = 0;
-        for (auto itMap = (*it)->begin(); itMap != (*it)->end(); ++itMap) {
-            if (itMap->second == NULL) continue;
-            variance += pow(static_cast<int>(itMap->second->size()) - mean, 2);
-        }
+        retVal->totalCountForOccurenceOfHashValues = distribution;
+        retVal->standardDeviationForNumberOfValuesPerHashValue = standardDeviationPerNumberOfValuesPerHashValue;
+        retVal->meanForNumberOfValuesPerHashValue = averageNumberOfValuesPerHashValue;
         
-        variance = variance / mInverseIndex->size();
-        int standardDeviation = sqrt(variance);
-        standardDeviationPerNumberOfValuesPerHashValue.push_back(standardDeviation);
+        retVal->numberOfCreatedHashValuesPerHashFunction = numberOfCreatedHashValuesPerHashFunction;
     }
-    
-    size_t varianceForNumberOfHashValues = 0;
-    for (auto it = mInverseIndex->begin(); it != mInverseIndex->end(); ++it) {
-       if (*it == NULL) continue;
-       varianceForNumberOfHashValues += pow((*it)->size() - meanForNumberHashValues, 2);
-    }
-    
-    retVal->mean = meanForNumberHashValues;
-    retVal->standardDeviation = sqrt(varianceForNumberOfHashValues);
-    
-    retVal->totalCountForOccurenceOfHashValues = distribution;
-    retVal->standardDeviationForNumberOfValuesPerHashValue = standardDeviationPerNumberOfValuesPerHashValue;
-    retVal->meanForNumberOfValuesPerHashValue = averageNumberOfValuesPerHashValue;
-    
-    retVal->numberOfCreatedHashValuesPerHashFunction = numberOfCreatedHashValuesPerHashFunction;
-    
     return retVal;
 }
 void InverseIndexStorageUnorderedMap::prune(size_t pValue) { 

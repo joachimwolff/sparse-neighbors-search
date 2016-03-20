@@ -1,3 +1,12 @@
+bioinf_learn/__init__.pyc
+bioinf_learn/cluster/__init__.pyc
+bioinf_learn/cluster/minHashClustering.pyc
+bioinf_learn/cluster/minHashDBSCAN.pyc
+bioinf_learn/cluster/minHashSpectralClustering.pyc
+bioinf_learn/computation/inverseIndex.cpp
+bioinf_learn/computation/inverseIndexStorageUnorderedMap.cpp
+bioinf_learn/neighbors/__init__.pyc
+bioinf_learn/neighbors/nearestNeighborsCppInterface.pyc
 *.pyc
 example/.ipynb_checkpoints/
 neighborsMinHash.egg-info/

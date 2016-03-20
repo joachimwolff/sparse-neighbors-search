@@ -93,6 +93,7 @@ distributionInverseIndex* InverseIndex::getDistribution() {
 
 // compute the signature for one instance
 vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance) {
+    if (pRawData == NULL) return NULL;
     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
 
     for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
@@ -113,9 +114,9 @@ vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const
 }
 
 vsize_t* InverseIndex::shingle(vsize_t* pSignature) {
-    
+    if (pSignature == NULL) return NULL;
     vsize_t* signature = new vsize_t(mInverseIndexSize);
-    size_t iterationSize = (mNumberOfHashFunctions * mBlockSize) / mShingleSize;
+    size_t iterationSize = ceil((mNumberOfHashFunctions * mBlockSize) / mShingleSize);
     if (mShingle == 1) {
         
         // if 0 than combine hash values inside the block to one new hash value
@@ -226,29 +227,31 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     umap_uniqueElement* instanceSignature = new umap_uniqueElement();
     instanceSignature->reserve(sizeOfInstances);
     vvsize_t_p* signatures = computeSignatureVectors(pRawData, false);
+    if (signatures != NULL) {
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
-    for (size_t i = 0; i < signatures->size(); ++i) {
-
-        size_t signatureId = 0;
-        for (size_t j = 0; j < pRawData->getSizeOfInstance(i); ++j) {
-                signatureId = mHash->hash((pRawData->getNextElement(i, j) +1), (signatureId+1), MAX_VALUE);
-        }
-        
-        if (instanceSignature->find(signatureId) == instanceSignature->end()) {
-                vsize_t* doubleInstanceVector = new vsize_t(1);
-                (*doubleInstanceVector)[0] = i;
-                uniqueElement element;
-                element.instances = doubleInstanceVector; 
-                element.signature = (*signatures)[i];
-                #pragma omp critical
-                (*instanceSignature)[signatureId] = element;
-        } else {
-            #pragma omp critical
-            {
-                (*instanceSignature)[signatureId].instances->push_back(i);
-                mDoubleElementsQueryCount += 1;
+        for (size_t i = 0; i < signatures->size(); ++i) {
+    
+            size_t signatureId = 0;
+            for (size_t j = 0; j < pRawData->getSizeOfInstance(i); ++j) {
+                    signatureId = mHash->hash((pRawData->getNextElement(i, j) +1), (signatureId+1), MAX_VALUE);
             }
-        } 
+            
+            if (instanceSignature->find(signatureId) == instanceSignature->end()) {
+                    vsize_t* doubleInstanceVector = new vsize_t(1);
+                    (*doubleInstanceVector)[0] = i;
+                    uniqueElement element;
+                    element.instances = doubleInstanceVector; 
+                    element.signature = (*signatures)[i];
+                    #pragma omp critical
+                    (*instanceSignature)[signatureId] = element;
+            } else {
+                #pragma omp critical
+                {
+                    (*instanceSignature)[signatureId].instances->push_back(i);
+                    mDoubleElementsQueryCount += 1;
+                }
+            } 
+        }
     }
     delete signatures;
     return instanceSignature;
@@ -259,6 +262,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     mInverseIndexCuda->copyFittingDataToGpu(pRawData);
     #endif
     vvsize_t_p* signatures = computeSignatureVectors(pRawData, true);
+    if (signatures == NULL) return;
     // compute how often the inverse index should be pruned 
     size_t pruneEveryNInstances = ceil(signatures->size() * mPruneInverseIndexAfterInstance);
     #ifdef OPENMP
@@ -289,18 +293,24 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
                 mDoubleElementsStorageCount += 1;
             }
         }      
-        for (size_t j = 0; j < (*signatures)[i]->size(); ++j) {
-            mInverseIndexStorage->insert(j, (*(*signatures)[i])[j], i, mRemoveValueWithLeastSigificantBit);
-            
-        }
+        // #pragma omp critical
+        // {
+            for (size_t j = 0; j < (*signatures)[i]->size(); ++j) {
+                mInverseIndexStorage->insert(j, (*(*signatures)[i])[j], i, mRemoveValueWithLeastSigificantBit);
+            }
+        // }
         
         if (signatures->size() == pruneEveryNInstances) {
-            pruneEveryNInstances += pruneEveryNInstances;
-            if (mPruneInverseIndex > -1) {
-                mInverseIndexStorage->prune(mPruneInverseIndex);
-            }
-            if (mRemoveHashFunctionWithLessEntriesAs > -1) {
-                mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
+            #pragma omp critical
+            {
+                pruneEveryNInstances += pruneEveryNInstances;
+                if (mPruneInverseIndex > -1) {
+                    
+                    mInverseIndexStorage->prune(mPruneInverseIndex);
+                }
+                if (mRemoveHashFunctionWithLessEntriesAs > -1) {
+                    mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
+                }
             }
         }
         
