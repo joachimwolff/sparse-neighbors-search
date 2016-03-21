@@ -15,6 +15,7 @@
 #include <iterator>
 #include <utility>
 
+#include <assert.h>
 #ifdef OPENMP
 #include <omp.h>
 #endif
@@ -85,7 +86,7 @@ InverseIndex::~InverseIndex() {
     delete mSignatureStorage;
     delete mHash;
     delete mInverseIndexStorage;
-}
+} 
 
 distributionInverseIndex* InverseIndex::getDistribution() {
     return mInverseIndexStorage->getDistribution();
@@ -93,19 +94,34 @@ distributionInverseIndex* InverseIndex::getDistribution() {
 
 // compute the signature for one instance
 vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance) {
+
     if (pRawData == NULL) return NULL;
     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
 
     for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
+        // printf("instance: %i, size: %i", pInstance, pRawData->getSizeOfInstance(pInstance));
+        // fflush(stdout);
             size_t nearestNeighborsValue = MAX_VALUE;        
-            for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); ++i) {
+            for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); i++) {
                 size_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), (j+1), MAX_VALUE);
                 if (hashValue < nearestNeighborsValue) {
                     nearestNeighborsValue = hashValue;
                 }
+                // if ((unsigned int)i > (unsigned int)(pRawData->getSizeOfInstance(pInstance))) {
+                //     printf ("STOP\n");
+                //     break;
+                // } 
+                // std::cout << pRawData->getSizeOfInstance(pInstance) << std::endl;
+                // printf("pInstance: %u, size: %u, i: %u\n", pInstance, pRawData->getSizeOfInstance(pInstance), i);
+                // fflush(stdout);
+                // bool foo = i < pRawData->getSizeOfInstance(pInstance);
+                // std::cout << "foo: " << foo << std::endl;
+                // assert(i < pRawData->getSizeOfInstance(pInstance));
             }
             (*signature)[j] = nearestNeighborsValue;
     }
+    // printf("LOOP DONE.\n");
+    // fflush(stdout);
     // reduce number of hash values by a factor of mShingleSize
     if (mShingle) {
         return shingle(signature);
@@ -185,7 +201,6 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
     #ifdef OPENMP
     omp_set_dynamic(0);
     #endif
-    
     vvsize_t_p* signatures = new vvsize_t_p(pRawData->size(), NULL);
     #ifdef CUDA
     if (mCpuGpuLoadBalancing == 0) {
@@ -193,7 +208,7 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
         #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
         for (size_t instance = 0; instance < pRawData->size(); ++instance) {
             if (mHashAlgorithm == 0) {
-                // use nearestNeighbors
+                // use nearestNeighbors 
                 (*signatures)[instance] = computeSignature(pRawData, instance);
             } else if (mHashAlgorithm == 1) {
                 // use wta hash
@@ -256,12 +271,16 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     delete signatures;
     return instanceSignature;
 }
-void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
+void InverseIndex::fit(const SparseMatrixFloat* pRawData, size_t pStartIndex) {
     mMaxNnz = pRawData->getMaxNnz();
     #ifdef CUDA
-    mInverseIndexCuda->copyFittingDataToGpu(pRawData);
+    if (mCpuGpuLoadBalancing == 1) {
+        mInverseIndexCuda->copyFittingDataToGpu(pRawData, pStartIndex);
+    }
     #endif
+
     vvsize_t_p* signatures = computeSignatureVectors(pRawData, true);
+
     if (signatures == NULL) return;
     // compute how often the inverse index should be pruned 
     size_t pruneEveryNInstances = ceil(signatures->size() * mPruneInverseIndexAfterInstance);
@@ -272,6 +291,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
     // store signatures in signatureStorage
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     for (size_t i = 0; i < signatures->size(); ++i) {
+
         if ((*signatures)[i] == NULL) continue;
         size_t signatureId = 0;
         for (size_t j = 0; j < pRawData->getSizeOfInstance(i); ++j) {
@@ -289,14 +309,14 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
         } else {
             #pragma omp critical
             {            
-                mSignatureStorage->operator[](signatureId).instances->push_back(i);
+                mSignatureStorage->operator[](signatureId).instances->push_back(i+pStartIndex);
                 mDoubleElementsStorageCount += 1;
             }
         }      
         // #pragma omp critical
         // {
             for (size_t j = 0; j < (*signatures)[i]->size(); ++j) {
-                mInverseIndexStorage->insert(j, (*(*signatures)[i])[j], i, mRemoveValueWithLeastSigificantBit);
+                mInverseIndexStorage->insert(j, (*(*signatures)[i])[j], i+pStartIndex, mRemoveValueWithLeastSigificantBit);
             }
         // }
         

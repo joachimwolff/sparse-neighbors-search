@@ -76,7 +76,7 @@ class InverseIndex {
   	vsize_t* computeSignatureWTA(const SparseMatrixFloat* pRawData, const size_t pInstance);
     vvsize_t_p* computeSignatureVectors(const SparseMatrixFloat* pRawData, const bool pFitting);
   	umap_uniqueElement* computeSignatureMap(const SparseMatrixFloat* pRawData);
-  	void fit(const SparseMatrixFloat* pRawData);
+  	void fit(const SparseMatrixFloat* pRawData, size_t pStartIndex=0);
   	neighborhood* kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                 const size_t pNneighborhood, 
                                 const bool pDoubleElementsStorageCount,
@@ -87,10 +87,11 @@ class InverseIndex {
     distributionInverseIndex* getDistribution();
     vvsize_t_p* computeSignaturesOnGpu(const SparseMatrixFloat* pRawData, size_t pStartIndex, size_t pEndIndex, size_t pNumberOfInstances,
     size_t pNumberOfBlocks, size_t pNumberOfThreads);
-    
+    #ifdef CUDA
    int* get_dev_FeatureList() {
        return mInverseIndexCuda->get_mDev_FeatureList();
    };
+   
    int* get_dev_SizeOfInstanceList() {
        return mInverseIndexCuda->get_mDev_SizeOfInstanceList();
    };
@@ -100,6 +101,6 @@ class InverseIndex {
    float* get_dev_ValuesList() {
        return mInverseIndexCuda->get_mDev_ValuesList();
    };                                   
-                                        
+   #endif                           
 };
 #endif // INVERSE_INDEX_H

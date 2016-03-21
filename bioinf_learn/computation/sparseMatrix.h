@@ -35,6 +35,9 @@ class SparseMatrixFloat {
         mSparseMatrix = new size_t [pNumberOfInstances * pMaxNnz];
         mSparseMatrixValues = new float [pNumberOfInstances * pMaxNnz];
         mSizesOfInstances = new size_t [pNumberOfInstances];
+        // for (size_t i = 0; i < pNumberOfInstances; ++i) {
+        //     mSizesOfInstances[i] = 0;
+        // }
         mMaxNnz = pMaxNnz;
         mNumberOfInstances = pNumberOfInstances;
     };
@@ -45,19 +48,19 @@ class SparseMatrixFloat {
     };
     size_t* getSparseMatrixIndex() const{
         return mSparseMatrix;
-    }
+    };
     float* getSparseMatrixValues() const{
         return mSparseMatrixValues;
-    }
+    };
     size_t* getSparseMatrixSizeOfInstances() const{
         return mSizesOfInstances;
-    }
+    };
     size_t getMaxNnz() const {
         return mMaxNnz;
-    }
+    };
     size_t getNumberOfInstances() const {
         return mNumberOfInstances;
-    }
+    };
     size_t getNextElement(size_t pInstance, size_t pCounter) const {
         if (pInstance < mNumberOfInstances && pInstance*mMaxNnz+pCounter < mNumberOfInstances*mMaxNnz) {
             if (pCounter < mSizesOfInstances[pInstance]) {
@@ -65,7 +68,7 @@ class SparseMatrixFloat {
             }
         }
         return MAX_VALUE;
-    }
+    };
     float getNextValue(size_t pInstance, size_t pCounter) const {
         if (pInstance < mNumberOfInstances && pInstance*mMaxNnz+pCounter < mNumberOfInstances*mMaxNnz) {
             if (pCounter < mSizesOfInstances[pInstance]) {
@@ -73,17 +76,17 @@ class SparseMatrixFloat {
             }
         }
         return MAX_VALUE;
-    }
+    };
     size_t size() const {
         return mNumberOfInstances;
-    }
+    };
     
     size_t getSizeOfInstance(size_t pInstance) const {
         if (pInstance < mNumberOfInstances) {
             return mSizesOfInstances[pInstance];
         }
         return 0;
-    }
+    };
     void insertElement(size_t pInstanceId, size_t pNnzCount, size_t pFeatureId, float pValue) {
         if (pInstanceId*mMaxNnz + pNnzCount < mNumberOfInstances * mMaxNnz) {
             mSparseMatrix[pInstanceId*mMaxNnz + pNnzCount] = pFeatureId;
@@ -96,7 +99,39 @@ class SparseMatrixFloat {
             mSizesOfInstances[pInstanceId] = pSizeOfInstance;
         }
     };
-
+    void addNewInstancesPartialFit(const SparseMatrixFloat* pMatrix) {
+        size_t numberOfInstances = this->getNumberOfInstances();
+        numberOfInstances += pMatrix->getNumberOfInstances();
+        size_t maxNnz = std::max(mMaxNnz, pMatrix->getMaxNnz());
+        
+        size_t* tmp_mSparseMatrix = new size_t [numberOfInstances * maxNnz];
+        float* tmp_mSparseMatrixValues = new float [numberOfInstances * maxNnz];
+        size_t* tmp_mSizesOfInstances = new size_t [numberOfInstances];
+        
+        for (size_t i = 0; i < this->getNumberOfInstances(); ++i) {
+            for (size_t j = 0; j < this->getSizeOfInstance(i); ++j) {
+                tmp_mSparseMatrix[i*maxNnz + j] = this->getNextElement(i, j);
+                tmp_mSparseMatrixValues[i*maxNnz + j] = this->getNextValue(i,j);
+            }
+            tmp_mSizesOfInstances[i] = this->getSizeOfInstance(i);
+        }
+        for (size_t i = 0; i < pMatrix->getNumberOfInstances(); ++i) {
+            for (size_t j = 0; j < pMatrix->getSizeOfInstance(i); ++j) {
+                tmp_mSparseMatrix[(i+this->getNumberOfInstances())*maxNnz + j] = pMatrix->getNextElement(i, j);
+                tmp_mSparseMatrixValues[(i+this->getNumberOfInstances())*maxNnz + j] = pMatrix->getNextValue(i,j);
+            }
+            tmp_mSizesOfInstances[i+this->getNumberOfInstances()] = pMatrix->getSizeOfInstance(i);
+        }
+        mMaxNnz = maxNnz;
+        mNumberOfInstances = numberOfInstances;
+        delete [] mSparseMatrix;
+        delete [] mSparseMatrixValues;
+        delete [] mSizesOfInstances;
+        delete pMatrix;
+        mSparseMatrix = tmp_mSparseMatrix;
+        mSparseMatrixValues = tmp_mSparseMatrixValues;
+        mSizesOfInstances = tmp_mSizesOfInstances;        
+    };
     std::vector<sortMapFloat> euclidianDistance(const std::vector<int> pRowIdVector, const size_t pNneighbors, 
                                                 const size_t pQueryId, const SparseMatrixFloat* pQueryData=NULL) const {
         // std::cout << "euclidean distance, queryId: " << pQueryId << std::endl;

@@ -76,8 +76,15 @@ void NearestNeighbors::fit(const SparseMatrixFloat* pRawData) {
     return;
 }
 
-void NearestNeighbors::partialFit() {
-
+void NearestNeighbors::partialFit(const SparseMatrixFloat* pRawData, size_t pStartIndex) {
+    mInverseIndex->fit(pRawData, pStartIndex);
+    #ifdef CUDA
+    mNearestNeighborsCuda->setFeatureList(mInverseIndex->get_dev_FeatureList());
+    mNearestNeighborsCuda->setValuesList(mInverseIndex->get_dev_ValuesList());
+    mNearestNeighborsCuda->setSizeOfInstanceList(mInverseIndex->get_dev_SizeOfInstanceList());
+    mNearestNeighborsCuda->setMaxNnz(mOriginalData->getMaxNnz());
+    #endif
+    return;
 }
 
 neighborhood* NearestNeighbors::kneighbors(const SparseMatrixFloat* pRawData,

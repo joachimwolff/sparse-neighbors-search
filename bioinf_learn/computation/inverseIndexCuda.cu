@@ -26,7 +26,11 @@ InverseIndexCuda::~InverseIndexCuda() {
     cudaFree(mDev_ValuesList);
     cudaFree(mDev_SizeOfInstanceList);
 }
-void InverseIndexCuda::copyFittingDataToGpu(const SparseMatrixFloat* pRawData) {
+void InverseIndexCuda::copyFittingDataToGpu(const SparseMatrixFloat* pRawData, size_t pStartIndex) {
+    // size_t neededMemory = numberOfInstances / iterations  * signaturesSize * sizeof(int);
+    // neededMemory += pNumberOfBlocks * mNumberOfHashFunctions * pBlockSizeShingle * sizeof(int);
+    // cudaMemGetInfo(&memory_free, &memory_total);
+    
     // memory for instances and their featureIds
     cudaMalloc((void **) &mDev_FeatureList,
             pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(int));
@@ -62,9 +66,9 @@ void InverseIndexCuda::copyFittingDataToGpu(const SparseMatrixFloat* pRawData) {
     cudaMemcpy(mDev_SizeOfInstanceList, dev_sizes,
             pRawData->getNumberOfInstances() * sizeof(int),
             cudaMemcpyHostToDevice);
-     for (unsigned int i = 0; i < pRawData->getNumberOfInstances(); ++i) {
-        // printf ("instanceId: %i, size: %i\n", i, dev_sizes[i]);
-     }
+    //  for (unsigned int i = 0; i < pRawData->getNumberOfInstances(); ++i) {
+    //     // printf ("instanceId: %i, size: %i\n", i, dev_sizes[i]);
+    //  }
      
      
     //   for (int i = 0; i < pRawData->getMaxNnz(); ++i) {
@@ -78,8 +82,8 @@ void InverseIndexCuda::copyFittingDataToGpu(const SparseMatrixFloat* pRawData) {
     //         // }   
     //     }
     free(dev_index);
-        free(dev_values);
-     free(dev_sizes);
+    free(dev_values);
+    free(dev_sizes);
 }
 void InverseIndexCuda::computeSignaturesFittingOnGpu(const SparseMatrixFloat* pRawData, 
                                                 size_t pStartIndex, size_t pEndIndex, 

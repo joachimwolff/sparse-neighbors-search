@@ -106,22 +106,57 @@ static PyObject* fit(PyObject* self, PyObject* args) {
     
     // parse from python list to a c++ map<size_t, vector<size_t> >
     // where key == instance id and vector<size_t> == non null feature ids
+        printf("parse data...");
+fflush(stdout);
     SparseMatrixFloat* originalDataMatrix = parseRawData(instancesListObj, featuresListObj, dataListObj, 
                                                     maxNumberOfInstances, maxNumberOfFeatures);
+        printf("parse data... DONE");
+fflush(stdout);
+
     // get pointer to the minhash object
     NearestNeighbors* nearestNeighbors = reinterpret_cast<NearestNeighbors* >(addressNearestNeighborsObject);
-
+    printf("set data...");
+fflush(stdout);
     nearestNeighbors->set_mOriginalData(originalDataMatrix);
-
+    printf("fit data...");
+fflush(stdout);
     nearestNeighbors->fit(originalDataMatrix);
-
+    printf("fit data... DONE");
+fflush(stdout);
     addressNearestNeighborsObject = reinterpret_cast<size_t>(nearestNeighbors);
     PyObject * pointerToInverseIndex = Py_BuildValue("k", addressNearestNeighborsObject);
     
     return pointerToInverseIndex;
 }
 static PyObject* partialFit(PyObject* self, PyObject* args) {
-    return fit(self, args);
+    size_t addressNearestNeighborsObject, maxNumberOfInstances, maxNumberOfFeatures;
+    PyObject* instancesListObj, *featuresListObj, *dataListObj;
+
+    if (!PyArg_ParseTuple(args, "O!O!O!kkk", 
+                            &PyList_Type, &instancesListObj, 
+                            &PyList_Type, &featuresListObj,
+                            &PyList_Type, &dataListObj,
+                            &maxNumberOfInstances,
+                            &maxNumberOfFeatures,
+                            &addressNearestNeighborsObject))
+        return NULL;
+    
+    // parse from python list to a c++ map<size_t, vector<size_t> >
+    // where key == instance id and vector<size_t> == non null feature ids
+    SparseMatrixFloat* originalDataMatrix = parseRawData(instancesListObj, featuresListObj, dataListObj, 
+                                                    maxNumberOfInstances, maxNumberOfFeatures);
+    // get pointer to the minhash object
+    NearestNeighbors* nearestNeighbors = reinterpret_cast<NearestNeighbors* >(addressNearestNeighborsObject);
+    size_t numberOfInstancesOld = nearestNeighbors->getOriginalData()->size();
+    nearestNeighbors->getOriginalData()->addNewInstancesPartialFit(originalDataMatrix);
+    nearestNeighbors->set_mOriginalData(originalDataMatrix);
+
+    nearestNeighbors->partialFit(originalDataMatrix, numberOfInstancesOld);
+
+    addressNearestNeighborsObject = reinterpret_cast<size_t>(nearestNeighbors);
+    PyObject * pointerToInverseIndex = Py_BuildValue("k", addressNearestNeighborsObject);
+    
+    return pointerToInverseIndex;
 }
 static PyObject* kneighbors(PyObject* self, PyObject* args) {
     

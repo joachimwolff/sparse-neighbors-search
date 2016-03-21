@@ -27,7 +27,7 @@ class InverseIndexCuda {
     size_t mShingle;
     size_t mHashAlgorithm;
     size_t mBlockSize;
-    
+    bool mDataOnGpu;
   public:
   	InverseIndexCuda(size_t pNumberOfHashFunctions, size_t pShingle, 
                         size_t pShingleSize, size_t pBlockSize);
@@ -38,7 +38,7 @@ class InverseIndexCuda {
                                     size_t pNumberOfThreads, size_t pShingleFactor, 
                                     size_t pBlockSizeShingle,
                                     vvsize_t_p* pSignatures);
-    void copyFittingDataToGpu(const SparseMatrixFloat* pRawData);
+    void copyFittingDataToGpu(const SparseMatrixFloat* pRawData, size_t pStartIndex);
     
    void computeSignaturesQueryOnGpu(const SparseMatrixFloat* pRawData, 
                                                 size_t pStartIndex, size_t pEndIndex, 

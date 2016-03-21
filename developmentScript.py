@@ -155,7 +155,7 @@ def test(data):
     #                   shingle=1, block_size=3, cpu_gpu_load_balancing = 0.0)
     
     # 0.9
-    print "fitting..."
+    print "creating object..."
     minHash = MinHash(number_of_hash_functions=200, max_bin_size= 45, shingle_size = 1,
                       similarity=False, minimal_blocks_in_common=4,
                       number_of_cores=4, prune_inverse_index=14, 
@@ -164,7 +164,11 @@ def test(data):
                       remove_hash_function_with_less_entries_as=0,
                       shingle=0, block_size=1, cpu_gpu_load_balancing = 0.0)
     # minHash.fit(data[0])
+    print "fitting..."
+
     minHash.fit(datasetBursi)
+    print "get distribution..."
+
     minHash.get_distribution_of_inverse_index()
     print "Fitting time: ",  time.time() - time_build_approx_start
     

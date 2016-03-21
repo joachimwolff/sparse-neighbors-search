@@ -11,7 +11,7 @@
 **/
 #include <Python.h>
 #include <iostream>
-
+#include <stdio.h>
 #include "typeDefinitions.h"
 
 
@@ -22,8 +22,8 @@ SparseMatrixFloat* parseRawData(PyObject * pInstancesListObj, PyObject * pFeatur
                                               size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures) {
     PyObject * instanceSize_tObj;
     PyObject * featureSize_tObj;
-    PyObject * dataSize_tObj; 
-
+    PyObject * dataSize_tObj;
+    printf("Max number of instances: %i\n", pMaxNumberOfInstances);
     size_t instanceOld = 0;
     size_t sizeOfFeatureVector = PyList_Size(pInstancesListObj);
     SparseMatrixFloat* originalData = new SparseMatrixFloat(pMaxNumberOfInstances, pMaxNumberOfFeatures);
@@ -41,14 +41,25 @@ SparseMatrixFloat* parseRawData(PyObject * pInstancesListObj, PyObject * pFeatur
         PyArg_Parse(dataSize_tObj, "f", &dataValue);
 
         if (instanceOld != instanceValue) {
+            // printf("size of instance %u: %u\n", instanceOld, featuresCount);
             originalData->insertToSizesOfInstances(instanceOld, featuresCount);
+            while (instanceOld+1 != instanceValue) {
+                ++instanceOld;
+                originalData->insertToSizesOfInstances(instanceOld, 0);
+            }
             featuresCount = 0;
         }
         originalData->insertElement(instanceValue, featuresCount, featureValue, dataValue);
         instanceOld = instanceValue;
         ++featuresCount;
     }
+    // printf("size of instance %u: %u\n", instanceOld, featuresCount);
+    
     originalData->insertToSizesOfInstances(instanceOld, featuresCount);
+    while (instanceOld+1 < pMaxNumberOfInstances) {
+        ++instanceOld;
+        originalData->insertToSizesOfInstances(instanceOld, 0);
+    }
 
     return originalData;
 }
