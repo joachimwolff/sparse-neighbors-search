@@ -289,7 +289,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData, size_t pStartIndex) {
     #endif
     
     // store signatures in signatureStorage
-#pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+// #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     for (size_t i = 0; i < signatures->size(); ++i) {
 
         if ((*signatures)[i] == NULL) continue;
@@ -304,10 +304,10 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData, size_t pStartIndex) {
             uniqueElement element;
             element.instances = doubleInstanceVector;
             element.signature = (*signatures)[i];
-            #pragma omp critical
+            // #pragma omp critical
             mSignatureStorage->operator[](signatureId) = element;
         } else {
-            #pragma omp critical
+            // #pragma omp critical
             {            
                 mSignatureStorage->operator[](signatureId).instances->push_back(i+pStartIndex);
                 mDoubleElementsStorageCount += 1;
@@ -319,25 +319,39 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData, size_t pStartIndex) {
                 mInverseIndexStorage->insert(j, (*(*signatures)[i])[j], i+pStartIndex, mRemoveValueWithLeastSigificantBit);
             }
         // }
-        
-        if (signatures->size() == pruneEveryNInstances) {
-            #pragma omp critical
-            {
-                pruneEveryNInstances += pruneEveryNInstances;
-                if (mPruneInverseIndex > -1) {
-                    
-                    mInverseIndexStorage->prune(mPruneInverseIndex);
-                }
-                if (mRemoveHashFunctionWithLessEntriesAs > -1) {
-                    mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
-                }
+        // #pragma omp barrier 
+        // {
+            if (signatures->size() == pruneEveryNInstances) {
+                
+                // #pragma omp critical
+                // {
+                    pruneEveryNInstances += pruneEveryNInstances;
+                    if (mPruneInverseIndex > -1) {
+                            // std::cout << __LINE__ << std::endl;
+    
+                        mInverseIndexStorage->prune(mPruneInverseIndex);
+                            // std::cout << __LINE__ << std::endl;
+    
+                    }
+                        // std::cout << __LINE__ << std::endl;
+    
+                    if (mRemoveHashFunctionWithLessEntriesAs > -1) {
+                            // std::cout << __LINE__ << std::endl;
+    
+                        mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
+                            // std::cout << __LINE__ << std::endl;
+    
+                    }
+                // }
             }
-        }
+        // }
         
     }
+
     if (mPruneInverseIndex > -1) {
         mInverseIndexStorage->prune(mPruneInverseIndex);
     }
+
     if (mRemoveHashFunctionWithLessEntriesAs > -1) {
         mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
     }

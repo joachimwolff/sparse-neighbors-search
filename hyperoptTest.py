@@ -45,16 +45,32 @@ def rfam_data(rfam_ids, n_max=300, complexity=3, nbits=13):
     return data_matrix, targets
 def compute_score(error, memory, time, max_memory, max_time, alpha, beta):
     print "error1: ", error
+    # if error >= 1.0:
+    #     return 12
+    # if error > 0.9:
+    #     return 11
+    # if error > 0.8:
+    #     return 10
+    # if error > 0.7:
+    #     return 9
+    # if error > 0.6:
+    #     return 8
+    # if error > 0.5:
+    #     return 7
     # if error > 0.4:
-    #     return 3
-    # if error > 0.35:
-    #     return 4
+    #     return 6
     # if error > 0.3:
-    #     return 2
+    #     return 5
+    # # if error > 0.2:
+    # #     return 4
+    # # if error > 0.15:
+    # #     return 3
+    # # if error > 0.1:
+    # #     return 2   
     if memory == 0:
-        return 10
+        return 15
     if time == 0:
-        return 10
+        return 15
     # error = error/(float (max_error))
     # memory = math.log(memory/float(max_memory), 10)*alpha
     # time = math.log(time/float(max_time), 10)*beta
@@ -63,7 +79,7 @@ def compute_score(error, memory, time, max_memory, max_time, alpha, beta):
     print "memory: ", memory
     print "time: ", time
     print "score: ", error + memory  + time
-    return error #+ memory  + time
+    return error + memory + time
 
  
 
@@ -174,20 +190,20 @@ if not os.path.isfile("bursiDataset"):
 else:
     fileObject = open("bursiDataset",'r')
     datasetBursi = pickle.load(fileObject)
-categories = ['alt.atheism', 'talk.religion.misc', 'comp.graphics', 'sci.space']
-newsgroups_train = fetch_20newsgroups(subset='train', categories=categories)
-vectorizer = TfidfVectorizer()
-vectors_training = vectorizer.fit_transform(newsgroups_train.data)
+# categories = ['alt.atheism', 'talk.religion.misc', 'comp.graphics', 'sci.space']
+# newsgroups_train = fetch_20newsgroups(subset='train', categories=categories)
+# vectorizer = TfidfVectorizer()
+# vectors_training = vectorizer.fit_transform(newsgroups_train.data)
 
-newsgroups_test = fetch_20newsgroups(subset='test',remove=('headers', 'footers', 'quotes'), categories=categories)
-vectors_test = vectorizer.transform(newsgroups_test.data)
-datasetBursi = vectors_test
-# rfam_ids=['RF00004','RF00005','RF00015','RF00020','RF00026','RF00169',
-#           'RF00380','RF00386','RF01051','RF01055','RF01234','RF01699',
-#           'RF01701','RF01705','RF01731','RF01734','RF01745','RF01750',
-#           'RF01942','RF01998','RF02005','RF02012','RF02034']
-# X, y = rfam_data(rfam_ids[:3], n_max=100, complexity=3, nbits=16)
-# datasetBursi = X 
+# newsgroups_test = fetch_20newsgroups(subset='test',remove=('headers', 'footers', 'quotes'), categories=categories)
+# vectors_test = vectorizer.transform(newsgroups_test.data)
+# datasetBursi = vectors_test
+rfam_ids=['RF00004','RF00005','RF00015','RF00020','RF00026','RF00169',
+          'RF00380','RF00386','RF01051','RF01055','RF01234','RF01699',
+          'RF01701','RF01705','RF01731','RF01734','RF01745','RF01750',
+          'RF01942','RF01998','RF02005','RF02012','RF02034']
+X, y = rfam_data(rfam_ids[:3], n_max=100, complexity=3, nbits=16)
+datasetBursi = X 
 # get values with out
 # minHash_org = MinHash(n_neighbors=10, radius=1.0, fast=False, number_of_hash_functions=800,
 #                  max_bin_size = 50, minimal_blocks_in_common = 1, shingle_size = 1, excess_factor = 1,
@@ -223,7 +239,7 @@ neighbors_sklearn = nearest_Neighbors.kneighbors(n_neighbors=10, return_distance
 # define a search space
 from hyperopt import hp
 space = {
-        'number_of_hash_functions': hp.uniform('number_of_hash_functions', 150, 900),
+        'number_of_hash_functions': hp.uniform('number_of_hash_functions', 150, 1000),
         'max_bin_size': hp.uniform('max_bin_size', 10, 100),
         'shingle_size': hp.choice('shingle_size', [1, 2, 3, 4]),
         'excess_factor': hp.uniform('excess_factor', 1, 15),

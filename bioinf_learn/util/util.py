@@ -497,7 +497,7 @@ def plotDataBenchmark(data, color, label, title, xticks, ylabel,
     plt.grid(True)
     plt.show()
 
-def measure_performance(dataset, n_neighbors_sklearn = 10, n_neighbors_minHash = 10, size_of_query = 50, number_of_hashfunctions=[400]):
+def measure_performance(dataset, minHashParameters, n_neighbors_sklearn = 10, n_neighbors_minHash = 10, size_of_query = 50, number_of_hashfunctions=[400]):
     """Function to measure and plot the performance for the given input data.
         For the query times two methods are measured:
             - All queries at once
@@ -541,12 +541,19 @@ def measure_performance(dataset, n_neighbors_sklearn = 10, n_neighbors_minHash =
         iteration_of_dataset += 1
         # print "Dataset processing: ", iteration_of_dataset, "/", length_of_dataset
         nearest_neighbor_sklearn = NearestNeighbors(n_neighbors = n_neighbors_sklearn)
-        nearest_neighbor_minHash = MinHash(n_neighbors = n_neighbors_minHash, number_of_hash_functions=hash_function,
-                         max_bin_size= 36, shingle_size = 4, similarity=False, 
-                        number_of_cores=4,
-                     prune_inverse_index=2, store_value_with_least_sigificant_bit=1, excess_factor=11,
-                    prune_inverse_index_after_instance=0.5, remove_hash_function_with_less_entries_as=4, 
-                     shingle=0, block_size=2)
+        nearest_neighbor_minHash = MinHash(n_neighbors = minHashParameters[0], 
+                                number_of_hash_functions=hash_function,
+                                max_bin_size= minHashParameters[1], 
+                                shingle_size = minHashParameters[2], 
+                                similarity=minHashParameters[3], 
+                                number_of_cores=minHashParameters[4],
+                                prune_inverse_index=minHashParameters[5], 
+                                store_value_with_least_sigificant_bit=minHashParameters[6], 
+                                excess_factor=minHashParameters[7],
+                                prune_inverse_index_after_instance=minHashParameters[8], 
+                                remove_hash_function_with_less_entries_as=minHashParameters[9], 
+                                shingle=minHashParameters[10], 
+                                block_size=minHashParameters[11])
         nearest_neighbor_lshf = LSHForest(n_estimators=20, n_candidates=200, n_neighbors=n_neighbors_minHash)
         time_start = time.time()
         nearest_neighbor_sklearn.fit(dataset)

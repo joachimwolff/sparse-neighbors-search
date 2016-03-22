@@ -54,9 +54,9 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
 
     if ((*mInverseIndex)[pVectorId] == NULL) return;
 
-#ifdef OPENMP
-#pragma omp critical
-#endif
+// #ifdef OPENMP
+// #pragma omp critical
+// #endif
    {
 
         auto itHashValue_InstanceVector = (*mInverseIndex)[pVectorId]->find(pHashValue);
@@ -158,17 +158,25 @@ distributionInverseIndex* InverseIndexStorageUnorderedMap::getDistribution() {
 void InverseIndexStorageUnorderedMap::prune(size_t pValue) { 
     if (mInverseIndex == NULL) return;
     for (auto it = mInverseIndex->begin(); it != mInverseIndex->end(); ++it) {
+        
         vsize_t elementsToDelete;
+        
+        if ((*it) == NULL) continue;
+        
         for (auto itMap = (*it)->begin(); itMap != (*it)->end(); ++itMap) {
+            
             if (itMap->second != NULL && itMap->second->size() <= pValue) {
                 elementsToDelete.push_back(itMap->first);
                 delete itMap->second;
                 itMap->second = NULL;
             }
         }
+        
         for (size_t i = 0; i < elementsToDelete.size(); ++i) {
+            
             if ((*it) == NULL) continue;
             (*it)->erase(elementsToDelete[i]);
+            // (*it) = NULL;
         }
         elementsToDelete.clear();
     }

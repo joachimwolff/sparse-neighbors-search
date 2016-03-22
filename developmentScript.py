@@ -107,14 +107,14 @@ def test(data):
         fileObject = open("bursiDataset",'r')
         datasetBursi = pickle.load(fileObject)  
     # if not os.path.exists("inverse_index.approx"):
-    categories = ['alt.atheism', 'talk.religion.misc', 'comp.graphics', 'sci.space']
-    newsgroups_train = fetch_20newsgroups(subset='train',remove=('headers', 'footers', 'quotes'), categories=categories)
-    vectorizer = TfidfVectorizer()
-    vectors_training = vectorizer.fit_transform(newsgroups_train.data)
+    # categories = ['alt.atheism', 'talk.religion.misc', 'comp.graphics', 'sci.space']
+    # newsgroups_train = fetch_20newsgroups(subset='train',remove=('headers', 'footers', 'quotes'), categories=categories)
+    # vectorizer = TfidfVectorizer()
+    # vectors_training = vectorizer.fit_transform(newsgroups_train.data)
 
-    newsgroups_test = fetch_20newsgroups(subset='test',remove=('headers', 'footers', 'quotes'), categories=categories)
-    vectors_test = vectorizer.transform(newsgroups_test.data)
-    datasetBursi = vectors_training
+    # newsgroups_test = fetch_20newsgroups(subset='test',remove=('headers', 'footers', 'quotes'), categories=categories)
+    # vectors_test = vectorizer.transform(newsgroups_test.data)
+    # datasetBursi = vectors_training
 
     # rfam_ids=['RF00004','RF00005','RF00015','RF00020','RF00026','RF00169',
     #       'RF00380','RF00386','RF01051','RF01055','RF01234','RF01699',
@@ -156,13 +156,13 @@ def test(data):
     
     # 0.9
     print "creating object..."
-    minHash = MinHash(number_of_hash_functions=200, max_bin_size= 45, shingle_size = 1,
-                      similarity=False, minimal_blocks_in_common=4,
-                      number_of_cores=4, prune_inverse_index=14, 
-                      store_value_with_least_sigificant_bit=0,
-                      excess_factor=10, prune_inverse_index_after_instance=0.0, 
-                      remove_hash_function_with_less_entries_as=0,
-                      shingle=0, block_size=1, cpu_gpu_load_balancing = 0.0)
+    minHash = MinHash(number_of_hash_functions=163, max_bin_size= 54, shingle_size = 4,
+                      similarity=False, minimal_blocks_in_common=1,
+                      number_of_cores=4, prune_inverse_index=0, 
+                      store_value_with_least_sigificant_bit=1,
+                      excess_factor=8, prune_inverse_index_after_instance=0.0, 
+                      remove_hash_function_with_less_entries_as=603,
+                      shingle=1, block_size=4, cpu_gpu_load_balancing = 0.0)
     # minHash.fit(data[0])
     print "fitting..."
 
