@@ -33,6 +33,7 @@ import time
 import cPickle as pickle
 # from neighborsMinHash import MinHashKNeighborsClassifier
 from bioinf_learn.neighbors import MinHash
+from bioinf_learn.neighbors import WtaHash
 # from neighborsMinHash.computation import InverseIndex
 import inspect
 from scipy.sparse import csr_matrix
@@ -156,13 +157,13 @@ def test(data):
     
     # 0.9
     print "creating object..."
-    minHash = MinHash(number_of_hash_functions=163, max_bin_size= 54, shingle_size = 4,
+    minHash = MinHash(number_of_hash_functions=450, max_bin_size= 50, shingle_size = 4, #rangeK_wta=40,
                       similarity=False, minimal_blocks_in_common=1,
-                      number_of_cores=4, prune_inverse_index=0, 
+                      number_of_cores=4, prune_inverse_index=1, 
                       store_value_with_least_sigificant_bit=1,
-                      excess_factor=8, prune_inverse_index_after_instance=0.0, 
-                      remove_hash_function_with_less_entries_as=603,
-                      shingle=1, block_size=4, cpu_gpu_load_balancing = 0.0)
+                      excess_factor=10, prune_inverse_index_after_instance=-1, 
+                      remove_hash_function_with_less_entries_as=-1,
+                      shingle=1, block_size=1, cpu_gpu_load_balancing = 1.0)
     # minHash.fit(data[0])
     print "fitting..."
 

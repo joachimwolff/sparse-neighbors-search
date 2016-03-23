@@ -28,7 +28,7 @@ __device__ size_t computeHashValueCuda(size_t key, size_t aModulo) {
     return key % aModulo;
 }
 
-__global__ void fitCuda(const int* pFeatureIdList, const int* pSizeOfInstanceList,
+__global__ void fitCudaMinHash(const int* pFeatureIdList, const int* pSizeOfInstanceList,
                     const int pNumberOfHashFunctions, const int pMaxNnz,
                     int* pComputedSignatures, 
                     const int pNumberOfInstances, const int pStartInstance, 
@@ -45,30 +45,10 @@ __global__ void fitCuda(const int* pFeatureIdList, const int* pSizeOfInstanceLis
     int signatureBlockValue;
     int shingleId;
     int signatureBlockId = blockIdx.x * pNumberOfHashFunctions * pBlockSize;
-    // compute one instance per block
-    // if one instance is computed, block takes next instance
-    // printf("pMaxNNz: %i\n", pMaxNnz);
-    // if (blockIdx.x == 0 && threadIdx.x == 0) {
-    //     printf("InstancesGPUFITTING: ");
-    //     for (int i = 0; i < pMaxNnz; ++i) {
-    //         // if (i % 100 == 0) {
-    //             // for (int j = 0; j < pSizeOfCandidates[i]; ++j) {
-    //                 // if (j % 20 == 0) {
-    //                     printf ("%f, ", pFeatureIdList[i]);
-                        
-    //                 // }
-    //             // }
-    //         // }   
-    //     }
-    //     // numberOfFeaturesInstance = pSizeOfInstanceList[instanceId];
-    // }
     while (instanceId < pNumberOfInstances) {
         // compute the nearestNeighborsValue for every hash function
         // if pBlockSize is greater as 1, hash functions * pBlockSize values 
         // are computed. They will be merged together by a factor of pShingleSize
-        // if (threadIdx.x == 0) {
-        //     printf ("instanceId: %i, size: %i\n", instanceId, pSizeOfInstanceList[instanceId]);
-        // }
         sizeOfInstance = pSizeOfInstanceList[instanceId];
         while (hashFunctionId < pNumberOfHashFunctions * pBlockSize && featureId < pNumberOfInstances*pMaxNnz) {
             for (unsigned int i = 0; i < sizeOfInstance; ++i) {
@@ -104,6 +84,61 @@ __global__ void fitCuda(const int* pFeatureIdList, const int* pSizeOfInstanceLis
     }
 }
 
+__global__ void fitCudaWtaHash(const int* pFeatureIdList, const int* pSizeOfInstanceList,
+                    const int pNumberOfHashFunctions, const int pMaxNnz,
+                    int* pComputedSignatures, 
+                    const int pNumberOfInstances, const int pStartInstance, 
+                    const int pBlockSize, const int pShingleSize,
+                    int* pSignaturesBlockSize, int pRangeK) {
+                        
+    int instanceId = blockIdx.x + pStartInstance;
+    int nearestNeighborsValue = MAX_VALUE;
+    int hashValue = 0;
+    int signatureSize = pNumberOfHashFunctions * pBlockSize / pShingleSize;
+    int featureId = blockIdx.x * pMaxNnz;
+    int hashFunctionId = threadIdx.x;
+    int sizeOfInstance;
+    int signatureBlockValue;
+    int shingleId;
+    int signatureBlockId = blockIdx.x * pNumberOfHashFunctions * pBlockSize;
+    while (instanceId < pNumberOfInstances) {
+        // compute the nearestNeighborsValue for every hash function
+        // if pBlockSize is greater as 1, hash functions * pBlockSize values 
+        // are computed. They will be merged together by a factor of pShingleSize
+        sizeOfInstance = pSizeOfInstanceList[instanceId];
+        while (hashFunctionId < pNumberOfHashFunctions * pBlockSize && featureId < pNumberOfInstances*pMaxNnz) {
+            for (unsigned int i = 0; i < sizeOfInstance; ++i) {
+                hashValue = computeHashValueCuda((pFeatureIdList[featureId + i]+1) * (hashFunctionId+1), MAX_VALUE);
+                if (hashValue < nearestNeighborsValue) {
+                    nearestNeighborsValue = hashValue;
+                }
+            }
+            
+            pSignaturesBlockSize[signatureBlockId + hashFunctionId] = nearestNeighborsValue;
+            hashFunctionId += blockDim.x;
+            nearestNeighborsValue = MAX_VALUE;
+        }
+        __syncthreads();
+        // merge pShingleSize values together.
+        // do one merge per thread
+        hashFunctionId = threadIdx.x * pShingleSize;
+        shingleId = threadIdx.x;
+        while (hashFunctionId < pNumberOfHashFunctions * pBlockSize ) {
+            signatureBlockValue = pSignaturesBlockSize[signatureBlockId + hashFunctionId];
+            for (unsigned int i = 1; i < pShingleSize && hashFunctionId+i < pNumberOfHashFunctions * pBlockSize; ++i) {
+                signatureBlockValue = computeHashValueCuda((pSignaturesBlockSize[signatureBlockId + hashFunctionId+i]+1) * (signatureBlockValue+1), MAX_VALUE);
+            }
+            pComputedSignatures[(instanceId-pStartInstance)*signatureSize + shingleId] = signatureBlockValue;
+            hashFunctionId += blockDim.x * pShingleSize;
+            shingleId += blockDim.x;
+        }
+        __syncthreads();
+        instanceId += gridDim.x;
+        featureId = instanceId * pMaxNnz;
+        nearestNeighborsValue = MAX_VALUE;
+        hashFunctionId = threadIdx.x;
+    }
+}
 
 
 // __global__ void createSortedHistogramsCuda(hits* pHitsPerInstance,
@@ -390,7 +425,7 @@ __global__ void euclideanDistanceCuda(cudaInstanceVector* candidates, int pSize,
                     value[threadIdx.x] = pValuesList[indexSparseMatrixInstance+pointerToFeatureInstance] 
                                     - pValuesList[indexSparseMatrixNeighbor+pointerToFeatureNeighbor];
                     
-                    printf("11euclid: %f\n", euclideanDistance[threadIdx.x] );
+                    // printf("11euclid: %f\n", euclideanDistance[threadIdx.x] );
                     // increase both counters to the next element 
                     ++pointerToFeatureInstance;
                     ++pointerToFeatureNeighbor;
@@ -423,14 +458,14 @@ __global__ void euclideanDistanceCuda(cudaInstanceVector* candidates, int pSize,
             }
             __syncthreads();
             
-            printf("22euclid: %f\n", euclideanDistance[threadIdx.x]);
+            // printf("22euclid: %f\n", euclideanDistance[threadIdx.x]);
             // square root of the sum
             // printf("blockId: %i, threadId: %i\n", blockIdx.x, threadIdx.x);
             
             
             // printf("instanceId: %i, neighborId: %i,  euclidean distance: %f, sizeOfCandidates: %i\n",instanceIdCandidates, instanceIdNeighbor, euclideanDistance[threadIdx.x], pSizeOfCandidates[instanceId]);
             // euclideanDistance[threadIdx.x] = sqrtf(euclideanDistance[threadIdx.x]);
-            printf("33euclid: %f\n", euclideanDistance[threadIdx.x]);
+            // printf("33euclid: %f\n", euclideanDistance[threadIdx.x]);
             
             __syncthreads();
             // printf("threadId: %i, euclidean distance: %f", threadId, euclideanDistance[threadIdx.x]);
@@ -445,22 +480,22 @@ __global__ void euclideanDistanceCuda(cudaInstanceVector* candidates, int pSize,
         }
         __syncthreads();
         // sort instances by euclidean distance
-        if (threadIdx.x == 0 && blockIdx.x == 0) {
-           for (int i = 0; i < pSizeOfCandidates[instanceIdCandidates]; ++i) {
-               printf("id: %i, value: %f\n", candidates[instanceIdCandidates].instance[i].x, candidates[instanceIdCandidates].instance[i].y);
-           } 
-        }
+        // if (threadIdx.x == 0 && blockIdx.x == 0) {
+        //    for (int i = 0; i < pSizeOfCandidates[instanceIdCandidates]; ++i) {
+        //        printf("id: %i, value: %f\n", candidates[instanceIdCandidates].instance[i].x, candidates[instanceIdCandidates].instance[i].y);
+        //    } 
+        // }
         __syncthreads();
         
         sortDesc(candidates, instanceIdCandidates, pSizeOfCandidates[instanceIdCandidates]);
-        __syncthreads();
-        if (threadIdx.x == 0 && blockIdx.x == 0) {
-        printf("SORTED:\n");
+        // __syncthreads();
+        // if (threadIdx.x == 0 && blockIdx.x == 0) {
+        // printf("SORTED:\n");
             
-           for (int i = 0; i < pSizeOfCandidates[instanceIdCandidates]; ++i) {
-               printf("id: %i, value: %f\n", candidates[instanceIdCandidates].instance[i].x, candidates[instanceIdCandidates].instance[i].y);
-           } 
-        }
+        //    for (int i = 0; i < pSizeOfCandidates[instanceIdCandidates]; ++i) {
+        //        printf("id: %i, value: %f\n", candidates[instanceIdCandidates].instance[i].x, candidates[instanceIdCandidates].instance[i].y);
+        //    } 
+        // }
         // if (blockIdx.x == 0 && threadIdx.x == 0) {
         //     for (int i = 0; i < pSizeOfCandidates[instanceIdCandidates]; ++i) {
         //         printf("candidate: %i, value: %f\n", candidates[instanceIdCandidates].instance[threadId].x, candidates[instanceIdCandidates].instance[threadId].y);

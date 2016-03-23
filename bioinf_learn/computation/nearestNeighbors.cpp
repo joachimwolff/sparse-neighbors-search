@@ -30,7 +30,7 @@ NearestNeighbors::NearestNeighbors(size_t pNumberOfHashFunctions, size_t pShingl
                     int pFast, int pSimilarity, int pPruneInverseIndex, float pPruneInverseIndexAfterInstance, 
                     int pRemoveHashFunctionWithLessEntriesAs, size_t pHashAlgorithm,
                     size_t pBlockSize, size_t pShingle, size_t pRemoveValueWithLeastSigificantBit,
-                    float pCpuGpuLoadBalancing) {
+                    float pCpuGpuLoadBalancing, size_t pRangeK_Wta) {
             // printf("foo%i\n", __LINE__);
 
         mInverseIndex = new InverseIndex(pNumberOfHashFunctions, pShingleSize,
@@ -39,7 +39,8 @@ NearestNeighbors::NearestNeighbors(size_t pNumberOfHashFunctions, size_t pShingl
                                     pExcessFactor, pMaximalNumberOfHashCollisions,
                                     pPruneInverseIndex, pPruneInverseIndexAfterInstance, 
                                     pRemoveHashFunctionWithLessEntriesAs, pHashAlgorithm, pBlockSize, pShingle,
-                                    pRemoveValueWithLeastSigificantBit, pCpuGpuLoadBalancing);
+                                    pRemoveValueWithLeastSigificantBit, 
+                                    pCpuGpuLoadBalancing, pRangeK_Wta);
 
         mNneighbors = pSizeOfNeighborhood;
         mFast = pFast;

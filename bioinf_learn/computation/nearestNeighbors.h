@@ -54,7 +54,7 @@ class NearestNeighbors {
                     int pRemoveHashFunctionWithLessEntriesAs, 
                     size_t pHashAlgorithm, size_t pBlockSize,
                     size_t pShingle, size_t pRemoveValueWithLeastSigificantBit,
-                    float pCpuGpuLoadBalancing);
+                    float pCpuGpuLoadBalancing, size_t pRangeK_Wta);
 
   	~NearestNeighbors(); 
     // Calculate the inverse index for the given instances.

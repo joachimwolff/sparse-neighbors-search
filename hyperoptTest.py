@@ -20,7 +20,7 @@ from eden.graph import Vectorizer
 from itertools import islice
 import numpy as np
 from scipy.sparse import vstack
-
+from bioinf_learn.neighbors import WtaHash
 def rfam_uri(family_id):
     return 'http://rfam.xfam.org/family/%s/alignment?acc=%s&format=fastau&download=0'%(family_id,family_id)
 
@@ -97,6 +97,7 @@ def objective(args):
     shingle = args["shingle"]
     remove_value_with_least_sigificant_bit =args["remove_value_with_least_sigificant_bit"]
     minimal_blocks_in_common = args['minimal_blocks_in_common']
+    rangeK_wta = args['rangeK_wta']
     # try:
     print "\n\n\n"        
     print "Values: "
@@ -111,11 +112,12 @@ def objective(args):
     print "block_size ", block_size
     print "shingle ", shingle
     print "remove_value_with_least_sigificant_bit ", remove_value_with_least_sigificant_bit
+    print 'rangeK_wta', rangeK_wta
     print "\n\n\n"        
     if number_of_hash_functions < 50:
         return 10
     print "Create minHash object"
-    minHash = MinHash(n_neighbors=10, radius=1.0, fast=False, number_of_hash_functions=int(number_of_hash_functions),
+    minHash = WtaHash(n_neighbors=10, radius=1.0, fast=False, number_of_hash_functions=int(number_of_hash_functions),
                 max_bin_size = int(max_bin_size), minimal_blocks_in_common = int(minimal_blocks_in_common),
                 shingle_size = int(shingle_size),
                 excess_factor = int(excess_factor),
@@ -125,7 +127,7 @@ def objective(args):
                 remove_hash_function_with_less_entries_as=int(removeHashFunctionWithLessEntriesAs), 
                  block_size = int(block_size), shingle=shingle,
                 store_value_with_least_sigificant_bit=remove_value_with_least_sigificant_bit, 
-                cpu_gpu_load_balancing=0)
+                cpu_gpu_load_balancing=0, rangeK_wta=int(rangeK_wta))
     print "Create minHash object...Done"
                 
     # print "Values: "
@@ -198,12 +200,12 @@ else:
 # newsgroups_test = fetch_20newsgroups(subset='test',remove=('headers', 'footers', 'quotes'), categories=categories)
 # vectors_test = vectorizer.transform(newsgroups_test.data)
 # datasetBursi = vectors_test
-rfam_ids=['RF00004','RF00005','RF00015','RF00020','RF00026','RF00169',
-          'RF00380','RF00386','RF01051','RF01055','RF01234','RF01699',
-          'RF01701','RF01705','RF01731','RF01734','RF01745','RF01750',
-          'RF01942','RF01998','RF02005','RF02012','RF02034']
-X, y = rfam_data(rfam_ids[:3], n_max=100, complexity=3, nbits=16)
-datasetBursi = X 
+# rfam_ids=['RF00004','RF00005','RF00015','RF00020','RF00026','RF00169',
+#           'RF00380','RF00386','RF01051','RF01055','RF01234','RF01699',
+#           'RF01701','RF01705','RF01731','RF01734','RF01745','RF01750',
+#           'RF01942','RF01998','RF02005','RF02012','RF02034']
+# X, y = rfam_data(rfam_ids[:3], n_max=100, complexity=3, nbits=16)
+# datasetBursi = X 
 # get values with out
 # minHash_org = MinHash(n_neighbors=10, radius=1.0, fast=False, number_of_hash_functions=800,
 #                  max_bin_size = 50, minimal_blocks_in_common = 1, shingle_size = 1, excess_factor = 1,
@@ -251,6 +253,7 @@ space = {
         'shingle': hp.choice('shingle', [0,1]), 
         'remove_value_with_least_sigificant_bit': hp.choice('remove_value_with_least_sigificant_bit', [1, 2, 3, 4]),
         'minimal_blocks_in_common': hp.uniform('minimal_blocks_in_common', 1, 5),
+        'rangeK_wta': hp.uniform('rangeK_wta', 2, 100),
         # 'alpha':hp.uniform('alpha', 0, 1),
         # 'beta':hp.uniform('beta', 0,1),    
 }

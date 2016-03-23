@@ -81,19 +81,19 @@ cudaInstanceVector* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* 
     //  free(dev_sizes);
    
    
-    printf("30");
-    fflush(stdout);
+    // printf("30");
+    // fflush(stdout);
     cudaInstanceVector* candidates = (cudaInstanceVector*) malloc(sizeof(cudaInstanceVector) * neighbors->neighbors->size());
     int* sizeOfCandidates = (int*) malloc (sizeof(int) * neighbors->neighbors->size());
-    printf("33");
-    fflush(stdout);
+    // printf("33");
+    // fflush(stdout);
     
     for (size_t i = 0; i < neighbors->neighbors->size(); ++i) {
         candidates[i].instance = (cudaInstance*) malloc(sizeof(cudaInstance) * neighbors->neighbors->operator[](i).size());
         sizeOfCandidates[i] = neighbors->neighbors->operator[](i).size();
-        if (i % 100 == 0) {
-        printf ("CPUcandidate: %i, size: %i\n", i, sizeOfCandidates[i]);
-        }
+        // if (i % 100 == 0) {
+        // printf ("CPUcandidate: %i, size: %i\n", i, sizeOfCandidates[i]);
+        // }
         for (size_t j = 0; j < neighbors->neighbors->operator[](i).size(); ++j) {
             candidates[i].instance[j].x = static_cast<int>(neighbors->neighbors->operator[](i)[j]);
             //  if (i % 100 == 0)
@@ -103,8 +103,8 @@ cudaInstanceVector* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* 
         //  if (i % 100 == 0)
         // printf("\n");      
     }
-    printf("44");
-    fflush(stdout);
+    // printf("44");
+    // fflush(stdout);
     
     // printf("size of neighbirs: %i",neighbors->neighbors->size());
     cudaInstanceVector* h_data = (cudaInstanceVector*) malloc(sizeof(cudaInstanceVector) * neighbors->neighbors->size());
@@ -117,14 +117,14 @@ cudaInstanceVector* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* 
         cudaMalloc((void **) &(h_data[i].instance), sizeof(cudaInstance) * neighbors->neighbors->operator[](i).size());
         cudaMemcpy(h_data[i].instance, candidates[i].instance, sizeof(cudaInstance) * neighbors->neighbors->operator[](i).size(), cudaMemcpyHostToDevice);
     }
-    printf("57");
-    fflush(stdout);
+    // printf("57");
+    // fflush(stdout);
     
     cudaInstanceVector* d_data;
     cudaMalloc((void **) &d_data, sizeof(cudaInstanceVector) * neighbors->neighbors->size());
     cudaMemcpy(d_data, h_data, sizeof(cudaInstanceVector) * neighbors->neighbors->size(), cudaMemcpyHostToDevice);
-    printf("62");
-    fflush(stdout);
+    // printf("62");
+    // fflush(stdout);
     
     int* sizeOfCandidatesCuda;
     int size = neighbors->neighbors->size();
@@ -137,31 +137,31 @@ cudaInstanceVector* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* 
         euclideanDistanceCuda<<<32, 96>>>(d_data, size, sizeOfCandidatesCuda, mDev_FeatureList,
                                         mDev_ValuesList, mDev_SizeOfInstanceList, mMaxNnz);
     }
-    printf("75");
-    fflush(stdout);
+    // printf("75");
+    // fflush(stdout);
     
     // cudaMemcpy(h_data, d_data, sizeof(cudaInstanceVector) * neighbors->neighbors->size(), cudaMemcpyDeviceToHost);
-    printf("78");
-    fflush(stdout);
+    // printf("78");
+    // fflush(stdout);
     
     for (size_t i = 0; i < neighbors->neighbors->size(); ++i) {
         cudaMemcpy((void **) candidates[i].instance, h_data[i].instance, sizeof(cudaInstance) * neighbors->neighbors->operator[](i).size(), cudaMemcpyDeviceToHost);
         cudaFree(h_data[i].instance);
     }
-    printf("84");
-    fflush(stdout);
+    // printf("84");
+    // fflush(stdout);
     
     // memcpy(candidates, h_data, sizeof(cudaInstanceVector) * neighbors->neighbors->size());
     // cudaMemcpy(candidates, d_data, sizeof(cudaInstanceVector) * neighbors->neighbors->size(), cudaMemcpyDeviceToHost);
-    printf("88");
-    fflush(stdout);
+    // printf("88");
+    // fflush(stdout);
     
     cudaFree(d_data);
     cudaFree(sizeOfCandidatesCuda);
     free(h_data);
     free(sizeOfCandidates);
-    printf("94");
-    fflush(stdout);
+    // printf("94");
+    // fflush(stdout);
     
     return candidates;
 }

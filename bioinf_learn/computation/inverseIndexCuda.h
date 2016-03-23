@@ -30,14 +30,14 @@ class InverseIndexCuda {
     bool mDataOnGpu;
   public:
   	InverseIndexCuda(size_t pNumberOfHashFunctions, size_t pShingle, 
-                        size_t pShingleSize, size_t pBlockSize);
+                        size_t pShingleSize, size_t pBlockSize, size_t pHashAlgorithm);
     ~InverseIndexCuda();
   	void computeSignaturesFittingOnGpu(const SparseMatrixFloat* pRawData, 
                                     size_t pStartIndex, size_t pEndIndex, 
                                     size_t pNumberOfInstances, size_t pNumberOfBlocks, 
                                     size_t pNumberOfThreads, size_t pShingleFactor, 
                                     size_t pBlockSizeShingle,
-                                    vvsize_t_p* pSignatures);
+                                    vvsize_t_p* pSignatures, int pRangeK);
     void copyFittingDataToGpu(const SparseMatrixFloat* pRawData, size_t pStartIndex);
     
    void computeSignaturesQueryOnGpu(const SparseMatrixFloat* pRawData, 
@@ -45,7 +45,7 @@ class InverseIndexCuda {
                                                 size_t pNumberOfInstances, size_t pNumberOfBlocks, 
                                                 size_t pNumberOfThreads, size_t pShingleFactor, 
                                                 size_t pBlockSizeShingle,
-                                                vvsize_t_p* pSignatures);
+                                                vvsize_t_p* pSignatures, int pRangeK);
    int* get_mDev_FeatureList() {
        return mDev_FeatureList;
    };

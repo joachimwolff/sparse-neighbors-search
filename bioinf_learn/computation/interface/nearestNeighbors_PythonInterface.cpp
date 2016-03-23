@@ -55,16 +55,17 @@ static PyObject* createObject(PyObject* self, PyObject* args) {
     size_t numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
     nNeighbors, minimalBlocksInCommon, maxBinSize,
     maximalNumberOfHashCollisions, excessFactor, hashAlgorithm,
-     blockSize, shingle, removeValueWithLeastSigificantBit;
+     blockSize, shingle, removeValueWithLeastSigificantBit, rangeK_Wta;
     int fast, similarity, pruneInverseIndex, removeHashFunctionWithLessEntriesAs;
     float pruneInverseIndexAfterInstance, cpuGpuLoadBalancing;
     
-    if (!PyArg_ParseTuple(args, "kkkkkkkkkiiifikkkkf", &numberOfHashFunctions,
+    if (!PyArg_ParseTuple(args, "kkkkkkkkkiiifikkkkfk", &numberOfHashFunctions,
                         &shingleSize, &numberOfCores, &chunkSize, &nNeighbors,
                         &minimalBlocksInCommon, &maxBinSize,
                         &maximalNumberOfHashCollisions, &excessFactor, &fast, &similarity,
                         &pruneInverseIndex,&pruneInverseIndexAfterInstance, &removeHashFunctionWithLessEntriesAs,
-                        &hashAlgorithm, &blockSize, &shingle, &removeValueWithLeastSigificantBit, &cpuGpuLoadBalancing))
+                        &hashAlgorithm, &blockSize, &shingle, &removeValueWithLeastSigificantBit, 
+                        &cpuGpuLoadBalancing, &rangeK_Wta))
         return NULL;
     NearestNeighbors* nearestNeighbors;
     nearestNeighbors = new NearestNeighbors (numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
@@ -72,7 +73,7 @@ static PyObject* createObject(PyObject* self, PyObject* args) {
                         excessFactor, maximalNumberOfHashCollisions, fast, similarity, pruneInverseIndex,
                         pruneInverseIndexAfterInstance, removeHashFunctionWithLessEntriesAs, 
                         hashAlgorithm, blockSize, shingle, removeValueWithLeastSigificantBit,
-                        cpuGpuLoadBalancing);
+                        cpuGpuLoadBalancing, rangeK_Wta);
 
     size_t adressNearestNeighborsObject = reinterpret_cast<size_t>(nearestNeighbors);
     PyObject* pointerToInverseIndex = Py_BuildValue("k", adressNearestNeighborsObject);

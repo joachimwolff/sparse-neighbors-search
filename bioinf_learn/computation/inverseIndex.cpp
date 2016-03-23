@@ -42,7 +42,7 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     int pRemoveHashFunctionWithLessEntriesAs, size_t pHashAlgorithm,
                     size_t pBlockSize, size_t pShingle,
                     size_t pRemoveValueWithLeastSigificantBit,
-                    float pCpuGpuLoadBalancing) {   
+                    float pCpuGpuLoadBalancing, size_t pRangeK_Wta) {   
     mNumberOfHashFunctions = pNumberOfHashFunctions;
     mShingleSize = pShingleSize;
     mNumberOfCores = pNumberOfCores;
@@ -60,6 +60,7 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
     mBlockSize = pBlockSize;
     mShingle = pShingle;
     mCpuGpuLoadBalancing = pCpuGpuLoadBalancing;
+    mRangeK_Wta = pRangeK_Wta;
     if (mShingle == 0) {
         if (mBlockSize == 0) {
             mBlockSize = 1;
@@ -71,10 +72,14 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
         mInverseIndexSize = ceil(((float) (mNumberOfHashFunctions * mBlockSize) / (float) mShingleSize));
         // std::cout << "size inverse index: " << mInverseIndexSize << std::endl;      
     }
+    
+    // if (mHashAlgorithm == 1) {
+    //     mInverseIndexSize = mNumberOfHashFunctions * 
+    // }
         mInverseIndexStorage = new InverseIndexStorageUnorderedMap(mInverseIndexSize, mMaxBinSize);
     mRemoveValueWithLeastSigificantBit = pRemoveValueWithLeastSigificantBit;
     #ifdef CUDA
-    mInverseIndexCuda = new InverseIndexCuda(pNumberOfHashFunctions, mShingle, mShingleSize, mBlockSize);
+    mInverseIndexCuda = new InverseIndexCuda(pNumberOfHashFunctions, mShingle, mShingleSize, mBlockSize, mHashAlgorithm);
     #endif
 }
  
@@ -99,29 +104,15 @@ vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const
     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
 
     for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
-        // printf("instance: %i, size: %i", pInstance, pRawData->getSizeOfInstance(pInstance));
-        // fflush(stdout);
             size_t nearestNeighborsValue = MAX_VALUE;        
             for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); i++) {
                 size_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), (j+1), MAX_VALUE);
                 if (hashValue < nearestNeighborsValue) {
                     nearestNeighborsValue = hashValue;
                 }
-                // if ((unsigned int)i > (unsigned int)(pRawData->getSizeOfInstance(pInstance))) {
-                //     printf ("STOP\n");
-                //     break;
-                // } 
-                // std::cout << pRawData->getSizeOfInstance(pInstance) << std::endl;
-                // printf("pInstance: %u, size: %u, i: %u\n", pInstance, pRawData->getSizeOfInstance(pInstance), i);
-                // fflush(stdout);
-                // bool foo = i < pRawData->getSizeOfInstance(pInstance);
-                // std::cout << "foo: " << foo << std::endl;
-                // assert(i < pRawData->getSizeOfInstance(pInstance));
             }
             (*signature)[j] = nearestNeighborsValue;
     }
-    // printf("LOOP DONE.\n");
-    // fflush(stdout);
     // reduce number of hash values by a factor of mShingleSize
     if (mShingle) {
         return shingle(signature);
@@ -162,15 +153,15 @@ vsize_t* InverseIndex::computeSignatureWTA(const SparseMatrixFloat* pRawData, co
     size_t sizeOfInstance = pRawData->getSizeOfInstance(pInstance);
     
     size_t mSeed = 42;
-    size_t mK = mBlockSize;
+    size_t mK = mRangeK_Wta;
     
-    vsize_t* signature = new vsize_t (mNumberOfHashFunctions);;
+    vsize_t* signature = new vsize_t (mNumberOfHashFunctions * mBlockSize);
     if (sizeOfInstance < mK) {
         mK = sizeOfInstance;
     }
     KSizeSortedMap keyValue(mK);
     
-    for (size_t i = 0; i < mNumberOfHashFunctions; ++i) {
+    for (size_t i = 0; i < mNumberOfHashFunctions * mBlockSize; ++i) {
         
         for (size_t j = 0; j < sizeOfInstance; ++j) {
             size_t hashIndex = mHash->hash((pRawData->getNextElement(pInstance, j) +1), mSeed+i, MAX_VALUE);
@@ -223,14 +214,14 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
                                                     128, 128, 
                                                     mShingleSize,
                                                     mBlockSize,
-                                                    signatures);
+                                                    signatures, mRangeK_Wta);
         } else { 
             mInverseIndexCuda->computeSignaturesQueryOnGpu(pRawData,  0,
                                                     pRawData->size(), pRawData->size(), 
                                                     128, 128, 
                                                     mShingleSize,
                                                     mBlockSize,
-                                                    signatures);
+                                                    signatures, mRangeK_Wta);
             } 
     }
     #endif

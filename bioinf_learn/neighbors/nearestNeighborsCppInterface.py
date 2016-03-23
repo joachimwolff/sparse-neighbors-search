@@ -96,7 +96,7 @@ class NearestNeighborsCppInterface():
                  similarity=False, number_of_cores=None, chunk_size=None, prune_inverse_index=-1,
                   prune_inverse_index_after_instance=-1.0, remove_hash_function_with_less_entries_as=-1, 
                   hash_algorithm = 0, block_size = 5, shingle=0, store_value_with_least_sigificant_bit=0, 
-                  cpu_gpu_load_balancing=0):
+                  cpu_gpu_load_balancing=0, rangeK_wta=10):
         if number_of_cores is None:
             number_of_cores = mp.cpu_count()
         if chunk_size is None:
@@ -112,7 +112,7 @@ class NearestNeighborsCppInterface():
                                                     prune_inverse_index_after_instance, remove_hash_function_with_less_entries_as,
                                                     hash_algorithm,
                                                      block_size, 
-                                                     shingle, store_value_with_least_sigificant_bit, cpu_gpu_load_balancing)
+                                                     shingle, store_value_with_least_sigificant_bit, cpu_gpu_load_balancing, rangeK_wta)
 
     def __del__(self):
         _nearestNeighbors.delete_object(self._pointer_address_of_nearestNeighbors_object)

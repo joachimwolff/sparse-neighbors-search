@@ -15,11 +15,12 @@
 
 InverseIndexCuda::InverseIndexCuda(size_t pNumberOfHashFunctions, 
                                     size_t pShingle, size_t pShingleSize, 
-                                    size_t pBlockSize) {
+                                    size_t pBlockSize, size_t pHashAlgorithm) {
           mNumberOfHashFunctions = pNumberOfHashFunctions;
           mShingle = pShingle;
           mShingleSize = pShingleSize;
           mBlockSize = pBlockSize;
+          mHashAlgorithm = pHashAlgorithm;
 }
 InverseIndexCuda::~InverseIndexCuda() {
     cudaFree(mDev_FeatureList);
@@ -90,7 +91,7 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(const SparseMatrixFloat* pR
                                                 size_t pNumberOfInstances, size_t pNumberOfBlocks, 
                                                 size_t pNumberOfThreads, size_t pShingleFactor, 
                                                 size_t pBlockSizeShingle,
-                                                vvsize_t_p* pSignatures) {
+                                                vvsize_t_p* pSignatures, int pRangeK) {
     // check if enough memory is available on the gpu 
     size_t memory_total = 0;
     size_t memory_free = 0;
@@ -127,13 +128,23 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(const SparseMatrixFloat* pR
     // if the data would not fit on the ram of the gpu
     for (size_t i = 0; i < iterations; ++i) {
         // execute kernel on gpu
-        fitCuda<<<pNumberOfBlocks, pNumberOfThreads>>>
-        (mDev_FeatureList, 
-        mDev_SizeOfInstanceList,  
-        mNumberOfHashFunctions, 
-        pRawData->getMaxNnz(),
-                mDev_ComputedSignaturesPerInstance, 
-                end, start, mBlockSize, mShingleSize, dev_SignaturesBlockSize);
+        if (mHashAlgorithm == 0) {
+            fitCudaMinHash<<<pNumberOfBlocks, pNumberOfThreads>>>
+            (mDev_FeatureList, 
+            mDev_SizeOfInstanceList,  
+            mNumberOfHashFunctions, 
+            pRawData->getMaxNnz(),
+                    mDev_ComputedSignaturesPerInstance, 
+                    end, start, mBlockSize, mShingleSize, dev_SignaturesBlockSize);
+        } else {
+            fitCudaWtaHash<<<pNumberOfBlocks, pNumberOfThreads>>>
+            (mDev_FeatureList, 
+            mDev_SizeOfInstanceList,  
+            mNumberOfHashFunctions, 
+            pRawData->getMaxNnz(),
+                    mDev_ComputedSignaturesPerInstance, 
+                    end, start, mBlockSize, mShingleSize, dev_SignaturesBlockSize, pRangeK);
+        }
         // copy results back to host      
         cudaMemcpy(instancesHashValues, mDev_ComputedSignaturesPerInstance, 
                     numberOfInstances/iterations * signaturesSize * sizeof(int),
@@ -161,7 +172,7 @@ void InverseIndexCuda::computeSignaturesQueryOnGpu(const SparseMatrixFloat* pRaw
                                                 size_t pNumberOfInstances, size_t pNumberOfBlocks, 
                                                 size_t pNumberOfThreads, size_t pShingleFactor, 
                                                 size_t pBlockSizeShingle,
-                                                vvsize_t_p* pSignatures) {
+                                                vvsize_t_p* pSignatures, int pRangeK) {
     int* dev_featureList;
     int* dev_sizeOfInstanceList;
     int* dev_computedSignaturesPerInstance;
@@ -229,13 +240,23 @@ void InverseIndexCuda::computeSignaturesQueryOnGpu(const SparseMatrixFloat* pRaw
     // if the data would not fit on the ram of the gpu
     for (size_t i = 0; i < iterations; ++i) {
         // execute kernel on gpu
-        fitCuda<<<pNumberOfBlocks, pNumberOfThreads>>>
-        (dev_featureList, 
-        dev_sizeOfInstanceList,  
-        mNumberOfHashFunctions, 
-        pRawData->getMaxNnz(),
-                dev_computedSignaturesPerInstance, 
-                end, start, mBlockSize, mShingleSize, dev_signaturesBlockSize);
+        if (mHashAlgorithm == 0) {
+            fitCudaMinHash<<<pNumberOfBlocks, pNumberOfThreads>>>
+            (dev_featureList, 
+            dev_sizeOfInstanceList,  
+            mNumberOfHashFunctions, 
+            pRawData->getMaxNnz(),
+                    dev_computedSignaturesPerInstance, 
+                    end, start, mBlockSize, mShingleSize, dev_signaturesBlockSize);
+        } else {
+            fitCudaWtaHash<<<pNumberOfBlocks, pNumberOfThreads>>>
+            (dev_featureList, 
+            dev_sizeOfInstanceList,  
+            mNumberOfHashFunctions, 
+            pRawData->getMaxNnz(),
+                    dev_computedSignaturesPerInstance, 
+                    end, start, mBlockSize, mShingleSize, dev_signaturesBlockSize, pRangeK);
+        }
         // copy results back to host      
         cudaMemcpy(instancesHashValues, dev_computedSignaturesPerInstance, 
                     numberOfInstances/iterations * signaturesSize * sizeof(int),

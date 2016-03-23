@@ -95,29 +95,29 @@ class MinHash():
             print "Speed optimization and accuracy optimization at the same time is not possible."
             return
         if speed_optimized:
-            number_of_hash_functions = 400
-            max_bin_size = 12
+            number_of_hash_functions = 163
+            max_bin_size = 54
             minimal_blocks_in_common = 1
-            shingle_size = 1
-            excess_factor = 12
-            prune_inverse_index = 2
+            shingle_size = 4
+            excess_factor = 8
+            prune_inverse_index = 0
             prune_inverse_index_after_instance = 0.5
             remove_hash_function_with_less_entries_as = 0
-            block_size = 1
+            block_size = 4
             shingle = 1
-            store_value_with_least_sigificant_bit = 4
+            store_value_with_least_sigificant_bit = 1
         elif accuracy_optimized:
-            number_of_hash_functions = 400
-            max_bin_size = 12
-            minimal_blocks_in_common = 1
+            number_of_hash_functions = 289
+            max_bin_size = 45
+            minimal_blocks_in_common = 4
             shingle_size = 1
-            excess_factor = 12
-            prune_inverse_index = 2
-            prune_inverse_index_after_instance = 0.5
+            excess_factor = 10
+            prune_inverse_index = 14
+            prune_inverse_index_after_instance = 0.0
             remove_hash_function_with_less_entries_as = 0
             block_size = 1
-            shingle = 1
-            store_value_with_least_sigificant_bit = 4
+            shingle = 0
+            store_value_with_least_sigificant_bit = 0
                 
         self._nearestNeighborsCppInterface = NearestNeighborsCppInterface(n_neighbors=n_neighbors, radius=radius,
                 fast=fast, number_of_hash_functions=number_of_hash_functions,

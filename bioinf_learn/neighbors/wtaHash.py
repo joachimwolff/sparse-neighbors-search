@@ -87,7 +87,7 @@ class WtaHash():
         GraphClust: alignment-free structural clustering of local RNA secondary structures.
         Bioinformatics, 28(12), i224-i232.
         http://bioinformatics.oxfordjournals.org/content/28/12/i224.full.pdf+html"""
-    def __init__(self, n_neighbors = 5, radius = 1.0, fast=False, number_of_hash_functions=400,
+    def __init__(self, n_neighbors = 5, radius = 1.0, fast=False, number_of_hash_functions=400, rangeK_wta=10,
                  max_bin_size = 50, minimal_blocks_in_common = 1, shingle_size = 4, excess_factor = 5,
                  similarity=False, number_of_cores=None, chunk_size=None, prune_inverse_index=-1,
                  prune_inverse_index_after_instance=-1.0, remove_hash_function_with_less_entries_as=-1, 
@@ -131,7 +131,7 @@ class WtaHash():
                 remove_hash_function_with_less_entries_as=remove_hash_function_with_less_entries_as, 
                 hash_algorithm=1, block_size=block_size, shingle=shingle,
                 store_value_with_least_sigificant_bit=store_value_with_least_sigificant_bit, 
-                cpu_gpu_load_balancing=cpu_gpu_load_balancing)
+                cpu_gpu_load_balancing=cpu_gpu_load_balancing, rangeK_wta=rangeK_wta)
 
     def __del__(self):
        del self._nearestNeighborsCppInterface
