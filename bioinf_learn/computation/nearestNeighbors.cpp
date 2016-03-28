@@ -66,30 +66,44 @@ NearestNeighbors::~NearestNeighbors() {
     #endif
 }
 
-void NearestNeighbors::fit(const SparseMatrixFloat* pRawData) {
+void NearestNeighbors::fit(SparseMatrixFloat* pRawData) {
+            std::cout << __LINE__ << std::endl;
+
     mInverseIndex->fit(pRawData);
+            std::cout << __LINE__ << std::endl;
+
+    pRawData->precomputeDotProduct();
     #ifdef CUDA
     mNearestNeighborsCuda->setFeatureList(mInverseIndex->get_dev_FeatureList());
     mNearestNeighborsCuda->setValuesList(mInverseIndex->get_dev_ValuesList());
     mNearestNeighborsCuda->setSizeOfInstanceList(mInverseIndex->get_dev_SizeOfInstanceList());
-    mNearestNeighborsCuda->setMaxNnz(mOriginalData->getMaxNnz());
+    mNearestNeighborsCuda->setJumpLenthList(mInverseIndex->get_mDev_JumpLength());
+    mNearestNeighborsCuda->setDotProduct(mInverseIndex->get_mDev_DotProduct());
+    
+    // mNearestNeighborsCuda->setMaxNnz(mOriginalData->getMaxNnz());
     #endif
+            std::cout << __LINE__ << std::endl;
+
     return;
 }
 
-void NearestNeighbors::partialFit(const SparseMatrixFloat* pRawData, size_t pStartIndex) {
+void NearestNeighbors::partialFit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
     mInverseIndex->fit(pRawData, pStartIndex);
     #ifdef CUDA
     mNearestNeighborsCuda->setFeatureList(mInverseIndex->get_dev_FeatureList());
     mNearestNeighborsCuda->setValuesList(mInverseIndex->get_dev_ValuesList());
     mNearestNeighborsCuda->setSizeOfInstanceList(mInverseIndex->get_dev_SizeOfInstanceList());
-    mNearestNeighborsCuda->setMaxNnz(mOriginalData->getMaxNnz());
+    // mNearestNeighborsCuda->setMaxNnz(mOriginalData->getMaxNnz());
     #endif
     return;
 }
 
-neighborhood* NearestNeighbors::kneighbors(const SparseMatrixFloat* pRawData,
+neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                                                 size_t pNneighbors, int pFast, int pSimilarity) {
+//    std::cout << "sizeof(size_t) " << sizeof(size_t) << std::endl;
+//    std::cout << "sizeof(int32_t) " << sizeof(int32_t) << std::endl;
+//    std::cout << "sizeof(uint32_t) " << sizeof(uint32_t) << std::endl; 
+   
     if (pFast == -1) {
         pFast = mFast;
     } 
@@ -111,6 +125,7 @@ neighborhood* NearestNeighbors::kneighbors(const SparseMatrixFloat* pRawData,
                                                     pNneighbors, true);
         doubleElementsStorageCount = true;
     } else {
+        pRawData->precomputeDotProduct();
         x_inverseIndex = (mInverseIndex->computeSignatureMap(pRawData));
         neighborhood_ = mInverseIndex->kneighbors(x_inverseIndex, pNneighbors, 
                                                 doubleElementsStorageCount);
@@ -150,6 +165,7 @@ neighborhood* NearestNeighbors::kneighbors(const SparseMatrixFloat* pRawData,
         #endif
         for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
             if (neighborhood_->neighbors->operator[](i).size() > 0) {
+                // std::cout << "candidates: " << neighborhood_->neighbors->operator[](i).size() << std::endl;
                 std::vector<sortMapFloat> exactNeighbors;
                 if (pSimilarity) {
                     exactNeighbors = 
@@ -174,6 +190,7 @@ neighborhood* NearestNeighbors::kneighbors(const SparseMatrixFloat* pRawData,
                 }
             }
         }
+        // return neighborhood_;
     #ifdef CUDA
     } else {
         // call gpu code

@@ -78,7 +78,7 @@ distributionInverseIndex* InverseIndex::getDistribution() {
 }
 
  // compute the signature for one instance
-vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance) {
+vsize_t* InverseIndex::computeSignature(SparseMatrixFloat* pRawData, const size_t pInstance) {
     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
 
     for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
@@ -146,7 +146,7 @@ vsize_t* InverseIndex::shingle(vsize_t* pSignature) {
     return signature; 
 }
 
-vsize_t* InverseIndex::computeSignatureWTA(const SparseMatrixFloat* pRawData, const size_t pInstance) {
+vsize_t* InverseIndex::computeSignatureWTA(SparseMatrixFloat* pRawData, const size_t pInstance) {
     size_t sizeOfInstance = pRawData->getSizeOfInstance(pInstance);
     
     size_t mSeed = 42;
@@ -182,7 +182,7 @@ vsize_t* InverseIndex::computeSignatureWTA(const SparseMatrixFloat* pRawData, co
     return signature;
 }
 
-vvsize_t_p* InverseIndex::computeSignaturesOnGpu(const SparseMatrixFloat* pRawData, size_t pStartIndex, size_t pEndIndex, size_t pNumberOfInstances,
+vvsize_t_p* InverseIndex::computeSignaturesOnGpu(SparseMatrixFloat* pRawData, size_t pStartIndex, size_t pEndIndex, size_t pNumberOfInstances,
     size_t pNumberOfBlocks, size_t pNumberOfThreads) {
 
     vvsize_t_p* signatures = new vvsize_t_p(pNumberOfInstances);
@@ -191,18 +191,18 @@ vvsize_t_p* InverseIndex::computeSignaturesOnGpu(const SparseMatrixFloat* pRawDa
     // size_t memory_free = 0;
     // size_t iterations = 1;
     // cudaMemGetInfo(&memory_free, &memory_total);
-    // if (memory_free >= pRawData->getNumberOfInstances()  * mNumberOfHashFunctions * sizeof(size_t)) {
-    //     iterations = ceil(pRawData->getNumberOfInstances()  * mNumberOfHashFunctions * sizeof(size_t) / static_cast<float>(memory_free));
+    // if (memory_free >= pRawData->size()  * mNumberOfHashFunctions * sizeof(size_t)) {
+    //     iterations = ceil(pRawData->size()  * mNumberOfHashFunctions * sizeof(size_t) / static_cast<float>(memory_free));
     // }
     // size_t start = 0;
-    // size_t end = pRawData->getNumberOfInstances() / iterations;
-    // size_t windowSize = pRawData->getNumberOfInstances() / iterations;
-    // size_t* instancesHashValues = (size_t*) malloc(pRawData->getNumberOfInstances() / iterations * mNumberOfHashFunctions * sizeof(size_t));
+    // size_t end = pRawData->size() / iterations;
+    // size_t windowSize = pRawData->size() / iterations;
+    // size_t* instancesHashValues = (size_t*) malloc(pRawData->size() / iterations * mNumberOfHashFunctions * sizeof(size_t));
     
     // // memory for the inverse index on the gpu.
     // // for each instance the number of hash functions
     // cudaMalloc((void **) &mDev_ComputedSignaturesPerInstance,
-    //         pRawData->getNumberOfInstances() / iterations  * mNumberOfHashFunctions * sizeof(size_t));
+    //         pRawData->size() / iterations  * mNumberOfHashFunctions * sizeof(size_t));
     
     // for (size_t i = 0; i < iterations; ++i) {
         
@@ -215,9 +215,9 @@ vvsize_t_p* InverseIndex::computeSignaturesOnGpu(const SparseMatrixFloat* pRawDa
     //             end, start);
                 
     //     cudaMemcpy(instancesHashValues, mDev_ComputedSignaturesPerInstance, 
-    //                 pRawData->getNumberOfInstances()/iterations * mNumberOfHashFunctions * sizeof(size_t),
+    //                 pRawData->size()/iterations * mNumberOfHashFunctions * sizeof(size_t),
     //                 cudaMemcpyDeviceToHost);
-    //     for(size_t i = 0; i < pRawData->getNumberOfInstances() / iterations; ++i) {
+    //     for(size_t i = 0; i < pRawData->size() / iterations; ++i) {
     //         vsize_t* instance = new vsize_t(mNumberOfHashFunctions);
     //         for (size_t j = 0; j < mNumberOfHashFunctions; ++j) {
     //             (*instance)[j] = instancesHashValues[i*mNumberOfHashFunctions + j];
@@ -231,7 +231,7 @@ vvsize_t_p* InverseIndex::computeSignaturesOnGpu(const SparseMatrixFloat* pRawDa
     // cudaFree(mDev_ComputedSignaturesPerInstance);
     return signatures;
 }
-vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawData) {
+vvsize_t_p* InverseIndex::computeSignatureVectors(SparseMatrixFloat* pRawData) {
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
@@ -248,9 +248,9 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
     // how to split the data between cpu and gpu?
     float cpuGpuSplitFactor = 0.7;
     size_t gpuStart = 0;
-    size_t gpuEnd = floor(pRawData->getNumberOfInstances() * cpuGpuSplitFactor);
-    cpuStart = ceil(pRawData->getNumberOfInstances() * cpuGpuSplitFactor);
-    cpuEnd = pRawData->getNumberOfInstances();
+    size_t gpuEnd = floor(pRawData->size() * cpuGpuSplitFactor);
+    cpuStart = ceil(pRawData->size() * cpuGpuSplitFactor);
+    cpuEnd = pRawData->size();
     // how many blocks, how many threads?
     size_t numberOfBlocksForGpu = 192;
     size_t numberOfThreadsForGpu = 128;
@@ -271,25 +271,25 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
 
     //         // memory for instances and their featureIds
     //         cudaMalloc((void **) &mDev_FeatureList,
-    //                 pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(size_t));
+    //                 pRawData->getMaxNnz() * pRawData->size() * sizeof(size_t));
     //         // memory for the values of the features of the instances
     //         cudaMalloc((void **) &mDev_ValuesList, 
-    //                     pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(float));
+    //                     pRawData->getMaxNnz() * pRawData->size() * sizeof(float));
     //         // memory for the number of features per instance
     //         cudaMalloc((void **) &mDev_SizeOfInstanceList,
-    //                 pRawData->getNumberOfInstances() * sizeof(size_t));
+    //                 pRawData->size() * sizeof(size_t));
             
     //         // copy instances and their feature ids to the gpu
     //         cudaMemcpy(mDev_FeatureList, pRawData->getSparseMatrixIndex(),
-    //                     pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(size_t),
+    //                     pRawData->getMaxNnz() * pRawData->size() * sizeof(size_t),
     //                 cudaMemcpyHostToDevice);
     //         // copy instances and their values for each feature to the gpu
     //         cudaMemcpy(mDev_ValuesList, pRawData->getSparseMatrixValues(),
-    //                     pRawData->getMaxNnz() * pRawData->getNumberOfInstances() * sizeof(float),
+    //                     pRawData->getMaxNnz() * pRawData->size() * sizeof(float),
     //                 cudaMemcpyHostToDevice);
     //         // copy the size of all instances to the gpu               
     //         cudaMemcpy(mDev_SizeOfInstanceList, pRawData->getSparseMatrixSizeOfInstances(),
-    //                 pRawData->getNumberOfInstances() * sizeof(size_t),
+    //                 pRawData->size() * sizeof(size_t),
     //                 cudaMemcpyHostToDevice);
     //         signaturesPerThread = this->computeSignaturesOnGpu(pRawData, gpuStart, gpuEnd, gpuEnd - gpuStart, numberOfBlocksForGpu, numberOfThreadsForGpu);
     // std::cout << __LINE__ << std::endl;
@@ -322,7 +322,7 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
 
     return signatures;
 }
-umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* pRawData) {
+umap_uniqueElement* InverseIndex::computeSignatureMap(SparseMatrixFloat* pRawData) {
     mDoubleElementsQueryCount = 0;
     const size_t sizeOfInstances = pRawData->size();
     umap_uniqueElement* instanceSignature = new umap_uniqueElement();
@@ -386,7 +386,7 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     }
     return instanceSignature;
 }
-void InverseIndex::fit(const SparseMatrixFloat* pRawData) {
+void InverseIndex::fit(SparseMatrixFloat* pRawData) {
     // compute signatures
     vvsize_t_p* signatures = computeSignatureVectors(pRawData);
     omp_set_dynamic(0);

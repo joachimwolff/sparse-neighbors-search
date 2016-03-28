@@ -35,7 +35,17 @@ from Cython.Distutils import build_ext
 import subprocess
 import numpy
 
+import distutils.sysconfig
+import distutils.ccompiler
+compiler = distutils.ccompiler.new_compiler()
+distutils.sysconfig.customize_compiler(compiler)
+print "FOO ", compiler.compiler_so
+compiler.compiler_so.remove("-O2")
+compiler.compiler_so.remove("-g")
+compiler.compiler_so.remove("-DNDEBUG")
+print "FOO 2", compiler.compiler_so
 
+# compiler_so.remove("-O%s" % i)
 sources_list = ['bioinf_learn/computation/interface/nearestNeighbors_PythonInterface.cpp', 'bioinf_learn/computation/nearestNeighbors.cpp', 
                  'bioinf_learn/computation/inverseIndex.cpp', 'bioinf_learn/computation/inverseIndexStorageUnorderedMap.cpp']
 depends_list = ['bioinf_learn/computation/nearestNeighbors.h', 'bioinf_learn/computation/inverseIndex.h', 'bioinf_learn/computation/kSizeSortedMap.h',
@@ -45,17 +55,17 @@ openmp = True
 if "--openmp" in sys.argv:
     module1 = Extension('_nearestNeighbors', sources = sources_list, depends = depends_list,
          define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
-        extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])#, include_dirs=['/home/wolffj/Software/boost_1_59_0', '/home/wolffj/Software/mtl4'])
+        extra_compile_args=["-fopenmp", "-O3", "-std=c++11", "-funroll-loops"])#, include_dirs=['/home/wolffj/Software/boost_1_59_0', '/home/wolffj/Software/mtl4'])
 # extra_link_args=(['-Wl,--no-undefined'])
 elif platform.system() == 'Darwin' or "--noopenmp" in sys.argv:
     module1 = Extension('_nearestNeighbors', sources = sources_list, depends = depends_list, 
-        extra_compile_args=["-O3", "-std=c++11"])
+        extra_compile_args=["-O3", "-std=c++11", "-funroll-loops"])
     openmp = False
 
 else:
     module1 = Extension('_nearestNeighbors', sources = sources_list, depends = depends_list,
         define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"],
-         extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])
+         extra_compile_args=["-fopenmp", "-O3", "-std=c++11", "-funroll-loops"])
 no_cuda = False
 
 if "--nocuda" in sys.argv:
@@ -121,7 +131,49 @@ CUDA = locate_cuda()
 #     numpy_include = numpy.get_include()
 # except AttributeError:
 #     numpy_include = numpy.get_numpy_include()
+def customize_compiler_gcc(self):
+    """inject deep into distutils to customize how the dispatch
+    to gcc/nvcc works.
+    
+    If you subclass UnixCCompiler, it's not trivial to get your subclass
+    injected in, and still have the right customizations (i.e.
+    distutils.sysconfig.customize_compiler) run on it. So instead of going
+    the OO route, I have this. Note, it's kindof like a wierd functional
+    subclassing going on."""
+    
+    # tell the compiler it can processes .cu
+    self.src_extensions.append('.cu')
 
+    # save references to the default compiler_so and _comple methods
+    default_compiler_so = self.compiler_so
+    super = self._compile
+
+    # now redefine the _compile method. This gets executed for each
+    # object but distutils doesn't have the ability to change compilers
+    # based on source extension: we add it.
+    def _compile(obj, src, ext, cc_args, extra_postargs, pp_opts):
+        # if os.path.splitext(src)[1] == '.cu':
+        #     # use the cuda for .cu files
+        #     self.set_executable('compiler_so', CUDA['nvcc'])
+        #     # use only a subset of the extra_postargs, which are 1-1 translated
+        #     # from the extra_compile_args in the Extension class
+        #     postargs = extra_postargs['nvcc']
+        # else:
+        postargs = extra_postargs['gcc']
+
+        super(obj, src, ext, cc_args, postargs, pp_opts)
+        # reset the default compiler_so, which we might have changed for cuda
+        self.compiler_so = default_compiler_so
+
+    # inject our redefined _compile method into the class
+    self._compile = _compile
+
+
+# run the customize_compiler
+class custom_build_ext_gcc(build_ext):
+    def build_extensions(self):
+        customize_compiler_for_gcc(self.compiler)
+        build_ext.build_extensions(self)
 
 
 
@@ -148,7 +200,7 @@ def customize_compiler_for_nvcc(self):
     # object but distutils doesn't have the ability to change compilers
     # based on source extension: we add it.
     def _compile(obj, src, ext, cc_args, extra_postargs, pp_opts):
-        if os.path.splitext(src)[1] == '.cu':
+        if os.path.splitext(src)[1] == '.cu' or os.path.splitext(src)[1] == '.cuh':
             # use the cuda for .cu files
             self.set_executable('compiler_so', CUDA['nvcc'])
             # use only a subset of the extra_postargs, which are 1-1 translated
@@ -160,6 +212,11 @@ def customize_compiler_for_nvcc(self):
         super(obj, src, ext, cc_args, postargs, pp_opts)
         # reset the default compiler_so, which we might have changed for cuda
         self.compiler_so = default_compiler_so
+        if os.path.splitext(src)[1] == '.cpp' or os.path.splitext(src)[1] == '.h':
+            if '-O2' in self.compiler_so:
+                self.compiler_so.remove('-O2')
+                self.compiler_so.remove('-g')
+                self.compiler_so.remove('-DNDEBUG')
 
     # inject our redefined _compile method into the class
     self._compile = _compile
@@ -186,6 +243,7 @@ if (locate_cuda() == None or no_cuda):
             "scipy >= 0.14.0",
             "scikit-learn >= 0.16.0",],
             ext_modules = [module1],
+            cmdclass={'build_ext': custom_build_ext_gcc},
             packages=['bioinf_learn',
                         'bioinf_learn.neighbors',
                         'bioinf_learn.util',
@@ -216,7 +274,7 @@ else:
                     # extra_link_args={'gcc': ["-lm", "-lrt","-lgomp"], 
                     #                   'nvcc' :[]  },
                     extra_link_args=["-lm", "-lrt","-lgomp"],
-                    extra_compile_args={'gcc': ["-fopenmp", "-O3", "-std=c++11"],
+                    extra_compile_args={'gcc': ["-fopenmp", "-O3", "-std=c++11", "-funroll-loops"],
                                         'nvcc': ['-arch=sm_20', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
                     include_dirs = [CUDA['include'], 'src'],#, '/home/joachim/Software/cub-1.5.1'],
                     platforms = "Linux, Mac OS X"
@@ -236,7 +294,7 @@ else:
                     #                   'nvcc' :[]  },
                     extra_link_args=["-lm", "-lrt","-lgomp"],
                     extra_compile_args={'gcc': ["-O3", "-std=c++11"],
-                                        'nvcc': ['-arch=sm_20', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
+                                        'nvcc': ['-arch=sm_30', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
                     include_dirs = [CUDA['include'], 'src'],#, '/home/joachim/Software/cub-1.5.1'],
                     platforms = "Linux, Mac OS X"
                     )

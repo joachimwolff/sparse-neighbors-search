@@ -74,11 +74,11 @@ class InverseIndex {
                     size_t pBlockSize, size_t pShingle, size_t pRemoveValueWithLeastSigificantBit,
                     float pCpuGpuLoadBalancing, size_t pRangeK_Wta);
     ~InverseIndex();
-  	vsize_t* computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance);
-  	vsize_t* computeSignatureWTA(const SparseMatrixFloat* pRawData, const size_t pInstance);
-    vvsize_t_p* computeSignatureVectors(const SparseMatrixFloat* pRawData, const bool pFitting);
-  	umap_uniqueElement* computeSignatureMap(const SparseMatrixFloat* pRawData);
-  	void fit(const SparseMatrixFloat* pRawData, size_t pStartIndex=0);
+  	vsize_t* computeSignature(SparseMatrixFloat* pRawData, const size_t pInstance);
+  	vsize_t* computeSignatureWTA(SparseMatrixFloat* pRawData, const size_t pInstance);
+    vvsize_t_p* computeSignatureVectors(SparseMatrixFloat* pRawData, const bool pFitting);
+  	umap_uniqueElement* computeSignatureMap(SparseMatrixFloat* pRawData);
+  	void fit(SparseMatrixFloat* pRawData, size_t pStartIndex=0);
   	neighborhood* kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                 const size_t pNneighborhood, 
                                 const bool pDoubleElementsStorageCount,
@@ -87,22 +87,28 @@ class InverseIndex {
       return mSignatureStorage;
     };
     distributionInverseIndex* getDistribution();
-    vvsize_t_p* computeSignaturesOnGpu(const SparseMatrixFloat* pRawData, size_t pStartIndex, size_t pEndIndex, size_t pNumberOfInstances,
+    vvsize_t_p* computeSignaturesOnGpu(SparseMatrixFloat* pRawData, size_t pStartIndex, size_t pEndIndex, size_t pNumberOfInstances,
     size_t pNumberOfBlocks, size_t pNumberOfThreads);
     #ifdef CUDA
-   int* get_dev_FeatureList() {
+   int** get_dev_FeatureList() {
        return mInverseIndexCuda->get_mDev_FeatureList();
    };
    
-   int* get_dev_SizeOfInstanceList() {
+   int** get_dev_SizeOfInstanceList() {
        return mInverseIndexCuda->get_mDev_SizeOfInstanceList();
    };
-   int* get_dev_ComputedSignaturesPerInstance() {
+   int** get_dev_ComputedSignaturesPerInstance() {
        return mInverseIndexCuda->get_mDev_ComputedSignaturesPerInstance();
    };
-   float* get_dev_ValuesList() {
+   float** get_dev_ValuesList() {
        return mInverseIndexCuda->get_mDev_ValuesList();
-   };                                   
+   };       
+   int** get_mDev_JumpLength() {
+       return mInverseIndexCuda->get_mDev_JumpLength();
+   };
+   float** get_mDev_DotProduct() {
+       return mInverseIndexCuda->get_mDev_DotProduct();
+   };                            
    #endif                           
 };
 #endif // INVERSE_INDEX_H

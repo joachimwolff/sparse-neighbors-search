@@ -21,42 +21,51 @@ class InverseIndexCuda {
     int* mDev_SizeOfInstanceList;
     int* mDev_ComputedSignaturesPerInstance;
     float* mDev_ValuesList;
-    
-    size_t mNumberOfHashFunctions;
-    size_t mShingleSize;
-    size_t mShingle;
-    size_t mHashAlgorithm;
-    size_t mBlockSize;
+    int* mDev_JumpLength;
+    float* mDev_DotProduct;
+    int mNumberOfHashFunctions;
+    int mShingleSize;
+    int mShingle;
+    int mHashAlgorithm;
+    int mBlockSize;
     bool mDataOnGpu;
   public:
-  	InverseIndexCuda(size_t pNumberOfHashFunctions, size_t pShingle, 
-                        size_t pShingleSize, size_t pBlockSize, size_t pHashAlgorithm);
+  	InverseIndexCuda(int pNumberOfHashFunctions, int pShingle, 
+                        int pShingleSize, int pBlockSize, int pHashAlgorithm);
     ~InverseIndexCuda();
-  	void computeSignaturesFittingOnGpu(const SparseMatrixFloat* pRawData, 
-                                    size_t pStartIndex, size_t pEndIndex, 
-                                    size_t pNumberOfInstances, size_t pNumberOfBlocks, 
-                                    size_t pNumberOfThreads, size_t pShingleFactor, 
-                                    size_t pBlockSizeShingle,
+    void copyDataToGpu(SparseMatrixFloat* pRawData, int** pDevFeatureList,
+                                      float** pDevValueList, int** pSizeList, int** pJumpList);
+  	void computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData, 
+                                    int pStartIndex, int pEndIndex, 
+                                    int pNumberOfInstances, int pNumberOfBlocks, 
+                                    int pNumberOfThreads, int pShingleFactor, 
+                                    int pBlockSizeShingle,
                                     vvsize_t_p* pSignatures, int pRangeK);
-    void copyFittingDataToGpu(const SparseMatrixFloat* pRawData, size_t pStartIndex);
+    // void copyFittingDataToGpu(SparseMatrixFloat* pRawData, size_t pStartIndex);
     
-   void computeSignaturesQueryOnGpu(const SparseMatrixFloat* pRawData, 
-                                                size_t pStartIndex, size_t pEndIndex, 
-                                                size_t pNumberOfInstances, size_t pNumberOfBlocks, 
-                                                size_t pNumberOfThreads, size_t pShingleFactor, 
-                                                size_t pBlockSizeShingle,
+   void computeSignaturesQueryOnGpu(SparseMatrixFloat* pRawData, 
+                                                int pStartIndex, int pEndIndex, 
+                                                int pNumberOfInstances, int pNumberOfBlocks, 
+                                                int pNumberOfThreads, int pShingleFactor, 
+                                                int pBlockSizeShingle,
                                                 vvsize_t_p* pSignatures, int pRangeK);
-   int* get_mDev_FeatureList() {
-       return mDev_FeatureList;
+   int** get_mDev_FeatureList() {
+       return &mDev_FeatureList;
    };
-   int* get_mDev_SizeOfInstanceList() {
-       return mDev_SizeOfInstanceList;
+   int** get_mDev_SizeOfInstanceList() {
+       return &mDev_SizeOfInstanceList;
    };
-   int* get_mDev_ComputedSignaturesPerInstance() {
-       return mDev_ComputedSignaturesPerInstance;
+   int** get_mDev_ComputedSignaturesPerInstance() {
+       return &mDev_ComputedSignaturesPerInstance;
    };
-   float* get_mDev_ValuesList() {
-       return mDev_ValuesList;
+   float** get_mDev_ValuesList() {
+       return &mDev_ValuesList;
+   };
+   int** get_mDev_JumpLength() {
+       return &mDev_JumpLength;
+   };
+   float** get_mDev_DotProduct() {
+       return &mDev_DotProduct;
    };
 };
 #endif // INVERSE_INDEX_CUDA_H 

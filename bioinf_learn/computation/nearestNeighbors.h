@@ -58,11 +58,11 @@ class NearestNeighbors {
 
   	~NearestNeighbors(); 
     // Calculate the inverse index for the given instances.
-    void fit(const SparseMatrixFloat* pRawData); 
+    void fit(SparseMatrixFloat* pRawData); 
     // Extend the inverse index with the given instances.
-    void partialFit(const SparseMatrixFloat* pRawData, size_t pStartIndex); 
+    void partialFit(SparseMatrixFloat* pRawData, size_t pStartIndex); 
     // Calculate k-nearest neighbors.
-    neighborhood* kneighbors(const SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast, int pSimilarity = -1); 
+    neighborhood* kneighbors(SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast, int pSimilarity = -1); 
 
     void set_mOriginalData(SparseMatrixFloat* pOriginalData) {
       mOriginalData = pOriginalData;

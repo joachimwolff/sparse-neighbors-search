@@ -79,7 +79,9 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
         mInverseIndexStorage = new InverseIndexStorageUnorderedMap(mInverseIndexSize, mMaxBinSize);
     mRemoveValueWithLeastSigificantBit = pRemoveValueWithLeastSigificantBit;
     #ifdef CUDA
-    mInverseIndexCuda = new InverseIndexCuda(pNumberOfHashFunctions, mShingle, mShingleSize, mBlockSize, mHashAlgorithm);
+    mInverseIndexCuda = new InverseIndexCuda(static_cast<int>(pNumberOfHashFunctions), static_cast<int>(mShingle),
+                                             static_cast<int>(mShingleSize), static_cast<int>(mBlockSize), 
+                                             static_cast<int>(mHashAlgorithm));
     #endif
 }
  
@@ -98,7 +100,7 @@ distributionInverseIndex* InverseIndex::getDistribution() {
 }
 
 // compute the signature for one instance
-vsize_t* InverseIndex::computeSignature(const SparseMatrixFloat* pRawData, const size_t pInstance) {
+vsize_t* InverseIndex::computeSignature(SparseMatrixFloat* pRawData, const size_t pInstance) {
 
     if (pRawData == NULL) return NULL;
     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
@@ -149,7 +151,7 @@ vsize_t* InverseIndex::shingle(vsize_t* pSignature) {
     return signature; 
 }
 
-vsize_t* InverseIndex::computeSignatureWTA(const SparseMatrixFloat* pRawData, const size_t pInstance) {
+vsize_t* InverseIndex::computeSignatureWTA(SparseMatrixFloat* pRawData, const size_t pInstance) {
     size_t sizeOfInstance = pRawData->getSizeOfInstance(pInstance);
     
     size_t mSeed = 42;
@@ -168,15 +170,17 @@ vsize_t* InverseIndex::computeSignatureWTA(const SparseMatrixFloat* pRawData, co
             keyValue.insert(hashIndex, pRawData->getNextValue(pInstance, j));
         } 
         
-        float maxValue = 0.0;
-        size_t maxValueIndex = 0;
-        for (size_t j = 0; j < mK; ++j) {
-            if (keyValue.getValue(j) > maxValue) {
-                maxValue = keyValue.getValue(j);
-                maxValueIndex = j;
-            }
-        }
-        (*signature)[i] = maxValueIndex;
+        // float maxValue = 0.0;
+        // size_t maxValueIndex = 0;
+        
+        // for (size_t j = 0; j < mK; ++j) {
+        //     if (keyValue.getValue(j) > maxValue) {
+        //         maxValue = keyValue.getValue(j);
+        //         maxValueIndex = j;
+        //     }
+        // }
+        // (*signature)[i] = maxValueIndex;//keyValue.getMaxValueIndex();
+        (*signature)[i] = keyValue.getMaxValueIndex();
         keyValue.clear();
     }
     if (mShingle) {
@@ -185,7 +189,7 @@ vsize_t* InverseIndex::computeSignatureWTA(const SparseMatrixFloat* pRawData, co
     return signature;
 }
 
-vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawData, const bool pFitting) {
+vvsize_t_p* InverseIndex::computeSignatureVectors(SparseMatrixFloat* pRawData, const bool pFitting) {
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
@@ -206,28 +210,30 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(const SparseMatrixFloat* pRawD
                 (*signatures)[instance] = computeSignatureWTA(pRawData, instance);
             }
         }
-    #ifdef CUDA
+    #ifdef CUDA 
     } else {
         if (pFitting) {
             mInverseIndexCuda->computeSignaturesFittingOnGpu(pRawData, 0,
-                                                    pRawData->size(), pRawData->size(),
+                                                    static_cast<int>(pRawData->size()),
+                                                    static_cast<int>(pRawData->size()),
                                                     128, 128, 
-                                                    mShingleSize,
-                                                    mBlockSize,
-                                                    signatures, mRangeK_Wta);
+                                                    static_cast<int>(mShingleSize),
+                                                    static_cast<int>(mBlockSize),
+                                                    signatures, static_cast<int>(mRangeK_Wta));
         } else { 
             mInverseIndexCuda->computeSignaturesQueryOnGpu(pRawData,  0,
-                                                    pRawData->size(), pRawData->size(), 
+                                                    static_cast<int>(pRawData->size()),
+                                                    static_cast<int>(pRawData->size()),
                                                     128, 128, 
-                                                    mShingleSize,
-                                                    mBlockSize,
-                                                    signatures, mRangeK_Wta);
+                                                    static_cast<int>(mShingleSize),
+                                                    static_cast<int>(mBlockSize),
+                                                    signatures, static_cast<int>(mRangeK_Wta));
             } 
     }
     #endif
     return signatures;
 }
-umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* pRawData) {
+umap_uniqueElement* InverseIndex::computeSignatureMap(SparseMatrixFloat* pRawData) {
     mDoubleElementsQueryCount = 0;
     const size_t sizeOfInstances = pRawData->size();
     umap_uniqueElement* instanceSignature = new umap_uniqueElement();
@@ -262,15 +268,19 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(const SparseMatrixFloat* p
     delete signatures;
     return instanceSignature;
 }
-void InverseIndex::fit(const SparseMatrixFloat* pRawData, size_t pStartIndex) {
-    mMaxNnz = pRawData->getMaxNnz();
-    #ifdef CUDA
-    if (mCpuGpuLoadBalancing == 1) {
-        mInverseIndexCuda->copyFittingDataToGpu(pRawData, pStartIndex);
-    }
-    #endif
+void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
+    // mMaxNnz = pRawData->getMaxNnz();
+            std::cout << __LINE__ << std::endl;
+
+    // #ifdef CUDA
+    // if (mCpuGpuLoadBalancing == 1) {
+    //     mInverseIndexCuda->copyFittingDataToGpu(pRawData, pStartIndex);
+    // }
+    // #endif
+        std::cout << __LINE__ << std::endl;
 
     vvsize_t_p* signatures = computeSignatureVectors(pRawData, true);
+        std::cout << __LINE__ << std::endl;
 
     if (signatures == NULL) return;
     // compute how often the inverse index should be pruned 
@@ -278,7 +288,8 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData, size_t pStartIndex) {
     #ifdef OPENMP
     omp_set_dynamic(0);
     #endif
-    
+            std::cout << __LINE__ << std::endl;
+
     // store signatures in signatureStorage
 // #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     for (size_t i = 0; i < signatures->size(); ++i) {
@@ -338,6 +349,7 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData, size_t pStartIndex) {
         // }
         
     }
+        std::cout << __LINE__ << std::endl;
 
     if (mPruneInverseIndex > -1) {
         mInverseIndexStorage->prune(mPruneInverseIndex);
@@ -347,6 +359,8 @@ void InverseIndex::fit(const SparseMatrixFloat* pRawData, size_t pStartIndex) {
         mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
     }
     delete signatures;
+            std::cout << __LINE__ << std::endl;
+
 }
 
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 

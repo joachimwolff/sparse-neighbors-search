@@ -69,7 +69,10 @@ struct distributionInverseIndex {
     size_t mean;
     size_t standardDeviation;
 };
-
+struct sparseData {
+    uint32_t instance;
+    float value;
+};
 static bool mapSortDescByValueFloat(const sortMapFloat& a, const sortMapFloat& b) {
         return a.val > b.val;
 };

@@ -16,7 +16,7 @@
 #include "../parsePythonToCpp.h"
 
 static neighborhood* neighborhoodComputation(size_t pNearestNeighborsAddress, PyObject* pInstancesListObj,
-                                                PyObject* pFeaturesListObj,PyObject* pDataListObj, 
+                                                PyObject* pFeaturesListObj, PyObject* pDataListObj,
                                                 size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures, 
                                                 size_t pNneighbors, int pFast, int pSimilarity) {
     SparseMatrixFloat* originalDataMatrix = NULL;
@@ -35,7 +35,7 @@ static neighborhood* neighborhoodComputation(size_t pNearestNeighborsAddress, Py
 }
 
 static neighborhood* fitNeighborhoodComputation(size_t pNearestNeighborsAddress, PyObject* pInstancesListObj,
-                                                PyObject* pFeaturesListObj,PyObject* pDataListObj, 
+                                                PyObject* pFeaturesListObj,PyObject* pDataListObj,
                                                 size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures, 
                                                 size_t pNneighbors, int pFast, int pSimilarity) {
     SparseMatrixFloat* originalDataMatrix = parseRawData(pInstancesListObj, pFeaturesListObj, pDataListObj, 
@@ -342,7 +342,7 @@ static PyObject* fitRadiusNeighborsGraph(PyObject* self, PyObject* args) {
     int fast, similarity;
     PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!kkkkikik", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkkkikikO!O!O!kk", 
                             &PyList_Type, &instancesListObj, 
                             &PyList_Type, &featuresListObj,
                             &PyList_Type, &dataListObj,

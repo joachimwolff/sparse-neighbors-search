@@ -11,6 +11,8 @@
 __author__ = 'joachimwolff'
 import multiprocessing as mp
 from scipy.sparse import csr_matrix
+from sklearn.random_projection import SparseRandomProjection
+from sklearn import random_projection
 
 from numpy import asarray
 
@@ -143,6 +145,7 @@ class NearestNeighborsCppInterface():
         maxFeatures = int(max(X_csr.getnnz(1)))
         
         data = X_csr.data
+        
         # returns a pointer to the inverse index stored in c++
         self._pointer_address_of_nearestNeighbors_object = _nearestNeighbors.fit(instances.tolist(), features.tolist(), data.tolist(), 
                                                     X_csr.shape[0], maxFeatures,
@@ -165,6 +168,7 @@ class NearestNeighborsCppInterface():
         for i in xrange(len(instances)):
             instances[i] += self._index_elements_count 
         self._index_elements_count  += X.shape[0]
+        
         self._pointer_address_of_nearestNeighbors_object = _nearestNeighbors.fit(instances.tolist(), features.tolist(), data.tolist(),
                                                                     self._pointer_address_of_nearestNeighbors_object)
        
@@ -218,6 +222,7 @@ class NearestNeighborsCppInterface():
                                     1 if return_distance else 0,
                                     fast, similarity, self._pointer_address_of_nearestNeighbors_object)
         else:
+           
             X_csr = csr_matrix(X)
             instances, features = X_csr.nonzero()
             maxFeatures = int(max(X_csr.getnnz(1)))
@@ -297,6 +302,7 @@ class NearestNeighborsCppInterface():
                                     similarity, 
                                     self._pointer_address_of_nearestNeighbors_object)
         else:
+            
             X_csr = csr_matrix(X)
 
             instances, features = X_csr.nonzero()
@@ -374,6 +380,7 @@ class NearestNeighborsCppInterface():
                                     fast, similarity, 
                                     self._pointer_address_of_nearestNeighbors_object)
         else:
+            
             X_csr = csr_matrix(X)
 
             instances, features = X_csr.nonzero()
@@ -450,6 +457,7 @@ class NearestNeighborsCppInterface():
                                     similarity, 
                                     self._pointer_address_of_nearestNeighbors_object)
         else:
+            
             X_csr = csr_matrix(X)
 
             instances, features = X_csr.nonzero()
@@ -511,7 +519,7 @@ class NearestNeighborsCppInterface():
         data = X_csr.data
 
         maxFeatures = int(max(X_csr.getnnz(1)))
-
+        
         # returns a pointer to the inverse index stored in c++
         result = _nearestNeighbors.fit_kneighbors(instances.tolist(), features.tolist(), data.tolist(), 
                                                     X_csr.shape[0], maxFeatures,
@@ -574,7 +582,7 @@ class NearestNeighborsCppInterface():
         instances, features = X_csr.nonzero()
         maxFeatures = int(max(X_csr.getnnz(1)))
         data = X_csr.data
-
+        
         # returns a pointer to the inverse index stored in c++
         row, column, data =  _nearestNeighbors.fit_kneighbor_graph(instances.tolist(), features.tolist(), data.tolist(), 
                                                     X_csr.shape[0], maxFeatures,
@@ -637,6 +645,7 @@ class NearestNeighborsCppInterface():
         instances, features = X_csr.nonzero()
         data = X_csr.data
         maxFeatures = int(max(X_csr.getnnz(1)))
+        
         # returns a pointer to the inverse index stored in c++
         result = _nearestNeighbors.fit_radius_neighbors(instances.tolist(), features.tolist(), data.tolist(), 
                                                     X_csr.shape[0], maxFeatures,
@@ -703,6 +712,7 @@ class NearestNeighborsCppInterface():
         data = X_csr.data
 
         maxFeatures = int(max(X_csr.getnnz(1)))
+        
         # returns a pointer to the inverse index stored in c++
         row, column, data = _nearestNeighbors.fit_radius_neighbors_graph(instances.tolist(), features.tolist(), data.tolist(),
                                                     X_csr.shape[0], maxFeatures,

@@ -19,11 +19,23 @@ class KSizeSortedMap {
   private: 
     std::map<size_t, float>* mKSizeSortedMap;
     size_t mK;
-
+    float mMaxValue;
+    size_t mMaxValueIndex;
+// float maxValue = 0.0;
+        // size_t maxValueIndex = 0;
+        
+        // for (size_t j = 0; j < mK; ++j) {
+        //     if (keyValue.getValue(j) > maxValue) {
+        //         maxValue = keyValue.getValue(j);
+        //         maxValueIndex = j;
+        //     }
+        // }
   public:
     KSizeSortedMap(size_t pSizeOfMap) {
         mKSizeSortedMap = new std::map<size_t, float>();
         mK = pSizeOfMap;
+        mMaxValue = 0.0;
+        mMaxValueIndex = 0;
     };
     ~KSizeSortedMap() {
         delete mKSizeSortedMap;
@@ -31,12 +43,20 @@ class KSizeSortedMap {
     void insert(size_t pInstance, float pValue) {
         if (mKSizeSortedMap->size() <= mK) {
             (*mKSizeSortedMap)[pInstance] = pValue;
+            if (pValue > mMaxValue) {
+                mMaxValue = pValue;
+                mMaxValueIndex = pInstance;
+            }
         } else {
             auto rit = mKSizeSortedMap->crbegin();
             if (rit->first < pInstance) {
                 return;
             } else {
                 (*mKSizeSortedMap)[pInstance] = pValue;
+                if (pValue > mMaxValue) {
+                    mMaxValue = pValue;
+                    mMaxValueIndex = pInstance;
+                }
                 rit = mKSizeSortedMap->crbegin();
                 size_t key = rit->first;
                 // std::cout << "Key: " << key << std::endl; 
@@ -61,6 +81,10 @@ class KSizeSortedMap {
     };
     void clear() {
         mKSizeSortedMap->clear();
+    }
+    size_t getMaxValueIndex() {
+        size_t foo = std::distance(mKSizeSortedMap->begin(), mKSizeSortedMap->find(mMaxValueIndex));
+        // std::cout << foo << ", " << std::endl;
     }
 };
 #endif // K_SIZE_SORTED_MAP_H
