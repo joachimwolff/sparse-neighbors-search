@@ -195,6 +195,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     } else {
         // call gpu code
         std::cout << "GPU code is running! " << std::endl;
+        
         cudaInstanceVector* cudaInstanceVector;
         cudaInstanceVector = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData);
        

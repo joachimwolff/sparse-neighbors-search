@@ -17,8 +17,8 @@ __global__ void fitCudaWtaHash(const int* pFeatureIdList, const int* pSizeOfInst
                     const int pNumberOfInstances, const int pStartInstance, 
                     const int pBlockSize, const int pShingleSize,
                     int* pSignaturesBlockSize);
-__global__ void euclideanDistanceCuda(cudaInstanceVector* pCandidates, int pSize,
-                                        int* pSizeOfCandidates,
+__global__ void euclideanDistanceCuda(cudaInstance* pCandidates, int* pJumpLengthList, 
+                                        int* pSizeCandidatesList, int pSize,
                                         int* pFeatureList, float* pValuesList,
                                         int* pSizeOfInstanceList, int* pJumpLength,
                                         float* pDotProduct);
@@ -27,8 +27,8 @@ __global__ void cosineSimilarityCuda(cudaInstanceVector* pCandidates, int pSize,
                                         int* pFeatureList, float* pValuesList,
                                         int* pSizeOfInstanceList, int* pJumpLength,
                                         float* pDotProduct);
-__device__ void sortDesc(cudaInstanceVector* pCandidates, int pInstanceId, int pSize);
-__device__ void sortAsc(cudaInstanceVector* pCandidates, int pInstanceId, int pSize);
+__device__ void sortDesc(cudaInstance* pCandidates, int pInstanceId, int pSize);
+__device__ void sortAsc(cudaInstance* pCandidates, int pInstanceId, int pSize);
 __global__ void dotProductSingle(int* pFeatureList, float* pValuesList,
                                  int* pSizeOfInstanceList, int* pJumpLength,
                                  int pSize, float* pDevDotProduct);

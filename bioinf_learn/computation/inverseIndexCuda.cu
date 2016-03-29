@@ -56,8 +56,6 @@ void InverseIndexCuda::copyDataToGpu(SparseMatrixFloat* pRawData, int** pDevFeat
             static_cast<int>(pRawData->size()) * sizeof(int),
             cudaMemcpyHostToDevice);
     free(sizes);
-    printf("Inverse size pointer adress: %u\n", pSizeList);
-    printf("Inverse &size pointer adress: %u\n", &pSizeList);
     
     // memory for the number of features per instance
     cudaMalloc((void **) &(*pJumpList),
@@ -96,6 +94,14 @@ void InverseIndexCuda::copyDataToGpu(SparseMatrixFloat* pRawData, int** pDevFeat
     free(dev_index);
     free(dev_values);      
     free(jumpValues);
+    printf("Feature list pointer adress: %u\n", (*pDevFeatureList));
+    printf("&Feature list pointer adress: %u\n", &(*pDevFeatureList));
+    printf("pDevValueList pointer adress: %u\n", (*pDevValueList));
+    printf("&pDevValueList pointer adress: %u\n", &(*pDevValueList));
+    printf("Inverse size pointer adress: %u\n", (*pSizeList));
+    printf("Inverse &size pointer adress: %u\n", &(*pSizeList));
+    printf("jumppointer adress: %u\n", (*pJumpList));
+    printf("&jump pointer adress: %u\n", &(*pJumpList));
 }
 void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData, 
                                                 int pStartIndex, int pEndIndex, 

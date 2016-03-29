@@ -121,7 +121,7 @@ __global__ void fitCudaWtaHash(const int* pFeatureIdList, const int* pSizeOfInst
 }
 
 
-__device__ void sortDesc(cudaInstanceVector* pCandidates, int pInstanceId, int pSize) {
+__device__ void sortDesc(cudaInstance* pCandidates, int pInstanceId, int pSize) {
     
     int threadId = threadIdx.x;
     int instance_tmp;
@@ -129,22 +129,23 @@ __device__ void sortDesc(cudaInstanceVector* pCandidates, int pInstanceId, int p
     for (int i = 0; i < pSize / 2; ++i) {
         while (threadId < pSize) {
             if (threadId + 1 < pSize 
-                    && pCandidates[pInstanceId].instance[threadId+1].y > pCandidates[pInstanceId].instance[threadId].y) {
-                        instance_tmp = pCandidates[pInstanceId].instance[threadId].x;
-                        value_tmp = pCandidates[pInstanceId].instance[threadId].y;
-                        pCandidates[pInstanceId].instance[threadId].x = pCandidates[pInstanceId].instance[threadId + 1].x;
-                        pCandidates[pInstanceId].instance[threadId].y = pCandidates[pInstanceId].instance[threadId + 1].y;
-                        pCandidates[pInstanceId].instance[threadId + 1].x = instance_tmp;
-                        pCandidates[pInstanceId].instance[threadId + 1].y = value_tmp;
+                    && pCandidates[pInstanceId+threadId+1].y > pCandidates[pInstanceId + threadId].y) {
+                        instance_tmp = pCandidates[pInstanceId + threadId].x;
+                        value_tmp = pCandidates[pInstanceId + threadId].y;
+                        pCandidates[pInstanceId + threadId].x = pCandidates[pInstanceId + threadId + 1].x;
+                        pCandidates[pInstanceId + threadId].y = pCandidates[pInstanceId + threadId + 1].y;
+                        pCandidates[pInstanceId + threadId + 1].x = instance_tmp;
+                        pCandidates[pInstanceId + threadId + 1].y = value_tmp;
             }
             if (threadId + 2 < pSize 
-                    && pCandidates[pInstanceId].instance[threadId+2].y > pCandidates[pInstanceId].instance[threadId+1].y) {
-                        instance_tmp = pCandidates[pInstanceId].instance[threadId+1].x;
-                        value_tmp = pCandidates[pInstanceId].instance[threadId+1].y;
-                        pCandidates[pInstanceId].instance[threadId+1].x = pCandidates[pInstanceId].instance[threadId + 2].x;
-                        pCandidates[pInstanceId].instance[threadId+1].y = pCandidates[pInstanceId].instance[threadId + 2].y;
-                        pCandidates[pInstanceId].instance[threadId + 2].x = instance_tmp;
-                        pCandidates[pInstanceId].instance[threadId + 2].y = value_tmp;
+                    && pCandidates[pInstanceId + threadId+2].y > pCandidates[pInstanceId + threadId+1].y) {
+                        // int2 tmp;
+                        instance_tmp = pCandidates[pInstanceId + threadId+1].x;
+                        value_tmp = pCandidates[pInstanceId + threadId+1].y;
+                        pCandidates[pInstanceId + threadId+1].x = pCandidates[pInstanceId + threadId + 2].x;
+                        pCandidates[pInstanceId + threadId+1].y = pCandidates[pInstanceId + threadId + 2].y;
+                        pCandidates[pInstanceId + threadId + 2].x = instance_tmp;
+                        pCandidates[pInstanceId + threadId + 2].y = value_tmp;
             }
             __syncthreads();
             threadId += blockDim.x;
@@ -153,7 +154,7 @@ __device__ void sortDesc(cudaInstanceVector* pCandidates, int pInstanceId, int p
         threadId = threadIdx.x;
     }
 }
-__device__ void sortAsc(cudaInstanceVector* pCandidates, int pInstanceId, int pSize) {
+__device__ void sortAsc(cudaInstance* pCandidates, int pInstanceId, int pSize) {
     
     int threadId = threadIdx.x;
     int instance_tmp;
@@ -161,23 +162,23 @@ __device__ void sortAsc(cudaInstanceVector* pCandidates, int pInstanceId, int pS
     for (int i = 0; i < pSize / 2; ++i) {
         while (threadId < pSize) {
             if (threadId + 1 < pSize 
-                    && pCandidates[pInstanceId].instance[threadId+1].y < pCandidates[pInstanceId].instance[threadId].y) {
-                        instance_tmp = pCandidates[pInstanceId].instance[threadId].x;
-                        value_tmp = pCandidates[pInstanceId].instance[threadId].y;
-                        pCandidates[pInstanceId].instance[threadId].x = pCandidates[pInstanceId].instance[threadId + 1].x;
-                        pCandidates[pInstanceId].instance[threadId].y = pCandidates[pInstanceId].instance[threadId + 1].y;
-                        pCandidates[pInstanceId].instance[threadId + 1].x = instance_tmp;
-                        pCandidates[pInstanceId].instance[threadId + 1].y = value_tmp;
+                    && pCandidates[pInstanceId+threadId+1].y < pCandidates[pInstanceId + threadId].y) {
+                        instance_tmp = pCandidates[pInstanceId + threadId].x;
+                        value_tmp = pCandidates[pInstanceId + threadId].y;
+                        pCandidates[pInstanceId + threadId].x = pCandidates[pInstanceId + threadId + 1].x;
+                        pCandidates[pInstanceId + threadId].y = pCandidates[pInstanceId + threadId + 1].y;
+                        pCandidates[pInstanceId + threadId + 1].x = instance_tmp;
+                        pCandidates[pInstanceId + threadId + 1].y = value_tmp;
             }
             if (threadId + 2 < pSize 
-                    && pCandidates[pInstanceId].instance[threadId+2].y < pCandidates[pInstanceId].instance[threadId+1].y) {
+                    && pCandidates[pInstanceId + threadId+2].y < pCandidates[pInstanceId + threadId+1].y) {
                         // int2 tmp;
-                        instance_tmp = pCandidates[pInstanceId].instance[threadId+1].x;
-                        value_tmp = pCandidates[pInstanceId].instance[threadId+1].y;
-                        pCandidates[pInstanceId].instance[threadId+1].x = pCandidates[pInstanceId].instance[threadId + 2].x;
-                        pCandidates[pInstanceId].instance[threadId+1].y = pCandidates[pInstanceId].instance[threadId + 2].y;
-                        pCandidates[pInstanceId].instance[threadId + 2].x = instance_tmp;
-                        pCandidates[pInstanceId].instance[threadId + 2].y = value_tmp;
+                        instance_tmp = pCandidates[pInstanceId + threadId+1].x;
+                        value_tmp = pCandidates[pInstanceId + threadId+1].y;
+                        pCandidates[pInstanceId + threadId+1].x = pCandidates[pInstanceId + threadId + 2].x;
+                        pCandidates[pInstanceId + threadId+1].y = pCandidates[pInstanceId + threadId + 2].y;
+                        pCandidates[pInstanceId + threadId + 2].x = instance_tmp;
+                        pCandidates[pInstanceId + threadId + 2].y = value_tmp;
             }
             __syncthreads();
             threadId += blockDim.x;
@@ -254,8 +255,8 @@ __device__ float dotProduct(int* pFeatureListX, float* pValuesListX, int pSizeX,
     }
     return (float) value / (float) 1000000;
 }
-__global__ void euclideanDistanceCuda(cudaInstanceVector* pCandidates, int pSize,
-                                        int* pSizeOfCandidates,
+__global__ void euclideanDistanceCuda(cudaInstance* pCandidates, int* pJumpLengthList, 
+                                        int* pSizeCandidatesList, int pSize,
                                         int* pFeatureList, float* pValuesList,
                                         int* pSizeOfInstanceList, int* pJumpLength,
                                         float* pDotProduct) {
@@ -270,16 +271,16 @@ __global__ void euclideanDistanceCuda(cudaInstanceVector* pCandidates, int pSize
     // float __shared__ dotProductYY[128];
     while (instanceIdCandidates < pSize) {
         if (threadIdx.x == 0) {
-            instance = pCandidates[instanceIdCandidates].instance[0].x;
+            instance = pCandidates[pJumpLengthList[instanceIdCandidates]].x;
             dotProductXX = pDotProduct[instance];
-            size = pSizeOfCandidates[instanceIdCandidates];
-            printf("instance: %i\n", instanceIdCandidates);
+            size = pSizeCandidatesList[instanceIdCandidates];
+            // printf("instance: %i\n", instanceIdCandidates);
         }
         __syncthreads();
         
         while (threadId < size) {
             
-            candidate = pCandidates[instanceIdCandidates].instance[threadId].x;
+            candidate = pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].x;
             // value = candidates[instanceIdCandidates][threadId].y;
             // dotProductYY[threadIdx.x] = pDotProduct[candidate];
             value[threadIdx.x] = dotProduct(&pFeatureList[pJumpLength[instance]], &pValuesList[pJumpLength[instance]], pSizeOfInstanceList[instance],
@@ -300,15 +301,15 @@ __global__ void euclideanDistanceCuda(cudaInstanceVector* pCandidates, int pSize
                     
             //     }
             // }
-            // value[threadIdx.x] *= 2;
-            // pCandidates[instanceIdCandidates].instance[threadId].y = sqrtf(dotProductXX - value[threadIdx.x] - pDotProduct[candidate]);
+            value[threadIdx.x] *= 2;
+            pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].y = sqrtf(dotProductXX - value[threadIdx.x] - pDotProduct[candidate]);
             threadId += blockDim.x;
         }
         __syncthreads();
         if (blockIdx.x == 0) {
-            printf("value: %f\n", pCandidates[instanceIdCandidates].instance[threadIdx.x].y);
+            printf("value: %f\n", pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].y);
         }
-        sortDesc(pCandidates, instanceIdCandidates, size); 
+        sortDesc(pCandidates, pJumpLengthList[instanceIdCandidates], size); 
         instanceIdCandidates += gridDim.x;
         threadId = threadIdx.x;
     }
