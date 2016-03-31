@@ -123,11 +123,12 @@ __global__ void fitCudaWtaHash(const int* pFeatureIdList, const int* pSizeOfInst
 
 __device__ void sortDesc(cudaInstance* pCandidates, int pInstanceId, int pSize) {
     
-    int threadId = threadIdx.x;
+    int threadId = 2*threadIdx.x;
     int instance_tmp;
     float value_tmp;
     for (int i = 0; i < pSize / 2; ++i) {
         while (threadId < pSize) {
+           
             if (threadId + 1 < pSize 
                     && pCandidates[pInstanceId+threadId+1].y > pCandidates[pInstanceId + threadId].y) {
                         instance_tmp = pCandidates[pInstanceId + threadId].x;
@@ -137,6 +138,7 @@ __device__ void sortDesc(cudaInstance* pCandidates, int pInstanceId, int pSize) 
                         pCandidates[pInstanceId + threadId + 1].x = instance_tmp;
                         pCandidates[pInstanceId + threadId + 1].y = value_tmp;
             }
+            
             if (threadId + 2 < pSize 
                     && pCandidates[pInstanceId + threadId+2].y > pCandidates[pInstanceId + threadId+1].y) {
                         // int2 tmp;
@@ -147,7 +149,6 @@ __device__ void sortDesc(cudaInstance* pCandidates, int pInstanceId, int pSize) 
                         pCandidates[pInstanceId + threadId + 2].x = instance_tmp;
                         pCandidates[pInstanceId + threadId + 2].y = value_tmp;
             }
-            __syncthreads();
             threadId += blockDim.x;
         }
         __syncthreads();
@@ -156,11 +157,15 @@ __device__ void sortDesc(cudaInstance* pCandidates, int pInstanceId, int pSize) 
 }
 __device__ void sortAsc(cudaInstance* pCandidates, int pInstanceId, int pSize) {
     
-    int threadId = threadIdx.x;
+    int threadId = 2*threadIdx.x;
     int instance_tmp;
     float value_tmp;
     for (int i = 0; i < pSize / 2; ++i) {
         while (threadId < pSize) {
+            //  if (blockIdx.x == 0 && pInstanceId == 0 && threadId == 1) {
+            //     printf("id: %i, value: %f, id2: %i, value2: %f\n", pCandidates[pInstanceId + threadId].x, pCandidates[pInstanceId + threadId].y,
+            //         pCandidates[pInstanceId+threadId+1].x, pCandidates[pInstanceId+threadId+1].y);
+            // }
             if (threadId + 1 < pSize 
                     && pCandidates[pInstanceId+threadId+1].y < pCandidates[pInstanceId + threadId].y) {
                         instance_tmp = pCandidates[pInstanceId + threadId].x;
@@ -281,11 +286,14 @@ __global__ void euclideanDistanceCuda(cudaInstance* pCandidates, int* pJumpLengt
         while (threadId < size) {
             
             candidate = pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].x;
+            // printf("instance: %i, %i, %i, %i, %i\n", instanceIdCandidates, pJumpLengthList[instanceIdCandidates], candidate, size, __LINE__);
+            
             // value = candidates[instanceIdCandidates][threadId].y;
             // dotProductYY[threadIdx.x] = pDotProduct[candidate];
             value[threadIdx.x] = dotProduct(&pFeatureList[pJumpLength[instance]], &pValuesList[pJumpLength[instance]], pSizeOfInstanceList[instance],
                                 &pFeatureList[pJumpLength[candidate]], &pValuesList[pJumpLength[candidate]],
                                  pSizeOfInstanceList[candidate]);
+            // printf("instance: %i, %i\n", instanceIdCandidates, __LINE__);
             
             // if (blockIdx.x == 0 && instanceIdCandidates == 0) {
             //     if (threadIdx.x < size) {
@@ -301,15 +309,49 @@ __global__ void euclideanDistanceCuda(cudaInstance* pCandidates, int* pJumpLengt
                     
             //     }
             // }
+            // printf("instance__XX: %i, %i, %i, %f\n", instanceIdCandidates, threadIdx.x, __LINE__, dotProductXX);
+            
             value[threadIdx.x] *= 2;
-            pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].y = sqrtf(dotProductXX - value[threadIdx.x] - pDotProduct[candidate]);
+            value[threadIdx.x] = dotProductXX - value[threadIdx.x] + pDotProduct[candidate];
+            if (value[threadIdx.x] <= 0) {
+                value[threadIdx.x] = 0;
+            }
+            value[threadIdx.x] = sqrtf(value[threadIdx.x]);
+            // printf("instance__sqrt: %i, %i, %i, %f\n", instanceIdCandidates, threadIdx.x, __LINE__, value[threadIdx.x]);
+            
+            pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].y = value[threadIdx.x];
+            
             threadId += blockDim.x;
+            // printf("instance: %i, %i\n", instanceIdCandidates, __LINE__);
+            
         }
         __syncthreads();
-        if (blockIdx.x == 0) {
-            printf("value: %f\n", pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].y);
-        }
-        sortDesc(pCandidates, pJumpLengthList[instanceIdCandidates], size); 
+        // if (blockIdx.x == 0 && instanceIdCandidates == 0) {
+        //     threadId = threadIdx.x;
+        //     if (threadIdx.x == 0) {
+        //         printf("unsorted:\n");
+        //     }
+        // __syncthreads();
+        //     while (threadId < size) {
+        //         printf("threadId, %i, candiate: %i, value: %f\n",threadId, pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].x, pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].y);
+                
+        //         threadId += blockDim.x;
+        //     }
+        // }
+        sortAsc(pCandidates, pJumpLengthList[instanceIdCandidates], size); 
+        __syncthreads();
+        
+        // if (blockIdx.x == 0 && instanceIdCandidates == 0) {
+        //     threadId = threadIdx.x;
+        //     if (threadIdx.x == 0) {
+        //         printf("sorted:\n");
+        //     }
+        //      __syncthreads();
+        //     while (threadId < size) {
+        //         printf("threadId, %i, candiate: %i, value: %f\n",threadId, pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].x, pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].y);
+        //         threadId += blockDim.x;
+        //     }
+        // }
         instanceIdCandidates += gridDim.x;
         threadId = threadIdx.x;
     }

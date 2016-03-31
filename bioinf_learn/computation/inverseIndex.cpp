@@ -269,18 +269,8 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(SparseMatrixFloat* pRawDat
     return instanceSignature;
 }
 void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
-    // mMaxNnz = pRawData->getMaxNnz();
-            std::cout << __LINE__ << std::endl;
-
-    // #ifdef CUDA
-    // if (mCpuGpuLoadBalancing == 1) {
-    //     mInverseIndexCuda->copyFittingDataToGpu(pRawData, pStartIndex);
-    // }
-    // #endif
-        std::cout << __LINE__ << std::endl;
 
     vvsize_t_p* signatures = computeSignatureVectors(pRawData, true);
-        std::cout << __LINE__ << std::endl;
 
     if (signatures == NULL) return;
     // compute how often the inverse index should be pruned 
@@ -306,50 +296,27 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
             uniqueElement element;
             element.instances = doubleInstanceVector;
             element.signature = (*signatures)[i];
-            // #pragma omp critical
             mSignatureStorage->operator[](signatureId) = element;
         } else {
-            // #pragma omp critical
             {            
                 mSignatureStorage->operator[](signatureId).instances->push_back(i+pStartIndex);
                 mDoubleElementsStorageCount += 1;
             }
         }      
-        // #pragma omp critical
-        // {
             for (size_t j = 0; j < (*signatures)[i]->size(); ++j) {
                 mInverseIndexStorage->insert(j, (*(*signatures)[i])[j], i+pStartIndex, mRemoveValueWithLeastSigificantBit);
             }
-        // }
-        // #pragma omp barrier 
-        // {
             if (signatures->size() == pruneEveryNInstances) {
                 
-                // #pragma omp critical
-                // {
                     pruneEveryNInstances += pruneEveryNInstances;
                     if (mPruneInverseIndex > -1) {
-                            // std::cout << __LINE__ << std::endl;
-    
                         mInverseIndexStorage->prune(mPruneInverseIndex);
-                            // std::cout << __LINE__ << std::endl;
-    
                     }
-                        // std::cout << __LINE__ << std::endl;
-    
                     if (mRemoveHashFunctionWithLessEntriesAs > -1) {
-                            // std::cout << __LINE__ << std::endl;
-    
                         mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
-                            // std::cout << __LINE__ << std::endl;
-    
                     }
-                // }
             }
-        // }
-        
     }
-        std::cout << __LINE__ << std::endl;
 
     if (mPruneInverseIndex > -1) {
         mInverseIndexStorage->prune(mPruneInverseIndex);
@@ -359,14 +326,14 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
         mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
     }
     delete signatures;
-            std::cout << __LINE__ << std::endl;
-
 }
 
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                         const size_t pNneighborhood, 
                                         const bool pDoubleElementsStorageCount,
-                                        const bool pNoneSingleInstance) {
+                                        const bool pNoneSingleInstance,
+                                        int* pNeighborsCuda, int* pJumpLengthCuda,
+                                        int* pSizesCuda) {
     size_t doubleElements = 0;
     if (pNoneSingleInstance) {
         if (pDoubleElementsStorageCount) {

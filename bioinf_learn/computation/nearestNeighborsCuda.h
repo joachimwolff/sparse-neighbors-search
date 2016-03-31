@@ -30,7 +30,8 @@ class NearestNeighborsCuda {
   	// NearestNeighborsCuda(int* pFeatureList, float* pValuesList,
     //                       int* pSizeOfInstanceList);
     ~NearestNeighborsCuda();
-    cudaInstanceVector* computeNearestNeighbors(neighborhood* neighbors, size_t pSimilarity, SparseMatrixFloat* pRawData);
+    cudaInstance* computeNearestNeighbors(neighborhood* neighbors, size_t pSimilarity, SparseMatrixFloat* pRawData,
+                                            int* pJumpLength);
     void setFeatureList(int** pFeatureList) {
         mDev_FeatureList = pFeatureList;
     };

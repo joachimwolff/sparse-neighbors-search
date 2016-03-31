@@ -224,7 +224,13 @@ class SparseMatrixFloat {
                 } else {
                     valueYY = pQueryData->getDotProductPrecomputed()[instance_id];
                 }
-                element.val = sqrt(valueXX - 2* valueXY + valueYY);
+                element.val = valueXX - 2* valueXY + valueYY;
+                if (element.val <= 0) {
+                    element.val = 0;
+                } else {
+                    element.val = sqrt(valueXX - 2* valueXY + valueYY);
+                }
+                
                 // (*mValuesPrecomputed)[indexOuter]->operator[](indexInner) = element.val;
             // }
             returnValue[i] = element;
