@@ -72,6 +72,7 @@ cudaInstance* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
         cudaDeviceSynchronize();
     }
     cudaMemcpy(candidates, candidatesCuda, sizeof(cudaInstance) * jumpLengthCount, cudaMemcpyDeviceToHost);
+    
     cudaFree(candidatesCuda);
     free(numberOfCandidatesPerInstance);
     // free(jumpLength);

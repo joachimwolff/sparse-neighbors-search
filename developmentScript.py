@@ -171,7 +171,7 @@ def test(data):
                       store_value_with_least_sigificant_bit=1,
                       excess_factor=5, prune_inverse_index_after_instance=0.5, 
                       remove_hash_function_with_less_entries_as=0,
-                      shingle=0, block_size=4, cpu_gpu_load_balancing = 0.0)
+                      shingle=0, block_size=4, cpu_gpu_load_balancing = 1.0)
     # minHash.fit(data[0])
     print "fitting..."
 

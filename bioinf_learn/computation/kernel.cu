@@ -325,21 +325,21 @@ __global__ void euclideanDistanceCuda(cudaInstance* pCandidates, int* pJumpLengt
             // printf("instance: %i, %i\n", instanceIdCandidates, __LINE__);
             
         }
-        __syncthreads();
-        // if (blockIdx.x == 0 && instanceIdCandidates == 0) {
-        //     threadId = threadIdx.x;
-        //     if (threadIdx.x == 0) {
-        //         printf("unsorted:\n");
-        //     }
         // __syncthreads();
-        //     while (threadId < size) {
-        //         printf("threadId, %i, candiate: %i, value: %f\n",threadId, pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].x, pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].y);
+        // // if (blockIdx.x == 0 && instanceIdCandidates == 0) {
+        // //     threadId = threadIdx.x;
+        // //     if (threadIdx.x == 0) {
+        // //         printf("unsorted:\n");
+        // //     }
+        // // __syncthreads();
+        // //     while (threadId < size) {
+        // //         printf("threadId, %i, candiate: %i, value: %f\n",threadId, pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].x, pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].y);
                 
-        //         threadId += blockDim.x;
-        //     }
-        // }
-        sortAsc(pCandidates, pJumpLengthList[instanceIdCandidates], size); 
-        __syncthreads();
+        // //         threadId += blockDim.x;
+        // //     }
+        // // }
+        // sortAsc(pCandidates, pJumpLengthList[instanceIdCandidates], size); 
+        // __syncthreads();
         
         // if (blockIdx.x == 0 && instanceIdCandidates == 0) {
         //     threadId = threadIdx.x;

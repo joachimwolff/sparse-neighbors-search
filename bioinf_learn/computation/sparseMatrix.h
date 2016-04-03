@@ -69,7 +69,58 @@ class SparseMatrixFloat {
             }
         }
         
-        return value;  
+        return value; 
+        
+        
+    // size_t instanceId = 0;
+    // size_t neighborId = 0;
+	// __m128 value = { 0, 0, 0, 0};
+	// while (instanceId < instance->size() && neighborId < neighbor->size()) {
+	// 	if (instance->operatora.indices[instanceId + 3] < b.indices[neighborId])
+	// 	{
+	// 		instanceId += 4;
+	// 		continue;
+	// 	}
+	// 	else if (b.indices[neighborId + 3] < a.indices[instanceId])
+	// 	{
+	// 		instanceId += 4;
+	// 		continue;
+	// 	}
+
+	// 	__m128 vai = _mm_load_ps((float *)a.indices + instanceId);
+	// 	__m128 val_a = _mm_load_ps(a.values + instanceId);
+
+	// 	__m128 vbi = _mm_load_ps((float *)b.indices + neighborId);
+	// 	__m128 val_b = _mm_load_ps(b.values + neighborId);
+
+	// 	for (int i=0; i<3; i++)
+	// 	{
+	// 		__m128 prod = _mm_mul_ps(val_a, val_b);
+	// 		__m128 eq = _mm_cmpeq_ps(vai, vbi);
+	// 		value = _mm_add_ps(value, _mm_and_ps(prod, eq));
+
+	// 		vai = _mm_andnot_ps(vai, eq);
+	// 		val_a = _mm_andnot_ps(val_a, eq);
+	// 		vai = _mm_shuffle_ps(vai, vai, _MM_SHUFFLE(3,0,1,2));
+	// 		val_a = _mm_shuffle_ps(val_a, val_a, _MM_SHUFFLE(3,0,1,2));
+	// 	}
+
+	// 	if (a.indices[instanceId + 3] == b.indices[neighborId + 3])
+	// 	{
+	// 		instanceId += 4;
+	// 		neighborId += 4;
+	// 	}
+	// 	else if (b.indices[neighborId + 3] < a.indices[instanceId + 3])
+	// 	{
+	// 		neighborId += 4;
+	// 	}
+	// 	else
+	// 	{
+	// 		instanceId += 4;
+	// 	}
+	// }
+
+	// return value.m128_f32[0] + value.m128_f32[1] + value.m128_f32[2] + value.m128_f32[3]; 
    };
     
     // std::vector<std::unordered_map<uint32_t, float>* >* getValuesPrecomputed() {
@@ -84,7 +135,7 @@ class SparseMatrixFloat {
             (*mDataMatrix)[i] = new std::vector<sparseData>();
             // (*mValuesPrecomputed)[i] = new std::unordered_map<uint32_t, float>();
         }
-        std::cout << __LINE__ << std::endl;
+        // std::cout << __LINE__ << std::endl;
         
     };
     ~SparseMatrixFloat() {
@@ -148,7 +199,7 @@ class SparseMatrixFloat {
          return mDotProductPrecomputed;
      }
     void precomputeDotProduct() {
-        std::cout << __LINE__ << std::endl;
+        // std::cout << __LINE__ << std::endl;
         
         float value = 0.0;
         float value1 = 0.0;
@@ -174,7 +225,7 @@ class SparseMatrixFloat {
             value3 = 0;
             // std::cout << "instance: " << i << ": value: " << mDotProductPrecomputed[i] << std::endl;
         }
-        std::cout << __LINE__ << std::endl;
+        // std::cout << __LINE__ << std::endl;
         
     }
     
