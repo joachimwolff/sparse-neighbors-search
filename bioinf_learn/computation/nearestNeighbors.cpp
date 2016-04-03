@@ -190,7 +190,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                 }
             }
         }
-        return neighborhood_;
+        // return neighborhood_;
     #ifdef CUDA
     } else {
         // call gpu code

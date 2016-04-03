@@ -12,6 +12,17 @@
 
 #include "nearestNeighborsCuda.h"
 #include "kernel.h"
+
+static void HandleError( cudaError_t err,
+                         const char *file,
+                         int line ) {
+    if (err != cudaSuccess) {
+        printf( "%s in %s at line %d\n", cudaGetErrorString( err ),
+                file, line );
+        exit( EXIT_FAILURE );
+    }
+}
+#define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
 NearestNeighborsCuda::NearestNeighborsCuda() {
     
 }
@@ -65,11 +76,17 @@ cudaInstance* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
         // cosineSimilarityCuda<<<32, 96>>>(d_data, size, sizeOfCandidatesCuda, mDev_FeatureList,
         //                                 mDev_ValuesList, mDev_SizeOfInstanceList, mMaxNnz);
     } else {
-        euclideanDistanceCuda<<<128, 128>>>(candidatesCuda, jumpLengthCuda, numberOfCandidatesPerInstanceCuda, 
-                                        neighbors->neighbors->size(), (*mDev_FeatureList),
-                                        (*mDev_ValuesList), (*mDev_SizeOfInstanceList), 
-                                        (*mDev_JumpLengthList), (*mDev_DotProducts));
-        cudaDeviceSynchronize();
+       (euclideanDistanceCuda<<<128, 128>>>(candidatesCuda, jumpLengthCuda, numberOfCandidatesPerInstanceCuda, 
+                                        neighbors->neighbors->size(), *mDev_FeatureList,
+                                        *mDev_ValuesList, *mDev_SizeOfInstanceList, 
+                                        *mDev_JumpLengthList, *mDev_DotProducts ));
+        cudaError_t errSync  = cudaGetLastError();
+    cudaError_t errAsync = cudaDeviceSynchronize();
+    if (errSync != cudaSuccess) 
+        HANDLE_ERROR(errSync);
+    if (errAsync != cudaSuccess)
+        HANDLE_ERROR(errAsync);
+        
     }
     cudaMemcpy(candidates, candidatesCuda, sizeof(cudaInstance) * jumpLengthCount, cudaMemcpyDeviceToHost);
     
