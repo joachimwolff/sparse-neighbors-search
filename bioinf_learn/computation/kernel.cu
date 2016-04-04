@@ -250,30 +250,68 @@ __device__ float dotProduct(int* pFeatureListX, float* pValuesListX, int pSizeX,
     return (float) value / (float) 1000000;
 }
 
-// __global__ void dotProduct(int* pFeatureList, int* pValueList, int pStartPosX, int pStartPosY,
-//                            int pEndPosX, int pEndPosY) {
-//     __shared__ int featureIdX[128];
-//     __shared__ int featureIdY[128];
-//     __shared__ int value[128];
-//     int index;
-    
-//     if (pStartPosX + threadIdx.x < pEndPosX) {
-//         featureIdX[threadId.x] = pFeatureList[pStartPosX + threadIdx.x];
-//     }
-//     if (pStartPosY + threadIdx.x < pEndPosY) {
-//         featureIdY[threadId.x] = pFeatureList[pStartPosY + threadIdx.x];
-//     }
-    
-//     for (int i = 0; i < 128; ++i) {
-//         index = (threadIdx.x + i) % 128;
-//         if (featureIdX[index] == featureIdY[threadIdx.x]) {
-//             value[threadIdx.x] = pValueList[pStartPosX+index] * pValueList[threadIdx.x];
-//         } else if () {
+__global__ void dotProduct(int* pFeatureList, int* pValueList, int pStartPosX, int pStartPosY,
+                           int pEndPosX, int pEndPosY) {
+    __shared__ int featureIdX[128];
+    __shared__ int featureIdY[128];
+    __shared__ int value[128];
+    int index = 64;
+    int round = 0;
+    int jumpWidth = 32;
+    value[threadIdx.x] = 0;
+    while (pStartPosX < pEndPosX && pStartPosY < pEndPosY) {
+        if (pStartPosX + threadIdx.x < pEndPosX) {
+            featureIdX[threadId.x] = pFeatureList[pStartPosX + threadIdx.x];
+        } else {
+            featureIdX[threadId.x] = -1;
+        }
+        if (pStartPosY + threadIdx.x < pEndPosY) {
+            featureIdY[threadId.x] = pFeatureList[pStartPosY + threadIdx.x];
+        } else {
+            featureIdY[threadId.x] = -2;
+        }
+        if (featureIdX[0] > featureIdY[128] && featureIdY[128] != -2) {
+            pStartPosX += 128;
+            continue;
+        } else if (featureIdX[128] < featureIdY[0] && featureIdX[128] != -1) {
+            pStartPosY += 128;
+            continue;
+        }
+        while (round < 8) {
+            if (featureIdX[index] < featureIdY[threadIdx.x]) {
+                index -= jumpWidth;
+            } else if (featureIdX[index] < featureIdY[threadIdx.x]) {
+                index += jumpWidth;
+            } else {
+                value[threadIdx.x] += pValueList[pStartPosX + index] * pValueList[pStartPosY + threadIdx.x];
+                break;
+            }
+            jumpWidth /= 2;
             
-//         }
-//     }
+            ++round;
+        }
+        __syncthreads();
+        index = 0;
+        round = 0;
+        
+       
+    }
+     int i = blockDim.x/2;
+        while (i != 0) {
+            if (threadIdx.x < i) { 
+                value[threadIdx.x] += value[threadIdx.x + i];
+            // printf("dotXX: %i, threadId: %i, value: %f\n",instanceId, threadIdx.x, value[threadIdx.x]);
+                
+            }
+            __syncthreads();
+            i /= 2;
+        }
+        if (threadIdx.x == 0) {
+            pDevDotProduct[instanceId] = (float) value[0] / (float) 1000000.0;
+            // printf("dotXZ: %i: %lf\n",instanceId, (float) value[0]/ (float) 1000000);
+        }
     
-// }
+}
 __global__ void euclideanDistanceCuda(cudaInstance* pCandidates, int* pJumpLengthList, 
                                         int* pSizeCandidatesList, int pSize,
                                         int* pFeatureList, float* pValuesList,
