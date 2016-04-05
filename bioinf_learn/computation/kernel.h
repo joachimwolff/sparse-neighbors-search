@@ -5,12 +5,12 @@
 #define A 0.414213562 // sqrt(2) - 1
 
 __device__ size_t computeHashValueCuda(size_t key, size_t aModulo);
-__global__ void fitCudaMinHash(const int* pFeatureIdList, const int* pSizeOfInstanceList,
-                    const int pNumberOfHashFunctions, const int* pJumpLengthList,
-                    int* pComputedSignatures, 
-                    const int pNumberOfInstances, const int pStartInstance, 
-                    const int pBlockSize, const int pShingleSize,
-                    int* pSignaturesBlockSize);
+__global__ void fitCudaMinHash(const size_t* pFeatureIdList, const size_t* pSizeOfInstanceList,
+                    const size_t pNumberOfHashFunctions, const size_t pMaxNnz,
+                    size_t* pComputedSignatures, 
+                    const size_t pNumberOfInstances, const size_t pStartInstance, 
+                    const size_t pBlockSize, const size_t pShingleSize,
+                    size_t* pSignaturesBlockSize);
 __global__ void fitCudaWtaHash(const int* pFeatureIdList, const int* pSizeOfInstanceList,
                     const int pNumberOfHashFunctions, const int* pJumpLengthList,
                     int* pComputedSignatures, 

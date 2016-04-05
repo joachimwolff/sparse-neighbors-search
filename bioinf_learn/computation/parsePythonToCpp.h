@@ -75,8 +75,8 @@ static PyObject* radiusNeighborhood(const neighborhood* pNeighborhood, const siz
         PyObject* innerListDistances = PyList_New(0);
 
         for (size_t j = 0 + pCutFirstValue; j < sizeOfInnerNeighborList; ++j) {
-            if (pNeighborhood->distances->operator[](i)[j] <= pRadius && pNeighborhood->neighbors->operator[](i)[j] != -1) {
-                PyObject* valueNeighbor = Py_BuildValue("i", pNeighborhood->neighbors->operator[](i)[j]);
+            if (pNeighborhood->distances->operator[](i)[j] <= pRadius) {
+                PyObject* valueNeighbor = Py_BuildValue("i", static_cast<int>(pNeighborhood->neighbors->operator[](i)[j]));
                 PyList_SetItem(innerListNeighbors, j - pCutFirstValue, valueNeighbor);
                 
                 PyObject* valueDistance = Py_BuildValue("f", pNeighborhood->distances->operator[](i)[j]);
@@ -114,7 +114,7 @@ static PyObject* bringNeighborhoodInShape(const neighborhood* pNeighborhood, con
         PyObject* innerListDistances = PyList_New(pNneighbors);
         if (sizeOfInnerNeighborList > pNneighbors) {
             for (size_t j = 0 + pCutFirstValue; j < pNneighbors + pCutFirstValue; ++j) {
-                PyObject* valueNeighbor = Py_BuildValue("i", pNeighborhood->neighbors->operator[](i)[j]);
+                PyObject* valueNeighbor = Py_BuildValue("i", static_cast<int>(pNeighborhood->neighbors->operator[](i)[j]));
                 if (PyList_SetItem(innerListNeighbors, j - pCutFirstValue, valueNeighbor) == -1) {
                     std::cout << "error: " << __LINE__ << pNeighborhood->neighbors->operator[](i)[j] << std::endl;
                 }
@@ -127,7 +127,7 @@ static PyObject* bringNeighborhoodInShape(const neighborhood* pNeighborhood, con
             }
         } else {
             for (size_t j = 0 + pCutFirstValue; j < sizeOfInnerNeighborList; ++j) {
-                PyObject* valueNeighbor = Py_BuildValue("i", pNeighborhood->neighbors->operator[](i)[j]);
+                PyObject* valueNeighbor = Py_BuildValue("i", static_cast<int>(pNeighborhood->neighbors->operator[](i)[j]));
                 if (PyList_SetItem(innerListNeighbors, j - pCutFirstValue, valueNeighbor) == -1) {
                     std::cout << "error: " << __LINE__ << pNeighborhood->neighbors->operator[](i)[j] << std::endl;
 
@@ -187,7 +187,7 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
             size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
 
             for (size_t j = 0; j < sizeOfInnerNeighborList && j < pNneighbors; ++j) {
-                if (pNeighborhood->neighbors->operator[](i)[j] == -1) break;
+                // if (pNeighborhood->neighbors->operator[](i)[j] == -1) break;
                 size_t node = pNeighborhood->neighbors->operator[](i)[j];
                 float distance;
                 if (pReturnDistance) {
@@ -224,11 +224,11 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
 
         for (size_t i = 0; i < sizeOfNeighborList; ++i) {
 
-            PyObject* root = Py_BuildValue("i", pNeighborhood->neighbors->operator[](i)[0]);
+            PyObject* root = Py_BuildValue("i", static_cast<int>(pNeighborhood->neighbors->operator[](i)[0]));
             size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
             for (size_t j = 1; j < sizeOfInnerNeighborList && j < pNneighbors; ++j) {
-                if (pNeighborhood->neighbors->operator[](i)[j] == -1) break;
-                PyObject* node = Py_BuildValue("i", pNeighborhood->neighbors->operator[](i)[j]);
+                // if (pNeighborhood->neighbors->operator[](i)[j] == -1) break;
+                PyObject* node = Py_BuildValue("i", static_cast<int>(pNeighborhood->neighbors->operator[](i)[j]));
                 PyObject* distance;
                 if (pReturnDistance) {
                     distance = Py_BuildValue("f", pNeighborhood->distances->operator[](i)[j]);
@@ -268,7 +268,7 @@ static PyObject* radiusNeighborhoodGraph(const neighborhood* pNeighborhood, cons
             size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
 
             for (size_t j = 0; j < sizeOfInnerNeighborList; ++j) {
-                if (pNeighborhood->neighbors->operator[](i)[j] == -1) break;
+                // if (pNeighborhood->neighbors->operator[](i)[j] == -1) break;
                 if (pNeighborhood->distances->operator[](i)[j] <= pRadius) {
                     size_t node = pNeighborhood->neighbors->operator[](i)[j];
                     float distance;
@@ -298,8 +298,8 @@ static PyObject* radiusNeighborhoodGraph(const neighborhood* pNeighborhood, cons
         }
 
         for (auto itSymmetric = symmetricMatrix.begin(); itSymmetric != symmetricMatrix.end(); ++itSymmetric) {
-            PyObject* root = Py_BuildValue("i", itSymmetric->first.first);
-            PyObject* node = Py_BuildValue("i", itSymmetric->first.second);
+            PyObject* root = Py_BuildValue("i", static_cast<int>(itSymmetric->first.first));
+            PyObject* node = Py_BuildValue("i", static_cast<int>(itSymmetric->first.second));
             PyObject* distance = Py_BuildValue("f", itSymmetric->second);
             PyList_Append(rowList, root);
             PyList_Append(columnList, node);
@@ -308,12 +308,12 @@ static PyObject* radiusNeighborhoodGraph(const neighborhood* pNeighborhood, cons
     } else {
         for (size_t i = 0; i < sizeOfNeighborList; ++i) {
 
-            PyObject* root = Py_BuildValue("i", pNeighborhood->neighbors->operator[](i)[0]);
+            PyObject* root = Py_BuildValue("i", static_cast<int>(pNeighborhood->neighbors->operator[](i)[0]));
             size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
             for (size_t j = 1; j < sizeOfInnerNeighborList; ++j) {
-                if (pNeighborhood->neighbors->operator[](i)[j] == -1) break;
+                // if (pNeighborhood->neighbors->operator[](i)[j] == -1) break;
                 if (pNeighborhood->distances->operator[](i)[j] <= pRadius) {
-                    PyObject* node = Py_BuildValue("i", pNeighborhood->neighbors->operator[](i)[j]);
+                    PyObject* node = Py_BuildValue("i", static_cast<int>(pNeighborhood->neighbors->operator[](i)[j]));
                     PyObject* distance;
                     if (pReturnDistance) {
                         distance = Py_BuildValue("f", pNeighborhood->distances->operator[](i)[j]);

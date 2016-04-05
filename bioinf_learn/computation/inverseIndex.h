@@ -82,9 +82,7 @@ class InverseIndex {
   	neighborhood* kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                 const size_t pNneighborhood, 
                                 const bool pDoubleElementsStorageCount,
-                                const bool pNoneSingleInstance=true,
-                                int* pNeighborsCuda=NULL, int* pJumpLengthCuda=NULL,
-                                int* pSizesCuda=NULL);
+                                const bool pNoneSingleInstance=true);
   	umap_uniqueElement* getSignatureStorage() { 
       return mSignatureStorage;
     };
@@ -92,23 +90,23 @@ class InverseIndex {
     vvsize_t_p* computeSignaturesOnGpu(SparseMatrixFloat* pRawData, size_t pStartIndex, size_t pEndIndex, size_t pNumberOfInstances,
     size_t pNumberOfBlocks, size_t pNumberOfThreads);
     #ifdef CUDA
-   int** get_dev_FeatureList() {
+   size_t** get_dev_FeatureList() {
        return mInverseIndexCuda->get_mDev_FeatureList();
    };
    
-   int** get_dev_SizeOfInstanceList() {
+   size_t** get_dev_SizeOfInstanceList() {
        return mInverseIndexCuda->get_mDev_SizeOfInstanceList();
    };
-   int** get_dev_ComputedSignaturesPerInstance() {
+   size_t** get_dev_ComputedSignaturesPerInstance() {
        return mInverseIndexCuda->get_mDev_ComputedSignaturesPerInstance();
    };
-   float** get_dev_ValuesList() {
+   size_t** get_dev_ValuesList() {
        return mInverseIndexCuda->get_mDev_ValuesList();
    };       
-   int** get_mDev_JumpLength() {
+   size_t** get_mDev_JumpLength() {
        return mInverseIndexCuda->get_mDev_JumpLength();
    };
-   float** get_mDev_DotProduct() {
+   size_t** get_mDev_DotProduct() {
        return mInverseIndexCuda->get_mDev_DotProduct();
    };                            
    #endif                           

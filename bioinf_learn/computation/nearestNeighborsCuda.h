@@ -18,37 +18,36 @@
 class NearestNeighborsCuda {
 
   private: 
-   int** mDev_FeatureList;
-   float** mDev_ValuesList;
-   int** mDev_SizeOfInstanceList;
-   int mMaxNnz;
-   int** mDev_JumpLengthList;
-   float** mDev_DotProducts;
+   size_t** mDev_FeatureList;
+   size_t** mDev_ValuesList;
+   size_t** mDev_SizeOfInstanceList;
+   size_t mMaxNnz;
+   size_t** mDev_JumpLengthList;
+   size_t** mDev_DotProducts;
     
   public:
     NearestNeighborsCuda();
   	// NearestNeighborsCuda(int* pFeatureList, float* pValuesList,
     //                       int* pSizeOfInstanceList);
     ~NearestNeighborsCuda();
-    cudaInstance* computeNearestNeighbors(neighborhood* neighbors, size_t pSimilarity, SparseMatrixFloat* pRawData,
-                                            int* pJumpLength);
-    void setFeatureList(int** pFeatureList) {
+    cudaInstance* computeNearestNeighbors(neighborhood* neighbors, size_t pSimilarity, SparseMatrixFloat* pRawData);
+    void setFeatureList(size_t** pFeatureList) {
         mDev_FeatureList = pFeatureList;
     };
-    void setValuesList(float** pValuesList) {
+    void setValuesList(size_t** pValuesList) {
         mDev_ValuesList = pValuesList;
     };
-    void setSizeOfInstanceList(int** pSizeOfInstanceList) {
+    void setSizeOfInstanceList(size_t** pSizeOfInstanceList) {
         mDev_SizeOfInstanceList = pSizeOfInstanceList;
         
     };
-    void setMaxNnz(int pMaxNnz) {
+    void setMaxNnz(size_t pMaxNnz) {
         mMaxNnz = pMaxNnz;
     };
-    void setJumpLenthList(int** pJumpLengthList) {
+    void setJumpLenthList(size_t** pJumpLengthList) {
         mDev_JumpLengthList = pJumpLengthList;
     }
-    void setDotProduct(float** pDotProduct) {
+    void setDotProduct(size_t** pDotProduct) {
         mDev_DotProducts = pDotProduct;
     };
 };

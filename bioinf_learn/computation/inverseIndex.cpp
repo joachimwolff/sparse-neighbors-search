@@ -331,9 +331,7 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                         const size_t pNneighborhood, 
                                         const bool pDoubleElementsStorageCount,
-                                        const bool pNoneSingleInstance,
-                                        int* pNeighborsCuda, int* pJumpLengthCuda,
-                                        int* pSizesCuda) {
+                                        const bool pNoneSingleInstance) {
     size_t doubleElements = 0;
     if (pNoneSingleInstance) {
         if (pDoubleElementsStorageCount) {
@@ -346,7 +344,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
 #ifdef OPENMP
     omp_set_dynamic(0);
 #endif
-    vvint* neighbors = new vvint();
+    vvsize_t* neighbors = new vvsize_t();
     vvfloat* distances = new vvfloat();
     neighbors->resize(pSignaturesMap->size() + doubleElements);
     distances->resize(pSignaturesMap->size() + doubleElements);
@@ -447,12 +445,12 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             
         }
         size_t count = 0;
-        vvint neighborsForThisInstance(instanceId->second.instances->size());
-        vvfloat distancesForThisInstance(instanceId->second.instances->size());
+        vvsize_t neighborsForThisInstance(instanceId->second.instances->size());
+        vvsize_t distancesForThisInstance(instanceId->second.instances->size());
 
         for (size_t j = 0; j < neighborsForThisInstance.size(); ++j) {
             vint neighborhoodVector;
-            std::vector<float> distanceVector;
+            std::vector<size_t> distanceVector;
             for (auto it = neighborhoodVectorForSorting.begin();
                     it != neighborhoodVectorForSorting.end(); ++it) {
                 neighborhoodVector.push_back((*it).key);

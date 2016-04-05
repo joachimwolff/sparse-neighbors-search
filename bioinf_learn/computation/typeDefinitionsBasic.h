@@ -44,7 +44,7 @@ struct uniqueElement {
 };
 
 struct neighborhood {
-  vvint* neighbors;
+  vvsize_t* neighbors;
   vvfloat* distances;
 };
 
@@ -52,8 +52,8 @@ typedef std::unordered_map< size_t, uniqueElement > umap_uniqueElement;
 
 
 struct sortMapFloat {
-    int key;
-    float val;
+    size_t key;
+    size_t val;
 };
 
 typedef unsigned char bitVector;
@@ -69,10 +69,10 @@ struct distributionInverseIndex {
     size_t mean;
     size_t standardDeviation;
 };
-struct sparseData {
-    uint32_t instance;
-    float value;
-};
+// struct sparseData {
+//     uint32_t instance;
+//     float value;
+// };
 static bool mapSortDescByValueFloat(const sortMapFloat& a, const sortMapFloat& b) {
         return a.val > b.val;
 };

@@ -18,25 +18,23 @@
 __device__ size_t computeHashValueCuda(size_t pKey, size_t aModulo) {
     // source:  Thomas Wang: Integer Hash Functions, 1997 / 2007 
     // https://gist.github.com/badboy/6267743
-    __shared__ size_t key[128];
-    // __shared__ size_t key[128];
-    key[threadIdx.x] = pKey;
-    key[threadIdx.x] = key[threadIdx.x] * A;
-    key[threadIdx.x] = ~key[threadIdx.x] + (key[threadIdx.x] << 15);
-    key[threadIdx.x] = key[threadIdx.x] ^ (key[threadIdx.x] >> 12);
-    key[threadIdx.x] = key[threadIdx.x] + (key[threadIdx.x] << 2);
-    key[threadIdx.x] = key[threadIdx.x] ^ (key[threadIdx.x] >> 4);
-    key[threadIdx.x] = key[threadIdx.x] * 2057;
-    key[threadIdx.x] = key[threadIdx.x] ^ (key[threadIdx.x] >> 16);
-    return key[threadIdx.x] % aModulo;
+   
+    pKey = pKey * A;
+    pKey= ~pKey + (pKey << 15);
+    pKey = pKey ^ (pKey >> 12);
+    pKey = pKey + (pKey << 2);
+    pKey = pKey ^ (pKey >> 4);
+    pKey = pKey * 2057;
+    pKey = pKey ^ (pKey >> 16);
+    return pKey % aModulo;
 }
 
-__global__ void fitCudaMinHash(const int* pFeatureIdList, const int* pSizeOfInstanceList,
-                    const int pNumberOfHashFunctions, const int* pJumpLengthList,
-                    int* pComputedSignatures, 
-                    const int pNumberOfInstances, const int pStartInstance, 
-                    const int pBlockSize, const int pShingleSize,
-                    int* pSignaturesBlockSize) {
+__global__ void fitCudaMinHash(const size_t* pFeatureIdList, const size_t* pSizeOfInstanceList,
+                    const size_t pNumberOfHashFunctions, const size_t pMaxNnz,
+                    size_t* pComputedSignatures, 
+                    const size_t pNumberOfInstances, const size_t pStartInstance, 
+                    const size_t pBlockSize, const size_t pShingleSize,
+                    size_t* pSignaturesBlockSize) {
                    
     int instanceId = blockIdx.x + pStartInstance;
     int nearestNeighborsValue = MAX_VALUE;
@@ -59,11 +57,11 @@ __global__ void fitCudaMinHash(const int* pFeatureIdList, const int* pSizeOfInst
         }
     __syncthreads();
         
-        featureId = pJumpLengthList[instanceId];
+        featureId = instanceId * pMaxNnz;
           
         
         while (hashFunctionId < pNumberOfHashFunctions * pBlockSize) {
-            for (uint i = 0; i < sizeOfInstance; ++i) {
+            for (uint i = 0; i < sizeOfInstance && i < pMaxNnz; ++i) {
                 hashValue = computeHashValueCuda((pFeatureIdList[featureId + i]+1) * (hashFunctionId+1), MAX_VALUE);
                 if (hashValue < nearestNeighborsValue) {
                     nearestNeighborsValue = hashValue;
@@ -250,68 +248,68 @@ __device__ float dotProduct(int* pFeatureListX, float* pValuesListX, int pSizeX,
     return (float) value / (float) 1000000;
 }
 
-__global__ void dotProduct(int* pFeatureList, int* pValueList, int pStartPosX, int pStartPosY,
-                           int pEndPosX, int pEndPosY) {
-    __shared__ int featureIdX[128];
-    __shared__ int featureIdY[128];
-    __shared__ int value[128];
-    int index = 64;
-    int round = 0;
-    int jumpWidth = 32;
-    value[threadIdx.x] = 0;
-    while (pStartPosX < pEndPosX && pStartPosY < pEndPosY) {
-        if (pStartPosX + threadIdx.x < pEndPosX) {
-            featureIdX[threadId.x] = pFeatureList[pStartPosX + threadIdx.x];
-        } else {
-            featureIdX[threadId.x] = -1;
-        }
-        if (pStartPosY + threadIdx.x < pEndPosY) {
-            featureIdY[threadId.x] = pFeatureList[pStartPosY + threadIdx.x];
-        } else {
-            featureIdY[threadId.x] = -2;
-        }
-        if (featureIdX[0] > featureIdY[128] && featureIdY[128] != -2) {
-            pStartPosX += 128;
-            continue;
-        } else if (featureIdX[128] < featureIdY[0] && featureIdX[128] != -1) {
-            pStartPosY += 128;
-            continue;
-        }
-        while (round < 8) {
-            if (featureIdX[index] < featureIdY[threadIdx.x]) {
-                index -= jumpWidth;
-            } else if (featureIdX[index] < featureIdY[threadIdx.x]) {
-                index += jumpWidth;
-            } else {
-                value[threadIdx.x] += pValueList[pStartPosX + index] * pValueList[pStartPosY + threadIdx.x];
-                break;
-            }
-            jumpWidth /= 2;
+// __global__ void dotProduct(int* pFeatureList, int* pValueList, int pStartPosX, int pStartPosY,
+//                            int pEndPosX, int pEndPosY) {
+//     __shared__ int featureIdX[128];
+//     __shared__ int featureIdY[128];
+//     __shared__ int value[128];
+//     int index = 64;
+//     int round = 0;
+//     int jumpWidth = 32;
+//     value[threadIdx.x] = 0;
+//     while (pStartPosX < pEndPosX && pStartPosY < pEndPosY) {
+//         if (pStartPosX + threadIdx.x < pEndPosX) {
+//             featureIdX[threadId.x] = pFeatureList[pStartPosX + threadIdx.x];
+//         } else {
+//             featureIdX[threadId.x] = -1;
+//         }
+//         if (pStartPosY + threadIdx.x < pEndPosY) {
+//             featureIdY[threadId.x] = pFeatureList[pStartPosY + threadIdx.x];
+//         } else {
+//             featureIdY[threadId.x] = -2;
+//         }
+//         if (featureIdX[0] > featureIdY[128] && featureIdY[128] != -2) {
+//             pStartPosX += 128;
+//             continue;
+//         } else if (featureIdX[128] < featureIdY[0] && featureIdX[128] != -1) {
+//             pStartPosY += 128;
+//             continue;
+//         }
+//         while (round < 8) {
+//             if (featureIdX[index] < featureIdY[threadIdx.x]) {
+//                 index -= jumpWidth;
+//             } else if (featureIdX[index] < featureIdY[threadIdx.x]) {
+//                 index += jumpWidth;
+//             } else {
+//                 value[threadIdx.x] += pValueList[pStartPosX + index] * pValueList[pStartPosY + threadIdx.x];
+//                 break;
+//             }
+//             jumpWidth /= 2;
             
-            ++round;
-        }
-        __syncthreads();
-        index = 0;
-        round = 0;
+//             ++round;
+//         }
+//         __syncthreads();
+//         index = 0;
+//         round = 0;
         
        
-    }
-     int i = blockDim.x/2;
-        while (i != 0) {
-            if (threadIdx.x < i) { 
-                value[threadIdx.x] += value[threadIdx.x + i];
-            // printf("dotXX: %i, threadId: %i, value: %f\n",instanceId, threadIdx.x, value[threadIdx.x]);
+//     }
+//      int i = blockDim.x/2;
+//         while (i != 0) {
+//             if (threadIdx.x < i) { 
+//                 value[threadIdx.x] += value[threadIdx.x + i];
+//             // printf("dotXX: %i, threadId: %i, value: %f\n",instanceId, threadIdx.x, value[threadIdx.x]);
                 
-            }
-            __syncthreads();
-            i /= 2;
-        }
-        if (threadIdx.x == 0) {
-            pDevDotProduct[instanceId] = (float) value[0] / (float) 1000000.0;
-            // printf("dotXZ: %i: %lf\n",instanceId, (float) value[0]/ (float) 1000000);
-        }
+//             }
+//             __syncthreads();
+//             i /= 2;
+//         }
+//         if (threadIdx.x == 0) {
+//             pDevDotProduct[instanceId] = (float) value[0] / (float) 1000000.0;
+//             // printf("dotXZ: %i: %lf\n",instanceId, (float) value[0]/ (float) 1000000);
+//         }
     
-}
+// }
 __global__ void euclideanDistanceCuda(cudaInstance* pCandidates, int* pJumpLengthList, 
                                         int* pSizeCandidatesList, int pSize,
                                         int* pFeatureList, float* pValuesList,

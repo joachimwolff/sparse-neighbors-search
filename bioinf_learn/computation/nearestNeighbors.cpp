@@ -71,13 +71,16 @@ void NearestNeighbors::fit(SparseMatrixFloat* pRawData) {
 
     mInverseIndex->fit(pRawData);
             std::cout << __LINE__ << std::endl;
-
-    pRawData->precomputeDotProduct();
+    #ifndef CUDA
+    if (mCpuGpuLoadBalancing == 0) {
+        pRawData->precomputeDotProduct();
+    }
+    #endif
     #ifdef CUDA
     mNearestNeighborsCuda->setFeatureList(mInverseIndex->get_dev_FeatureList());
     mNearestNeighborsCuda->setValuesList(mInverseIndex->get_dev_ValuesList());
     mNearestNeighborsCuda->setSizeOfInstanceList(mInverseIndex->get_dev_SizeOfInstanceList());
-    mNearestNeighborsCuda->setJumpLenthList(mInverseIndex->get_mDev_JumpLength());
+    // mNearestNeighborsCuda->setJumpLenthList(mInverseIndex->get_mDev_JumpLength());
     mNearestNeighborsCuda->setDotProduct(mInverseIndex->get_mDev_DotProduct());
     
     // mNearestNeighborsCuda->setMaxNnz(mOriginalData->getMaxNnz());
@@ -145,10 +148,10 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     #ifdef OPENMP
         omp_set_dynamic(0);
     #endif
-    vvint neighborsListFirstRound(neighborhood_->neighbors->size(), vint(0));
+    vvsize_t neighborsListFirstRound(neighborhood_->neighbors->size(), vsize_t(0));
    
     neighborhood* neighborhoodCandidates = new neighborhood();
-    neighborhoodCandidates->neighbors = new vvint(mOriginalData->size());
+    neighborhoodCandidates->neighbors = new vvsize_t(mOriginalData->size());
     
     // compute the exact neighbors based on the candidates given by the inverse index
     // store the neighborhood in neighborhoodCandidates to reuse neighbor if needed
@@ -175,7 +178,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                         mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), pNneighbors+mExcessFactor, i, pRawData);
                 }
                 size_t vectorSize = std::min(exactNeighbors.size(),pNneighbors+mExcessFactor);
-                std::vector<int> neighborsVector(vectorSize);
+                std::vector<size_t> neighborsVector(vectorSize);
                 for (size_t j = 0; j < vectorSize; ++j) {
                     neighborsVector[j] = exactNeighbors[j].key;
                     neighborsListFirstRound[i].push_back(exactNeighbors[j].key);
@@ -198,7 +201,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
         
         cudaInstance* cudaInstanceVector;
         int* jumpLength =  (int*) malloc(neighborhood_->neighbors->size() * sizeof(int));
-        cudaInstanceVector = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData, jumpLength);
+        cudaInstanceVector = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData);
         
         printf("%i", __LINE__);
         fflush(stdout);
@@ -206,7 +209,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
         #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
         for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
             size_t vectorSize = std::min(neighborhood_->neighbors->operator[](i).size(),pNneighbors+mExcessFactor);
-            std::vector<int> neighborsVector(vectorSize);
+            std::vector<size_t> neighborsVector(vectorSize);
             for (size_t j = 0; j < vectorSize; ++j) {
                 neighborsVector[j] = cudaInstanceVector[jumpLength[i]+j].x;
                 neighborsListFirstRound[i].push_back(cudaInstanceVector[jumpLength[i]+j].x);
@@ -268,7 +271,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                             mOriginalData->euclidianDistance(neighborhood_instance->neighbors->operator[](0), pNneighbors+mExcessFactor, instance, pRawData);
                     }
                     size_t vectorSize = std::min(exactNeighbors.size(), pNneighbors+mExcessFactor);
-                    std::vector<int> neighborsVector(vectorSize);
+                    std::vector<size_t> neighborsVector(vectorSize);
                     for (size_t j = 0; j < vectorSize; ++j) {
                         neighborsVector[j] = exactNeighbors[j].key;
                     }
@@ -302,7 +305,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     delete neighborhoodCandidates;
     
     neighborhood* neighborhoodExact = new neighborhood();
-    neighborhoodExact->neighbors = new vvint(neighborhood_->neighbors->size());
+    neighborhoodExact->neighbors = new vvsize_t(neighborhood_->neighbors->size());
     neighborhoodExact->distances = new vvfloat(neighborhood_->neighbors->size());
 
     // compute the exact neighbors based on the candidate selection before.
@@ -326,7 +329,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                     }
                 size_t vectorSize = exactNeighbors.size();
                 
-                std::vector<int> neighborsVector(vectorSize);
+                std::vector<size_t> neighborsVector(vectorSize);
                 std::vector<float> distancesVector(vectorSize);
                 if (vectorSize == 0) {
                     neighborsVector.push_back(i);
@@ -334,7 +337,11 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                 }
                 for (size_t j = 0; j < vectorSize; ++j) {
                         neighborsVector[j] = exactNeighbors[j].key;
-                        distancesVector[j] = exactNeighbors[j].val;
+                        if (pSimilarity) {
+                            distancesVector[j] = exactNeighbors[j].val / (float) 1000.0;
+                        } else {
+                            distancesVector[j] = sqrt(exactNeighbors[j].val / (float) 1000000.0);
+                        }
                 }
     #ifdef OPENMP
     #pragma omp critical
@@ -348,7 +355,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     #pragma omp critical
     #endif
                 {
-                    std::vector<int> neighborsVector(1, i);
+                    std::vector<size_t> neighborsVector(1, i);
                     std::vector<float> distancesVector(1, 0.0);
                     neighborhoodExact->neighbors->operator[](i) = neighborsVector;
                     neighborhoodExact->distances->operator[](i) = distancesVector;
@@ -359,30 +366,30 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     } else {
         std::cout << "GPU code is running! Part2" << std::endl;
         
-        cudaInstance* cudaInstanceVector;
-        int* jumpLength =  (int*) malloc(neighborhood_->neighbors->size() * sizeof(int));
-        cudaInstanceVector = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData, jumpLength);
+        // cudaInstance* cudaInstanceVector;
+        // // int* jumpLength =  (int*) malloc(neighborhood_->neighbors->size() * sizeof(int));
+        // cudaInstanceVector = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData);
         // #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
-        for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
-            size_t vectorSize = std::min(neighborhood_->neighbors->operator[](i).size(), pNneighbors+mExcessFactor);
-            std::vector<int> neighborsVector(vectorSize);
-            std::vector<float> distancesVector(vectorSize);
-            if (vectorSize == 0) {
-                neighborsVector.push_back(i);
-                distancesVector.push_back(0.0);
-            }
-            for (size_t j = 0; j < vectorSize; ++j) {
-                neighborsVector[j] = cudaInstanceVector[jumpLength[i]+j].x;
-                distancesVector[j] = cudaInstanceVector[jumpLength[i]+j].y;
+        // for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
+        //     size_t vectorSize = std::min(neighborhood_->neighbors->operator[](i).size(), pNneighbors+mExcessFactor);
+        //     std::vector<size_t> neighborsVector(vectorSize);
+        //     std::vector<float> distancesVector(vectorSize);
+        //     if (vectorSize == 0) {
+        //         neighborsVector.push_back(i);
+        //         distancesVector.push_back(0.0);
+        //     }
+        //     for (size_t j = 0; j < vectorSize; ++j) {
+        //         neighborsVector[j] = cudaInstanceVector[jumpLength[i]+j].x;
+        //         distancesVector[j] = cudaInstanceVector[jumpLength[i]+j].y;
                 
-            } 
-            // jumpLength += neighborhood_->neighbors->operator[](i).size();
-            neighborhoodExact->neighbors->operator[](i) = neighborsVector;
-            neighborhoodExact->distances->operator[](i) = distancesVector;
-            // free(cudaInstanceVector[i].instance);
-        }
-        free(cudaInstanceVector);
-        free(jumpLength);
+        //     } 
+        //     // jumpLength += neighborhood_->neighbors->operator[](i).size();
+        //     neighborhoodExact->neighbors->operator[](i) = neighborsVector;
+        //     neighborhoodExact->distances->operator[](i) = distancesVector;
+        //     // free(cudaInstanceVector[i].instance);
+        // }
+        // free(cudaInstanceVector);
+        // free(jumpLength);
         std::cout << "GPU code is running! Part2 DONE" << std::endl;
         
     }

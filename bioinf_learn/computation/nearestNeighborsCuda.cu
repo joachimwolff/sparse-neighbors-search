@@ -37,8 +37,7 @@ NearestNeighborsCuda::~NearestNeighborsCuda() {
     
 }
 
-cudaInstance* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighbors, size_t pSimilarity, SparseMatrixFloat* pRawData,
-                                                                int* pJumpLength) {
+cudaInstance* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighbors, size_t pSimilarity, SparseMatrixFloat* pRawData) {
     
     
     // int* candidates
