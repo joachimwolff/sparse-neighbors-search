@@ -45,7 +45,7 @@ struct uniqueElement {
 
 struct neighborhood {
   vvsize_t* neighbors;
-  vvfloat* distances;
+  vvsize_t* distances;
 };
 
 typedef std::unordered_map< size_t, uniqueElement > umap_uniqueElement;

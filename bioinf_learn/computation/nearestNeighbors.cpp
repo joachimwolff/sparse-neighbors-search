@@ -306,7 +306,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     
     neighborhood* neighborhoodExact = new neighborhood();
     neighborhoodExact->neighbors = new vvsize_t(neighborhood_->neighbors->size());
-    neighborhoodExact->distances = new vvfloat(neighborhood_->neighbors->size());
+    neighborhoodExact->distances = new vvsize_t(neighborhood_->neighbors->size());
 
     // compute the exact neighbors based on the candidate selection before.
     #ifdef CUDA
@@ -330,7 +330,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                 size_t vectorSize = exactNeighbors.size();
                 
                 std::vector<size_t> neighborsVector(vectorSize);
-                std::vector<float> distancesVector(vectorSize);
+                std::vector<size_t> distancesVector(vectorSize);
                 if (vectorSize == 0) {
                     neighborsVector.push_back(i);
                     distancesVector.push_back(0.0);
@@ -338,9 +338,9 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                 for (size_t j = 0; j < vectorSize; ++j) {
                         neighborsVector[j] = exactNeighbors[j].key;
                         if (pSimilarity) {
-                            distancesVector[j] = exactNeighbors[j].val / (float) 1000.0;
+                            distancesVector[j] = exactNeighbors[j].val / 1000;
                         } else {
-                            distancesVector[j] = sqrt(exactNeighbors[j].val / (float) 1000000.0);
+                            distancesVector[j] = sqrt((float) exactNeighbors[j].val) / 1000;
                         }
                 }
     #ifdef OPENMP
@@ -356,7 +356,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     #endif
                 {
                     std::vector<size_t> neighborsVector(1, i);
-                    std::vector<float> distancesVector(1, 0.0);
+                    std::vector<size_t> distancesVector(1, 0);
                     neighborhoodExact->neighbors->operator[](i) = neighborsVector;
                     neighborhoodExact->distances->operator[](i) = distancesVector;
                 }

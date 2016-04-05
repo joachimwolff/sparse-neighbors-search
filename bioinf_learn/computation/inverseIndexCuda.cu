@@ -45,7 +45,7 @@ void InverseIndexCuda::copyDataToGpu(SparseMatrixFloat* pRawData, size_t** pDevF
             pRawData->size() * pRawData->getMaxNnz() * sizeof(size_t));
     // memory for the values of the features of the instances
     cudaMalloc((void **) &(*pDevValueList), 
-                pRawData->size() * pRawData->getMaxNnz() * sizeof(size_t);
+                pRawData->size() * pRawData->getMaxNnz() * sizeof(size_t));
     
     // copy instances and their feature ids to the gpu
     cudaMemcpy((*pDevFeatureList), pRawData->getSparseMatrixIndex(),
@@ -53,7 +53,7 @@ void InverseIndexCuda::copyDataToGpu(SparseMatrixFloat* pRawData, size_t** pDevF
             cudaMemcpyHostToDevice);
     
     cudaMemcpy((*pDevValueList), pRawData->getSparseMatrixValues(),
-                pRawData->size() * pRawData->getMaxNnz() * sizeof(size_t),,
+                pRawData->size() * pRawData->getMaxNnz() * sizeof(size_t),
             cudaMemcpyHostToDevice);
  
     // printf("Feature list pointer adress: %u\n", (*pDevFeatureList));
@@ -96,7 +96,7 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData
     // int end = numberOfInstances / iterations;
   
     // int windowSize = numberOfInstances / iterations;
-    // int* instancesHashValues = (int*) malloc(numberOfInstances / iterations * mNumberOfHashFunctions * sizeof(int));
+    size_t* instancesHashValues = (size_t*) malloc(pRawData->size() * signaturesSize * sizeof(size_t));
     
     // memory for the inverse index on the gpu.
     // for each instance the number of hash functions
@@ -108,7 +108,7 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData
      
      
     // cuda memory for dot products dot<X, X>
-    cudaMalloc((void **) &mDev_DotProduct, sizeof(int) * numberOfInstances);
+    cudaMalloc((void **) &mDev_DotProduct, sizeof(size_t) * pRawData->size());
     // printf("start: %i, end: %i, iterations: %i\n", start, end, iterations);
     // compute the signatures on the gpu
     // do it in n iterations with equal sized chunks 
@@ -125,7 +125,7 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData
             mNumberOfHashFunctions, 
             pRawData->getMaxNnz(),
                     mDev_ComputedSignaturesPerInstance, 
-                    end, start, mBlockSize, mShingleSize, dev_SignaturesBlockSize);
+                    pRawData->size(), 0, mBlockSize, mShingleSize, dev_SignaturesBlockSize);
         } else {
             // fitCudaWtaHash<<<128, 128>>>
             // (mDev_FeatureList, 
@@ -135,18 +135,18 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData
             //         mDev_ComputedSignaturesPerInstance, 
             //         end, start, mBlockSize, mShingleSize, dev_SignaturesBlockSize);
         }
-        dotProductSingle<<<32, 128>>>(mDev_FeatureList, mDev_ValuesList, mDev_SizeOfInstanceList,
-                                        mDev_JumpLength, end, mDev_DotProduct);
+        dotProductSingle<<<128, 128>>>(mDev_FeatureList, mDev_ValuesList, mDev_SizeOfInstanceList,
+                                        mDev_JumpLength, pRawData->size(), mDev_DotProduct);
                                         
         // copy results back to host      
         cudaMemcpy(instancesHashValues, mDev_ComputedSignaturesPerInstance, 
-                    numberOfInstances/iterations * signaturesSize * sizeof(int),
+                    pRawData->size() * signaturesSize * sizeof(size_t),
                     cudaMemcpyDeviceToHost);
         // copy values into one vector per instance
-        for(size_t i = start; i < end; ++i) {
+        for(size_t i = 0; i < pRawData->size(); ++i) {
             vsize_t* instance = new vsize_t(signaturesSize);
             for (size_t j = 0; j < signaturesSize; ++j) {
-                (*instance)[j] = static_cast<size_t>(instancesHashValues[i*signaturesSize + j]);
+                (*instance)[j] = instancesHashValues[i*signaturesSize + j];
             }
             // printf("instance: %i\n", i);
 

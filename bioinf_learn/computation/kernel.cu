@@ -179,12 +179,12 @@ __device__ void sortAsc(cudaInstance* pCandidates, int pInstanceId, int pSize) {
         threadId = threadIdx.x;
     }
 }
-__global__ void dotProductSingle(int* pFeatureList, float* pValuesList,
-                                 int* pSizeOfInstanceList, int* pJumpLength,
-                                 int pSize, float* pDevDotProduct) {
+__global__ void dotProductSingle(size_t* pFeatureList, size_t* pValuesList,
+                                 size_t* pSizeOfInstanceList, size_t* pJumpLength,
+                                 size_t pSize, size_t* pDevDotProduct) {
     int instanceId = blockIdx.x;
     int threadId = threadIdx.x;
-    int __shared__ value[128];
+    size_t __shared__ value[128];
     int __shared__ jumpLength;
     int __shared__ size;
     
@@ -197,7 +197,7 @@ __global__ void dotProductSingle(int* pFeatureList, float* pValuesList,
         }
         __syncthreads();
         while (threadId < size) {
-            value[threadIdx.x] += (1000 * pValuesList[jumpLength + threadId]) * (1000 * pValuesList[jumpLength + threadId]);
+            value[threadIdx.x] += pValuesList[jumpLength + threadId] * pValuesList[jumpLength + threadId];
             
             threadId += blockDim.x;
         }
@@ -215,7 +215,7 @@ __global__ void dotProductSingle(int* pFeatureList, float* pValuesList,
             i /= 2;
         }
         if (threadIdx.x == 0) {
-            pDevDotProduct[instanceId] = (float) value[0] / (float) 1000000.0;
+            pDevDotProduct[instanceId] = value[0];
             // printf("dotXZ: %i: %lf\n",instanceId, (float) value[0]/ (float) 1000000);
         }
         instanceId += gridDim.x;

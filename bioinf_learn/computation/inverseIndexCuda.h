@@ -35,7 +35,7 @@ class InverseIndexCuda {
                         size_t pShingleSize, size_t pBlockSize, size_t pHashAlgorithm);
     ~InverseIndexCuda();
     void copyDataToGpu(SparseMatrixFloat* pRawData, size_t** pDevFeatureList,
-                                      size_t** pDevValueList, size_t** pSizeList, size_t** pJumpList);
+                                      size_t** pDevValueList, size_t** pSizeList);
   	void computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData, 
                                         size_t pStartIndex, size_t pEndIndex, 
                                         size_t pNumberOfInstances, size_t pNumberOfBlocks, 
