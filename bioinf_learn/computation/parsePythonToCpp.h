@@ -26,6 +26,7 @@ SparseMatrixFloat* parseRawData(PyObject * pInstancesListObj, PyObject * pFeatur
     // printf("Max number of instances: %i\n", pMaxNumberOfInstances);
     size_t instanceOld = 0;
     size_t sizeOfFeatureVector = PyList_Size(pInstancesListObj);
+    printf("maxNumberOfFeatures: %u", pMaxNumberOfFeatures);
     SparseMatrixFloat* originalData = new SparseMatrixFloat(pMaxNumberOfInstances, pMaxNumberOfFeatures);
     size_t featuresCount = 0;
     size_t featureValue;
@@ -42,11 +43,11 @@ SparseMatrixFloat* parseRawData(PyObject * pInstancesListObj, PyObject * pFeatur
 
         if (instanceOld != instanceValue) {
             // printf("size of instance %u: %u\n", instanceOld, featuresCount);
-            // originalData->insertToSizesOfInstances(instanceOld, featuresCount);
-            // while (instanceOld+1 != instanceValue) {
-                // ++instanceOld;
-                // originalData->insertToSizesOfInstances(instanceOld, 0);
-            // }
+            originalData->insertToSizesOfInstances(instanceOld, featuresCount);
+            while (instanceOld+1 != instanceValue) {
+                ++instanceOld;
+                originalData->insertToSizesOfInstances(instanceOld, 0);
+            }
             featuresCount = 0;
         }
         originalData->insertElement(instanceValue, featuresCount, featureValue, dataValue);
@@ -55,11 +56,11 @@ SparseMatrixFloat* parseRawData(PyObject * pInstancesListObj, PyObject * pFeatur
     }
     // printf("size of instance %u: %u\n", instanceOld, featuresCount);
     
-    // originalData->insertToSizesOfInstances(instanceOld, featuresCount);
-    // while (instanceOld+1 < pMaxNumberOfInstances) {
-    //     ++instanceOld;
-    //     originalData->insertToSizesOfInstances(instanceOld, 0);
-    // }
+    originalData->insertToSizesOfInstances(instanceOld, featuresCount);
+    while (instanceOld+1 < pMaxNumberOfInstances) {
+        ++instanceOld;
+        originalData->insertToSizesOfInstances(instanceOld, 0);
+    }
    
     return originalData;
 }

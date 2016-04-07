@@ -100,13 +100,13 @@ class InverseIndex {
    size_t** get_dev_ComputedSignaturesPerInstance() {
        return mInverseIndexCuda->get_mDev_ComputedSignaturesPerInstance();
    };
-   size_t** get_dev_ValuesList() {
+   float** get_dev_ValuesList() {
        return mInverseIndexCuda->get_mDev_ValuesList();
    };       
    size_t** get_mDev_JumpLength() {
        return mInverseIndexCuda->get_mDev_JumpLength();
    };
-   size_t** get_mDev_DotProduct() {
+   float** get_mDev_DotProduct() {
        return mInverseIndexCuda->get_mDev_DotProduct();
    };                            
    #endif                           

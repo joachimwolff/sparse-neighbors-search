@@ -45,7 +45,7 @@ struct uniqueElement {
 
 struct neighborhood {
   vvsize_t* neighbors;
-  vvsize_t* distances;
+  vvfloat* distances;
 };
 
 typedef std::unordered_map< size_t, uniqueElement > umap_uniqueElement;
@@ -53,7 +53,7 @@ typedef std::unordered_map< size_t, uniqueElement > umap_uniqueElement;
 
 struct sortMapFloat {
     size_t key;
-    size_t val;
+    float val;
 };
 
 typedef unsigned char bitVector;

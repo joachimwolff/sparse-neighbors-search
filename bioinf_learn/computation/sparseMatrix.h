@@ -25,15 +25,15 @@ class SparseMatrixFloat {
     //      if even index: size_t which is pointer for vsize
     //      if odd indeX: size_t which is pointer for vfloat
     size_t* mSparseMatrix;
-    size_t*  mSparseMatrixValues;
+    float*  mSparseMatrixValues;
     size_t* mSizesOfInstances;
     size_t mMaxNnz;
     size_t mNumberOfInstances;
-    std::unordered_map<size_t, size_t> mDotProductPrecomputed;
+    std::unordered_map<size_t, float> mDotProductPrecomputed;
   public:
     SparseMatrixFloat(size_t pNumberOfInstances, size_t pMaxNnz) {
         mSparseMatrix = new size_t [pNumberOfInstances * pMaxNnz];
-        mSparseMatrixValues = new size_t [pNumberOfInstances * pMaxNnz];
+        mSparseMatrixValues = new float [pNumberOfInstances * pMaxNnz];
         mSizesOfInstances = new size_t [pNumberOfInstances];
         // for (size_t i = 0; i < pNumberOfInstances; ++i) {
         //     mSizesOfInstances[i] = 0;
@@ -50,10 +50,10 @@ class SparseMatrixFloat {
     void precomputeDotProduct() {
         // std::cout << __LINE__ << std::endl;
         
-        size_t value = 0;
-        size_t value1 = 0;
-        size_t value2 = 0;
-        size_t value3 = 0;
+        double value = 0.0;
+        double value1 = 0.0;
+        double value2 = 0.0;
+        double value3 = 0.0;
         for (size_t i = 0; i < size(); ++i) {
             size_t j = 0;
             for (j = 0; j < getSizeOfInstance(i); j += 4) {
@@ -67,14 +67,16 @@ class SparseMatrixFloat {
                 ++j;
             }
             value = value + value1 + value2 + value3;
-            mDotProductPrecomputed[i] = value;
-            value = 0;
-            value1 = 0;
-            value2 = 0;
-            value3 = 0;
+            // std::cout << "instance: " << i << ": value: " << value << std::endl;
+            
+            mDotProductPrecomputed[i] = (float) value;
+            value = 0.0;
+            value1 = 0.0;
+            value2 = 0.0;
+            value3 = 0.0;
             // std::cout << "instance: " << i << ": value: " << mDotProductPrecomputed[i] << std::endl;
         }
-        // std::cout << __LINE__ << std::endl;
+        std::cout << __LINE__ << std::endl;
         
     };
     float dotProduct(const size_t pIndex, const size_t pIndexNeighbor, SparseMatrixFloat* pQueryData=NULL)  {
@@ -82,7 +84,7 @@ class SparseMatrixFloat {
          if (pQueryData != NULL) {
             queryData = pQueryData;
         }
-        size_t value = 0;  
+        double value = 0.0;  
         size_t counterInstance = 0;
         size_t counterNeighbor = 0;
         size_t sizeInstance = queryData->getSizeOfInstance(pIndex);
@@ -98,20 +100,20 @@ class SparseMatrixFloat {
             } else if (queryData->getNextElement(pIndex, counterInstance) > this->getNextElement(pIndexNeighbor, counterNeighbor)){
                 ++counterNeighbor;
             } else {
-                value += queryData->getNextValue(pIndex, counterInstance) * this->getNextValue(pIndexNeighbor, counterNeighbor);
+                value += (double) queryData->getNextValue(pIndex, counterInstance) * (double) this->getNextValue(pIndexNeighbor, counterNeighbor);
                 ++counterInstance;
                 ++counterNeighbor;
             }
         }
-        return value; 
+        return (float) value; 
     };
-    size_t getDotProductPrecomputed(size_t pIndex) {
+    float getDotProductPrecomputed(size_t pIndex) {
         return mDotProductPrecomputed[pIndex];
     }
     size_t* getSparseMatrixIndex() const{
         return mSparseMatrix;
     };
-    size_t* getSparseMatrixValues() const{
+    float* getSparseMatrixValues() const{
         return mSparseMatrixValues;
     };
     size_t* getSparseMatrixSizeOfInstances() const{
@@ -124,20 +126,20 @@ class SparseMatrixFloat {
         return mNumberOfInstances;
     };
     size_t getNextElement(size_t pInstance, size_t pCounter) const {
-        if (pInstance < mNumberOfInstances && pInstance*mMaxNnz+pCounter < mNumberOfInstances*mMaxNnz) {
-            if (pCounter < mSizesOfInstances[pInstance]) {
+        // if (pInstance < mNumberOfInstances && pInstance*mMaxNnz+pCounter < mNumberOfInstances*mMaxNnz) {
+        //     if (pCounter < mSizesOfInstances[pInstance]) {
                 return mSparseMatrix[pInstance*mMaxNnz+pCounter];
-            }
-        }
-        return MAX_VALUE;
+        //     }
+        // }
+        // return MAX_VALUE;
     };
-    size_t getNextValue(size_t pInstance, size_t pCounter) const {
-        if (pInstance < mNumberOfInstances && pInstance*mMaxNnz+pCounter < mNumberOfInstances*mMaxNnz) {
-            if (pCounter < mSizesOfInstances[pInstance]) {
+    float getNextValue(size_t pInstance, size_t pCounter) const {
+        // if (pInstance < mNumberOfInstances && pInstance*mMaxNnz+pCounter < mNumberOfInstances*mMaxNnz) {
+            // if (pCounter < mSizesOfInstances[pInstance]) {
                 return mSparseMatrixValues[pInstance*mMaxNnz+pCounter];
-            }
-        }
-        return MAX_VALUE;
+            // }
+        // }
+        // return MAX_VALUE;
     };
     size_t size() const {
         return mNumberOfInstances;
@@ -152,7 +154,8 @@ class SparseMatrixFloat {
     void insertElement(size_t pInstanceId, size_t pNnzCount, size_t pFeatureId, float pValue) {
         if (pInstanceId*mMaxNnz + pNnzCount < mNumberOfInstances * mMaxNnz) {
             mSparseMatrix[pInstanceId*mMaxNnz + pNnzCount] = pFeatureId;
-            mSparseMatrixValues[pInstanceId*mMaxNnz + pNnzCount] = (size_t) pValue*1000;
+            mSparseMatrixValues[pInstanceId*mMaxNnz + pNnzCount] = pValue;
+            // std::cout << mSparseMatrixValues[pInstanceId*mMaxNnz + pNnzCount] << ", " << pValue*1000 << std::endl;
         }
     };
 
@@ -167,7 +170,7 @@ class SparseMatrixFloat {
         size_t maxNnz = std::max(mMaxNnz, pMatrix->getMaxNnz());
         
         size_t* tmp_mSparseMatrix = new size_t [numberOfInstances * maxNnz];
-        size_t* tmp_mSparseMatrixValues = new size_t [numberOfInstances * maxNnz];
+        float* tmp_mSparseMatrixValues = new float [numberOfInstances * maxNnz];
         size_t* tmp_mSizesOfInstances = new size_t [numberOfInstances];
         
         for (size_t i = 0; i < this->getNumberOfInstances(); ++i) {
@@ -205,15 +208,15 @@ class SparseMatrixFloat {
         const size_t valueXX = getDotProductPrecomputed(pRowId);
         // std::cout << __LINE__ << std::endl;
         
-        size_t valueXY = 0;
-        size_t valueYY = 0;
+        float valueXY = 0;
+        float valueYY = 0;
         size_t instance_id;
         // uint32_t neighbor_id = 
         for (size_t i = 0; i < pRowIdVector.size(); ++i) {
             instance_id = pRowIdVector[i];
             sortMapFloat element; 
             element.key = pRowIdVector[i];
-            element.val = 0.0;
+            element.val = 0;
             
             // if (pRowId < pRowIdVector[i]) {
             //     indexOuter = pRowId;
@@ -239,6 +242,11 @@ class SparseMatrixFloat {
                     valueYY = pQueryData->getDotProductPrecomputed(instance_id);
                 }
                 element.val = valueXX - 2* valueXY + valueYY;
+                // std::cout << "result: " << element.val << std::endl;
+                // std::cout <<  "valueXX: " << valueXX << std::endl;
+                // std::cout <<  "valueXY: " << valueXY << std::endl;
+                // std::cout <<  "valueYY: " << valueYY << std::endl;
+                
                 if (element.val <= 0) {
                     element.val = 0;
                 }

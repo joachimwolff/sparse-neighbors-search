@@ -20,9 +20,9 @@ class InverseIndexCuda {
     size_t* mDev_FeatureList;
     size_t* mDev_SizeOfInstanceList;
     size_t* mDev_ComputedSignaturesPerInstance;
-    size_t* mDev_ValuesList;
+    float* mDev_ValuesList;
     size_t* mDev_JumpLength;
-    size_t* mDev_DotProduct;
+    float* mDev_DotProduct;
     
     size_t mNumberOfHashFunctions;
     size_t mShingleSize;
@@ -35,7 +35,7 @@ class InverseIndexCuda {
                         size_t pShingleSize, size_t pBlockSize, size_t pHashAlgorithm);
     ~InverseIndexCuda();
     void copyDataToGpu(SparseMatrixFloat* pRawData, size_t** pDevFeatureList,
-                                      size_t** pDevValueList, size_t** pSizeList);
+                                      float** pDevValueList, size_t** pSizeList);
   	void computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData, 
                                         size_t pStartIndex, size_t pEndIndex, 
                                         size_t pNumberOfInstances, size_t pNumberOfBlocks, 
@@ -59,13 +59,13 @@ class InverseIndexCuda {
    size_t** get_mDev_ComputedSignaturesPerInstance() {
        return &mDev_ComputedSignaturesPerInstance;
    };
-   size_t** get_mDev_ValuesList() {
+   float** get_mDev_ValuesList() {
        return &mDev_ValuesList;
    };
    size_t** get_mDev_JumpLength() {
        return &mDev_JumpLength;
    };
-   size_t** get_mDev_DotProduct() {
+   float** get_mDev_DotProduct() {
        return &mDev_DotProduct;
    };
 };

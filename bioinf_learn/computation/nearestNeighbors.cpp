@@ -71,11 +71,11 @@ void NearestNeighbors::fit(SparseMatrixFloat* pRawData) {
 
     mInverseIndex->fit(pRawData);
             std::cout << __LINE__ << std::endl;
-    #ifndef CUDA
+    // #ifndef CUDA
     if (mCpuGpuLoadBalancing == 0) {
         pRawData->precomputeDotProduct();
     }
-    #endif
+    // #endif
     #ifdef CUDA
     mNearestNeighborsCuda->setFeatureList(mInverseIndex->get_dev_FeatureList());
     mNearestNeighborsCuda->setValuesList(mInverseIndex->get_dev_ValuesList());
@@ -106,7 +106,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
 //    std::cout << "sizeof(size_t) " << sizeof(size_t) << std::endl;
 //    std::cout << "sizeof(int32_t) " << sizeof(int32_t) << std::endl;
 //    std::cout << "sizeof(uint32_t) " << sizeof(uint32_t) << std::endl; 
-   
+    // std::cout << __LINE__ << std::endl;
     if (pFast == -1) {
         pFast = mFast;
     } 
@@ -152,6 +152,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
    
     neighborhood* neighborhoodCandidates = new neighborhood();
     neighborhoodCandidates->neighbors = new vvsize_t(mOriginalData->size());
+    // std::cout << __LINE__ << std::endl;
     
     // compute the exact neighbors based on the candidates given by the inverse index
     // store the neighborhood in neighborhoodCandidates to reuse neighbor if needed
@@ -161,7 +162,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     // if it would not be used, it would be iterated over neighborhood_ and manipulated
     // at the same time
     #ifdef CUDA
-    if (mCpuGpuLoadBalancing == 0) {
+    if (mCpuGpuLoadBalancing == 1) {
     #endif
         #ifdef OPENMP
         #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
@@ -169,6 +170,8 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
         for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
             if (neighborhood_->neighbors->operator[](i).size() > 0) {
                 // std::cout << "candidates: " << neighborhood_->neighbors->operator[](i).size() << std::endl;
+    // std::cout << __LINE__ << std::endl;
+                
                 std::vector<sortMapFloat> exactNeighbors;
                 if (pSimilarity) {
                     exactNeighbors = 
@@ -192,6 +195,8 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                     }
                 }
             }
+    // std::cout << __LINE__ << std::endl;
+            
         }
         // return neighborhood_;
     #ifdef CUDA
@@ -300,17 +305,20 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
             }
         }
     }
+    // std::cout << __LINE__ << std::endl;
 
     delete neighborhoodCandidates->neighbors;
     delete neighborhoodCandidates;
+    // std::cout << __LINE__ << std::endl;
     
     neighborhood* neighborhoodExact = new neighborhood();
     neighborhoodExact->neighbors = new vvsize_t(neighborhood_->neighbors->size());
-    neighborhoodExact->distances = new vvsize_t(neighborhood_->neighbors->size());
+    neighborhoodExact->distances = new vvfloat(neighborhood_->neighbors->size());
+    std::cout << __LINE__ << std::endl;
 
     // compute the exact neighbors based on the candidate selection before.
     #ifdef CUDA
-    if (mCpuGpuLoadBalancing == 0) {
+    if (mCpuGpuLoadBalancing == 1) {
     #endif
     #ifdef OPENMP
     #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
@@ -330,7 +338,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                 size_t vectorSize = exactNeighbors.size();
                 
                 std::vector<size_t> neighborsVector(vectorSize);
-                std::vector<size_t> distancesVector(vectorSize);
+                std::vector<float> distancesVector(vectorSize);
                 if (vectorSize == 0) {
                     neighborsVector.push_back(i);
                     distancesVector.push_back(0.0);
@@ -338,9 +346,9 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                 for (size_t j = 0; j < vectorSize; ++j) {
                         neighborsVector[j] = exactNeighbors[j].key;
                         if (pSimilarity) {
-                            distancesVector[j] = exactNeighbors[j].val / 1000;
+                            distancesVector[j] = exactNeighbors[j].val;
                         } else {
-                            distancesVector[j] = sqrt((float) exactNeighbors[j].val) / 1000;
+                            distancesVector[j] = sqrt(exactNeighbors[j].val);
                         }
                 }
     #ifdef OPENMP
@@ -356,7 +364,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     #endif
                 {
                     std::vector<size_t> neighborsVector(1, i);
-                    std::vector<size_t> distancesVector(1, 0);
+                    std::vector<float> distancesVector(1, 0);
                     neighborhoodExact->neighbors->operator[](i) = neighborsVector;
                     neighborhoodExact->distances->operator[](i) = distancesVector;
                 }
@@ -394,9 +402,12 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
         
     }
     #endif
+    // std::cout << __LINE__ << std::endl;
+    
     delete neighborhood_->neighbors;
     delete neighborhood_->distances;
     delete neighborhood_;
+    // std::cout << __LINE__ << std::endl;
 
     return neighborhoodExact;
 }

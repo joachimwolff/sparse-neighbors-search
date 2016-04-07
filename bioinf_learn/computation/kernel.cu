@@ -37,8 +37,8 @@ __global__ void fitCudaMinHash(const size_t* pFeatureIdList, const size_t* pSize
                     size_t* pSignaturesBlockSize) {
                    
     int instanceId = blockIdx.x + pStartInstance;
-    int nearestNeighborsValue = MAX_VALUE;
-    int hashValue = 0;
+    size_t nearestNeighborsValue = MAX_VALUE;
+    size_t hashValue = 0;
     int signatureSize = pNumberOfHashFunctions * pBlockSize / pShingleSize;
     int featureId;
     int hashFunctionId = threadIdx.x;
@@ -55,10 +55,9 @@ __global__ void fitCudaMinHash(const size_t* pFeatureIdList, const size_t* pSize
         if (threadIdx.x == 0) {
             sizeOfInstance = pSizeOfInstanceList[instanceId];
         }
-    __syncthreads();
-        
+        __syncthreads();
+        printf("%i\n", __LINE__);
         featureId = instanceId * pMaxNnz;
-          
         
         while (hashFunctionId < pNumberOfHashFunctions * pBlockSize) {
             for (uint i = 0; i < sizeOfInstance && i < pMaxNnz; ++i) {
@@ -73,6 +72,7 @@ __global__ void fitCudaMinHash(const size_t* pFeatureIdList, const size_t* pSize
             nearestNeighborsValue = MAX_VALUE;
         }
             // printf("%i\n", __LINE__);
+        printf("%i\n", __LINE__);
 
         __syncthreads();
         // merge pShingleSize values together.
@@ -89,6 +89,7 @@ __global__ void fitCudaMinHash(const size_t* pFeatureIdList, const size_t* pSize
             shingleId += blockDim.x;
         }
             // printf("%i\n", __LINE__);
+        printf("%i\n", __LINE__);
 
         __syncthreads();
         instanceId += gridDim.x;
@@ -179,12 +180,12 @@ __device__ void sortAsc(cudaInstance* pCandidates, int pInstanceId, int pSize) {
         threadId = threadIdx.x;
     }
 }
-__global__ void dotProductSingle(size_t* pFeatureList, size_t* pValuesList,
+__global__ void dotProductSingle(size_t* pFeatureList, float* pValuesList,
                                  size_t* pSizeOfInstanceList, size_t* pJumpLength,
-                                 size_t pSize, size_t* pDevDotProduct) {
+                                 size_t pSize, float* pDevDotProduct) {
     int instanceId = blockIdx.x;
     int threadId = threadIdx.x;
-    size_t __shared__ value[128];
+    float __shared__ value[128];
     int __shared__ jumpLength;
     int __shared__ size;
     
@@ -229,7 +230,7 @@ __device__ float dotProduct(int* pFeatureListX, float* pValuesListX, int pSizeX,
     int counterY = 0;
     int featureX = pFeatureListX[counterX];
     int featureY = pFeatureListY[counterY];
-    int value = 0;
+    float value = 0.0;
     while (counterX < pSizeX && counterY < pSizeY) {
         if (featureX == featureY) {
             value += (1000* pValuesListX[counterX]) * (1000*pValuesListY[counterY]);

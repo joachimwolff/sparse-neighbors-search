@@ -19,11 +19,11 @@ class NearestNeighborsCuda {
 
   private: 
    size_t** mDev_FeatureList;
-   size_t** mDev_ValuesList;
+   float** mDev_ValuesList;
    size_t** mDev_SizeOfInstanceList;
    size_t mMaxNnz;
    size_t** mDev_JumpLengthList;
-   size_t** mDev_DotProducts;
+   float** mDev_DotProducts;
     
   public:
     NearestNeighborsCuda();
@@ -34,7 +34,7 @@ class NearestNeighborsCuda {
     void setFeatureList(size_t** pFeatureList) {
         mDev_FeatureList = pFeatureList;
     };
-    void setValuesList(size_t** pValuesList) {
+    void setValuesList(float** pValuesList) {
         mDev_ValuesList = pValuesList;
     };
     void setSizeOfInstanceList(size_t** pSizeOfInstanceList) {
@@ -47,7 +47,7 @@ class NearestNeighborsCuda {
     void setJumpLenthList(size_t** pJumpLengthList) {
         mDev_JumpLengthList = pJumpLengthList;
     }
-    void setDotProduct(size_t** pDotProduct) {
+    void setDotProduct(float** pDotProduct) {
         mDev_DotProducts = pDotProduct;
     };
 };

@@ -30,7 +30,7 @@ InverseIndexCuda::~InverseIndexCuda() {
     cudaFree(mDev_DotProduct);
 }
 void InverseIndexCuda::copyDataToGpu(SparseMatrixFloat* pRawData, size_t** pDevFeatureList,
-                                      size_t** pDevValueList, size_t** pSizeList) {
+                                      float** pDevValueList, size_t** pSizeList) {
 
     // memory for the number of features per instance
     cudaMalloc((void **) &(*pSizeList),
@@ -45,7 +45,7 @@ void InverseIndexCuda::copyDataToGpu(SparseMatrixFloat* pRawData, size_t** pDevF
             pRawData->size() * pRawData->getMaxNnz() * sizeof(size_t));
     // memory for the values of the features of the instances
     cudaMalloc((void **) &(*pDevValueList), 
-                pRawData->size() * pRawData->getMaxNnz() * sizeof(size_t));
+                pRawData->size() * pRawData->getMaxNnz() * sizeof(float));
     
     // copy instances and their feature ids to the gpu
     cudaMemcpy((*pDevFeatureList), pRawData->getSparseMatrixIndex(),
@@ -53,17 +53,8 @@ void InverseIndexCuda::copyDataToGpu(SparseMatrixFloat* pRawData, size_t** pDevF
             cudaMemcpyHostToDevice);
     
     cudaMemcpy((*pDevValueList), pRawData->getSparseMatrixValues(),
-                pRawData->size() * pRawData->getMaxNnz() * sizeof(size_t),
+                pRawData->size() * pRawData->getMaxNnz() * sizeof(float),
             cudaMemcpyHostToDevice);
- 
-    // printf("Feature list pointer adress: %u\n", (*pDevFeatureList));
-    // printf("&Feature list pointer adress: %u\n", &(*pDevFeatureList));
-    // printf("pDevValueList pointer adress: %u\n", (*pDevValueList));
-    // printf("&pDevValueList pointer adress: %u\n", &(*pDevValueList));
-    // printf("Inverse size pointer adress: %u\n", (*pSizeList));
-    // printf("Inverse &size pointer adress: %u\n", &(*pSizeList));
-    // printf("jumppointer adress: %u\n", (*pJumpList));
-    // printf("&jump pointer adress: %u\n", &(*pJumpList));
 }
 void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData, 
                                                 size_t pStartIndex, size_t pEndIndex, 
@@ -74,28 +65,9 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData
     // copy data to gpu
     
     copyDataToGpu(pRawData, &mDev_FeatureList, &mDev_ValuesList, &mDev_SizeOfInstanceList);                                             
-                                                    
-    
-    // check if enough memory is available on the gpu 
-    // size_t memory_total = 0;
-    // size_t memory_free = 0;
-    // int iterations = 1;
-    // int numberOfInstances = pEndIndex) - static_cast<int>(pStartIndex);
+                                  
     size_t signaturesSize = ceil(mNumberOfHashFunctions * pBlockSizeShingle / (float) pShingleFactor);
-    
-    // // memory for all signatures and memory for signatures on each block
-    // size_t neededMemory = numberOfInstances / iterations  * signaturesSize * sizeof(int);
-    // neededMemory += pNumberOfBlocks * mNumberOfHashFunctions * pBlockSizeShingle * sizeof(int);
-    // cudaMemGetInfo(&memory_free, &memory_total);
-    // // do i need more memory than it is free?
-    // if (neededMemory > memory_free) {
-    //     iterations = ceil(neededMemory / static_cast<float>(memory_free));
-    // }
-    
-    // int start = static_cast<int>(pStartIndex);
-    // int end = numberOfInstances / iterations;
-  
-    // int windowSize = numberOfInstances / iterations;
+   
     size_t* instancesHashValues = (size_t*) malloc(pRawData->size() * signaturesSize * sizeof(size_t));
     
     // memory for the inverse index on the gpu.
@@ -108,15 +80,9 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData
      
      
     // cuda memory for dot products dot<X, X>
-    cudaMalloc((void **) &mDev_DotProduct, sizeof(size_t) * pRawData->size());
-    // printf("start: %i, end: %i, iterations: %i\n", start, end, iterations);
-    // compute the signatures on the gpu
-    // do it in n iterations with equal sized chunks 
-    // if the data would not fit on the ram of the gpu
-    printf("%i\n", __LINE__);
-    printf("inverse size pointer adress2: %u\n", mDev_SizeOfInstanceList);
-    printf("inver &size pointer adress2: %u\n", &mDev_SizeOfInstanceList);
-    // for (size_t i = 0; i < iterations; ++i) {
+    cudaMalloc((void **) &mDev_DotProduct, sizeof(float) * pRawData->size());
+  
+    printf("maxNNZ: %u\n", pRawData->getMaxNnz());
         // execute kernel on gpu
         if (mHashAlgorithm == 0) {
             fitCudaMinHash<<<128, 128>>>
@@ -124,8 +90,9 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData
             mDev_SizeOfInstanceList,  
             mNumberOfHashFunctions, 
             pRawData->getMaxNnz(),
-                    mDev_ComputedSignaturesPerInstance, 
-                    pRawData->size(), 0, mBlockSize, mShingleSize, dev_SignaturesBlockSize);
+            mDev_ComputedSignaturesPerInstance, 
+            pRawData->size(), 0, mBlockSize, mShingleSize, dev_SignaturesBlockSize);
+            
         } else {
             // fitCudaWtaHash<<<128, 128>>>
             // (mDev_FeatureList, 
@@ -147,16 +114,10 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData
             vsize_t* instance = new vsize_t(signaturesSize);
             for (size_t j = 0; j < signaturesSize; ++j) {
                 (*instance)[j] = instancesHashValues[i*signaturesSize + j];
+                printf("",);
             }
-            // printf("instance: %i\n", i);
-
             (*pSignatures)[i] = instance;
         }
-    // printf("%i\n", __LINE__);
-        
-        // start = end+1;
-        // end = end + windowSize;
-    // }
     
     cudaFree(mDev_ComputedSignaturesPerInstance);
     cudaFree(dev_SignaturesBlockSize);
@@ -184,7 +145,7 @@ void InverseIndexCuda::computeSignaturesQueryOnGpu(SparseMatrixFloat* pRawData,
     
     // size_t start = 0;
     // size_t end = numberOfInstances / iterations;
-    // size_t windowSize = numberOfInstances / iterations;
+// size_t windowSize = numberOfInstances / iterations;
     // size_t* instancesHashValues = (int*) malloc(numberOfInstances / iterations * mNumberOfHashFunctions * sizeof(int));
     
     // // size_t signaturesSize = mNumberOfHashFunctions * pBlockSizeShingle / pShingleFactor;
