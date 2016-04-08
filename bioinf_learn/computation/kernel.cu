@@ -39,41 +39,33 @@ __global__ void fitCudaMinHash(const size_t* pFeatureIdList, const size_t* pSize
     int instanceId = blockIdx.x + pStartInstance;
     size_t nearestNeighborsValue = MAX_VALUE;
     size_t hashValue = 0;
-    int signatureSize = pNumberOfHashFunctions * pBlockSize / pShingleSize;
-    int featureId;
+    size_t signatureSize = pNumberOfHashFunctions * pBlockSize / pShingleSize;
+    int featureId = blockIdx.x * pMaxNnz;
     int hashFunctionId = threadIdx.x;
-    int __shared__ sizeOfInstance;
-    int signatureBlockValue;
-    int shingleId;
-    int signatureBlockId = blockIdx.x * pNumberOfHashFunctions * pBlockSize;
-     
-    __syncthreads();
+    size_t sizeOfInstance;
+    size_t signatureBlockValue;
+    size_t shingleId;
+    size_t signatureBlockId = blockIdx.x * pNumberOfHashFunctions * pBlockSize;
+    // compute one instance per block
+    // if one instance is computed, block takes next instance
     while (instanceId < pNumberOfInstances) {
         // compute the nearestNeighborsValue for every hash function
         // if pBlockSize is greater as 1, hash functions * pBlockSize values 
         // are computed. They will be merged together by a factor of pShingleSize
-        if (threadIdx.x == 0) {
-            sizeOfInstance = pSizeOfInstanceList[instanceId];
-        }
-        __syncthreads();
-        printf("%i\n", __LINE__);
-        featureId = instanceId * pMaxNnz;
+        sizeOfInstance = pSizeOfInstanceList[instanceId];
         
-        while (hashFunctionId < pNumberOfHashFunctions * pBlockSize) {
-            for (uint i = 0; i < sizeOfInstance && i < pMaxNnz; ++i) {
+        while (hashFunctionId < pNumberOfHashFunctions * pBlockSize && featureId < pNumberOfInstances*pMaxNnz) {
+            for (size_t i = 0; i < sizeOfInstance; ++i) {
                 hashValue = computeHashValueCuda((pFeatureIdList[featureId + i]+1) * (hashFunctionId+1), MAX_VALUE);
                 if (hashValue < nearestNeighborsValue) {
                     nearestNeighborsValue = hashValue;
                 }
+                
             }
-            
             pSignaturesBlockSize[signatureBlockId + hashFunctionId] = nearestNeighborsValue;
             hashFunctionId += blockDim.x;
             nearestNeighborsValue = MAX_VALUE;
         }
-            // printf("%i\n", __LINE__);
-        printf("%i\n", __LINE__);
-
         __syncthreads();
         // merge pShingleSize values together.
         // do one merge per thread
@@ -81,23 +73,19 @@ __global__ void fitCudaMinHash(const size_t* pFeatureIdList, const size_t* pSize
         shingleId = threadIdx.x;
         while (hashFunctionId < pNumberOfHashFunctions * pBlockSize ) {
             signatureBlockValue = pSignaturesBlockSize[signatureBlockId + hashFunctionId];
-            for (unsigned int i = 1; i < pShingleSize && hashFunctionId+i < pNumberOfHashFunctions * pBlockSize; ++i) {
+            for (size_t i = 1; i < pShingleSize && hashFunctionId+i < pNumberOfHashFunctions * pBlockSize; ++i) {
                 signatureBlockValue = computeHashValueCuda((pSignaturesBlockSize[signatureBlockId + hashFunctionId+i]+1) * (signatureBlockValue+1), MAX_VALUE);
             }
             pComputedSignatures[(instanceId-pStartInstance)*signatureSize + shingleId] = signatureBlockValue;
             hashFunctionId += blockDim.x * pShingleSize;
             shingleId += blockDim.x;
         }
-            // printf("%i\n", __LINE__);
-        printf("%i\n", __LINE__);
-
         __syncthreads();
         instanceId += gridDim.x;
+        featureId = instanceId * pMaxNnz;
         nearestNeighborsValue = MAX_VALUE;
         hashFunctionId = threadIdx.x;
     }
-        // printf("%i\n", __LINE__);
-
 }
 
 __global__ void fitCudaWtaHash(const int* pFeatureIdList, const int* pSizeOfInstanceList,
@@ -181,8 +169,8 @@ __device__ void sortAsc(cudaInstance* pCandidates, int pInstanceId, int pSize) {
     }
 }
 __global__ void dotProductSingle(size_t* pFeatureList, float* pValuesList,
-                                 size_t* pSizeOfInstanceList, size_t* pJumpLength,
-                                 size_t pSize, float* pDevDotProduct) {
+                                 size_t* pSizeOfInstanceList,
+                                 size_t pSize, size_t pMaxNnz, float* pDevDotProduct) {
     int instanceId = blockIdx.x;
     int threadId = threadIdx.x;
     float __shared__ value[128];
@@ -193,12 +181,12 @@ __global__ void dotProductSingle(size_t* pFeatureList, float* pValuesList,
     while (instanceId < pSize) {
         value[threadIdx.x] = 0;
         if (threadIdx.x == 0) {
-            jumpLength = pJumpLength[instanceId];
+            jumpLength = instanceId * pMaxNnz;
             size = pSizeOfInstanceList[instanceId];
         }
         __syncthreads();
         while (threadId < size) {
-            value[threadIdx.x] += pValuesList[jumpLength + threadId] * pValuesList[jumpLength + threadId];
+            value[threadIdx.x] += 1000 * pValuesList[jumpLength + threadId] * pValuesList[jumpLength + threadId];
             
             threadId += blockDim.x;
         }
@@ -215,10 +203,10 @@ __global__ void dotProductSingle(size_t* pFeatureList, float* pValuesList,
             __syncthreads();
             i /= 2;
         }
-        if (threadIdx.x == 0) {
-            pDevDotProduct[instanceId] = value[0];
-            // printf("dotXZ: %i: %lf\n",instanceId, (float) value[0]/ (float) 1000000);
-        }
+        // if (threadIdx.x == 0) {
+            pDevDotProduct[instanceId] = value[0] / 1000.0;
+            // printf("dotXZ: %i: %lf\n",instanceId, value[0] / 1000.0);
+        // }
         instanceId += gridDim.x;
         threadId = threadIdx.x;
     }                                
@@ -233,7 +221,7 @@ __device__ float dotProduct(int* pFeatureListX, float* pValuesListX, int pSizeX,
     float value = 0.0;
     while (counterX < pSizeX && counterY < pSizeY) {
         if (featureX == featureY) {
-            value += (1000* pValuesListX[counterX]) * (1000*pValuesListY[counterY]);
+            value += 1000* pValuesListX[counterX] * pValuesListY[counterY];
             ++counterX;
             featureX = pFeatureListX[counterX];
             ++counterY;
@@ -246,7 +234,7 @@ __device__ float dotProduct(int* pFeatureListX, float* pValuesListX, int pSizeX,
            featureY = pFeatureListY[counterY];
         }
     }
-    return (float) value / (float) 1000000;
+    return value / 1000.0;
 }
 
 // __global__ void dotProduct(int* pFeatureList, int* pValueList, int pStartPosX, int pStartPosY,
@@ -311,11 +299,10 @@ __device__ float dotProduct(int* pFeatureListX, float* pValuesListX, int pSizeX,
 //         }
     
 // }
-__global__ void euclideanDistanceCuda(cudaInstance* pCandidates, int* pJumpLengthList, 
+__global__ void euclideanDistanceCuda(cudaInstance* pCandidates, 
                                         int* pSizeCandidatesList, int pSize,
-                                        int* pFeatureList, float* pValuesList,
-                                        int* pSizeOfInstanceList, int* pJumpLength,
-                                        float* pDotProduct) {
+                                        size_t* pFeatureList, float* pValuesList,
+                                        size_t* pSizeOfInstanceList, float* pDotProduct) {
     int instanceIdCandidates = blockIdx.x;
     int threadId = threadIdx.x;
     int candidate;
@@ -330,7 +317,7 @@ __global__ void euclideanDistanceCuda(cudaInstance* pCandidates, int* pJumpLengt
             instance = pCandidates[pJumpLengthList[instanceIdCandidates]].x;
             dotProductXX = pDotProduct[instance];
             size = pSizeCandidatesList[instanceIdCandidates];
-            // printf("instance: %i\n", instanceIdCandidates);
+            printf("instance: %i\n", instanceIdCandidates);
         }
         __syncthreads();
         

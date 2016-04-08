@@ -30,8 +30,8 @@ __global__ void cosineSimilarityCuda(cudaInstanceVector* pCandidates, int pSize,
 __device__ void sortDesc(cudaInstance* pCandidates, int pInstanceId, int pSize);
 __device__ void sortAsc(cudaInstance* pCandidates, int pInstanceId, int pSize);
 __global__ void dotProductSingle(size_t* pFeatureList, float* pValuesList,
-                                 size_t* pSizeOfInstanceList, size_t* pJumpLength,
-                                 size_t pSize, float* pDevDotProduct);
+                                 size_t* pSizeOfInstanceList,
+                                 size_t pSize, size_t pMaxNnz, float* pDevDotProduct);
 __device__ float dotProduct(int* pFeatureListX, float* pValuesListX, int pSizeX,
                             int* pFeatureListY, float* pValuesListY, int pSizeY);
 #endif // KERNEL_CUDA
