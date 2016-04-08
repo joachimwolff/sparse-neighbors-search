@@ -299,101 +299,23 @@ __device__ float dotProduct(int* pFeatureListX, float* pValuesListX, int pSizeX,
 //         }
     
 // }
-__global__ void euclideanDistanceCuda(cudaInstance* pCandidates, 
-                                        int* pSizeCandidatesList, int pSize,
-                                        size_t* pFeatureList, float* pValuesList,
-                                        size_t* pSizeOfInstanceList, float* pDotProduct) {
-    int instanceIdCandidates = blockIdx.x;
-    int threadId = threadIdx.x;
-    int candidate;
-    // int value;
-    int __shared__ size;
-    int __shared__ instance;
-    float __shared__ value[128];
-    float __shared__ dotProductXX;
-    // float __shared__ dotProductYY[128];
-    while (instanceIdCandidates < pSize) {
-        if (threadIdx.x == 0) {
-            instance = pCandidates[pJumpLengthList[instanceIdCandidates]].x;
-            dotProductXX = pDotProduct[instance];
-            size = pSizeCandidatesList[instanceIdCandidates];
-            printf("instance: %i\n", instanceIdCandidates);
-        }
-        __syncthreads();
-        
-        while (threadId < size) {
-            
-            candidate = pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].x;
-            // printf("instance: %i, %i, %i, %i, %i\n", instanceIdCandidates, pJumpLengthList[instanceIdCandidates], candidate, size, __LINE__);
-            
-            // value = candidates[instanceIdCandidates][threadId].y;
-            // dotProductYY[threadIdx.x] = pDotProduct[candidate];
-            value[threadIdx.x] = dotProduct(&pFeatureList[pJumpLength[instance]], &pValuesList[pJumpLength[instance]], pSizeOfInstanceList[instance],
-                                &pFeatureList[pJumpLength[candidate]], &pValuesList[pJumpLength[candidate]],
-                                 pSizeOfInstanceList[candidate]);
-            // printf("instance: %i, %i\n", instanceIdCandidates, __LINE__);
-            
-            // if (blockIdx.x == 0 && instanceIdCandidates == 0) {
-            //     if (threadIdx.x < size) {
-            //         // printf("Bla\n");
-            //         // printf("candidate: %i\n", candidate);
-            //         printf("value: %f\n", value[threadIdx.x]);
-                    
-            //         printf("dotYY: %f\n", pDotProduct[candidate]);
-                    
-                    
-            //         // printf("dotXX: %f\n", dotProductXX);
-            //         // printf("value: %i\n", candidate);
-                    
-            //     }
-            // }
-            // printf("instance__XX: %i, %i, %i, %f\n", instanceIdCandidates, threadIdx.x, __LINE__, dotProductXX);
-            
-            value[threadIdx.x] *= 2;
-            value[threadIdx.x] = dotProductXX - value[threadIdx.x] + pDotProduct[candidate];
-            if (value[threadIdx.x] <= 0) {
-                value[threadIdx.x] = 0;
-            }
-            value[threadIdx.x] = sqrtf(value[threadIdx.x]);
-            // printf("instance__sqrt: %i, %i, %i, %f\n", instanceIdCandidates, threadIdx.x, __LINE__, value[threadIdx.x]);
-            
-            pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].y = value[threadIdx.x];
-            
-            threadId += blockDim.x;
-            // printf("instance: %i, %i\n", instanceIdCandidates, __LINE__);
-            
-        }
-        // __syncthreads();
-        // // if (blockIdx.x == 0 && instanceIdCandidates == 0) {
-        // //     threadId = threadIdx.x;
-        // //     if (threadIdx.x == 0) {
-        // //         printf("unsorted:\n");
-        // //     }
-        // // __syncthreads();
-        // //     while (threadId < size) {
-        // //         printf("threadId, %i, candiate: %i, value: %f\n",threadId, pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].x, pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].y);
-                
-        // //         threadId += blockDim.x;
-        // //     }
-        // // }
-        // sortAsc(pCandidates, pJumpLengthList[instanceIdCandidates], size); 
-        // __syncthreads();
-        
-        // if (blockIdx.x == 0 && instanceIdCandidates == 0) {
-        //     threadId = threadIdx.x;
-        //     if (threadIdx.x == 0) {
-        //         printf("sorted:\n");
-        //     }
-        //      __syncthreads();
-        //     while (threadId < size) {
-        //         printf("threadId, %i, candiate: %i, value: %f\n",threadId, pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].x, pCandidates[pJumpLengthList[instanceIdCandidates]+threadId].y);
-        //         threadId += blockDim.x;
-        //     }
-        // }
-        instanceIdCandidates += gridDim.x;
-        threadId = threadIdx.x;
-    }
-    __syncthreads();
+
+__global__ void computeDotProducts(float4* pDotProducts, size_t pSize, float* pPreComputedDotProducts, 
+                                        int* pCandidates, size_t* pJumpLength,
+                                        int* pFeatureIdsNeighbor, float* pValuesNeighbor, 
+                                        size_t pMaxNnzNeighbor, size_t pSizeNeighbor,
+                                        int* pFeatureIdsInstance, float* pValuesInstance,
+                                        size_t pMaxNnzInstance, size_t pSizeInstance) {
+    int instance = blockIdx.x;
+    while (instance < )
+}
+__global__ void euclideanDistanceCuda(float4* pDotProducts, size_t pSize) {
+  int instance = blockIdx.x * blockDim.x + threadIdx.x;
+  
+  while (instance < pSize) {
+      pDotProducts[instance].w = pDotProducts[instance].x - 2*pDotProducts[instance].y + pDotProducts[instance].z;
+      instance += gridDim.x;
+  }
 }
 
 __global__ void cosineSimilarityCuda(cudaInstanceVector* pCandidates, int pSize,

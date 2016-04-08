@@ -162,7 +162,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     // if it would not be used, it would be iterated over neighborhood_ and manipulated
     // at the same time
     #ifdef CUDA
-    if (mCpuGpuLoadBalancing == 1) {
+    if (mCpuGpuLoadBalancing == 0) {
     #endif
         #ifdef OPENMP
         #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
@@ -318,7 +318,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
 
     // compute the exact neighbors based on the candidate selection before.
     #ifdef CUDA
-    if (mCpuGpuLoadBalancing == 1) {
+    if (mCpuGpuLoadBalancing == 0) {
     #endif
     #ifdef OPENMP
     #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
