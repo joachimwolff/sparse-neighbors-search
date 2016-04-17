@@ -237,9 +237,9 @@ __device__ float dotProduct(int* pFeatureListX, float* pValuesListX, int pSizeX,
     return value / 1000.0;
 }
 
-__device__ float dotProductDevice(int* pFeatureListX, int* pValueListX, 
+__device__ float dotProductDevice(size_t* pFeatureListX, float* pValueListX, 
                                     int pStartPosX, int pEndPosX,
-                                    int* pFeatureListY, int* pValueListY, 
+                                    size_t* pFeatureListY, float* pValueListY, 
                                     int pStartPosY, int pEndPosY) {
     __shared__ int featureIdX[128];
     __shared__ int featureIdY[128];
@@ -250,20 +250,20 @@ __device__ float dotProductDevice(int* pFeatureListX, int* pValueListX,
     value[threadIdx.x] = 0;
     while (pStartPosX < pEndPosX && pStartPosY < pEndPosY) {
         if (pStartPosX + threadIdx.x < pEndPosX) {
-            featureIdX[threadId.x] = pFeatureListX[pStartPosX + threadIdx.x];
+            featureIdX[threadIdx.x] = pFeatureListX[pStartPosX + threadIdx.x];
         } else {
-            featureIdX[threadId.x] = -1;
+            featureIdX[threadIdx.x] = -1;
         }
         if (pStartPosY + threadIdx.x < pEndPosY) {
-            featureIdY[threadId.x] = pFeatureListY[pStartPosY + threadIdx.x];
+            featureIdY[threadIdx.x] = pFeatureListY[pStartPosY + threadIdx.x];
         } else {
-            featureIdY[threadId.x] = -2;
+            featureIdY[threadIdx.x] = -2;
         }
-        if (featureIdX[0] > featureIdY[128] && featureIdY[128] != -2) {
+        if (featureIdX[0] > featureIdY[127] && featureIdY[127] != -2) {
             pStartPosX += 128;
             continue;
-        } else if (featureIdX[128] < featureIdY[0] && featureIdX[128] != -1) {
-            pStartPosY += 128;
+        } else if (featureIdX[127] < featureIdY[0] && featureIdX[127] != -1) {
+            pStartPosY += 127;
             continue;
         }
         
@@ -273,7 +273,7 @@ __device__ float dotProductDevice(int* pFeatureListX, int* pValueListX,
             } else if (featureIdX[index] < featureIdY[threadIdx.x]) {
                 index += jumpWidth;
             } else {
-                value[threadIdx.x] += pValueList[pStartPosX + index] * pValueList[pStartPosY + threadIdx.x];
+                value[threadIdx.x] += pValueListX[pStartPosX + index] * pValueListY[pStartPosY + threadIdx.x];
                 break;
             }
             jumpWidth /= 2;
@@ -283,15 +283,15 @@ __device__ float dotProductDevice(int* pFeatureListX, int* pValueListX,
         __syncthreads();
         index = 0;
         round = 0;
-        int count = 128;
-        if (featureIdX[128] < featureIdY[count]) {
-            while (featureIdX[128] < featureIdY[count] && count > 0) {
+        int count = 127;
+        if (featureIdX[127] < featureIdY[count]) {
+            while (featureIdX[127] < featureIdY[count] && count > 0) {
                 count--;
             }
-            pStartPosY += 128
-            pStartPosX = 
+            // pStartPosY += 128;
+            // pStartPosX = 
         } else {
-            while (featureIdX[count] < featureIdY[128] && count > 0) {
+            while (featureIdX[count] < featureIdY[127] && count > 0) {
                 count--;
             }
         }
@@ -313,16 +313,16 @@ __device__ float dotProductDevice(int* pFeatureListX, int* pValueListX,
 
 __global__ void computeDotProducts(float3* pDotProducts, size_t pSize, 
                                         int* pCandidates, size_t* pJumpLength, size_t* pCandidateSize,
-                                        int* pFeatureIdsNeighbor, float* pValuesNeighbor, 
+                                        size_t* pFeatureIdsNeighbor, float* pValuesNeighbor, 
                                         size_t pMaxNnzNeighbor, size_t* pSizeNeighbor,
-                                        int* pFeatureIdsInstance, float* pValuesInstance,
+                                        size_t* pFeatureIdsInstance, float* pValuesInstance,
                                         size_t pMaxNnzInstance, size_t* pSizeInstance,
                                          float* pPreComputedDotProductsNeighbor, float* pPreComputedDotProductsInstance) {
     int instanceCandidates = blockIdx.x;
     __shared__ int instanceCounter;
     __shared__ int neighbor;
     __shared__ int instance;
-    while (instance < pSize) {
+    while (instanceCandidates < pSize) {
         if (threadIdx.x == 0) {
             neighbor = pCandidates[pJumpLength[instanceCandidates]];
             instanceCounter = 0;

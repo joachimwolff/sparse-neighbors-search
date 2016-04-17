@@ -41,9 +41,9 @@ cudaInstance* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
     
     // int* candidates;
     // int* candidatesTmp = (int*) malloc();
-    size_t size = 0;
-    std::vector(size_t) foo;
-    printf("FOO size: %u\n", foo.size());
+    // size_t size = 0;
+    // std::vector(size_t) foo;
+    // printf("FOO size: %u\n", foo.size());
     // for (size_t i = 0; i < neighborhood->neighbors->size(); ++i) {
     //     size += neighborhood->neighbors->operator[](i).size();
     // }

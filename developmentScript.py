@@ -165,7 +165,7 @@ def test(data):
     # 0.9
     print "creating object..."
     # minHash = MinHash(accuracy_optimized=True)
-    minHash = MinHash(number_of_hash_functions=200, max_bin_size= 25, shingle_size = 4, #rangeK_wta=50,
+    minHash = MinHash(number_of_hash_functions=800, max_bin_size= 25, shingle_size = 4, #rangeK_wta=50,
                       similarity=False, minimal_blocks_in_common=2,
                       number_of_cores=4, prune_inverse_index=1, 
                       store_value_with_least_sigificant_bit=1,
