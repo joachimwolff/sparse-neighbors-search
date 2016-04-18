@@ -97,7 +97,7 @@ class InverseIndex {
    size_t** get_dev_SizeOfInstanceList() {
        return mInverseIndexCuda->get_mDev_SizeOfInstanceList();
    };
-   size_t** get_dev_ComputedSignaturesPerInstance() {
+   int** get_dev_ComputedSignaturesPerInstance() {
        return mInverseIndexCuda->get_mDev_ComputedSignaturesPerInstance();
    };
    float** get_dev_ValuesList() {

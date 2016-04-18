@@ -15,7 +15,7 @@
 // #include <math.h>
 #include "kernel.h"
 // #include <cub/cub.cuh>
-__device__ size_t computeHashValueCuda(size_t pKey, size_t aModulo) {
+__device__ size_t computeHashValueCuda(int pKey, int aModulo) {
     // source:  Thomas Wang: Integer Hash Functions, 1997 / 2007 
     // https://gist.github.com/badboy/6267743
    
@@ -31,19 +31,19 @@ __device__ size_t computeHashValueCuda(size_t pKey, size_t aModulo) {
 
 __global__ void fitCudaMinHash(const int* pFeatureIdList, const size_t* pSizeOfInstanceList,
                     const size_t pNumberOfHashFunctions, const size_t pMaxNnz,
-                    size_t* pComputedSignatures, 
+                    int* pComputedSignatures, 
                     const size_t pNumberOfInstances, const size_t pStartInstance, 
                     const size_t pBlockSize, const size_t pShingleSize,
-                    size_t* pSignaturesBlockSize) {
+                    int* pSignaturesBlockSize) {
                    
     int instanceId = blockIdx.x + pStartInstance;
-    size_t nearestNeighborsValue = MAX_VALUE;
-    size_t hashValue = 0;
+    int nearestNeighborsValue = MAX_VALUE;
+    int hashValue = 0;
     size_t signatureSize = pNumberOfHashFunctions * pBlockSize / pShingleSize;
     int featureId = blockIdx.x * pMaxNnz;
     int hashFunctionId = threadIdx.x;
     size_t sizeOfInstance;
-    size_t signatureBlockValue;
+    int signatureBlockValue;
     size_t shingleId;
     size_t signatureBlockId = blockIdx.x * pNumberOfHashFunctions * pBlockSize;
     // compute one instance per block
@@ -97,77 +97,7 @@ __global__ void fitCudaWtaHash(const int* pFeatureIdList, const int* pSizeOfInst
 }
 
 
-__device__ void sortDesc(cudaInstance* pCandidates, int pInstanceId, int pSize) {
-    
-    int threadId = 2*threadIdx.x;
-    int instance_tmp;
-    float value_tmp;
-    for (int i = 0; i < pSize / 2; ++i) {
-        while (threadId < pSize) {
-           
-            if (threadId + 1 < pSize 
-                    && pCandidates[pInstanceId+threadId+1].y > pCandidates[pInstanceId + threadId].y) {
-                        instance_tmp = pCandidates[pInstanceId + threadId].x;
-                        value_tmp = pCandidates[pInstanceId + threadId].y;
-                        pCandidates[pInstanceId + threadId].x = pCandidates[pInstanceId + threadId + 1].x;
-                        pCandidates[pInstanceId + threadId].y = pCandidates[pInstanceId + threadId + 1].y;
-                        pCandidates[pInstanceId + threadId + 1].x = instance_tmp;
-                        pCandidates[pInstanceId + threadId + 1].y = value_tmp;
-            }
-            
-            if (threadId + 2 < pSize 
-                    && pCandidates[pInstanceId + threadId+2].y > pCandidates[pInstanceId + threadId+1].y) {
-                        // int2 tmp;
-                        instance_tmp = pCandidates[pInstanceId + threadId+1].x;
-                        value_tmp = pCandidates[pInstanceId + threadId+1].y;
-                        pCandidates[pInstanceId + threadId+1].x = pCandidates[pInstanceId + threadId + 2].x;
-                        pCandidates[pInstanceId + threadId+1].y = pCandidates[pInstanceId + threadId + 2].y;
-                        pCandidates[pInstanceId + threadId + 2].x = instance_tmp;
-                        pCandidates[pInstanceId + threadId + 2].y = value_tmp;
-            }
-            threadId += blockDim.x;
-        }
-        __syncthreads();
-        threadId = threadIdx.x;
-    }
-}
-__device__ void sortAsc(cudaInstance* pCandidates, int pInstanceId, int pSize) {
-    
-    int threadId = 2*threadIdx.x;
-    int instance_tmp;
-    float value_tmp;
-    for (int i = 0; i < pSize / 2; ++i) {
-        while (threadId < pSize) {
-            //  if (blockIdx.x == 0 && pInstanceId == 0 && threadId == 1) {
-            //     printf("id: %i, value: %f, id2: %i, value2: %f\n", pCandidates[pInstanceId + threadId].x, pCandidates[pInstanceId + threadId].y,
-            //         pCandidates[pInstanceId+threadId+1].x, pCandidates[pInstanceId+threadId+1].y);
-            // }
-            if (threadId + 1 < pSize 
-                    && pCandidates[pInstanceId+threadId+1].y < pCandidates[pInstanceId + threadId].y) {
-                        instance_tmp = pCandidates[pInstanceId + threadId].x;
-                        value_tmp = pCandidates[pInstanceId + threadId].y;
-                        pCandidates[pInstanceId + threadId].x = pCandidates[pInstanceId + threadId + 1].x;
-                        pCandidates[pInstanceId + threadId].y = pCandidates[pInstanceId + threadId + 1].y;
-                        pCandidates[pInstanceId + threadId + 1].x = instance_tmp;
-                        pCandidates[pInstanceId + threadId + 1].y = value_tmp;
-            }
-            if (threadId + 2 < pSize 
-                    && pCandidates[pInstanceId + threadId+2].y < pCandidates[pInstanceId + threadId+1].y) {
-                        // int2 tmp;
-                        instance_tmp = pCandidates[pInstanceId + threadId+1].x;
-                        value_tmp = pCandidates[pInstanceId + threadId+1].y;
-                        pCandidates[pInstanceId + threadId+1].x = pCandidates[pInstanceId + threadId + 2].x;
-                        pCandidates[pInstanceId + threadId+1].y = pCandidates[pInstanceId + threadId + 2].y;
-                        pCandidates[pInstanceId + threadId + 2].x = instance_tmp;
-                        pCandidates[pInstanceId + threadId + 2].y = value_tmp;
-            }
-            __syncthreads();
-            threadId += blockDim.x;
-        }
-        __syncthreads();
-        threadId = threadIdx.x;
-    }
-}
+
 __global__ void dotProductSingle(int* pFeatureList, float* pValuesList,
                                  size_t* pSizeOfInstanceList,
                                  size_t pSize, size_t pMaxNnz, float* pDevDotProduct) {
@@ -249,20 +179,16 @@ __device__ float dotProductDevice(int* pFeatureListX, float* pValueListX,
     int jumpWidth = 32;
     value[threadIdx.x] = 0.0;
     while (pStartPosX < pEndPosX && pStartPosY < pEndPosY) {
-        if (pStartPosX + threadIdx.x < pEndPosX) {
+        // if (pStartPosX + threadIdx.x < pEndPosX) {
             featureIdX[threadIdx.x] = pFeatureListX[pStartPosX + threadIdx.x];
-        } else {
-            featureIdX[threadIdx.x] = -1;
-        }
-        if (pStartPosY + threadIdx.x < pEndPosY) {
+        // }
+        // if (pStartPosY + threadIdx.x < pEndPosY) {
             featureIdY[threadIdx.x] = pFeatureListY[pStartPosY + threadIdx.x];
-        } else {
-            featureIdY[threadIdx.x] = -2;
-        }
-        if (featureIdX[0] > featureIdY[127] && featureIdY[127] != -2) {
+        // }
+        if (featureIdX[0] > featureIdY[127]) {
             pStartPosX += 128;
             continue;
-        } else if (featureIdX[127] < featureIdY[0] && featureIdX[127] != -1) {
+        } else if (featureIdX[127] < featureIdY[0]) {
             pStartPosY += 127;
             continue;
         }
@@ -270,7 +196,7 @@ __device__ float dotProductDevice(int* pFeatureListX, float* pValueListX,
         while (round < 8) {
             if (featureIdX[index] < featureIdY[threadIdx.x]) {
                 index -= jumpWidth;
-            } else if (featureIdX[index] < featureIdY[threadIdx.x]) {
+            } else if (featureIdX[index] > featureIdY[threadIdx.x]) {
                 index += jumpWidth;
             } else {
                 value[threadIdx.x] += pValueListX[pStartPosX + index] * pValueListY[pStartPosY + threadIdx.x];
@@ -281,19 +207,15 @@ __device__ float dotProductDevice(int* pFeatureListX, float* pValueListX,
             ++round;
         }
         __syncthreads();
-        index = 0;
+        index = 64;
         round = 0;
-        int count = 127;
-        if (featureIdX[127] < featureIdY[count]) {
-            while (featureIdX[127] < featureIdY[count] && count > 0) {
-                count--;
-            }
-            // pStartPosY += 128;
-            // pStartPosX = 
+        if (featureIdX[127] == featureIdY[127]) {
+            pStartPosY += 128;
+            pStartPosX += 128;
+        } else if (featureIdX[127] <= featureIdY[127]) {
+            pStartPosX += 128;
         } else {
-            while (featureIdX[count] < featureIdY[127] && count > 0) {
-                count--;
-            }
+            pStartPosY += 128;
         }
        
     }
@@ -301,7 +223,6 @@ __device__ float dotProductDevice(int* pFeatureListX, float* pValueListX,
         while (i != 0) {
             if (threadIdx.x < i) { 
                 value[threadIdx.x] += value[threadIdx.x + i];
-            // printf("dotXX: %i, threadId: %i, value: %f\n",instanceId, threadIdx.x, value[threadIdx.x]);
                 
             }
             __syncthreads();
@@ -359,110 +280,5 @@ __global__ void cosineSimilarityCuda(cudaInstanceVector* pCandidates, int pSize,
                                         int* pFeatureList, float* pValuesList,
                                         int* pSizeOfInstanceList, int* pJumpLength,
                                         float* pDotProduct) {
-    // int blockId = blockIdx.x;
-    // int threadId = threadIdx.x;
-    // size_t pointerToFeatureInstance, pointerToFeatureNeighbor, queryIndexInstance,
-    //     queryIndexNeighbor, instanceId, instanceIdNeighbor, indexSparseMatrixInstance,
-    //     indexSparseMatrixNeighbor, numberOfFeaturesInstance, numberOfFeaturesNeighbor,
-    //     featureIdNeighbor, featureIdInstance;
-    // bool endOfInstanceNotReached, endOfNeighborNotReached;
-    // float magnitudeInstance, magnitudeNeighbor, dotProduct, cosineSimilarity;
-    // while (blockId < pNumberOfInstances) {
-    //     // pointer to feature ids in sparse matrix
-    //     pointerToFeatureInstance = 0;
-    //     pointerToFeatureNeighbor = 0;
-        
-    //     // get the instance ids of the query instance and the possible neighbor
-    //     // it is assumed that the first instance is the query instance and 
-    //     // all others are possible neighbors
-    //     queryIndexInstance = blockId * pRangeBetweenInstances;
-    //     queryIndexNeighbor = blockId * pRangeBetweenInstances + threadId;
-        
-    //     // get the two instance ids
-    //     instanceId = pHitsPerQueryInstance[queryIndexInstance].y;
-    //     instanceIdNeighbor = pHitsPerQueryInstance[queryIndexNeighbor].y;
-        
-    //     // get the index positons for the two instances in the sparse matrix
-    //     indexSparseMatrixInstance = instanceId*pMaxNnz;
-    //     indexSparseMatrixNeighbor = instanceIdNeighbor*pMaxNnz;
-        
-    //     // get the number of features for every instance
-    //     numberOfFeaturesInstance = pSizeOfInstanceList[instanceId];
-    //     numberOfFeaturesNeighbor = pSizeOfInstanceList[instanceIdNeighbor];
-        
-    //     endOfInstanceNotReached = pointerToFeatureInstance < numberOfFeaturesInstance;
-    //     endOfNeighborNotReached = pointerToFeatureNeighbor < numberOfFeaturesNeighbor;
-    //     magnitudeInstance = 0;
-    //     magnitudeNeighbor = 0;
-    //     dotProduct = 0;
-    //     while (threadId < pNumberInstancesToConsider[instanceIdNeighbor]) {
-            
-    //         while (endOfInstanceNotReached && endOfNeighborNotReached) {
-    //             featureIdInstance = pFeatureList[indexSparseMatrixInstance+pointerToFeatureInstance];
-    //             featureIdNeighbor = pFeatureList[indexSparseMatrixNeighbor+pointerToFeatureNeighbor];
-                
-    //             if (featureIdInstance == featureIdNeighbor) {
-    //                 // if they are the same substract the values, compute the square and sum it up
-    //                 dotProduct += pValuesList[indexSparseMatrixInstance+pointerToFeatureInstance] 
-    //                                 * pValuesList[indexSparseMatrixNeighbor+pointerToFeatureNeighbor];
-    //                 //this->getNextValue(pRowIdVector[i], pointerToMatrixElement) - queryData->(pRowId, pointerToVectorElement);
-    //                 magnitudeInstance += powf(pValuesList[indexSparseMatrixInstance+pointerToFeatureInstance], 2);
-    //                 magnitudeNeighbor += powf(pValuesList[indexSparseMatrixNeighbor+pointerToFeatureNeighbor], 2);
-    //                 // increase both counters to the next element 
-    //                 ++pointerToFeatureInstance;
-    //                 ++pointerToFeatureNeighbor;
-    //             } else if (featureIdInstance < featureIdNeighbor) {
-    //                 // if the feature ids are unequal square only the smaller one and add it to the sum
-    //                 magnitudeInstance += powf(pValuesList[indexSparseMatrixInstance+pointerToFeatureInstance], 2);
-    //                 // increase counter for first vector
-    //                 ++pointerToFeatureInstance;
-    //             } else {
-    //                 magnitudeNeighbor += powf(pValuesList[indexSparseMatrixNeighbor+pointerToFeatureNeighbor], 2);
-    //                 ++pointerToFeatureNeighbor;
-    //             }
-    //             endOfInstanceNotReached = pointerToFeatureInstance < numberOfFeaturesInstance;
-    //             endOfNeighborNotReached = pointerToFeatureNeighbor < numberOfFeaturesNeighbor;
-    //         }
-    //         while (endOfInstanceNotReached) {
-    //             magnitudeInstance += powf(pValuesList[indexSparseMatrixInstance+pointerToFeatureInstance], 2);
-    //             ++pointerToFeatureInstance;
-    //             endOfInstanceNotReached = pointerToFeatureInstance < numberOfFeaturesInstance;
-    //         }
-    //         while (endOfNeighborNotReached) {
-    //             magnitudeNeighbor += powf(pValuesList[indexSparseMatrixNeighbor+pointerToFeatureNeighbor], 2);
-    //             ++pointerToFeatureNeighbor;
-    //             endOfNeighborNotReached = pointerToFeatureNeighbor < numberOfFeaturesNeighbor;
-    //         }
-            
-    //         // square root of the sum
-    //         cosineSimilarity = dotProduct / (float) magnitudeInstance * magnitudeNeighbor;
-    //         // store euclidean distance and neighbor id
-    //         pHitsPerQueryInstance[queryIndexNeighbor].x = (int) cosineSimilarity * 1000;
-    //         threadId += blockIdx.x;
-    //         magnitudeInstance = 0;
-    //         magnitudeNeighbor = 0;
-    //         dotProduct = 0;
-    //         cosineSimilarity = 0;
-    //         queryIndexNeighbor = blockId * pRangeBetweenInstances + threadId;
-    //         instanceIdNeighbor = pHitsPerQueryInstance[queryIndexNeighbor].y;
-    //         indexSparseMatrixNeighbor = instanceIdNeighbor*pMaxNnz;
-    //         numberOfFeaturesNeighbor = pSizeOfInstanceList[instanceIdNeighbor];
-    //         pointerToFeatureInstance = 0;
-    //         pointerToFeatureNeighbor = 0;
-    //         endOfInstanceNotReached = pointerToFeatureInstance < numberOfFeaturesInstance;
-    //         endOfNeighborNotReached = pointerToFeatureNeighbor < numberOfFeaturesNeighbor;
-    //     }
-    //     // sort instances by euclidean distance
-    //     mergeSortDesc(queryIndexInstance, pMergeSortMemory, pHitsPerQueryInstance, pNumberOfInstances);
-                        
-    //     if (threadId < pNumberOfNeighbors) {
-    //         pNeighborhood[instanceId*pNumberOfNeighbors+threadId] 
-    //             = pHitsPerQueryInstance[queryIndexInstance + threadId].y;
-    //         pDistances[instanceId*pNumberOfNeighbors+threadId] 
-    //             = (float) pHitsPerQueryInstance[queryIndexInstance + threadId].x;
-    //     }
-    //     blockId += gridDim.x;
-    //     threadId = threadIdx.x;
-    // }
     
 }

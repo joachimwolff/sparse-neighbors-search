@@ -4,13 +4,13 @@
 #define KERNEL_CUDA
 #define A 0.414213562 // sqrt(2) - 1
 
-__device__ size_t computeHashValueCuda(size_t key, size_t aModulo);
+__device__ size_t computeHashValueCuda(int key, int aModulo);
 __global__ void fitCudaMinHash(const int* pFeatureIdList, const size_t* pSizeOfInstanceList,
                     const size_t pNumberOfHashFunctions, const size_t pMaxNnz,
-                    size_t* pComputedSignatures, 
+                    int* pComputedSignatures, 
                     const size_t pNumberOfInstances, const size_t pStartInstance, 
                     const size_t pBlockSize, const size_t pShingleSize,
-                    size_t* pSignaturesBlockSize);
+                    int* pSignaturesBlockSize);
 __global__ void fitCudaWtaHash(const int* pFeatureIdList, const int* pSizeOfInstanceList,
                     const int pNumberOfHashFunctions, const int* pJumpLengthList,
                     int* pComputedSignatures, 

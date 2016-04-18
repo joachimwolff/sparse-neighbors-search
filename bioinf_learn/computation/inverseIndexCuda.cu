@@ -78,12 +78,6 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData
     
     copyDataToGpu(pRawData, &mDev_FeatureList, &mDev_ValuesList, &mDev_SizeOfInstanceList);  
                                                
-    // printf("\n\nmDev_FeatureList, %u\n", mDev_FeatureList);
-    // printf("&mDev_FeatureList, %u\n", &mDev_FeatureList);
-    // printf("mDev_ValuesList, %u\n", mDev_ValuesList);
-    // printf("&mDev_ValuesList, %u\n", &mDev_ValuesList);
-    // printf("mDev_SizeOfInstanceList, %u\n", mDev_SizeOfInstanceList);
-    // printf("&mDev_SizeOfInstanceList, %u\n", &mDev_SizeOfInstanceList);                          
     size_t signaturesSize = ceil(mNumberOfHashFunctions * pBlockSizeShingle / (float) pShingleFactor);
    
     size_t* instancesHashValues = (size_t*) malloc(pRawData->size() * signaturesSize * sizeof(size_t));
@@ -91,10 +85,10 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData
     // memory for the inverse index on the gpu.
     // for each instance the number of hash functions
     cudaMalloc((void **) &mDev_ComputedSignaturesPerInstance,
-            pRawData->size() * signaturesSize * sizeof(size_t));
-    size_t* dev_SignaturesBlockSize;
+            pRawData->size() * signaturesSize * sizeof(int));
+    int* dev_SignaturesBlockSize;
     cudaMalloc((void **) &dev_SignaturesBlockSize,
-           128 * mNumberOfHashFunctions * pBlockSizeShingle * sizeof(size_t));
+           128 * mNumberOfHashFunctions * pBlockSizeShingle * sizeof(int));
      
      
     // cuda memory for dot products dot<X, X>
@@ -126,21 +120,16 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData
         //     cudaDeviceSynchronize();
                                         
         // copy results back to host  
-        // printf("Size of signatues: %i\n", signaturesSize);    
         cudaMemcpy(instancesHashValues, mDev_ComputedSignaturesPerInstance, 
-                    pRawData->size() * signaturesSize * sizeof(size_t),
+                    pRawData->size() * signaturesSize * sizeof(int),
                     cudaMemcpyDeviceToHost);
         cudaDeviceSynchronize();
                     
         // copy values into one vector per instance
         for(size_t i = 0; i < pRawData->size(); ++i) {
             vsize_t* instance = new vsize_t(signaturesSize);
-            // if (i % 100 == 0)
-            //     printf("\nSignature: ");
             for (size_t j = 0; j < signaturesSize; ++j) {
-                (*instance)[j] = instancesHashValues[i*signaturesSize + j];
-                // if (i % 100 == 0)   
-                //     printf("%u, ",(*instance)[j]);
+                (*instance)[j] = static_cast<size_t> (instancesHashValues[i*signaturesSize + j]);
             }
             (*pSignatures)[i] = instance;
         }
@@ -157,77 +146,5 @@ void InverseIndexCuda::computeSignaturesQueryOnGpu(SparseMatrixFloat* pRawData,
                                                 size_t pNumberOfThreads, size_t pShingleFactor, 
                                                 size_t pBlockSizeShingle,
                                                 vvsize_t_p* pSignatures, size_t pRangeK) {
-    // size_t* dev_featureList;
-    // size_t* dev_valueList;
-    // size_t* dev_sizeOfInstanceList;
-    // // int* jumpLengthList;
-    // size_t* dev_computedSignaturesPerInstance;
-    // size_t numberOfInstances = pEndIndex - pStartIndex;
-    // size_t signaturesSize = mNumberOfHashFunctions * pBlockSizeShingle / pShingleFactor;
-    
-    // size_t memory_total = 0;
-    // size_t memory_free = 0;
-    // size_t iterations = 1;
-    
-    // copyDataToGpu(pRawData, &dev_featureList, &dev_valueList, &dev_sizeOfInstanceList);                                             
-    
-    
-    // size_t start = 0;
-    // size_t end = numberOfInstances / iterations;
-// size_t windowSize = numberOfInstances / iterations;
-    // size_t* instancesHashValues = (int*) malloc(numberOfInstances / iterations * mNumberOfHashFunctions * sizeof(int));
-    
-    // // size_t signaturesSize = mNumberOfHashFunctions * pBlockSizeShingle / pShingleFactor;
-    // // memory for the signatures on the gpu.
-    // // for each instance the number of hash functions
-    // cudaMalloc((void **) &dev_computedSignaturesPerInstance,
-    //         numberOfInstances / iterations  * signaturesSize * sizeof(int));
-    // int* dev_signaturesBlockSize;
-    // cudaMalloc((void **) &dev_signaturesBlockSize,
-    //        pNumberOfBlocks * mNumberOfHashFunctions * pBlockSizeShingle * sizeof(int));
-    // // compute the signatures on the gpu
-    // // do it in n iterations with equal sized chunks 
-    // // if the data would not fit on the ram of the gpu
-    // for (size_t i = 0; i < iterations; ++i) {
-    //     // execute kernel on gpu
-    //     if (mHashAlgorithm == 0) {
-    //         fitCudaMinHash<<<pNumberOfBlocks, pNumberOfThreads>>>
-    //         (dev_featureList, 
-    //         dev_sizeOfInstanceList,  
-    //         mNumberOfHashFunctions, 
-    //         jumpLengthList,
-    //                 dev_computedSignaturesPerInstance, 
-    //                 end, start, mBlockSize, mShingleSize, dev_signaturesBlockSize);
-    //     } else {
-    //         fitCudaWtaHash<<<pNumberOfBlocks, pNumberOfThreads>>>
-    //         (dev_featureList, 
-    //         dev_sizeOfInstanceList,  
-    //         mNumberOfHashFunctions, 
-    //         jumpLengthList,
-    //         dev_computedSignaturesPerInstance, 
-    //         end, start, mBlockSize, mShingleSize, dev_signaturesBlockSize);
-    //     }
-    //     // copy results back to host      
-    //     cudaMemcpy(instancesHashValues, dev_computedSignaturesPerInstance, 
-    //                 numberOfInstances/iterations * signaturesSize * sizeof(int),
-    //                 cudaMemcpyDeviceToHost);
-    //     // copy values into one vector per instance
-    //     for(size_t i = start; i < end; ++i) {
-    //         vsize_t* instance = new vsize_t(signaturesSize);
-    //         for (size_t j = 0; j < signaturesSize; ++j) {
-    //             (*instance)[j] = static_cast<size_t>(instancesHashValues[i*signaturesSize + j]);
-    //         }
-    //         (*pSignatures)[i] = instance;
-    //     }
-        
-    //     start = end+1;
-    //     end = end + windowSize;
-    // }
-    
-    // cudaFree(dev_computedSignaturesPerInstance);
-    // cudaFree(dev_signaturesBlockSize);
-    // cudaFree(dev_featureList);       
-    // cudaFree(dev_computedSignaturesPerInstance);       
-    // cudaFree(dev_sizeOfInstanceList);
-    // cudaFree(jumpLengthList);
+   
 }

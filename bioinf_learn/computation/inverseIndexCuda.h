@@ -19,7 +19,7 @@ class InverseIndexCuda {
   private: 
     int* mDev_FeatureList;
     size_t* mDev_SizeOfInstanceList;
-    size_t* mDev_ComputedSignaturesPerInstance;
+    int* mDev_ComputedSignaturesPerInstance;
     float* mDev_ValuesList;
     size_t* mDev_JumpLength;
     float* mDev_DotProduct;
@@ -56,7 +56,7 @@ class InverseIndexCuda {
    size_t** get_mDev_SizeOfInstanceList() {
        return &mDev_SizeOfInstanceList;
    };
-   size_t** get_mDev_ComputedSignaturesPerInstance() {
+   int** get_mDev_ComputedSignaturesPerInstance() {
        return &mDev_ComputedSignaturesPerInstance;
    };
    float** get_mDev_ValuesList() {
