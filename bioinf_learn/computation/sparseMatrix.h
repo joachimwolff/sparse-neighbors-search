@@ -9,6 +9,7 @@
  Albert-Ludwig-University Freiburg im Breisgau
 **/
 #include <math.h>
+#include <xmmintrin.h>
 
 #include <algorithm>
 #include <iostream>
@@ -24,17 +25,24 @@ class SparseMatrixFloat {
     // stores only the pointer addresses to:
     //      if even index: size_t which is pointer for vsize
     //      if odd indeX: size_t which is pointer for vfloat
-    size_t* mSparseMatrix;
+    int* mSparseMatrix;
     float*  mSparseMatrixValues;
     size_t* mSizesOfInstances;
+    size_t* mSizesOfInstancesCuda;
+    size_t* mSizesOfInstancesSSE;
+    
     size_t mMaxNnz;
     size_t mNumberOfInstances;
+   
     std::unordered_map<size_t, float> mDotProductPrecomputed;
   public:
     SparseMatrixFloat(size_t pNumberOfInstances, size_t pMaxNnz) {
-        mSparseMatrix = new size_t [pNumberOfInstances * pMaxNnz];
+        pMaxNnz = pMaxNnz + (pMaxNnz % 128);
+        mSparseMatrix = new int [pNumberOfInstances * pMaxNnz];
         mSparseMatrixValues = new float [pNumberOfInstances * pMaxNnz];
         mSizesOfInstances = new size_t [pNumberOfInstances];
+        mSizesOfInstancesCuda = new size_t [pNumberOfInstances];
+        mSizesOfInstancesSSE = new size_t [pNumberOfInstances];
         // for (size_t i = 0; i < pNumberOfInstances; ++i) {
         //     mSizesOfInstances[i] = 0;
         // }
@@ -45,6 +53,10 @@ class SparseMatrixFloat {
         delete [] mSparseMatrix;
         delete [] mSparseMatrixValues;
         delete [] mSizesOfInstances;
+        delete [] mSizesOfInstancesCuda;
+        delete [] mSizesOfInstancesSSE;
+        
+        
     };
     
     void precomputeDotProduct() {
@@ -84,40 +96,129 @@ class SparseMatrixFloat {
          if (pQueryData != NULL) {
             queryData = pQueryData;
         }
-        double value = 0.0;  
+        // double value = 0.0;  
         size_t counterInstance = 0;
         size_t counterNeighbor = 0;
-        size_t sizeInstance = queryData->getSizeOfInstance(pIndex);
-        size_t sizeNeighbor = this->getSizeOfInstance(pIndexNeighbor);
+        // size_t sizeInstance = queryData->getSizeOfInstance(pIndex);
+        // size_t sizeNeighbor = this->getSizeOfInstance(pIndexNeighbor);
         // std::vector<sparseData>* instance = queryData->getDataMatrix()->operator[](pIndex);
         // std::vector<sparseData>* neighbor = this->getDataMatrix()->operator[](pIndexNeighbor);
        
         // auto iteratorInstance = instance->begin();
         // auto iteratorNeighbor = neighbor->begin();
+        // while (counterInstance <  sizeInstance && counterNeighbor < sizeNeighbor) {
+        //     if (queryData->getNextElement(pIndex, counterInstance) < this->getNextElement(pIndexNeighbor, counterNeighbor)) {
+        //         ++counterInstance;
+        //     } else if (queryData->getNextElement(pIndex, counterInstance) > this->getNextElement(pIndexNeighbor, counterNeighbor)){
+        //         ++counterNeighbor;
+        //     } else {
+        //         value += (double) queryData->getNextValue(pIndex, counterInstance) * (double) this->getNextValue(pIndexNeighbor, counterNeighbor);
+        //         ++counterInstance;
+        //         ++counterNeighbor;
+        //     }
+        // }
+        // if (pIndex % 300 == 0) {
+        //     printf("foo: %f\n", (float) value);
+        // }
+        // return (float) value; 
+        // printf("%i\n", __LINE__);
+        // printf ("instance: %i, neighbor: %i\n", pIndex, pIndexNeighbor);
+        // printf("%i\n", __LINE__);
+        
+        // int* foo2 = this->getSparseMatrixIndexPointer(pIndexNeighbor);
+        // printf("foo[0]: %i\n", foo2[0]);
+        // printf("%i\n", __LINE__);
+        // foo2 = foo2 + 0;
+        // printf("foo2 + 0: %i\n", foo2[0]);
+        // printf("%i\n", __LINE__);
+        // float* foo3 = (float *) (this->getSparseMatrixIndex()+ counterNeighbor+ pIndexNeighbor * mMaxNnz);
+        // printf("value foo3: %f\n", foo3[0]);
+        // printf("%i\n", __LINE__);
+        
+        int sizeInstance = queryData->getSizeOfInstanceSSE(pIndex);
+        int sizeNeighbor = this->getSizeOfInstanceSSE(pIndexNeighbor);
+        __m128 value = {0.0, 0.0, 0.0, 0.0};
+        float* pointerInstanceFeature = (float*) queryData->getSparseMatrixIndexPointer(pIndex);
+        float* pointerNeighborFeature = (float*) this->getSparseMatrixIndexPointer(pIndexNeighbor);
+        float* pointerInstanceValue = queryData->getSparseMatrixValuesPointer(pIndex);
+        float* pointerNeighborValue = this->getSparseMatrixValuesPointer(pIndexNeighbor);
         while (counterInstance <  sizeInstance && counterNeighbor < sizeNeighbor) {
-            if (queryData->getNextElement(pIndex, counterInstance) < this->getNextElement(pIndexNeighbor, counterNeighbor)) {
-                ++counterInstance;
-            } else if (queryData->getNextElement(pIndex, counterInstance) > this->getNextElement(pIndexNeighbor, counterNeighbor)){
-                ++counterNeighbor;
-            } else {
-                value += (double) queryData->getNextValue(pIndex, counterInstance) * (double) this->getNextValue(pIndexNeighbor, counterNeighbor);
-                ++counterInstance;
-                ++counterNeighbor;
-            }
-        }
-        return (float) value; 
+          
+            if (queryData->getNextElement(pIndex, counterInstance + 3) < this->getNextElement(pIndexNeighbor, counterNeighbor)) {
+                counterInstance += 4;
+                continue;
+            } else if (this->getNextElement(pIndexNeighbor, counterNeighbor + 3) < queryData->getNextElement(pIndex, counterInstance)) {
+                counterNeighbor += 4;
+                continue;
+            } 
+       
+            __m128 featuresInstance = _mm_loadu_ps(pointerInstanceFeature + counterInstance);
+            __m128 valueInstance = _mm_loadu_ps(pointerInstanceValue + counterInstance);
+       
+            __m128 featuresNeighbor = _mm_loadu_ps(pointerNeighborFeature+ counterNeighbor);
+            __m128 valueNeighbor = _mm_loadu_ps(pointerNeighborValue + counterNeighbor);
+            
+            __m128 eq = _mm_cmpeq_ps(_mm_shuffle_ps(featuresInstance, featuresInstance, _MM_SHUFFLE(0,0,0,0)), featuresNeighbor);
+		    __m128 product = _mm_mul_ps(_mm_shuffle_ps(valueInstance, valueInstance, _MM_SHUFFLE(0,0,0,0)), valueNeighbor);
+            value = _mm_add_ps(value, _mm_and_ps(eq, product));
+        // printf("%i\n", __LINE__);
+    
+            eq = _mm_cmpeq_ps(_mm_shuffle_ps(featuresInstance, featuresInstance, _MM_SHUFFLE(1,1,1,1)), featuresNeighbor);
+            product = _mm_mul_ps(_mm_shuffle_ps(valueInstance, valueInstance, _MM_SHUFFLE(1,1,1,1)), valueNeighbor);
+            value = _mm_add_ps(value, _mm_and_ps(eq, product));
+    
+            eq = _mm_cmpeq_ps(_mm_shuffle_ps(featuresInstance, featuresInstance, _MM_SHUFFLE(2,2,2,2)), featuresNeighbor);
+            product = _mm_mul_ps(_mm_shuffle_ps(valueInstance, valueInstance, _MM_SHUFFLE(2,2,2,2)), valueNeighbor);
+            value = _mm_add_ps(value, _mm_and_ps(eq, product));
+    
+            eq = _mm_cmpeq_ps(_mm_shuffle_ps(featuresInstance, featuresInstance, _MM_SHUFFLE(3,3,3,3)), featuresNeighbor);
+            product = _mm_mul_ps(_mm_shuffle_ps(valueInstance, valueInstance, _MM_SHUFFLE(3,3,3,3)), valueNeighbor);
+            
+            
+            if (queryData->getNextElement(pIndex, counterInstance + 3) == this->getNextElement(pIndexNeighbor, counterNeighbor+3)) {
+                counterInstance += 4;
+                counterNeighbor += 4;
+            } else if (this->getNextElement(pIndexNeighbor, counterNeighbor + 3) < queryData->getNextElement(pIndex, counterInstance+3)) {
+                counterNeighbor += 4;
+            } else { //if (queryData->getNextElement(pIndex, counterInstance + 3) < this->getNextElement(pIndexNeighbor, counterNeighbor)) {
+                counterInstance += 4;
+            } // else {
+                
+            // }
+        } 
+        return  value[0] + value[1] + value[2] + value[3];
+       
     };
     float getDotProductPrecomputed(size_t pIndex) {
         return mDotProductPrecomputed[pIndex];
     }
-    size_t* getSparseMatrixIndex() const{
+    int* getSparseMatrixIndex() const{
         return mSparseMatrix;
     };
     float* getSparseMatrixValues() const{
         return mSparseMatrixValues;
     };
+    
+    
+    int* getSparseMatrixIndexPointer(size_t pIndex) {
+        // printf("pIndex: %u, mMaxNNZ: %u pIndex*mMaxNnz: %u maxIndex: %u\n", pIndex, mMaxNnz, pIndex * mMaxNnz, mNumberOfInstances * mMaxNnz);
+        
+        return &(mSparseMatrix[pIndex * mMaxNnz]);
+    };
+    float* getSparseMatrixValuesPointer(size_t pIndex) {
+        // printf("pIndex: %u, mMaxNNZ: %u pIndex*mMaxNnz: %u maxIndex: %u\n", pIndex, mMaxNnz, pIndex * mMaxNnz, mNumberOfInstances * mMaxNnz);
+        return &(mSparseMatrixValues[pIndex * mMaxNnz]);
+    };
+    
     size_t* getSparseMatrixSizeOfInstances() const{
         return mSizesOfInstances;
+    };
+    size_t* getSparseMatrixSizeOfInstancesSSE() const{
+        return mSizesOfInstancesSSE;
+    };
+    
+    size_t* getSparseMatrixSizeOfInstancesCuda() const{
+        return mSizesOfInstancesCuda;
     };
     size_t getMaxNnz() const {
         return mMaxNnz;
@@ -125,7 +226,7 @@ class SparseMatrixFloat {
     size_t getNumberOfInstances() const {
         return mNumberOfInstances;
     };
-    size_t getNextElement(size_t pInstance, size_t pCounter) const {
+    int getNextElement(size_t pInstance, size_t pCounter) const {
         // if (pInstance < mNumberOfInstances && pInstance*mMaxNnz+pCounter < mNumberOfInstances*mMaxNnz) {
         //     if (pCounter < mSizesOfInstances[pInstance]) {
                 return mSparseMatrix[pInstance*mMaxNnz+pCounter];
@@ -151,9 +252,15 @@ class SparseMatrixFloat {
         }
         return 0;
     };
+    size_t getSizeOfInstanceSSE(size_t pInstance) const {
+        if (pInstance < mNumberOfInstances) {
+            return mSizesOfInstancesSSE[pInstance];
+        }
+        return 0;
+    };
     void insertElement(size_t pInstanceId, size_t pNnzCount, size_t pFeatureId, float pValue) {
         if (pInstanceId*mMaxNnz + pNnzCount < mNumberOfInstances * mMaxNnz) {
-            mSparseMatrix[pInstanceId*mMaxNnz + pNnzCount] = pFeatureId;
+            mSparseMatrix[pInstanceId*mMaxNnz + pNnzCount] = static_cast<int> (pFeatureId);
             mSparseMatrixValues[pInstanceId*mMaxNnz + pNnzCount] = pValue;
             // std::cout << mSparseMatrixValues[pInstanceId*mMaxNnz + pNnzCount] << ", " << pValue*1000 << std::endl;
         }
@@ -162,6 +269,9 @@ class SparseMatrixFloat {
     void insertToSizesOfInstances(size_t pInstanceId, size_t pSizeOfInstance) {
         if (pInstanceId < mNumberOfInstances) {
             mSizesOfInstances[pInstanceId] = pSizeOfInstance;
+            mSizesOfInstancesSSE[pInstanceId] = pSizeOfInstance + (pSizeOfInstance % 4);
+            mSizesOfInstancesCuda[pInstanceId] = pSizeOfInstance + (pSizeOfInstance % 128);
+            
         }
     };
     void addNewInstancesPartialFit(const SparseMatrixFloat* pMatrix) {
@@ -169,7 +279,7 @@ class SparseMatrixFloat {
         numberOfInstances += pMatrix->getNumberOfInstances();
         size_t maxNnz = std::max(mMaxNnz, pMatrix->getMaxNnz());
         
-        size_t* tmp_mSparseMatrix = new size_t [numberOfInstances * maxNnz];
+        int* tmp_mSparseMatrix = new int [numberOfInstances * maxNnz];
         float* tmp_mSparseMatrixValues = new float [numberOfInstances * maxNnz];
         size_t* tmp_mSizesOfInstances = new size_t [numberOfInstances];
         

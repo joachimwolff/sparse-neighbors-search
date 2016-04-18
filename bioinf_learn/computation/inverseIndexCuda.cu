@@ -29,7 +29,7 @@ InverseIndexCuda::~InverseIndexCuda() {
     cudaFree(mDev_JumpLength);
     cudaFree(mDev_DotProduct);
 }
-void InverseIndexCuda::copyDataToGpu(SparseMatrixFloat* pRawData, size_t** pDevFeatureList,
+void InverseIndexCuda::copyDataToGpu(SparseMatrixFloat* pRawData, int** pDevFeatureList,
                                       float** pDevValueList, size_t** pSizeList) {
 
     // memory for the number of features per instance
@@ -42,14 +42,14 @@ void InverseIndexCuda::copyDataToGpu(SparseMatrixFloat* pRawData, size_t** pDevF
     
     // memory for instances and their featureIds
     cudaMalloc((void **) &(*pDevFeatureList),
-            pRawData->size() * pRawData->getMaxNnz() * sizeof(size_t));
+            pRawData->size() * pRawData->getMaxNnz() * sizeof(int));
     // memory for the values of the features of the instances
     cudaMalloc((void **) &(*pDevValueList), 
                 pRawData->size() * pRawData->getMaxNnz() * sizeof(float));
     
     // copy instances and their feature ids to the gpu
     cudaMemcpy((*pDevFeatureList), pRawData->getSparseMatrixIndex(),
-                pRawData->size() * pRawData->getMaxNnz() * sizeof(size_t),
+                pRawData->size() * pRawData->getMaxNnz() * sizeof(int),
             cudaMemcpyHostToDevice);
     
     cudaMemcpy((*pDevValueList), pRawData->getSparseMatrixValues(),

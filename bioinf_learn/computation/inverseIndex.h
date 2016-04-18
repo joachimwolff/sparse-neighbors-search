@@ -90,7 +90,7 @@ class InverseIndex {
     vvsize_t_p* computeSignaturesOnGpu(SparseMatrixFloat* pRawData, size_t pStartIndex, size_t pEndIndex, size_t pNumberOfInstances,
     size_t pNumberOfBlocks, size_t pNumberOfThreads);
     #ifdef CUDA
-   size_t** get_dev_FeatureList() {
+   int** get_dev_FeatureList() {
        return mInverseIndexCuda->get_mDev_FeatureList();
    };
    

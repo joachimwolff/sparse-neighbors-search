@@ -5,7 +5,7 @@
 #define A 0.414213562 // sqrt(2) - 1
 
 __device__ size_t computeHashValueCuda(size_t key, size_t aModulo);
-__global__ void fitCudaMinHash(const size_t* pFeatureIdList, const size_t* pSizeOfInstanceList,
+__global__ void fitCudaMinHash(const int* pFeatureIdList, const size_t* pSizeOfInstanceList,
                     const size_t pNumberOfHashFunctions, const size_t pMaxNnz,
                     size_t* pComputedSignatures, 
                     const size_t pNumberOfInstances, const size_t pStartInstance, 
@@ -29,7 +29,7 @@ __global__ void cosineSimilarityCuda(cudaInstanceVector* pCandidates, int pSize,
                                         float* pDotProduct);
 __device__ void sortDesc(cudaInstance* pCandidates, int pInstanceId, int pSize);
 __device__ void sortAsc(cudaInstance* pCandidates, int pInstanceId, int pSize);
-__global__ void dotProductSingle(size_t* pFeatureList, float* pValuesList,
+__global__ void dotProductSingle(int* pFeatureList, float* pValuesList,
                                  size_t* pSizeOfInstanceList,
                                  size_t pSize, size_t pMaxNnz, float* pDevDotProduct);
 __device__ float dotProduct(int* pFeatureListX, float* pValuesListX, int pSizeX,

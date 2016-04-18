@@ -29,7 +29,7 @@ __device__ size_t computeHashValueCuda(size_t pKey, size_t aModulo) {
     return pKey % aModulo;
 }
 
-__global__ void fitCudaMinHash(const size_t* pFeatureIdList, const size_t* pSizeOfInstanceList,
+__global__ void fitCudaMinHash(const int* pFeatureIdList, const size_t* pSizeOfInstanceList,
                     const size_t pNumberOfHashFunctions, const size_t pMaxNnz,
                     size_t* pComputedSignatures, 
                     const size_t pNumberOfInstances, const size_t pStartInstance, 
@@ -168,7 +168,7 @@ __device__ void sortAsc(cudaInstance* pCandidates, int pInstanceId, int pSize) {
         threadId = threadIdx.x;
     }
 }
-__global__ void dotProductSingle(size_t* pFeatureList, float* pValuesList,
+__global__ void dotProductSingle(int* pFeatureList, float* pValuesList,
                                  size_t* pSizeOfInstanceList,
                                  size_t pSize, size_t pMaxNnz, float* pDevDotProduct) {
     int instanceId = blockIdx.x;
@@ -237,17 +237,17 @@ __device__ float dotProduct(int* pFeatureListX, float* pValuesListX, int pSizeX,
     return value / 1000.0;
 }
 
-__device__ float dotProductDevice(size_t* pFeatureListX, float* pValueListX, 
+__device__ float dotProductDevice(int* pFeatureListX, float* pValueListX, 
                                     int pStartPosX, int pEndPosX,
-                                    size_t* pFeatureListY, float* pValueListY, 
+                                    int* pFeatureListY, float* pValueListY, 
                                     int pStartPosY, int pEndPosY) {
     __shared__ int featureIdX[128];
     __shared__ int featureIdY[128];
-    __shared__ int value[128];
+    __shared__ float value[128];
     int index = 64;
     int round = 0;
     int jumpWidth = 32;
-    value[threadIdx.x] = 0;
+    value[threadIdx.x] = 0.0;
     while (pStartPosX < pEndPosX && pStartPosY < pEndPosY) {
         if (pStartPosX + threadIdx.x < pEndPosX) {
             featureIdX[threadIdx.x] = pFeatureListX[pStartPosX + threadIdx.x];
@@ -313,9 +313,9 @@ __device__ float dotProductDevice(size_t* pFeatureListX, float* pValueListX,
 
 __global__ void computeDotProducts(float3* pDotProducts, size_t pSize, 
                                         int* pCandidates, size_t* pJumpLength, size_t* pCandidateSize,
-                                        size_t* pFeatureIdsNeighbor, float* pValuesNeighbor, 
+                                        int* pFeatureIdsNeighbor, float* pValuesNeighbor, 
                                         size_t pMaxNnzNeighbor, size_t* pSizeNeighbor,
-                                        size_t* pFeatureIdsInstance, float* pValuesInstance,
+                                        int* pFeatureIdsInstance, float* pValuesInstance,
                                         size_t pMaxNnzInstance, size_t* pSizeInstance,
                                          float* pPreComputedDotProductsNeighbor, float* pPreComputedDotProductsInstance) {
     int instanceCandidates = blockIdx.x;

@@ -17,7 +17,7 @@
 class InverseIndexCuda {
 
   private: 
-    size_t* mDev_FeatureList;
+    int* mDev_FeatureList;
     size_t* mDev_SizeOfInstanceList;
     size_t* mDev_ComputedSignaturesPerInstance;
     float* mDev_ValuesList;
@@ -34,7 +34,7 @@ class InverseIndexCuda {
   	InverseIndexCuda(size_t pNumberOfHashFunctions, size_t pShingle, 
                         size_t pShingleSize, size_t pBlockSize, size_t pHashAlgorithm);
     ~InverseIndexCuda();
-    void copyDataToGpu(SparseMatrixFloat* pRawData, size_t** pDevFeatureList,
+    void copyDataToGpu(SparseMatrixFloat* pRawData, int** pDevFeatureList,
                                       float** pDevValueList, size_t** pSizeList);
   	void computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData, 
                                         size_t pStartIndex, size_t pEndIndex, 
@@ -50,7 +50,7 @@ class InverseIndexCuda {
                                                 size_t pNumberOfThreads, size_t pShingleFactor, 
                                                 size_t pBlockSizeShingle,
                                                 vvsize_t_p* pSignatures, size_t pRangeK);
-   size_t** get_mDev_FeatureList() {
+   int** get_mDev_FeatureList() {
        return &mDev_FeatureList;
    };
    size_t** get_mDev_SizeOfInstanceList() {

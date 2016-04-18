@@ -18,7 +18,7 @@
 class NearestNeighborsCuda {
 
   private: 
-   size_t** mDev_FeatureList;
+   int** mDev_FeatureList;
    float** mDev_ValuesList;
    size_t** mDev_SizeOfInstanceList;
    size_t mMaxNnz;
@@ -31,7 +31,7 @@ class NearestNeighborsCuda {
     //                       int* pSizeOfInstanceList);
     ~NearestNeighborsCuda();
     cudaInstance* computeNearestNeighbors(neighborhood* neighbors, size_t pSimilarity, SparseMatrixFloat* pRawData);
-    void setFeatureList(size_t** pFeatureList) {
+    void setFeatureList(int** pFeatureList) {
         mDev_FeatureList = pFeatureList;
     };
     void setValuesList(float** pValuesList) {
