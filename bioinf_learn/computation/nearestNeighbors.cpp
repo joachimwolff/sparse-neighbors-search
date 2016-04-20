@@ -204,7 +204,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
         // call gpu code
         std::cout << "GPU code is running! " << std::endl;
         
-       
+    //    delete neighborhoodCandidates;
        
         neighborhood* neighbors_ = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData);
         

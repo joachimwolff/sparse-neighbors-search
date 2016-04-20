@@ -75,15 +75,15 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData
     // printf("&mDev_ValuesList, %u\n", &mDev_ValuesList);
     // printf("mDev_SizeOfInstanceList, %u\n", mDev_SizeOfInstanceList);
     // printf("&mDev_SizeOfInstanceList, %u\n", &mDev_SizeOfInstanceList);
-    printf("%i\n", __LINE__);
+    // printf("%i\n", __LINE__);
     copyDataToGpu(pRawData, &mDev_FeatureList, &mDev_ValuesList, &mDev_SizeOfInstanceList);  
-    printf("%i\n", __LINE__);
+    // printf("%i\n", __LINE__);
                                                
     size_t signaturesSize = ceil(mNumberOfHashFunctions * pBlockSizeShingle / (float) pShingleFactor);
-    printf("%i\n", __LINE__);
+    // printf("%i\n", __LINE__);
    
     int* instancesHashValues = (int*) malloc(pRawData->size() * signaturesSize * sizeof(int));
-    printf("%i\n", __LINE__);
+    // printf("%i\n", __LINE__);
     
     // memory for the inverse index on the gpu.
     // for each instance the number of hash functions
@@ -92,18 +92,18 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData
     int* dev_SignaturesBlockSize;
     cudaMalloc((void **) &dev_SignaturesBlockSize,
            128 * mNumberOfHashFunctions * pBlockSizeShingle * sizeof(int));
-    printf("%i\n", __LINE__);
+    // printf("%i\n", __LINE__);
      
      
     // cuda memory for dot products dot<X, X>
     cudaMalloc((void **) &mDev_DotProduct, sizeof(float) * pRawData->size());
   
-    printf("%i\n", __LINE__);
+    // printf("%i\n", __LINE__);
  
     
         // execute kernel on gpu
         if (mHashAlgorithm == 0) {
-    printf("%i\n", __LINE__);
+    // printf("%i\n", __LINE__);
             
             fitCudaMinHash<<<128, 128>>>
             (mDev_FeatureList, 
@@ -113,7 +113,7 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData
             mDev_ComputedSignaturesPerInstance, 
             pRawData->size(), 0, mBlockSize, mShingleSize, dev_SignaturesBlockSize);
             cudaDeviceSynchronize();
-    printf("%i\n", __LINE__);
+    // printf("%i\n", __LINE__);
             
         } else {
             // fitCudaWtaHash<<<128, 128>>>
@@ -127,14 +127,14 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData
         // dotProductSingle<<<128, 128>>>(mDev_FeatureList, mDev_ValuesList, mDev_SizeOfInstanceList,
         //                                 mDev_JumpLength, pRawData->size(), mDev_DotProduct);
         //     cudaDeviceSynchronize();
-    printf("%i\n", __LINE__);
+    // printf("%i\n", __LINE__);
                                         
         // copy results back to host  
         cudaMemcpy(instancesHashValues, mDev_ComputedSignaturesPerInstance, 
                     pRawData->size() * signaturesSize * sizeof(int),
                     cudaMemcpyDeviceToHost);
         cudaDeviceSynchronize();
-    printf("%i\n", __LINE__);
+    // printf("%i\n", __LINE__);
                     
         // copy values into one vector per instance
         for(size_t i = 0; i < pRawData->size(); ++i) {
@@ -144,7 +144,7 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData
             }
             (*pSignatures)[i] = instance;
         }
-    printf("%i\n", __LINE__);
+    // printf("%i\n", __LINE__);
     
     cudaFree(mDev_ComputedSignaturesPerInstance);
     cudaFree(dev_SignaturesBlockSize);
