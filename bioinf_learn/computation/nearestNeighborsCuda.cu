@@ -35,6 +35,8 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
     size_t maxNnzInstance;
     size_t** sizeInstance;
     if (pRawData == NULL) {
+        printf("%i\n", __LINE__);
+        
         precomputedDotProductInstance = mDev_DotProducts;
         featureIdsInstance = mDev_FeatureList;
         valuesInstance = mDev_ValuesList;
@@ -42,6 +44,8 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
         maxNnzInstance = mMaxNnz;
         
     } else {
+        printf("%i\n", __LINE__);
+        
         maxNnzInstance = pRawData->getMaxNnz();
         cudaMalloc((void **) &(*precomputedDotProductInstance), sizeof(float) * pRawData->size());
         cudaMalloc((void **) &(*featureIdsInstance), sizeof(int) * pRawData->size() * pRawData->getMaxNnz());
@@ -109,7 +113,7 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
     cudaMalloc((void **) &candidatesSizeCuda, neighbors->neighbors->size() * sizeof(size_t));
     cudaMemcpy(candidatesSizeCuda, candidatesSize, neighbors->neighbors->size() * sizeof(size_t), cudaMemcpyHostToDevice);
     // call computDotProducts
-        printf("%i\n", __LINE__);
+        printf("%i\n", __LINE__); 
     
     computeDotProducts<<<128, 128>>>(dotProducts, count, candidatesCuda, jumpLengthListCuda,
                                       candidatesSizeCuda, *mDev_FeatureList, *mDev_ValuesList,
@@ -120,8 +124,11 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
     cudaMalloc((void **) &resultsCuda, sizeof(float) * count);
     // compute euclidean distance or cosine similarity
     if (pSimilarity) {
+        printf("%i\n", __LINE__);
         
     } else {
+        printf("%i\n", __LINE__);
+        
         euclideanDistanceCuda<<<128, 128>>>(dotProducts, count, resultsCuda);
     }
         printf("%i\n", __LINE__);
@@ -146,10 +153,12 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
             sortMapFloat element; 
             element.key = neighbors->neighbors->operator[](i)[j];
             element.val = results[jumpLengthList[i]+j];
-            // printf("%f, ", element.val);
+            if (i+j < 32)
+            printf("%f, ", element.val);
             returnValue[j] = element;
         }
-        // printf("\n");
+        if (i == 0)
+        printf("\n");
         if (pSimilarity) {
             std::sort(returnValue.begin(), returnValue.end(), mapSortDescByValueFloat);
         } else {
