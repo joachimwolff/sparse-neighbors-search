@@ -191,6 +191,8 @@ __device__ float dotProductDevice(int* pFeatureListX, float* pValueListX,
     int round = 0;
     int jumpWidth = 32;
     value[threadIdx.x] = 0.0;
+    // int foo = pStartPosX;
+    // int foo2 = pStartPosY;
     while (pStartPosX < pEndPosX+(pEndPosX%128) && pStartPosY < pEndPosY+(pEndPosY%128) ) {
         // if (pStartPosX + threadIdx.x < pEndPosX) {
             featureIdX[threadIdx.x] = pFeatureListX[pStartPosX + threadIdx.x];
@@ -205,7 +207,9 @@ __device__ float dotProductDevice(int* pFeatureListX, float* pValueListX,
             pStartPosX += 128;
             continue;
         }
-        
+        // if (foo == 0 && foo2 == 0) {
+        //     printf("blockIdx.x: %i, featureIdX: %i, featureIdY: %i\n", blockIdx.x, featureIdX[threadIdx.x], featureIdY[threadIdx.x]);
+        // }
         while (round < 128) {
             // if (featureIdX[index] < featureIdY[threadIdx.x]) {
             //     // index -= jumpWidth;
@@ -213,7 +217,7 @@ __device__ float dotProductDevice(int* pFeatureListX, float* pValueListX,
             //     index += jumpWidth;
             // } else {
             if (featureIdX[(threadIdx.x+round)%128] == featureIdY[threadIdx.x]) {   
-                value[threadIdx.x] += pValueListX[pStartPosX + index] * pValueListY[pStartPosY + threadIdx.x];
+                value[threadIdx.x] += pValueListX[pStartPosX + (threadIdx.x+round)%128] * pValueListY[pStartPosY + threadIdx.x];
                 break;
             }
             // jumpWidth /= 2;
@@ -286,12 +290,11 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
             pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].z = pPreComputedDotProductsInstance[instance];
             if (threadIdx.x == 0) {
                 ++instanceCounter;
-               
             }
             if (threadIdx.x == 0 && blockIdx.x == 0) {
                 printf("neighbor %i, instance: %i, %f, ", neighbor, instance, pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].y);
                 printf(" %f, %f\n", pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].x, pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].z);
-             }
+            }
         }
         instanceCandidates += gridDim.x;
     }
