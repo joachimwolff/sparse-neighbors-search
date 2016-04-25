@@ -187,11 +187,11 @@ __device__ float dotProductDevice(int* pFeatureListX, float* pValueListX,
     __shared__ int featureIdX[128];
     __shared__ int featureIdY[128];
     __shared__ float value[128];
-    int index = 64;
+    // int index = 64;
     int round = 0;
-    int jumpWidth = 32;
+    // int jumpWidth = 32;
     value[threadIdx.x] = 0.0;
-    // int foo = pStartPosX;
+    int foo = pStartPosX;
     // int foo2 = pStartPosY;
     while (pStartPosX < pEndPosX+(pEndPosX%128) && pStartPosY < pEndPosY+(pEndPosY%128) ) {
         // if (pStartPosX + threadIdx.x < pEndPosX) {
@@ -218,7 +218,8 @@ __device__ float dotProductDevice(int* pFeatureListX, float* pValueListX,
             // } else {
             if (featureIdX[(threadIdx.x+round)%128] == featureIdY[threadIdx.x]) {   
                 value[threadIdx.x] += pValueListX[pStartPosX + (threadIdx.x+round)%128] * pValueListY[pStartPosY + threadIdx.x];
-                break;
+                // break;
+                
             }
             // jumpWidth /= 2;
             
@@ -245,7 +246,7 @@ __device__ float dotProductDevice(int* pFeatureListX, float* pValueListX,
             __syncthreads();
             i /= 2;
         }
-        // if (threadIdx.x == 0) {
+        // if (threadIdx.x == 0 && foo == 0) {
         //     printf("blockIdx.x: %i, %f\n", blockIdx.x, value[0]);
         // }
         return value[0];
@@ -262,10 +263,14 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
                                          float* pPreComputedDotProductsNeighbor, 
                                          float* pPreComputedDotProductsInstance) {
     int instanceCandidates = blockIdx.x;
-    
+    int round = 0;
     __shared__ int instanceCounter;
     __shared__ int neighbor;
     __shared__ int instance;
+    
+    __shared__ int featureIdX[128];
+    __shared__ int featureIdY[128];
+    __shared__ float value[128];
 //     if (threadIdx.x == 0) {
 //           printf("FOO %i\n", instanceCandidates);
 //   }
@@ -283,14 +288,86 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
                 
             }
             __syncthreads();
-            pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].y = 
-                            dotProductDevice(pFeatureIdsNeighbor, pValuesNeighbor, neighbor*pMaxNnzNeighbor, neighbor*pMaxNnzNeighbor + pSizeNeighbor[neighbor],
-                                            pFeatureIdsInstance, pValuesInstance, instance*pMaxNnzInstance, instance*pMaxNnzInstance + pSizeInstance[instance]);
+            
+            
+            value[threadIdx.x] = 0.0;
+            int pStartPosX = neighbor*pMaxNnzNeighbor;
+            int pEndPosX = neighbor*pMaxNnzNeighbor + pSizeNeighbor[neighbor];
+            int pStartPosY = instance*pMaxNnzInstance;
+            int pEndPosY = instance*pMaxNnzInstance + pSizeInstance[instance];
+            if (threadIdx.x == 0) {
+                printf("neighbor: %i, instance: %i, pMaxNnzNeighbor: %i, pMaxNnzInstance: %i, pSizeNeighbor[neighbor]: %i, pSizeInstance[instance]: %i\n", neighbor, instance, pMaxNnzNeighbor, pMaxNnzInstance, pSizeNeighbor[neighbor], pSizeInstance[instance]);
+            }
+            
+            while (pStartPosX < pEndPosX+(pEndPosX%128) && pStartPosY < pEndPosY+(pEndPosY%128) ) {
+                // if (pStartPosX + threadIdx.x < pEndPosX) {
+                    featureIdX[threadIdx.x] = pFeatureIdsNeighbor[pStartPosX + threadIdx.x];
+                // }
+                // if (pStartPosY + threadIdx.x < pEndPosY) {
+                    featureIdY[threadIdx.x] = pFeatureIdsInstance[pStartPosY + threadIdx.x];
+                // }
+                if (featureIdX[0] > featureIdY[127]) {
+                    pStartPosY += 128;
+                    continue;
+                } else if (featureIdX[127] < featureIdY[0]) {
+                    pStartPosX += 128;
+                    continue;
+                }
+                while (round < 128) {
+                    if (featureIdX[(threadIdx.x+round)%128] == featureIdY[threadIdx.x]) {   
+                        value[threadIdx.x] += pValuesNeighbor[pStartPosX + (threadIdx.x+round)%128] * pValuesInstance[pStartPosY + threadIdx.x];
+                        // break;
+                        
+                    }
+                    ++round;
+                }
+            __syncthreads();
+            round = 0;
+            if (featureIdX[127] == featureIdY[127]) {
+                pStartPosY += 128;
+                pStartPosX += 128;
+            } else if (featureIdX[127] < featureIdY[127]) {
+                pStartPosX += 128;
+            } else {
+                pStartPosY += 128;
+            }
+        
+        }
+        int i = blockDim.x/2;
+        while (i != 0) {
+            if (threadIdx.x < i) { 
+                value[threadIdx.x] += value[threadIdx.x + i];
+            }
+            __syncthreads();
+            i /= 2;
+        }
+        if (threadIdx.x == 0) {
+            pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].y = value[0];
             pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].x = pPreComputedDotProductsNeighbor[neighbor];
             pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].z = pPreComputedDotProductsInstance[instance];
-            if (threadIdx.x == 0) {
-                ++instanceCounter;
-            }
+            ++instanceCounter;
+        }
+        __syncthreads();
+        
+            
+            // pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].y = 
+            //                 dotProductDevice(pFeatureIdsNeighbor, pValuesNeighbor, neighbor*pMaxNnzNeighbor, neighbor*pMaxNnzNeighbor + pSizeNeighbor[neighbor],
+            //                                 pFeatureIdsInstance, pValuesInstance, instance*pMaxNnzInstance, instance*pMaxNnzInstance + pSizeInstance[instance]);
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            // if (threadIdx.x == 0) {
+              
+            // }
             if (threadIdx.x == 0 && blockIdx.x == 0) {
                 printf("neighbor %i, instance: %i, %f, ", neighbor, instance, pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].y);
                 printf(" %f, %f\n", pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].x, pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].z);

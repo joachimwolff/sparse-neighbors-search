@@ -151,6 +151,7 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData
     dotProductSingle<<<128, 128>>>(mDev_FeatureList, mDev_ValuesList, mDev_SizeOfInstanceList,
                                         pRawData->size(), pRawData->getMaxNnz(), mDev_DotProduct);
     cudaDeviceSynchronize();
+    printf("DotproductInverse: %u\n", mDev_DotProduct);
 }
 void InverseIndexCuda::computeSignaturesQueryOnGpu(SparseMatrixFloat* pRawData, 
                                                 size_t pStartIndex, size_t pEndIndex, 

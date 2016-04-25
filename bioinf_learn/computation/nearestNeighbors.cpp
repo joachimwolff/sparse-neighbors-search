@@ -83,7 +83,7 @@ void NearestNeighbors::fit(SparseMatrixFloat* pRawData) {
     // mNearestNeighborsCuda->setJumpLenthList(mInverseIndex->get_mDev_JumpLength());
     mNearestNeighborsCuda->setDotProduct(mInverseIndex->get_mDev_DotProduct());
     
-    // mNearestNeighborsCuda->setMaxNnz(mOriginalData->getMaxNnz());
+    mNearestNeighborsCuda->setMaxNnz(mOriginalData->getMaxNnz());
     #endif
             std::cout << __LINE__ << std::endl;
 

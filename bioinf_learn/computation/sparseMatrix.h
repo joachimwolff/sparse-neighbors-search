@@ -88,6 +88,7 @@ class SparseMatrixFloat {
             value3 = 0.0;
             // std::cout << "instance: " << i << ": value: " << mDotProductPrecomputed[i] << std::endl;
         }
+        std::cout << "mDotProduct[0]: " << mDotProductPrecomputed[0] << std::endl;
         std::cout << __LINE__ << std::endl;
         
     };
@@ -96,31 +97,31 @@ class SparseMatrixFloat {
          if (pQueryData != NULL) {
             queryData = pQueryData;
         }
-        // double value = 0.0;  
+        double value = 0.0;  
         size_t counterInstance = 0;
         size_t counterNeighbor = 0;
-        // size_t sizeInstance = queryData->getSizeOfInstance(pIndex);
-        // size_t sizeNeighbor = this->getSizeOfInstance(pIndexNeighbor);
+        size_t sizeInstance = queryData->getSizeOfInstance(pIndex);
+        size_t sizeNeighbor = this->getSizeOfInstance(pIndexNeighbor);
         // std::vector<sparseData>* instance = queryData->getDataMatrix()->operator[](pIndex);
         // std::vector<sparseData>* neighbor = this->getDataMatrix()->operator[](pIndexNeighbor);
        
         // auto iteratorInstance = instance->begin();
         // auto iteratorNeighbor = neighbor->begin();
-        // while (counterInstance <  sizeInstance && counterNeighbor < sizeNeighbor) {
-        //     if (queryData->getNextElement(pIndex, counterInstance) < this->getNextElement(pIndexNeighbor, counterNeighbor)) {
-        //         ++counterInstance;
-        //     } else if (queryData->getNextElement(pIndex, counterInstance) > this->getNextElement(pIndexNeighbor, counterNeighbor)){
-        //         ++counterNeighbor;
-        //     } else {
-        //         value += (double) queryData->getNextValue(pIndex, counterInstance) * (double) this->getNextValue(pIndexNeighbor, counterNeighbor);
-        //         ++counterInstance;
-        //         ++counterNeighbor;
-        //     }
-        // }
+        while (counterInstance <  sizeInstance && counterNeighbor < sizeNeighbor) {
+            if (queryData->getNextElement(pIndex, counterInstance) < this->getNextElement(pIndexNeighbor, counterNeighbor)) {
+                ++counterInstance;
+            } else if (queryData->getNextElement(pIndex, counterInstance) > this->getNextElement(pIndexNeighbor, counterNeighbor)){
+                ++counterNeighbor;
+            } else {
+                value += (double) queryData->getNextValue(pIndex, counterInstance) * (double) this->getNextValue(pIndexNeighbor, counterNeighbor);
+                ++counterInstance;
+                ++counterNeighbor;
+            }
+        }
         // if (pIndex % 300 == 0) {
         //     printf("foo: %f\n", (float) value);
         // }
-        // return (float) value; 
+        return (float) value; 
         // printf("%i\n", __LINE__);
         // printf ("instance: %i, neighbor: %i\n", pIndex, pIndexNeighbor);
         // printf("%i\n", __LINE__);
@@ -135,58 +136,58 @@ class SparseMatrixFloat {
         // printf("value foo3: %f\n", foo3[0]);
         // printf("%i\n", __LINE__);
         
-        int sizeInstance = queryData->getSizeOfInstanceSSE(pIndex);
-        int sizeNeighbor = this->getSizeOfInstanceSSE(pIndexNeighbor);
-        __m128 value = {0.0, 0.0, 0.0, 0.0};
-        float* pointerInstanceFeature = (float*) queryData->getSparseMatrixIndexPointer(pIndex);
-        float* pointerNeighborFeature = (float*) this->getSparseMatrixIndexPointer(pIndexNeighbor);
-        float* pointerInstanceValue = queryData->getSparseMatrixValuesPointer(pIndex);
-        float* pointerNeighborValue = this->getSparseMatrixValuesPointer(pIndexNeighbor);
-        while (counterInstance <  sizeInstance && counterNeighbor < sizeNeighbor) {
+        // int sizeInstance = queryData->getSizeOfInstanceSSE(pIndex);
+        // int sizeNeighbor = this->getSizeOfInstanceSSE(pIndexNeighbor);
+        // __m128 value = {0.0, 0.0, 0.0, 0.0};
+        // float* pointerInstanceFeature = (float*) queryData->getSparseMatrixIndexPointer(pIndex);
+        // float* pointerNeighborFeature = (float*) this->getSparseMatrixIndexPointer(pIndexNeighbor);
+        // float* pointerInstanceValue = queryData->getSparseMatrixValuesPointer(pIndex);
+        // float* pointerNeighborValue = this->getSparseMatrixValuesPointer(pIndexNeighbor);
+        // while (counterInstance <  sizeInstance && counterNeighbor < sizeNeighbor) {
           
-            if (queryData->getNextElement(pIndex, counterInstance + 3) < this->getNextElement(pIndexNeighbor, counterNeighbor)) {
-                counterInstance += 4;
-                continue;
-            } else if (this->getNextElement(pIndexNeighbor, counterNeighbor + 3) < queryData->getNextElement(pIndex, counterInstance)) {
-                counterNeighbor += 4;
-                continue;
-            } 
+        //     if (queryData->getNextElement(pIndex, counterInstance + 3) < this->getNextElement(pIndexNeighbor, counterNeighbor)) {
+        //         counterInstance += 4;
+        //         continue;
+        //     } else if (this->getNextElement(pIndexNeighbor, counterNeighbor + 3) < queryData->getNextElement(pIndex, counterInstance)) {
+        //         counterNeighbor += 4;
+        //         continue;
+        //     } 
        
-            __m128 featuresInstance = _mm_loadu_ps(pointerInstanceFeature + counterInstance);
-            __m128 valueInstance = _mm_loadu_ps(pointerInstanceValue + counterInstance);
+        //     __m128 featuresInstance = _mm_loadu_ps(pointerInstanceFeature + counterInstance);
+        //     __m128 valueInstance = _mm_loadu_ps(pointerInstanceValue + counterInstance);
        
-            __m128 featuresNeighbor = _mm_loadu_ps(pointerNeighborFeature+ counterNeighbor);
-            __m128 valueNeighbor = _mm_loadu_ps(pointerNeighborValue + counterNeighbor);
+        //     __m128 featuresNeighbor = _mm_loadu_ps(pointerNeighborFeature+ counterNeighbor);
+        //     __m128 valueNeighbor = _mm_loadu_ps(pointerNeighborValue + counterNeighbor);
             
-            __m128 eq = _mm_cmpeq_ps(_mm_shuffle_ps(featuresInstance, featuresInstance, _MM_SHUFFLE(0,0,0,0)), featuresNeighbor);
-		    __m128 product = _mm_mul_ps(_mm_shuffle_ps(valueInstance, valueInstance, _MM_SHUFFLE(0,0,0,0)), valueNeighbor);
-            value = _mm_add_ps(value, _mm_and_ps(eq, product));
-        // printf("%i\n", __LINE__);
+        //     __m128 eq = _mm_cmpeq_ps(_mm_shuffle_ps(featuresInstance, featuresInstance, _MM_SHUFFLE(0,0,0,0)), featuresNeighbor);
+		//     __m128 product = _mm_mul_ps(_mm_shuffle_ps(valueInstance, valueInstance, _MM_SHUFFLE(0,0,0,0)), valueNeighbor);
+        //     value = _mm_add_ps(value, _mm_and_ps(eq, product));
+        // // printf("%i\n", __LINE__);
     
-            eq = _mm_cmpeq_ps(_mm_shuffle_ps(featuresInstance, featuresInstance, _MM_SHUFFLE(1,1,1,1)), featuresNeighbor);
-            product = _mm_mul_ps(_mm_shuffle_ps(valueInstance, valueInstance, _MM_SHUFFLE(1,1,1,1)), valueNeighbor);
-            value = _mm_add_ps(value, _mm_and_ps(eq, product));
+        //     eq = _mm_cmpeq_ps(_mm_shuffle_ps(featuresInstance, featuresInstance, _MM_SHUFFLE(1,1,1,1)), featuresNeighbor);
+        //     product = _mm_mul_ps(_mm_shuffle_ps(valueInstance, valueInstance, _MM_SHUFFLE(1,1,1,1)), valueNeighbor);
+        //     value = _mm_add_ps(value, _mm_and_ps(eq, product));
     
-            eq = _mm_cmpeq_ps(_mm_shuffle_ps(featuresInstance, featuresInstance, _MM_SHUFFLE(2,2,2,2)), featuresNeighbor);
-            product = _mm_mul_ps(_mm_shuffle_ps(valueInstance, valueInstance, _MM_SHUFFLE(2,2,2,2)), valueNeighbor);
-            value = _mm_add_ps(value, _mm_and_ps(eq, product));
+        //     eq = _mm_cmpeq_ps(_mm_shuffle_ps(featuresInstance, featuresInstance, _MM_SHUFFLE(2,2,2,2)), featuresNeighbor);
+        //     product = _mm_mul_ps(_mm_shuffle_ps(valueInstance, valueInstance, _MM_SHUFFLE(2,2,2,2)), valueNeighbor);
+        //     value = _mm_add_ps(value, _mm_and_ps(eq, product));
     
-            eq = _mm_cmpeq_ps(_mm_shuffle_ps(featuresInstance, featuresInstance, _MM_SHUFFLE(3,3,3,3)), featuresNeighbor);
-            product = _mm_mul_ps(_mm_shuffle_ps(valueInstance, valueInstance, _MM_SHUFFLE(3,3,3,3)), valueNeighbor);
+        //     eq = _mm_cmpeq_ps(_mm_shuffle_ps(featuresInstance, featuresInstance, _MM_SHUFFLE(3,3,3,3)), featuresNeighbor);
+        //     product = _mm_mul_ps(_mm_shuffle_ps(valueInstance, valueInstance, _MM_SHUFFLE(3,3,3,3)), valueNeighbor);
             
             
-            if (queryData->getNextElement(pIndex, counterInstance + 3) == this->getNextElement(pIndexNeighbor, counterNeighbor+3)) {
-                counterInstance += 4;
-                counterNeighbor += 4;
-            } else if (this->getNextElement(pIndexNeighbor, counterNeighbor + 3) < queryData->getNextElement(pIndex, counterInstance+3)) {
-                counterNeighbor += 4;
-            } else { //if (queryData->getNextElement(pIndex, counterInstance + 3) < this->getNextElement(pIndexNeighbor, counterNeighbor)) {
-                counterInstance += 4;
-            } // else {
+        //     if (queryData->getNextElement(pIndex, counterInstance + 3) == this->getNextElement(pIndexNeighbor, counterNeighbor+3)) {
+        //         counterInstance += 4;
+        //         counterNeighbor += 4;
+        //     } else if (this->getNextElement(pIndexNeighbor, counterNeighbor + 3) < queryData->getNextElement(pIndex, counterInstance+3)) {
+        //         counterNeighbor += 4;
+        //     } else { //if (queryData->getNextElement(pIndex, counterInstance + 3) < this->getNextElement(pIndexNeighbor, counterNeighbor)) {
+        //         counterInstance += 4;
+        //     } // else {
                 
-            // }
-        } 
-        return  value[0] + value[1] + value[2] + value[3];
+        //     // }
+        // } 
+        // return  value[0] + value[1] + value[2] + value[3];
        
     };
     float getDotProductPrecomputed(size_t pIndex) {
