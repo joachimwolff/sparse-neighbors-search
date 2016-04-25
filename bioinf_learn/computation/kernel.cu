@@ -114,7 +114,7 @@ __global__ void dotProductSingle(int* pFeatureList, float* pValuesList,
     int threadId = threadIdx.x;
     float __shared__ value[128];
     int __shared__ jumpLength;
-    int __shared__ size;
+    size_t __shared__ size;
     
     
     while (instanceId < pSize) {
@@ -122,6 +122,10 @@ __global__ void dotProductSingle(int* pFeatureList, float* pValuesList,
         if (threadIdx.x == 0) {
             jumpLength = instanceId * pMaxNnz;
             size = pSizeOfInstanceList[instanceId];
+            // if (instanceId % 300 == 0)
+            //     printf("size: %u\n", size);
+            // // printf("pSize: %u\n", pSize);
+            
         }
         __syncthreads();
         while (threadId < size) {
@@ -136,13 +140,14 @@ __global__ void dotProductSingle(int* pFeatureList, float* pValuesList,
         while (i != 0) {
             if (threadIdx.x < i) { 
                 value[threadIdx.x] += value[threadIdx.x + i];
-            // printf("dotXX: %i, threadId: %i, value: %f\n",instanceId, threadIdx.x, value[threadIdx.x]);
-                
             }
             __syncthreads();
             i /= 2;
         }
-        
+        if (blockIdx.x == 0 && threadIdx.x == 0)
+            printf("dotXX: %f\n", value[threadIdx.x]);
+                
+            
             pDevDotProduct[instanceId] = value[0];
         // if (threadIdx.x == 0) {
         //     printf("dotXZ: %i: %lf\n",instanceId, value[0] / 1000.0);
@@ -262,6 +267,8 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
                                         size_t pMaxNnzInstance, size_t* pSizeInstance,
                                          float* pPreComputedDotProductsNeighbor, 
                                          float* pPreComputedDotProductsInstance) {
+    
+    // __global__ void computeDotProducts(size_t* pSizeNeighbor) {
     int instanceCandidates = blockIdx.x;
     int round = 0;
     __shared__ int instanceCounter;
@@ -274,6 +281,15 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
 //     if (threadIdx.x == 0) {
 //           printf("FOO %i\n", instanceCandidates);
 //   }
+    // if (threadIdx.x == 0 && blockIdx.x == 0) {
+    //     for (size_t i = 0; i < 4337; ++i) {
+    //         if (i%300 == 0)
+    //         printf("size[]: %u\n", pSizeNeighbor[i] );
+    //     }
+        
+    // }
+        __syncthreads();
+    
     while (instanceCandidates < pSize) {
         if (threadIdx.x == 0) {
             neighbor = pCandidates[pJumpLength[instanceCandidates]];
@@ -295,9 +311,11 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
             int pEndPosX = neighbor*pMaxNnzNeighbor + pSizeNeighbor[neighbor];
             int pStartPosY = instance*pMaxNnzInstance;
             int pEndPosY = instance*pMaxNnzInstance + pSizeInstance[instance];
-            if (threadIdx.x == 0) {
-                printf("neighbor: %i, instance: %i, pMaxNnzNeighbor: %i, pMaxNnzInstance: %i, pSizeNeighbor[neighbor]: %i, pSizeInstance[instance]: %i\n", neighbor, instance, pMaxNnzNeighbor, pMaxNnzInstance, pSizeNeighbor[neighbor], pSizeInstance[instance]);
-            }
+            // if (threadIdx.x == 0 && blockIdx.x == 0) {
+            //     printf("pSizeNeighbor[instance]: %u\n", pSizeInstance[instance]);
+                
+            //     // printf("neighbor: %i, instance: %i, pMaxNnzNeighbor: %u, pMaxNnzInstance: %u, pSizeNeighbor[neighbor]: %u, pSizeInstance[instance]: %u\n", neighbor, instance, pMaxNnzNeighbor, pMaxNnzInstance, pSizeNeighbor[neighbor], pSizeInstance[instance]);
+            // }
             
             while (pStartPosX < pEndPosX+(pEndPosX%128) && pStartPosY < pEndPosY+(pEndPosY%128) ) {
                 // if (pStartPosX + threadIdx.x < pEndPosX) {
@@ -342,6 +360,8 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
             i /= 2;
         }
         if (threadIdx.x == 0) {
+            printf("dotXY: %f\n", value[threadIdx.x]);
+            
             pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].y = value[0];
             pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].x = pPreComputedDotProductsNeighbor[neighbor];
             pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].z = pPreComputedDotProductsInstance[instance];
@@ -368,10 +388,12 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
             // if (threadIdx.x == 0) {
               
             // }
-            if (threadIdx.x == 0 && blockIdx.x == 0) {
-                printf("neighbor %i, instance: %i, %f, ", neighbor, instance, pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].y);
-                printf(" %f, %f\n", pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].x, pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].z);
-            }
+            // if (threadIdx.x == 0 && blockIdx.x == 0) {
+                // printf("neighbor %i, instance: %i, %f, ", neighbor, instance, pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].y);
+                //  pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].z
+                // pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].y
+                // printf(" %f\n", pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].y);
+            // }
         }
         instanceCandidates += gridDim.x;
     }
@@ -382,9 +404,9 @@ __global__ void euclideanDistanceCuda(float3* pDotProducts, size_t pSize, float*
 //           printf("FOO %i\n", instance);
 //   }
   while (instance < pSize) {
-      if (threadIdx.x == 0) {
-          printf("%f, %f, %f\n",  pDotProducts[instance].x, pDotProducts[instance].y, pDotProducts[instance].z);
-      }
+    //   if (threadIdx.x == 0) {
+    //       printf("%f, %f, %f\n",  pDotProducts[instance].x, pDotProducts[instance].y, pDotProducts[instance].z);
+    //   }
       results[instance] = pDotProducts[instance].x - 2*pDotProducts[instance].y + pDotProducts[instance].z;
       instance += gridDim.x;
   }

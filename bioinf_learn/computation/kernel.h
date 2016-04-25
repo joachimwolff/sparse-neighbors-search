@@ -35,4 +35,5 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
                                         size_t pMaxNnzInstance, size_t* pSizeInstance,
                                          float* pPreComputedDotProductsNeighbor, 
                                          float* pPreComputedDotProductsInstance);
+// __global__ void computeDotProducts(size_t* pSizeNeighbor);
 #endif // KERNEL_CUDA

@@ -76,16 +76,16 @@ void NearestNeighbors::fit(SparseMatrixFloat* pRawData) {
         pRawData->precomputeDotProduct();
     }
     // #endif
-    #ifdef CUDA
-    mNearestNeighborsCuda->setFeatureList(mInverseIndex->get_dev_FeatureList());
-    mNearestNeighborsCuda->setValuesList(mInverseIndex->get_dev_ValuesList());
-    mNearestNeighborsCuda->setSizeOfInstanceList(mInverseIndex->get_dev_SizeOfInstanceList());
-    // mNearestNeighborsCuda->setJumpLenthList(mInverseIndex->get_mDev_JumpLength());
-    mNearestNeighborsCuda->setDotProduct(mInverseIndex->get_mDev_DotProduct());
+    // #ifdef CUDA
+    // mNearestNeighborsCuda->setFeatureList(mInverseIndex->get_dev_FeatureList());
+    // mNearestNeighborsCuda->setValuesList(mInverseIndex->get_dev_ValuesList());
+    // mNearestNeighborsCuda->setSizeOfInstanceList(mInverseIndex->get_dev_SizeOfInstanceList());
+    // // mNearestNeighborsCuda->setJumpLenthList(mInverseIndex->get_mDev_JumpLength());
+    // mNearestNeighborsCuda->setDotProduct(mInverseIndex->get_mDev_DotProduct());
     
-    mNearestNeighborsCuda->setMaxNnz(mOriginalData->getMaxNnz());
-    #endif
-            std::cout << __LINE__ << std::endl;
+    // mNearestNeighborsCuda->setMaxNnz(mOriginalData->getMaxNnz());
+    // #endif
+    //         std::cout << __LINE__ << std::endl;
 
     return;
 }
@@ -206,7 +206,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
         
     //    delete neighborhoodCandidates;
        
-        neighborhood* neighbors_ = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData);
+        neighborhood* neighbors_ = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData, mOriginalData);
         
         printf("%i", __LINE__);
         fflush(stdout);
@@ -376,7 +376,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     } else {
         std::cout << "GPU code is running! Part2" << std::endl;
         
-        neighborhood* neighbors_ = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData);
+        neighborhood* neighbors_ = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData, mOriginalData);
         #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
         for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
             size_t vectorSize = std::min(neighborhood_->neighbors->operator[](i).size(), pNneighbors+mExcessFactor);

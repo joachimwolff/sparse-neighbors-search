@@ -23,47 +23,84 @@ NearestNeighborsCuda::~NearestNeighborsCuda() {
     
 }
 
-neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighbors, size_t pSimilarity, SparseMatrixFloat* pRawData) {
+neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighbors, size_t pSimilarity, SparseMatrixFloat* pRawData,
+                                                            SparseMatrixFloat* pOriginalRawData) {
     // if pRawData == null set pointers to original data
     // else load new data to gpu
     //      compute dotProducts
         printf("%i\n", __LINE__);
 
-    float** precomputedDotProductInstance;
-    int** featureIdsInstance;
-    float** valuesInstance;
+
+    float* precomputedDotProductNeighbor;
+    int* featureIdsNeighbor;
+    float* valuesNeighbor;
+    size_t maxNnzNeighbor;
+    size_t* sizeNeighbor;
+    
+    float* precomputedDotProductInstance;
+    int* featureIdsInstance;
+    float* valuesInstance;
     size_t maxNnzInstance;
-    size_t** sizeInstance;
+    size_t* sizeInstance;
+   
+    printf("%i\n", __LINE__);
+    
+    maxNnzNeighbor = pOriginalRawData->getMaxNnz();
+    cudaMalloc((void **) &precomputedDotProductNeighbor, sizeof(float) * pOriginalRawData->size());
+    cudaMalloc((void **) &featureIdsNeighbor, sizeof(int) * pOriginalRawData->size() * pOriginalRawData->getMaxNnz());
+    cudaMalloc((void **) &valuesNeighbor, sizeof(float) * pOriginalRawData->size() * pOriginalRawData->getMaxNnz());
+    cudaMalloc((void **) &sizeNeighbor, sizeof(size_t) * pOriginalRawData->size());
+    
+    cudaMemcpy(featureIdsNeighbor, pOriginalRawData->getSparseMatrixIndex(),
+            pOriginalRawData->size() * pOriginalRawData->getMaxNnz() * sizeof(int),
+        cudaMemcpyHostToDevice);
+
+    cudaMemcpy(valuesNeighbor, pOriginalRawData->getSparseMatrixValues(),
+            pOriginalRawData->size() * pOriginalRawData->getMaxNnz() * sizeof(float),
+        cudaMemcpyHostToDevice);
+    cudaMemcpy(sizeNeighbor, pOriginalRawData->getSparseMatrixSizeOfInstances(),
+        sizeof(size_t) * pOriginalRawData->size(),
+        cudaMemcpyHostToDevice);  
+    // computeDotProducts<<<128, 128>>>(sizeNeighbor);
+         
+    dotProductSingle<<<128, 128>>>(featureIdsNeighbor, valuesNeighbor, sizeNeighbor, 
+                                    pOriginalRawData->size(), pOriginalRawData->getMaxNnz(), precomputedDotProductNeighbor);
+   
     if (pRawData == NULL) {
-        printf("%i\n", __LINE__);
-        
-        precomputedDotProductInstance = mDev_DotProducts;
-        featureIdsInstance = mDev_FeatureList;
-        valuesInstance = mDev_ValuesList;
-        sizeInstance = mDev_SizeOfInstanceList;
-        maxNnzInstance = mMaxNnz;
-        
+        precomputedDotProductInstance = precomputedDotProductNeighbor;
+        featureIdsInstance = featureIdsNeighbor;
+        valuesInstance = valuesNeighbor;
+        maxNnzInstance = maxNnzNeighbor;
+        sizeInstance = sizeNeighbor;
+    
+    // float* precomputedDotProductNeighbor;
+    // int* featureIdsNeighbor;
+    // float* valuesNeighbor;
+    // size_t maxNnzNeighbor;
+    // size_t* sizeNeighbor;
     } else {
+       
+   
         printf("%i\n", __LINE__);
         
         maxNnzInstance = pRawData->getMaxNnz();
-        cudaMalloc((void **) &(*precomputedDotProductInstance), sizeof(float) * pRawData->size());
-        cudaMalloc((void **) &(*featureIdsInstance), sizeof(int) * pRawData->size() * pRawData->getMaxNnz());
-        cudaMalloc((void **) &(*valuesInstance), sizeof(float) * pRawData->size() * pRawData->getMaxNnz());
-        cudaMalloc((void **) &(*sizeInstance), sizeof(size_t) * pRawData->size());
+        cudaMalloc((void **) &precomputedDotProductInstance, sizeof(float) * pRawData->size());
+        cudaMalloc((void **) &featureIdsInstance, sizeof(int) * pRawData->size() * pRawData->getMaxNnz());
+        cudaMalloc((void **) &valuesInstance, sizeof(float) * pRawData->size() * pRawData->getMaxNnz());
+        cudaMalloc((void **) &sizeInstance, sizeof(size_t) * pRawData->size());
         
-        cudaMemcpy((*featureIdsInstance), pRawData->getSparseMatrixIndex(),
+        cudaMemcpy(featureIdsInstance, pRawData->getSparseMatrixIndex(),
                 pRawData->size() * pRawData->getMaxNnz() * sizeof(int),
             cudaMemcpyHostToDevice);
     
-        cudaMemcpy((*valuesInstance), pRawData->getSparseMatrixValues(),
+        cudaMemcpy(valuesInstance, pRawData->getSparseMatrixValues(),
                 pRawData->size() * pRawData->getMaxNnz() * sizeof(float),
             cudaMemcpyHostToDevice);
-        cudaMemcpy((*sizeInstance), pRawData->getSparseMatrixSizeOfInstances(),
+        cudaMemcpy(sizeInstance, pRawData->getSparseMatrixSizeOfInstances(),
             sizeof(size_t) * pRawData->size(),
             cudaMemcpyHostToDevice);   
-        dotProductSingle<<<128, 128>>>(*featureIdsInstance, *valuesInstance, *sizeInstance, 
-                                        pRawData->size(), pRawData->getMaxNnz(), *precomputedDotProductInstance);
+        dotProductSingle<<<128, 128>>>(featureIdsInstance, valuesInstance, sizeInstance, 
+                                        pRawData->size(), pRawData->getMaxNnz(), precomputedDotProductInstance);
     }
     // compute dotproducts for all pairs
         printf("%i\n", __LINE__);
@@ -78,6 +115,7 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
         // printf("count: %i\n", count);
        
         candidatesSize[i] = neighbors->neighbors->operator[](i).size();
+        // printf("%u: %u\n", i, candidatesSize[i]);
     }
         printf("%i\n", __LINE__);
     
@@ -85,7 +123,7 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
         printf("%i\n", __LINE__);
     
     cudaMalloc((void **) &dotProducts, sizeof(float3) * count);
-        printf("%i\n", __LINE__);
+        printf("count: %i, %i\n", count, __LINE__);
     
     int* candidates = (int*) malloc(count * sizeof(int));
         printf("%i\n", __LINE__);
@@ -114,13 +152,15 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
     cudaMemcpy(candidatesSizeCuda, candidatesSize, neighbors->neighbors->size() * sizeof(size_t), cudaMemcpyHostToDevice);
     // call computDotProducts
     printf("%i\n", __LINE__); 
-    printf("pMaxNnzNeighbor: %u, pMaxNnzInstance: %u\n", mMaxNnz, maxNnzInstance);
+    printf("pMaxNnzNeighbor: %u, pMaxNnzInstance: %u\n", maxNnzNeighbor, maxNnzInstance);
     computeDotProducts<<<128, 128>>>(dotProducts, count, candidatesCuda, jumpLengthListCuda,
-                                      candidatesSizeCuda, *mDev_FeatureList, *mDev_ValuesList,
-                                      mMaxNnz, *mDev_SizeOfInstanceList,
-                                      *featureIdsInstance, *valuesInstance, maxNnzInstance,
-                                      *sizeInstance, *mDev_DotProducts, *precomputedDotProductInstance);
-       printf("DotproductNeighbors: %u\n", *mDev_DotProducts);
+                                      candidatesSizeCuda, featureIdsNeighbor, valuesNeighbor,
+                                      maxNnzNeighbor, sizeNeighbor,
+                                      featureIdsInstance, valuesInstance, maxNnzInstance,
+                                      sizeInstance, precomputedDotProductNeighbor, precomputedDotProductInstance);
+    
+    // computeDotProducts<<<128, 128>>>(sizeNeighbor);
+    //    printf("DotproductNeighbors: %u\n", mDev_DotProducts);
 
     // float* dotCuda = (float*) malloc(4337 * sizeof(float));
     // cudaMemcpy(dotCuda, (*mDev_DotProducts), sizeof(float) * 4337, cudaMemcpyDeviceToHost);
@@ -163,11 +203,11 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
             element.key = neighbors->neighbors->operator[](i)[j];
             element.val = results[jumpLengthList[i]+j];
             if (i+j < 32)
-            printf("%f, ", element.val);
+            // printf("%f, ", element.val);
             returnValue[j] = element;
         }
         if (i == 0)
-        printf("\n");
+        // printf("\n");
         if (pSimilarity) {
             std::sort(returnValue.begin(), returnValue.end(), mapSortDescByValueFloat);
         } else {
@@ -192,6 +232,26 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
     // free memory
     
         printf("%i\n", __LINE__);
+   
+//    dotProducts, count, candidatesCuda, jumpLengthListCuda,
+//                                       candidatesSizeCuda, featureIdsNeighbor, valuesNeighbor,
+//                                       maxNnzNeighbor, sizeNeighbor,
+//                                       featureIdsInstance, valuesInstance, maxNnzInstance,
+//                                       sizeInstance, precomputedDotProductNeighbor, precomputedDotProductInstance
+   cudaFree(dotProducts);
+   cudaFree(candidatesCuda);
+   cudaFree(jumpLengthListCuda);
+   cudaFree(candidatesSizeCuda);
+   cudaFree(featureIdsNeighbor);
+   cudaFree(valuesNeighbor);
+   cudaFree(sizeNeighbor);
+   cudaFree(featureIdsInstance);
+   cudaFree(valuesInstance);
+   cudaFree(sizeInstance);
+   cudaFree(precomputedDotProductNeighbor);
+   cudaFree(precomputedDotProductInstance);
+//    cudaFree();
+   
    
     return neighbors_;
 }
