@@ -269,6 +269,7 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
                                          float* pPreComputedDotProductsInstance) {
     
     // __global__ void computeDotProducts(size_t* pSizeNeighbor) {
+      
     int instanceCandidates = blockIdx.x;
     int round = 0;
     __shared__ int instanceCounter;
@@ -289,7 +290,9 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
         
     // }
         __syncthreads();
-    
+      if (threadIdx.x == 0) {
+            printf("instance: %i\n", instanceCandidates);
+        }
     while (instanceCandidates < pSize) {
         if (threadIdx.x == 0) {
             neighbor = pCandidates[pJumpLength[instanceCandidates]];
@@ -301,6 +304,7 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
             if (threadIdx.x == 0) {
                 instance = pCandidates[pJumpLength[instanceCandidates]+instanceCounter];
                 // printf("instanceCandidate: %i, instance: %i, size: %i\n", instanceCandidates, instance, pCandidateSize[neighbor]);
+                printf("instance: %i\n", instance);
                 
             }
             __syncthreads();
@@ -394,8 +398,12 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
                 // pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].y
                 // printf(" %f\n", pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].y);
             // }
+            
         }
         instanceCandidates += gridDim.x;
+          if (threadIdx.x == 0) {
+            printf("instance: %i\n", instanceCandidates);
+        }
     }
 }
 __global__ void euclideanDistanceCuda(float3* pDotProducts, size_t pSize, float* results) {
@@ -404,9 +412,9 @@ __global__ void euclideanDistanceCuda(float3* pDotProducts, size_t pSize, float*
 //           printf("FOO %i\n", instance);
 //   }
   while (instance < pSize) {
-    //   if (threadIdx.x == 0) {
-    //       printf("%f, %f, %f\n",  pDotProducts[instance].x, pDotProducts[instance].y, pDotProducts[instance].z);
-    //   }
+      if (threadIdx.x == 0) {
+          printf("euclidean %f: \n",  pDotProducts[instance].x);
+      }
       results[instance] = pDotProducts[instance].x - 2*pDotProducts[instance].y + pDotProducts[instance].z;
       instance += gridDim.x;
   }
