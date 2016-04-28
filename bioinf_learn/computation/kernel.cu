@@ -304,6 +304,7 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
             if (threadIdx.x == 0) {
                 instance = pCandidates[pJumpLength[instanceCandidates]+instanceCounter];
                 // printf("instanceCandidate: %i, instance: %i, size: %i\n", instanceCandidates, instance, pCandidateSize[neighbor]);
+                printf("neighbor: %i\n", neighbor);
                 printf("instance: %i\n", instance);
                 
             }
@@ -339,7 +340,6 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
                     if (featureIdX[(threadIdx.x+round)%128] == featureIdY[threadIdx.x]) {   
                         value[threadIdx.x] += pValuesNeighbor[pStartPosX + (threadIdx.x+round)%128] * pValuesInstance[pStartPosY + threadIdx.x];
                         // break;
-                        
                     }
                     ++round;
                 }

@@ -139,7 +139,7 @@ class MinHash():
 
             Parameters
             ----------
-            X : {array-like, sparse matrix}, optional
+            X : {array-like, sparse matrix}
                 Training data. If array or matrix, shape = [n_samples, n_features]
                 If X is None, a "lazy fitting" is performed. If kneighbors is called, the fitting
                 with with the data there is done. Also the caching of computed hash values is deactivated in
