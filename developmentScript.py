@@ -117,19 +117,19 @@ def test(data):
     # newsgroups_test = fetch_20newsgroups(subset='test',remove=('headers', 'footers', 'quotes'), categories=categories)
     # vectors_test = vectorizer.transform(newsgroups_test.data)
     # datasetBursi = vectors_training
-    # if not os.path.isfile("rnaDataset"):
-    #     rfam_ids=['RF00004','RF00005','RF00015','RF00020','RF00026','RF00169',
-    #           'RF00380','RF00386','RF01051','RF01055','RF01234','RF01699',
-    #           'RF01701','RF01705','RF01731','RF01734','RF01745','RF01750',
-    #           'RF01942','RF01998','RF02005','RF02012','RF02034']
-    #     X, y = rfam_data(rfam_ids, n_max=50, complexity=3, nbits=16)
-    #     fileObject = open("rnaDataset",'wb')
-    #     pickle.dump(X,fileObject)
-    #     fileObject.close()
-    #     datasetBursi = X
-    # else:
-    #     fileObject = open("rnaDataset",'r')
-    #     datasetBursi = pickle.load(fileObject)
+    if not os.path.isfile("rnaDataset"):
+        rfam_ids=['RF00004','RF00005','RF00015','RF00020','RF00026','RF00169',
+              'RF00380','RF00386','RF01051','RF01055','RF01234','RF01699',
+              'RF01701','RF01705','RF01731','RF01734','RF01745','RF01750',
+              'RF01942','RF01998','RF02005','RF02012','RF02034']
+        X, y = rfam_data(rfam_ids, n_max=50, complexity=3, nbits=16)
+        fileObject = open("rnaDataset",'wb')
+        pickle.dump(X,fileObject)
+        fileObject.close()
+        datasetBursi = X
+    else:
+        fileObject = open("rnaDataset",'r')
+        datasetBursi = pickle.load(fileObject)
     # print "Build inverse index for approximate..."
     #{'max_bin_size': 66.3710562451178, 'remove_value_with_least_sigificant_bit': 5, 
     # 'prune_inverse_index': 1, 'number_of_hash_functions': 253.3929503190519, 'shingle': 1,
@@ -171,7 +171,7 @@ def test(data):
                       store_value_with_least_sigificant_bit=1,
                       excess_factor=5, prune_inverse_index_after_instance=0.5, 
                       remove_hash_function_with_less_entries_as=0,
-                      shingle=0, block_size=4, cpu_gpu_load_balancing = 1.0)
+                      shingle=0, block_size=4, cpu_gpu_load_balancing = 0.0)
     # minHash.fit(data[0])
     print "fitting..."
 

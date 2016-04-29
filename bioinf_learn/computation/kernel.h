@@ -24,8 +24,7 @@ __device__ void sortAsc(cudaInstance* pCandidates, int pInstanceId, int pSize);
 __global__ void dotProductSingle(int* pFeatureList, float* pValuesList,
                                  size_t* pSizeOfInstanceList,
                                  size_t pSize, size_t pMaxNnz, float* pDevDotProduct);
-__device__ float dotProduct(int* pFeatureListX, float* pValuesListX, int pSizeX,
-                            int* pFeatureListY, float* pValuesListY, int pSizeY);
+
 __global__ void computeDotProducts(float3* pDotProducts, size_t pSize, 
                                         int* pCandidates, size_t* pJumpLength, 
                                         size_t* pCandidateSize, size_t pNumberOfCandidates,
@@ -35,5 +34,4 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
                                         size_t pMaxNnzInstance, size_t* pSizeInstance,
                                          float* pPreComputedDotProductsNeighbor, 
                                          float* pPreComputedDotProductsInstance);
-// __global__ void computeDotProducts(size_t* pSizeNeighbor);
 #endif // KERNEL_CUDA

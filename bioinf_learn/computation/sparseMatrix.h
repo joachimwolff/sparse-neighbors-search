@@ -37,7 +37,10 @@ class SparseMatrixFloat {
     std::unordered_map<size_t, float> mDotProductPrecomputed;
   public:
     SparseMatrixFloat(size_t pNumberOfInstances, size_t pMaxNnz) {
-        pMaxNnz = pMaxNnz + (pMaxNnz % 128);
+        std::cout << "pMaxNNz: " << pMaxNnz << std::endl; 
+        
+        pMaxNnz = pMaxNnz + 32 - (pMaxNnz % 32);
+        std::cout << "pMaxNNz: " << pMaxNnz << std::endl; 
         mSparseMatrix = new int [pNumberOfInstances * pMaxNnz]();
         mSparseMatrixValues = new float [pNumberOfInstances * pMaxNnz]();
         mSizesOfInstances = new size_t [pNumberOfInstances];
@@ -270,8 +273,8 @@ class SparseMatrixFloat {
     void insertToSizesOfInstances(size_t pInstanceId, size_t pSizeOfInstance) {
         if (pInstanceId < mNumberOfInstances) {
             mSizesOfInstances[pInstanceId] = pSizeOfInstance;
-            mSizesOfInstancesSSE[pInstanceId] = pSizeOfInstance + (pSizeOfInstance % 4);
-            mSizesOfInstancesCuda[pInstanceId] = pSizeOfInstance + (pSizeOfInstance % 128);
+            mSizesOfInstancesSSE[pInstanceId] = pSizeOfInstance + 4 - (pSizeOfInstance % 4);
+            mSizesOfInstancesCuda[pInstanceId] = pSizeOfInstance + 32 - (pSizeOfInstance % 32);
             
         }
     };

@@ -64,7 +64,7 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
     // computeDotProducts<<<128, 128>>>(sizeNeighbor);
              cudaDeviceSynchronize();
 
-    dotProductSingle<<<128, 128>>>(featureIdsNeighbor, valuesNeighbor, sizeNeighbor, 
+    dotProductSingle<<<512, 32>>>(featureIdsNeighbor, valuesNeighbor, sizeNeighbor, 
                                     pOriginalRawData->size(), pOriginalRawData->getMaxNnz(), precomputedDotProductNeighbor);
        cudaDeviceSynchronize();
     // float* dotCuda = (float*) malloc( pOriginalRawData->size() * sizeof(float));
@@ -110,7 +110,7 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
             cudaMemcpyHostToDevice);   
         cudaDeviceSynchronize();
 
-        dotProductSingle<<<128, 128>>>(featureIdsInstance, valuesInstance, sizeInstance, 
+        dotProductSingle<<<1024, 32>>>(featureIdsInstance, valuesInstance, sizeInstance, 
                                         pRawData->size(), pRawData->getMaxNnz(), precomputedDotProductInstance);
         cudaDeviceSynchronize();
     }
@@ -165,7 +165,7 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
     // call computDotProducts
     printf("%i\n", __LINE__); 
     printf("pMaxNnzNeighbor: %u, pMaxNnzInstance: %u\n", maxNnzNeighbor, maxNnzInstance);
-    computeDotProducts<<<128, 128>>>(dotProducts, count, candidatesCuda, jumpLengthListCuda,
+    computeDotProducts<<<1024, 32>>>(dotProducts, count, candidatesCuda, jumpLengthListCuda,
                                       candidatesSizeCuda, neighbors->neighbors->size(), featureIdsNeighbor, valuesNeighbor,
                                       maxNnzNeighbor, sizeNeighbor,
                                       featureIdsInstance, valuesInstance, maxNnzInstance,
@@ -190,7 +190,7 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
     } else {
         printf("%i\n", __LINE__);
         
-        euclideanDistanceCuda<<<128, 128>>>(dotProducts, count, resultsCuda);
+        euclideanDistanceCuda<<<1024, 32>>>(dotProducts, count, resultsCuda);
     }
         printf("%i\n", __LINE__);
     
@@ -205,11 +205,11 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
     neighbors_->neighbors = new vvsize_t(neighbors->neighbors->size());
     neighbors_->distances = new vvfloat(neighbors->neighbors->size());
         printf("%i\n", __LINE__);
-    
+    // #pragma omp parallel for
     for (size_t i = 0; i < neighbors->neighbors->size(); ++i) {
         std::vector<sortMapFloat> returnValue(neighbors->neighbors->operator[](i).size());
-            if (i == 4336)
-              printf("%i\n", __LINE__);
+            // if (i == 4336)
+            //   printf("%i\n", __LINE__);
         
         for (size_t j = 0; j < neighbors->neighbors->operator[](i).size(); ++j) {
             sortMapFloat element; 
@@ -219,8 +219,8 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
             printf("%u:%f, ",element.key, element.val);
             returnValue[j] = element;
         }
-        if (i == 0)
-        printf("\n\n");
+        // if (i == 0)
+        // printf("\n\n");
         if (pSimilarity) {
             std::sort(returnValue.begin(), returnValue.end(), mapSortDescByValueFloat);
         } else {
@@ -237,7 +237,7 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
         for (size_t j = 0; j < vectorSize; ++j) {
                 neighborsVector[j] = returnValue[j].key;
                 distancesVector[j] = returnValue[j].val;
-                if (i == 4336)
+                if (i == 0)
                     printf("%u:%f\n", returnValue[j].key, returnValue[j].val);
         }
         neighbors_->neighbors->operator[](i) = neighborsVector;
