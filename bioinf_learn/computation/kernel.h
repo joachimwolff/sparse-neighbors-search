@@ -28,7 +28,7 @@ __device__ float dotProduct(int* pFeatureListX, float* pValuesListX, int pSizeX,
                             int* pFeatureListY, float* pValuesListY, int pSizeY);
 __global__ void computeDotProducts(float3* pDotProducts, size_t pSize, 
                                         int* pCandidates, size_t* pJumpLength, 
-                                        size_t* pCandidateSize,
+                                        size_t* pCandidateSize, size_t pNumberOfCandidates,
                                         int* pFeatureIdsNeighbor, float* pValuesNeighbor, 
                                         size_t pMaxNnzNeighbor, size_t* pSizeNeighbor,
                                         int* pFeatureIdsInstance, float* pValuesInstance,

@@ -149,9 +149,9 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
             // printf("%i, ", candidates[jumpLengthList[i]+j]);
 
         }
-        // printf("\n");
+        // printf("%i: %i\n", i, jumpLengthList[i]);
     } 
-        printf("%i\n", __LINE__);
+        // printf("count: %i, %i\n", count, __LINE__);
     
     int* candidatesCuda;
     cudaMalloc((void **) &candidatesCuda, count * sizeof(int));
@@ -165,8 +165,8 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
     // call computDotProducts
     printf("%i\n", __LINE__); 
     printf("pMaxNnzNeighbor: %u, pMaxNnzInstance: %u\n", maxNnzNeighbor, maxNnzInstance);
-    computeDotProducts<<<1, 1>>>(dotProducts, count, candidatesCuda, jumpLengthListCuda,
-                                      candidatesSizeCuda, featureIdsNeighbor, valuesNeighbor,
+    computeDotProducts<<<128, 128>>>(dotProducts, count, candidatesCuda, jumpLengthListCuda,
+                                      candidatesSizeCuda, neighbors->neighbors->size(), featureIdsNeighbor, valuesNeighbor,
                                       maxNnzNeighbor, sizeNeighbor,
                                       featureIdsInstance, valuesInstance, maxNnzInstance,
                                       sizeInstance, precomputedDotProductNeighbor, precomputedDotProductInstance);
@@ -208,7 +208,7 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
     
     for (size_t i = 0; i < neighbors->neighbors->size(); ++i) {
         std::vector<sortMapFloat> returnValue(neighbors->neighbors->operator[](i).size());
-            if (i == 0)
+            if (i == 4336)
               printf("%i\n", __LINE__);
         
         for (size_t j = 0; j < neighbors->neighbors->operator[](i).size(); ++j) {
@@ -216,11 +216,11 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
             element.key = neighbors->neighbors->operator[](i)[j];
             element.val = results[jumpLengthList[i]+j];
             if (i == 0)
-            printf("%f, ", element.val);
+            printf("%u:%f, ",element.key, element.val);
             returnValue[j] = element;
         }
         if (i == 0)
-        // printf("\n");
+        printf("\n\n");
         if (pSimilarity) {
             std::sort(returnValue.begin(), returnValue.end(), mapSortDescByValueFloat);
         } else {
@@ -237,6 +237,8 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
         for (size_t j = 0; j < vectorSize; ++j) {
                 neighborsVector[j] = returnValue[j].key;
                 distancesVector[j] = returnValue[j].val;
+                if (i == 4336)
+                    printf("%u:%f\n", returnValue[j].key, returnValue[j].val);
         }
         neighbors_->neighbors->operator[](i) = neighborsVector;
         neighbors_->distances->operator[](i) = distancesVector;
