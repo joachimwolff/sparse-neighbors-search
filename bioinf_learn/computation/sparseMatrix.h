@@ -10,7 +10,8 @@
 **/
 #include <math.h>
 #include <xmmintrin.h>
-
+// #include <stdio.h>
+#include <cstring>
 #include <algorithm>
 #include <iostream>
 #include "typeDefinitionsBasic.h"
@@ -41,7 +42,8 @@ class SparseMatrixFloat {
         
         pMaxNnz = pMaxNnz + 32 - (pMaxNnz % 32);
         std::cout << "pMaxNNz: " << pMaxNnz << std::endl; 
-        mSparseMatrix = new int [pNumberOfInstances * pMaxNnz]();
+        mSparseMatrix = new int [pNumberOfInstances * pMaxNnz];
+        std::fill_n(mSparseMatrix, pNumberOfInstances * pMaxNnz, MAX_VALUE);
         mSparseMatrixValues = new float [pNumberOfInstances * pMaxNnz]();
         mSizesOfInstances = new size_t [pNumberOfInstances];
         mSizesOfInstancesCuda = new size_t [pNumberOfInstances];
@@ -110,7 +112,9 @@ class SparseMatrixFloat {
        
         // auto iteratorInstance = instance->begin();
         // auto iteratorNeighbor = neighbor->begin();
+       
         while (counterInstance <  sizeInstance && counterNeighbor < sizeNeighbor) {
+           
             if (queryData->getNextElement(pIndex, counterInstance) < this->getNextElement(pIndexNeighbor, counterNeighbor)) {
                 ++counterInstance;
             } else if (queryData->getNextElement(pIndex, counterInstance) > this->getNextElement(pIndexNeighbor, counterNeighbor)){
@@ -332,22 +336,6 @@ class SparseMatrixFloat {
             element.key = pRowIdVector[i];
             element.val = 0;
             
-            // if (pRowId < pRowIdVector[i]) {
-            //     indexOuter = pRowId;
-            //     indexInner = pRowIdVector[i];
-            // } else {
-            //     indexOuter = pRowIdVector[i];
-            //     indexInner = pRowId;
-            // }
-        // std::cout << __LINE__ << std::endl;
-            
-            // auto iteratorEuclidDistance = (*mValuesPrecomputed)[indexOuter]->find(indexInner);
-        // std::cout << __LINE__ << std::endl;
-            
-            // if (iteratorEuclidDistance != (*mValuesPrecomputed)[indexOuter]->end()) {
-            //     element.val = (*iteratorEuclidDistance).second;
-            // } else {
-        // std::cout << __LINE__ << std::endl;
                 
                 valueXY = this->dotProduct(pRowId, instance_id, pQueryData);
                 if (pQueryData == NULL) {
@@ -355,6 +343,7 @@ class SparseMatrixFloat {
                 } else {
                     valueYY = pQueryData->getDotProductPrecomputed(instance_id);
                 }
+               
                 element.val = valueXX - 2* valueXY + valueYY;
                 // std::cout << "result: " << element.val << std::endl;
                 // std::cout <<  "valueXX: " << valueXX << std::endl;

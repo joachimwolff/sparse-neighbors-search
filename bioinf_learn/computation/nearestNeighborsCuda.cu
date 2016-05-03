@@ -204,7 +204,7 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
     neighborhood* neighbors_ = new neighborhood();;
     neighbors_->neighbors = new vvsize_t(neighbors->neighbors->size());
     neighbors_->distances = new vvfloat(neighbors->neighbors->size());
-        printf("%i\n", __LINE__);
+        // printf("%i\n", __LINE__);
     // #pragma omp parallel for
     for (size_t i = 0; i < neighbors->neighbors->size(); ++i) {
         std::vector<sortMapFloat> returnValue(neighbors->neighbors->operator[](i).size());
@@ -215,8 +215,8 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
             sortMapFloat element; 
             element.key = neighbors->neighbors->operator[](i)[j];
             element.val = results[jumpLengthList[i]+j];
-            if (i == 0)
-            printf("%u:%f, ",element.key, element.val);
+            // if (i == 0)
+            // printf("%u:%f, ",element.key, element.val);
             returnValue[j] = element;
         }
         // if (i == 0)
@@ -237,8 +237,8 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
         for (size_t j = 0; j < vectorSize; ++j) {
                 neighborsVector[j] = returnValue[j].key;
                 distancesVector[j] = returnValue[j].val;
-                if (i == 0)
-                    printf("%u:%f\n", returnValue[j].key, returnValue[j].val);
+                // if (i == 0)
+                //     printf("%u:%f\n", returnValue[j].key, returnValue[j].val);
         }
         neighbors_->neighbors->operator[](i) = neighborsVector;
         neighbors_->distances->operator[](i) = distancesVector;

@@ -90,6 +90,7 @@ __global__ void fitCudaWtaHash(const int* pFeatureIdList, const int* pSizeOfInst
                     const int pNumberOfInstances, const int pStartInstance, 
                     const int pBlockSize, const int pShingleSize,
                     int* pSignaturesBlockSize) {
+                            
 }
 
 
@@ -193,41 +194,65 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
             
             __syncthreads();
             
-            while (pStartPosX < pEndPosX+(pEndPosX%threadCount) && pStartPosY < pEndPosY+(pEndPosY%threadCount) ) {
+            while (pStartPosX < pEndPosX+threadCount - (pEndPosX%threadCount) && pStartPosY < pEndPosY+threadCount - (pEndPosY%threadCount) ) {
+            //     if (threadIdx.x == 0 && instance == 2852 && neighbor == 0) {
+            //     printf("pStartPosX: %i\n", pStartPosX);
+            //     printf("pEndPosX: %i\n", pEndPosX+threadCount - (pEndPosX%threadCount));
+            //     printf("pStartPosY: %i\n", pStartPosY);
+            //     printf("pEndPosY: %i\n", pEndPosY+threadCount - (pEndPosY%threadCount));
+            //     printf("Length 0: %i\n", pSizeNeighbor[neighbor]);
+            //     printf("Length 2852: %i\n\n\n", pSizeInstance[instance]);
+                
+            // }
                 featureIdX[threadIdx.x] = pFeatureIdsNeighbor[pStartPosX + threadIdx.x];
                 featureIdY[threadIdx.x] = pFeatureIdsInstance[pStartPosY + threadIdx.x];
-                // if (threadIdx.x == 0) {
-                //     if (featureIdX[0] > featureIdY[127]) {
-                //         if (threadIdx.x == 0) pStartPosY += 128;
-                //         __syncthreads();
-                //         continue;
-                //     } else if (featureIdX[127] < featureIdY[0]) {
-                //          if (threadIdx.x == 0) pStartPosX += 128;
-                //         __syncthreads();    
-                //         continue;
-                //     }
-                // }
+                
                 while (round < threadCount) {
-                    if (featureIdX[round] == featureIdY[threadIdx.x]) {   
-                        value[threadIdx.x] += pValuesNeighbor[pStartPosX + round] * pValuesInstance[pStartPosY + threadIdx.x];
+                    if (featureIdX[(threadIdx.x + round) % threadCount] == featureIdY[threadIdx.x]) {   
+                        value[threadIdx.x] += pValuesNeighbor[pStartPosX + ((threadIdx.x + round) % threadCount)] * pValuesInstance[pStartPosY + threadIdx.x];
+                        // if (instance == 2852 && neighbor == 0) {
+                        //     printf("X: %i\n", featureIdX[(threadIdx.x + round) % threadCount]);
+                        //     printf("Y: %i\n", featureIdY[threadIdx.x]);
+                            
+                        //     printf("pValuesNeighbor[]: %f\n", pValuesNeighbor[pStartPosX + ((threadIdx.x + round) % threadCount)]);
+                        //     printf("pValuesInstance[]: %f\n\n", pValuesInstance[pStartPosY + threadIdx.x]);
+                            
+                        // }
                         break;
                     }
                     ++round;
                 }
-            __syncthreads();
-            round = 0;
-            if (threadIdx.x == 0) {
-                if (featureIdX[threadCount-1] == featureIdY[threadCount-1]) {
-                    pStartPosY += threadCount;
-                    pStartPosX += threadCount;
-                } else if (featureIdX[threadCount-1] < featureIdY[threadCount-1]) {
-                    pStartPosX += threadCount -1 ;
-                } else {
-                    pStartPosY += threadCount -1;
+                __syncthreads();
+                round = 0;
+                if (threadIdx.x == 0) {
+                    if (featureIdX[threadCount-1] == featureIdY[threadCount-1]) {
+                        // if (instance == 2852 && neighbor == 0) {
+                        // printf("==\n");
+                        // printf("featureIdX[threadCount-1]: %i\n", featureIdX[threadCount-1]);
+                        // printf("featureIdY[threadCount-1]: %i\n", featureIdY[threadCount-1]);
+                        // }
+                        pStartPosY += threadCount;
+                        pStartPosX += threadCount;
+                    } else if (featureIdX[threadCount-1] < featureIdY[threadCount-1]) {
+                        // if (instance == 2852 && neighbor == 0) {
+                        
+                        // printf("X < Y\n");
+                        
+                        //  printf("featureIdX[threadCount-1]: %i\n", featureIdX[threadCount-1]);
+                        // printf("featureIdY[threadCount-1]: %i\n", featureIdY[threadCount-1]);
+                        // }
+                        pStartPosX += threadCount;
+                    } else {
+                        // if (instance == 2852 && neighbor == 0) {
+                        
+                        // printf("X > Y");
+                        //  printf("featureIdX[threadCount-1]: %i\n", featureIdX[threadCount-1]);
+                        // printf("featureIdY[threadCount-1]: %i\n", featureIdY[threadCount-1]);
+                        // }
+                        pStartPosY += threadCount;
+                    }
                 }
-            }
-            __syncthreads();
-        
+                __syncthreads();
         }
         __syncthreads();
         
@@ -239,6 +264,14 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
             __syncthreads();
             i /= 2;
         }
+        // if (threadIdx.x == 0) {
+        //     for (int i = 1; i < 32; ++i) {
+        //         value[0] += value[i];                
+        //     }
+        // }
+        // if (instance == 2852 && neighbor == 0) {
+        //     printf ("value for 0 and 2852: %f", value[0]);
+        // }    
         if (threadIdx.x == 0) {
             pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].y = value[0];
             pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].x = pPreComputedDotProductsNeighbor[neighbor];
