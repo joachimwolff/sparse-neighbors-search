@@ -202,13 +202,13 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     #ifdef CUDA
     } else {
         // call gpu code
-        std::cout << "GPU code is running! " << std::endl;
+        // std::cout << "GPU code is running! " << std::endl;
         
     //    delete neighborhoodCandidates;
        
         neighborhood* neighbors_ = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData, mOriginalData);
         
-        printf("%i", __LINE__);
+        // printf("%i", __LINE__);
         fflush(stdout);
         // int jumpLength = 0;
         #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
@@ -315,7 +315,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     neighborhood* neighborhoodExact = new neighborhood();
     neighborhoodExact->neighbors = new vvsize_t(neighborhood_->neighbors->size());
     neighborhoodExact->distances = new vvfloat(neighborhood_->neighbors->size());
-    std::cout << __LINE__ << std::endl;
+    // std::cout << __LINE__ << std::endl;
 
     // compute the exact neighbors based on the candidate selection before.
     #ifdef CUDA
@@ -374,7 +374,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
         
     #ifdef CUDA
     } else {
-        std::cout << "GPU code is running! Part2" << std::endl;
+        // std::cout << "GPU code is running! Part2" << std::endl;
         
         neighborhood* neighbors_ = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData, mOriginalData);
         #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
@@ -399,7 +399,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
         delete neighbors_->neighbors;
         delete neighbors_->distances;
         delete neighbors_;
-        std::cout << "GPU code is running! Part2 DONE" << std::endl;
+        // std::cout << "GPU code is running! Part2 DONE" << std::endl;
         
     }
     #endif

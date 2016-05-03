@@ -148,6 +148,7 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
       
     int instanceCandidates = blockIdx.x;
     int round = 0;
+    int i = 0;
     const int threadCount = 32;
     __shared__ int instanceCounter;
     __shared__ int neighbor;
@@ -176,48 +177,18 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
                 pStartPosY = instance*pMaxNnzInstance;
                 pEndPosY = instance*pMaxNnzInstance + pSizeInstance[instance];
             }
-            // if (instance == neighbor) {
-                
-            //     if (threadIdx.x == 0) {
-            //         pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].y = pPreComputedDotProductsNeighbor[neighbor];
-            //         pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].x = pPreComputedDotProductsNeighbor[neighbor];
-            //         pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].z = pPreComputedDotProductsInstance[instance];
-            //         ++instanceCounter;
-            //     }
-            //     __syncthreads();
-            //     continue;
-            // }
-            
-            
-            
             value[threadIdx.x] = 0.0;
             
             __syncthreads();
             
             while (pStartPosX < pEndPosX+threadCount - (pEndPosX%threadCount) && pStartPosY < pEndPosY+threadCount - (pEndPosY%threadCount) ) {
-            //     if (threadIdx.x == 0 && instance == 2852 && neighbor == 0) {
-            //     printf("pStartPosX: %i\n", pStartPosX);
-            //     printf("pEndPosX: %i\n", pEndPosX+threadCount - (pEndPosX%threadCount));
-            //     printf("pStartPosY: %i\n", pStartPosY);
-            //     printf("pEndPosY: %i\n", pEndPosY+threadCount - (pEndPosY%threadCount));
-            //     printf("Length 0: %i\n", pSizeNeighbor[neighbor]);
-            //     printf("Length 2852: %i\n\n\n", pSizeInstance[instance]);
-                
-            // }
+           
                 featureIdX[threadIdx.x] = pFeatureIdsNeighbor[pStartPosX + threadIdx.x];
                 featureIdY[threadIdx.x] = pFeatureIdsInstance[pStartPosY + threadIdx.x];
                 
                 while (round < threadCount) {
                     if (featureIdX[(threadIdx.x + round) % threadCount] == featureIdY[threadIdx.x]) {   
                         value[threadIdx.x] += pValuesNeighbor[pStartPosX + ((threadIdx.x + round) % threadCount)] * pValuesInstance[pStartPosY + threadIdx.x];
-                        // if (instance == 2852 && neighbor == 0) {
-                        //     printf("X: %i\n", featureIdX[(threadIdx.x + round) % threadCount]);
-                        //     printf("Y: %i\n", featureIdY[threadIdx.x]);
-                            
-                        //     printf("pValuesNeighbor[]: %f\n", pValuesNeighbor[pStartPosX + ((threadIdx.x + round) % threadCount)]);
-                        //     printf("pValuesInstance[]: %f\n\n", pValuesInstance[pStartPosY + threadIdx.x]);
-                            
-                        // }
                         break;
                     }
                     ++round;
@@ -226,29 +197,11 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
                 round = 0;
                 if (threadIdx.x == 0) {
                     if (featureIdX[threadCount-1] == featureIdY[threadCount-1]) {
-                        // if (instance == 2852 && neighbor == 0) {
-                        // printf("==\n");
-                        // printf("featureIdX[threadCount-1]: %i\n", featureIdX[threadCount-1]);
-                        // printf("featureIdY[threadCount-1]: %i\n", featureIdY[threadCount-1]);
-                        // }
                         pStartPosY += threadCount;
                         pStartPosX += threadCount;
                     } else if (featureIdX[threadCount-1] < featureIdY[threadCount-1]) {
-                        // if (instance == 2852 && neighbor == 0) {
-                        
-                        // printf("X < Y\n");
-                        
-                        //  printf("featureIdX[threadCount-1]: %i\n", featureIdX[threadCount-1]);
-                        // printf("featureIdY[threadCount-1]: %i\n", featureIdY[threadCount-1]);
-                        // }
                         pStartPosX += threadCount;
                     } else {
-                        // if (instance == 2852 && neighbor == 0) {
-                        
-                        // printf("X > Y");
-                        //  printf("featureIdX[threadCount-1]: %i\n", featureIdX[threadCount-1]);
-                        // printf("featureIdY[threadCount-1]: %i\n", featureIdY[threadCount-1]);
-                        // }
                         pStartPosY += threadCount;
                     }
                 }
@@ -256,7 +209,7 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
         }
         __syncthreads();
         
-        int i = blockDim.x/2;
+        i = blockDim.x/2;
         while (i != 0) {
             if (threadIdx.x < i) { 
                 value[threadIdx.x] += value[threadIdx.x + i];
@@ -264,14 +217,6 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
             __syncthreads();
             i /= 2;
         }
-        // if (threadIdx.x == 0) {
-        //     for (int i = 1; i < 32; ++i) {
-        //         value[0] += value[i];                
-        //     }
-        // }
-        // if (instance == 2852 && neighbor == 0) {
-        //     printf ("value for 0 and 2852: %f", value[0]);
-        // }    
         if (threadIdx.x == 0) {
             pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].y = value[0];
             pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].x = pPreComputedDotProductsNeighbor[neighbor];
@@ -279,8 +224,7 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
             ++instanceCounter;
         }
         __syncthreads();
-        
-        
+            
             
         }
         instanceCandidates += gridDim.x;

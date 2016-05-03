@@ -652,3 +652,47 @@ def measure_performance(dataset, minHashParameters, n_neighbors_sklearn = 10, n_
             accuracy_1_50_minHash_exact, 
             accuracy_1_50_minHash_aprox, 
             accuracy_1_50_annoy)
+            
+# minHash minhashFast, minhashgpu minhashfastgpu wtahash wtahashFast wtahashgpu wtahashFastgpu sklaern bruteforce
+# 100, 200, 400, 600, 800 hash functions 
+def measureMinHashWtaHash(dataset):
+    time_list_fit = []
+    time_list_query = []
+    bruteforce = NearestNeighbors(n_neighbors=10, n_jobs=4)
+    time_start = time.time()
+    bruteforce.fit(dataset)
+    time_list_fit.append(time.time() - time_start)
+    for i in [100, 200, 400, 600, 800]:
+        minHash = MinHash(number_of_hash_functions=i, max_bin_size= 25, shingle_size = 4, #rangeK_wta=50,
+                        similarity=False, minimal_blocks_in_common=1,
+                        number_of_cores=4, prune_inverse_index=1, 
+                        store_value_with_least_sigificant_bit=0,
+                        excess_factor=5, prune_inverse_index_after_instance=0.5, 
+                        remove_hash_function_with_less_entries_as=0,
+                        shingle=0, block_size=4, cpu_gpu_load_balancing = 0.0)
+        wtaHash = WtaHash(number_of_hash_functions=i, max_bin_size= 25, shingle_size = 4, rangeK_wta=50,
+                        similarity=False, minimal_blocks_in_common=1,
+                        number_of_cores=4, prune_inverse_index=-1, 
+                        store_value_with_least_sigificant_bit=0,
+                        excess_factor=5, prune_inverse_index_after_instance=-1, 
+                        remove_hash_function_with_less_entries_as=-1,
+                        shingle=0, block_size=4, cpu_gpu_load_balancing = 0.0)
+        minHashGpu = MinHash(number_of_hash_functions=i, max_bin_size= 25, shingle_size = 4, #rangeK_wta=50,
+                        similarity=False, minimal_blocks_in_common=1,
+                        number_of_cores=4, prune_inverse_index=1, 
+                        store_value_with_least_sigificant_bit=0,
+                        excess_factor=5, prune_inverse_index_after_instance=0.5, 
+                        remove_hash_function_with_less_entries_as=0,
+                        shingle=0, block_size=4, cpu_gpu_load_balancing = 1.0)
+        wtaHashGpu = WtaHash(number_of_hash_functions=i, max_bin_size= 25, shingle_size = 4, rangeK_wta=50,
+                        similarity=False, minimal_blocks_in_common=1,
+                        number_of_cores=4, prune_inverse_index=-1, 
+                        store_value_with_least_sigificant_bit=0,
+                        excess_factor=5, prune_inverse_index_after_instance=-1, 
+                        remove_hash_function_with_less_entries_as=-1,
+                        shingle=0, block_size=4, cpu_gpu_load_balancing = 0.0)
+                        
+        
+    
+    
+    
