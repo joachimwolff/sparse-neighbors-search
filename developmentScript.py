@@ -138,14 +138,14 @@ def test(data):
     #   'block_size': 7.880427429793286, 'prune_inverse_index_after_instance': 1, 'shingle_size': 2.393356246460925}
 
     # query = datasetBursi[0::86]
-    # query_ids = set()
-    # query_list = []
-    # for i in range(50):
-    #     query_ids.add(random.randint(0, datasetBursi.shape[0]-1))
-    # # query_dense = dataset_dense[query_ids]    
-    # for i in query_ids:
-    #     query_list.append(datasetBursi.getrow(i))
-    # query = vstack(query_list)
+    query_ids = set()
+    query_list = []
+    for i in range(50):
+        query_ids.add(random.randint(0, datasetBursi.shape[0]-1))
+    # query_dense = dataset_dense[query_ids]    
+    for i in query_ids:
+        query_list.append(datasetBursi.getrow(i))
+    query = vstack(query_list)
     query=None
     # query = datasetBursi[sorted(list(query_ids))]
     # print query_ids

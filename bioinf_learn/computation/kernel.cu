@@ -206,26 +206,24 @@ __global__ void computeDotProducts(float3* pDotProducts, size_t pSize,
                     }
                 }
                 __syncthreads();
-        }
-        __syncthreads();
-        
-        i = blockDim.x/2;
-        while (i != 0) {
-            if (threadIdx.x < i) { 
-                value[threadIdx.x] += value[threadIdx.x + i];
             }
             __syncthreads();
-            i /= 2;
-        }
-        if (threadIdx.x == 0) {
-            pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].y = value[0];
-            pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].x = pPreComputedDotProductsNeighbor[neighbor];
-            pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].z = pPreComputedDotProductsInstance[instance];
-            ++instanceCounter;
-        }
-        __syncthreads();
             
-            
+            i = blockDim.x/2;
+            while (i != 0) {
+                if (threadIdx.x < i) { 
+                    value[threadIdx.x] += value[threadIdx.x + i];
+                }
+                __syncthreads();
+                i /= 2;
+            }
+            if (threadIdx.x == 0) {
+                pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].y = value[0];
+                pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].x = pPreComputedDotProductsNeighbor[neighbor];
+                pDotProducts[pJumpLength[instanceCandidates]+instanceCounter].z = pPreComputedDotProductsInstance[instance];          
+                ++instanceCounter;
+            }
+            __syncthreads();
         }
         instanceCandidates += gridDim.x;
     }

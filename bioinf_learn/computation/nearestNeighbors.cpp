@@ -206,14 +206,14 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
         
     //    delete neighborhoodCandidates;
        
-        neighborhood* neighbors_ = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData, mOriginalData);
+        neighborhood* neighbors_ = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData, mOriginalData, pNneighbors+mExcessFactor);
         
         // printf("%i", __LINE__);
-        fflush(stdout);
+        // fflush(stdout);
         // int jumpLength = 0;
         #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
         for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
-            size_t vectorSize = std::min(neighborhood_->neighbors->operator[](i).size(),pNneighbors+mExcessFactor);
+            size_t vectorSize = neighborhood_->neighbors->operator[](i).size();
             std::vector<size_t> neighborsVector(vectorSize);
             for (size_t j = 0; j < vectorSize; ++j) {
                 neighborsVector[j] = neighbors_->neighbors->operator[](i)[j];
@@ -376,29 +376,33 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     } else {
         // std::cout << "GPU code is running! Part2" << std::endl;
         
-        neighborhood* neighbors_ = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData, mOriginalData);
-        #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
-        for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
-            size_t vectorSize = std::min(neighborhood_->neighbors->operator[](i).size(), pNneighbors+mExcessFactor);
-            std::vector<size_t> neighborsVector(vectorSize);
-            std::vector<float> distancesVector(vectorSize);
-            if (vectorSize == 0) {
-                neighborsVector.push_back(i);
-                distancesVector.push_back(0.0);
-            }
-            for (size_t j = 0; j < vectorSize; ++j) {
-                neighborsVector[j] = neighbors_->neighbors->operator[](i)[j];
-                distancesVector[j] = neighbors_->distances->operator[](i)[j];
+        neighborhood* neighbors_ = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData, mOriginalData, pNneighbors+mExcessFactor);
+        delete neighborhood_->neighbors;
+    delete neighborhood_->distances;
+    delete neighborhood_;
+    return neighbors_;
+        // #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
+        // for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
+        //     size_t vectorSize = std::min(neighborhood_->neighbors->operator[](i).size(), pNneighbors+mExcessFactor);
+        //     std::vector<size_t> neighborsVector(vectorSize);
+        //     std::vector<float> distancesVector(vectorSize);
+        //     if (vectorSize == 0) {
+        //         neighborsVector.push_back(i);
+        //         distancesVector.push_back(0.0);
+        //     }
+        //     for (size_t j = 0; j < vectorSize; ++j) {
+        //         neighborsVector[j] = neighbors_->neighbors->operator[](i)[j];
+        //         distancesVector[j] = neighbors_->distances->operator[](i)[j];
                 
-            } 
-            // jumpLength += neighborhood_->neighbors->operator[](i).size();
-            neighborhoodExact->neighbors->operator[](i) = neighborsVector;
-            neighborhoodExact->distances->operator[](i) = distancesVector;
-            // free(cudaInstanceVector[i].instance);
-        }
-        delete neighbors_->neighbors;
-        delete neighbors_->distances;
-        delete neighbors_;
+        //     } 
+        //     // jumpLength += neighborhood_->neighbors->operator[](i).size();
+        //     neighborhoodExact->neighbors->operator[](i) = neighborsVector;
+        //     neighborhoodExact->distances->operator[](i) = distancesVector;
+        //     // free(cudaInstanceVector[i].instance);
+        // }
+        // delete neighbors_->neighbors;
+        // delete neighbors_->distances;
+        // delete neighbors_;
         // std::cout << "GPU code is running! Part2 DONE" << std::endl;
         
     }
