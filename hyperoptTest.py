@@ -45,16 +45,16 @@ def rfam_data(rfam_ids, n_max=300, complexity=3, nbits=13):
     return data_matrix, targets
 def compute_score(error, memory, time, max_memory, max_time, alpha, beta):
     print "error1: ", error
-    # if error >= 1.0:
-    #     return 12
-    # if error > 0.9:
-    #     return 11
-    # if error > 0.8:
-    #     return 10
-    # if error > 0.7:
-    #     return 9
-    # if error > 0.6:
-    #     return 8
+    if error >= 1.0:
+        return 12
+    if error > 0.9:
+        return 11
+    if error > 0.8:
+        return 10
+    if error > 0.7:
+        return 9
+    if error > 0.6:
+        return 8
     # if error > 0.5:
     #     return 7
     # if error > 0.4:
@@ -241,19 +241,19 @@ neighbors_sklearn = nearest_Neighbors.kneighbors(n_neighbors=10, return_distance
 # define a search space
 from hyperopt import hp
 space = {
-        'number_of_hash_functions': hp.uniform('number_of_hash_functions', 150, 1000),
-        'max_bin_size': hp.uniform('max_bin_size', 10, 100),
+        'number_of_hash_functions': hp.uniform('number_of_hash_functions', 150, 250),
+        'max_bin_size': hp.uniform('max_bin_size', 25, 60),
         'shingle_size': hp.choice('shingle_size', [1, 2, 3, 4]),
         'excess_factor': hp.uniform('excess_factor', 1, 15),
         # 'chunk_size': hp.uniform('chunk_size', 1, 20),
-        'prune_inverse_index': hp.uniform('prune_inverse_index',-1, 100),
+        'prune_inverse_index': hp.uniform('prune_inverse_index',-1, 15),
         'prune_inverse_index_after_instance':  hp.choice('prune_inverse_index_after_instance', [0.0, 0.5]),
-        'removeHashFunctionWithLessEntriesAs': hp.uniform('removeHashFunctionWithLessEntriesAs', -1, 1000),
+        'removeHashFunctionWithLessEntriesAs': hp.uniform('removeHashFunctionWithLessEntriesAs', -1, 0),
         'block_size': hp.choice('block_size', [1, 2, 3, 4]), 
         'shingle': hp.choice('shingle', [0,1]), 
         'remove_value_with_least_sigificant_bit': hp.choice('remove_value_with_least_sigificant_bit', [1, 2, 3, 4]),
         'minimal_blocks_in_common': hp.uniform('minimal_blocks_in_common', 1, 5),
-        'rangeK_wta': hp.uniform('rangeK_wta', 2, 100),
+        'rangeK_wta': hp.uniform('rangeK_wta', 15, 25),
         # 'alpha':hp.uniform('alpha', 0, 1),
         # 'beta':hp.uniform('beta', 0,1),    
 }
