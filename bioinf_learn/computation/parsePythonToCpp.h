@@ -26,7 +26,7 @@ SparseMatrixFloat* parseRawData(PyObject * pInstancesListObj, PyObject * pFeatur
     // printf("Max number of instances: %i\n", pMaxNumberOfInstances);
     size_t instanceOld = 0;
     size_t sizeOfFeatureVector = PyList_Size(pInstancesListObj);
-    printf("maxNumberOfFeatures: %u", pMaxNumberOfFeatures);
+    // printf("maxNumberOfFeatures: %u", pMaxNumberOfFeatures);
     SparseMatrixFloat* originalData = new SparseMatrixFloat(pMaxNumberOfInstances, pMaxNumberOfFeatures);
     size_t featuresCount = 0;
     size_t featureValue;

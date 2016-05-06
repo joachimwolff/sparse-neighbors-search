@@ -84,13 +84,124 @@ __global__ void fitCudaMinHash(const int* pFeatureIdList, const size_t* pSizeOfI
     }
 }
 
-__global__ void fitCudaWtaHash(const int* pFeatureIdList, const int* pSizeOfInstanceList,
-                    const int pNumberOfHashFunctions, const int* pJumpLengthList,
+__global__ void fitCudaWtaHash(const int* pFeatureIdList, const size_t* pSizeOfInstanceList,
+                    const size_t pNumberOfHashFunctions, const size_t pMaxNnz,
                     int* pComputedSignatures, 
-                    const int pNumberOfInstances, const int pStartInstance, 
-                    const int pBlockSize, const int pShingleSize,
-                    int* pSignaturesBlockSize) {
-                            
+                    const size_t pNumberOfInstances, const size_t pStartInstance, 
+                    const size_t pBlockSize, const size_t pShingleSize,
+                    int* pSignaturesBlockSize, const int pRangeK) {
+                        
+    
+    //    size_t sizeOfInstance = pRawData->getSizeOfInstance(pInstance);
+    
+    // size_t mSeed = 42;
+    // size_t mK = mRangeK_Wta;
+    
+    // vsize_t* signature = new vsize_t (mNumberOfHashFunctions * mBlockSize);
+    // if (sizeOfInstance < mK) {
+    //     mK = sizeOfInstance;
+    // }
+    // KSizeSortedMap keyValue(mK);
+    
+    // for (size_t i = 0; i < mNumberOfHashFunctions * mBlockSize; ++i) {
+        
+    //     for (size_t j = 0; j < sizeOfInstance; ++j) {
+    //         size_t hashIndex = mHash->hash((pRawData->getNextElement(pInstance, j) +1), mSeed+i, MAX_VALUE);
+    //         keyValue.insert(hashIndex, pRawData->getNextValue(pInstance, j));
+    //     } 
+        
+    //     // float maxValue = 0.0;
+    //     // size_t maxValueIndex = 0;
+        
+    //     // for (size_t j = 0; j < mK; ++j) {
+    //     //     if (keyValue.getValue(j) > maxValue) {
+    //     //         maxValue = keyValue.getValue(j);
+    //     //         maxValueIndex = j;
+    //     //     }
+    //     // }
+    //     // (*signature)[i] = maxValueIndex;//keyValue.getMaxValueIndex();
+    //     (*signature)[i] = keyValue.getMaxValueIndex();
+    //     keyValue.clear();
+    // }
+    // if (mShingle) {
+    //     return shingle(signature);
+    // }
+    // return signature;        
+    int index [pRangeK]; 
+    float values [pRangeK]; 
+    float maxValue = 0.0;
+    int maxIndex = 0;
+    int rangeKCount = 0;
+    int instanceId = blockIdx.x + pStartInstance;
+    int nearestNeighborsValue = MAX_VALUE;
+    int hashValue = 0;
+    int signatureSize = pNumberOfHashFunctions * pBlockSize / pShingleSize;
+    int featureId = blockIdx.x * pMaxNnz;
+    int hashFunctionId = threadIdx.x;
+    int sizeOfInstance;
+    int signatureBlockValue;
+    int shingleId;
+    int signatureBlockId = blockIdx.x * pNumberOfHashFunctions * pBlockSize;
+    // compute one instance per block
+    // if one instance is computed, block takes next instance
+    while (instanceId < pNumberOfInstances) {
+        // compute the nearestNeighborsValue for every hash function
+        // if pBlockSize is greater as 1, hash functions * pBlockSize values 
+        // are computed. They will be merged together by a factor of pShingleSize
+        sizeOfInstance = pSizeOfInstanceList[instanceId];
+        while (hashFunctionId < pNumberOfHashFunctions * pBlockSize && featureId < pNumberOfInstances*pMaxNnz) {
+            for (size_t i = 0; i < sizeOfInstance; ++i) {
+                hashValue = computeHashValueCuda((pFeatureIdList[featureId + i]+1) * (hashFunctionId+1), MAX_VALUE);
+
+                if (rangeKCount < pRangeK) {
+                    index[rangeKCount] = featureId + i;
+                    values[rangeKCount] = hashValue;
+                    ++rangeKCount;
+                    if (hashValue > maxValue) {
+                        maxValue = hashValue;
+                        maxIndex = featureId + i;
+                    }
+                } else {
+                    if (maxIndex < featureId + i) {
+                        continue;
+                    } else {
+                        int j = 0;
+                        while (j < pRangeK) {
+                            if (ma < featureId+i) {
+                                
+                            }                        
+                            ++j;
+                        }
+                    }
+                     
+                    
+                }
+            }
+            pSignaturesBlockSize[signatureBlockId + hashFunctionId] = nearestNeighborsValue;
+            hashFunctionId += blockDim.x;
+            nearestNeighborsValue = MAX_VALUE;
+        }
+        __syncthreads();
+        // merge pShingleSize values together.
+        // do one merge per thread
+        hashFunctionId = threadIdx.x * pShingleSize;
+        shingleId = threadIdx.x;
+        while (hashFunctionId < pNumberOfHashFunctions * pBlockSize ) {
+            signatureBlockValue = pSignaturesBlockSize[signatureBlockId + hashFunctionId];
+            for (size_t i = 1; i < pShingleSize && hashFunctionId+i < pNumberOfHashFunctions * pBlockSize; ++i) {
+                signatureBlockValue = computeHashValueCuda((pSignaturesBlockSize[signatureBlockId + hashFunctionId+i]+1) * (signatureBlockValue+1), MAX_VALUE);
+            }
+            pComputedSignatures[(instanceId-pStartInstance)*signatureSize + shingleId] = signatureBlockValue;
+            hashFunctionId += blockDim.x * pShingleSize;
+            shingleId += blockDim.x;
+        }
+        __syncthreads();
+        instanceId += gridDim.x;
+        featureId = instanceId * pMaxNnz;
+        nearestNeighborsValue = MAX_VALUE;
+        hashFunctionId = threadIdx.x;
+    }
+                  
 }
 
 

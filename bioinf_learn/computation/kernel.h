@@ -16,7 +16,7 @@ __global__ void fitCudaWtaHash(const int* pFeatureIdList, const int* pSizeOfInst
                     int* pComputedSignatures, 
                     const int pNumberOfInstances, const int pStartInstance, 
                     const int pBlockSize, const int pShingleSize,
-                    int* pSignaturesBlockSize);
+                    int* pSignaturesBlockSize, const int pRangeK);
 __global__ void euclideanDistanceCuda(float3* pDotProducts, size_t pSize, float* results);
 __global__ void cosineSimilarityCuda(float3* pDotProducts, size_t pSize, float* results);
 __device__ void sortDesc(cudaInstance* pCandidates, int pInstanceId, int pSize);

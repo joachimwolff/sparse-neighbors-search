@@ -37,6 +37,7 @@ class NearestNeighbors {
     size_t mSimilarity;
     size_t mExcessFactor;
     float mCpuGpuLoadBalancing;
+    size_t mGpuHash;
     Hash* mHash;
     #ifdef CUDA
     NearestNeighborsCuda* mNearestNeighborsCuda;
@@ -54,7 +55,7 @@ class NearestNeighbors {
                     int pRemoveHashFunctionWithLessEntriesAs, 
                     size_t pHashAlgorithm, size_t pBlockSize,
                     size_t pShingle, size_t pRemoveValueWithLeastSigificantBit,
-                    float pCpuGpuLoadBalancing, size_t pRangeK_Wta);
+                    float pCpuGpuLoadBalancing, size_t pGpuHash, size_t pRangeK_Wta);
 
   	~NearestNeighbors(); 
     // Calculate the inverse index for the given instances.

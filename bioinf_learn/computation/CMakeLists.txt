@@ -14,8 +14,7 @@ set(CMAKE_BUILD_TYPE Release)
 # Locate GTest
 #find_package(GTest REQUIRED)
 find_package(PythonLibs REQUIRED)
-include_directories(${PYTHON_INCLUDE_DIRS} bloomierFilter)
 
 # Link runTests with what we want to test and the GTest and pthread library
-add_executable(fit_kneighbors fit_kneighbors.cpp hash.h inverseIndex.cpp inverseIndexStorageBloomierFilter.cpp inverseIndexStorageUnorderedMap.cpp minHashBase.cpp minHash.cpp bloomierFilter/bloomierFilter.cpp bloomierFilter/bloomierHash.cpp bloomierFilter/encoder.cpp bloomierFilter/orderAndMatchFinder.cpp)
+add_executable(fit_kneighbors fit_kneighbors.cpp hash.h inverseIndex.cpp inverseIndexStorageBloomierFilter.cpp inverseIndexStorageUnorderedMap.cpp minHashBase.cpp minHash.cpp)
 target_link_libraries(fit_kneighbors ${PYTHON_LIBRARIES})

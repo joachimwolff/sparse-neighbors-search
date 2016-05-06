@@ -37,7 +37,7 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
     size_t maxNnzInstance;
     size_t* sizeInstance;
    
-    
+    // transfer data to gpu and precompute the dot product
     maxNnzNeighbor = pOriginalRawData->getMaxNnz();
     cudaMalloc((void **) &precomputedDotProductNeighbor, sizeof(float) * pOriginalRawData->size());
     cudaMalloc((void **) &featureIdsNeighbor, sizeof(int) * pOriginalRawData->size() * pOriginalRawData->getMaxNnz());
@@ -58,7 +58,7 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
 
     dotProductSingle<<<1024, 32>>>(featureIdsNeighbor, valuesNeighbor, sizeNeighbor, 
                                     pOriginalRawData->size(), pOriginalRawData->getMaxNnz(), precomputedDotProductNeighbor);
-       cudaDeviceSynchronize();
+    cudaDeviceSynchronize();
     
     if (pRawData == NULL) {
         precomputedDotProductInstance = precomputedDotProductNeighbor;
@@ -67,6 +67,9 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
         maxNnzInstance = maxNnzNeighbor;
         sizeInstance = sizeNeighbor;
     } else {
+        // the query dataset is different from the fitted one
+        // transfer data to gpu and precompute the dot product
+        
         maxNnzInstance = pRawData->getMaxNnz();
         cudaMalloc((void **) &precomputedDotProductInstance, sizeof(float) * pRawData->size());
         cudaMalloc((void **) &featureIdsInstance, sizeof(int) * pRawData->size() * pRawData->getMaxNnz());
@@ -89,10 +92,11 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
                                         pRawData->size(), pRawData->getMaxNnz(), precomputedDotProductInstance);
         cudaDeviceSynchronize();
     }
-    // compute dotproducts for all pairs
+    // compute jump lenghts for list of neighbor candidates.
+    // transfer data to gpu and create space for the euclidean distance/cosine similarity computation
+    // --> float3* dotProducts
     size_t* jumpLengthList = (size_t*) malloc(neighbors->neighbors->size() * sizeof(size_t));
     size_t count = 0;
-    // size_t jumpLength = 0;
     size_t* candidatesSize = (size_t*) malloc(neighbors->neighbors->size() * sizeof(size_t));
     for (size_t i = 0; i < neighbors->neighbors->size(); ++i) {
         jumpLengthList[i] = count;
@@ -117,12 +121,15 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
     size_t* candidatesSizeCuda;
     cudaMalloc((void **) &candidatesSizeCuda, neighbors->neighbors->size() * sizeof(size_t));
     cudaMemcpy(candidatesSizeCuda, candidatesSize, neighbors->neighbors->size() * sizeof(size_t), cudaMemcpyHostToDevice);
+    // compute all dot products for all candidates with their specific query instance.
+    // The base dataset is called 'neighbors' the query instances are 'instance'
     computeDotProducts<<<1024, 32>>>(dotProducts, count, candidatesCuda, jumpLengthListCuda,
                                       candidatesSizeCuda, neighbors->neighbors->size(), featureIdsNeighbor, valuesNeighbor,
                                       maxNnzNeighbor, sizeNeighbor,
                                       featureIdsInstance, valuesInstance, maxNnzInstance,
                                       sizeInstance, precomputedDotProductNeighbor, precomputedDotProductInstance);
     cudaDeviceSynchronize();
+    
     float* resultsCuda;
     cudaMalloc((void **) &resultsCuda, sizeof(float) * count);
     // compute euclidean distance or cosine similarity
@@ -134,7 +141,8 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
      // copy data back and sort
     float* results = (float*) malloc( sizeof(float) * count);
     cudaMemcpy(results, resultsCuda, sizeof(float) * count, cudaMemcpyDeviceToHost);
-    // return results;
+    
+    // return results
     neighborhood* neighbors_ = new neighborhood();;
     neighbors_->neighbors = new vvsize_t(neighbors->neighbors->size());
     neighbors_->distances = new vvfloat(neighbors->neighbors->size());
@@ -146,13 +154,12 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
             element.val = results[jumpLengthList[i]+j];
             returnValue[j] = element;
         }
-        if (pSimilarity) {
-            std::sort(returnValue.begin(), returnValue.end(), mapSortDescByValueFloat);
-        } else {
-            std::sort(returnValue.begin(), returnValue.end(), mapSortAscByValueFloat);
-        }
         size_t vectorSize = std::min(returnValue.size(), pMaxNeighbors);
-                
+        if (pSimilarity) {
+            std::partial_sort(returnValue.begin(), returnValue.begin()+vectorSize, returnValue.end(), mapSortDescByValueFloat);
+        } else {
+            std::partial_sort(returnValue.begin(), returnValue.begin()+vectorSize, returnValue.end(), mapSortAscByValueFloat);
+        }
         std::vector<size_t> neighborsVector(vectorSize);
         std::vector<float> distancesVector(vectorSize);
         if (vectorSize == 0) {
@@ -167,17 +174,24 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
         neighbors_->distances->operator[](i) = distancesVector;
     } 
     
-   cudaFree(dotProducts);
-   cudaFree(candidatesCuda);
-   cudaFree(jumpLengthListCuda);
-   cudaFree(candidatesSizeCuda);
-   cudaFree(featureIdsNeighbor);
-   cudaFree(valuesNeighbor);
-   cudaFree(sizeNeighbor);
-   cudaFree(featureIdsInstance);
-   cudaFree(valuesInstance);
-   cudaFree(sizeInstance);
-   cudaFree(precomputedDotProductNeighbor);
-   cudaFree(precomputedDotProductInstance);
-   return neighbors_;
+    cudaFree(dotProducts);
+    cudaFree(candidatesCuda);
+    cudaFree(jumpLengthListCuda);
+    cudaFree(candidatesSizeCuda);
+    cudaFree(featureIdsNeighbor);
+    cudaFree(valuesNeighbor);
+    cudaFree(sizeNeighbor);
+    cudaFree(precomputedDotProductNeighbor);
+    if (pRawData != NULL) {
+        cudaFree(featureIdsInstance);
+        cudaFree(valuesInstance);
+        cudaFree(sizeInstance);
+        cudaFree(precomputedDotProductInstance);
+    }
+    free(jumpLengthList);
+    free(candidates);
+    free(candidatesSize);
+    free(results);
+    
+    return neighbors_;
 }

@@ -26,6 +26,8 @@ from sklearn.metrics import accuracy_score
 import sklearn
 from sklearn.random_projection import SparseRandomProjection
 from ..neighbors import MinHash
+from ..neighbors import WtaHash
+
 # import pyflann
 import annoy
 
@@ -658,10 +660,14 @@ def measure_performance(dataset, minHashParameters, n_neighbors_sklearn = 10, n_
 def measureMinHashWtaHash(dataset):
     time_list_fit = []
     time_list_query = []
+    accuracy_list = []
     bruteforce = NearestNeighbors(n_neighbors=10, n_jobs=4)
     time_start = time.time()
     bruteforce.fit(dataset)
     time_list_fit.append(time.time() - time_start)
+    time_start = time.time()
+    kneighbors_true = bruteforce.kneighbors(n_neighbors=10, return_distance=False)
+    time_list_query.append(time.time() - time_start)
     for i in [100, 200, 400, 600, 800]:
         minHash = MinHash(number_of_hash_functions=i, max_bin_size= 25, shingle_size = 4, #rangeK_wta=50,
                         similarity=False, minimal_blocks_in_common=1,
@@ -692,7 +698,76 @@ def measureMinHashWtaHash(dataset):
                         remove_hash_function_with_less_entries_as=-1,
                         shingle=0, block_size=4, cpu_gpu_load_balancing = 0.0)
                         
+        time_start = time.time()
+        minHash.fit(dataset)
+        time_list_fit.append(time.time() - time_start)
+        print "fitting minHash done"
         
+        time_start = time.time()
+        minHashGpu.fit(dataset)
+        time_list_fit.append(time.time() - time_start)
+        print "fitting minHashGpu done"
+        
+        time_start = time.time()
+        wtaHash.fit(dataset)
+        time_list_fit.append(time.time() - time_start)
+        print "fitting wtaHash done"
+        
+        time_start = time.time()
+        wtaHashGpu.fit(dataset)
+        time_list_fit.append(time.time() - time_start)
+        
+        print "fitting wtaHashGPU done"
+
+        time_start = time.time()
+        kneighbors = minHash.kneighbors(n_neighbors=10, return_distance=False, fast=True)
+        time_list_query.append(time.time() - time_start)
+        accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
+        print "kneighbors minHash fast done"
+        
+        time_start = time.time()
+        kneighbors = minHashGpu.kneighbors(n_neighbors=10, return_distance=False, fast=True)
+        time_list_fit.append(time.time() - time_start)
+        accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
+        print "kneighbors minHashGpu fast done"
+        
+        time_start = time.time()
+        kneighbors = wtaHash.kneighbors(n_neighbors=10, return_distance=False, fast=True)
+        time_list_query.append(time.time() - time_start)
+        accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
+        print "kneighbors wtaHash fast done"
+        
+        time_start = time.time()
+        kneighbors = wtaHashGpu.kneighbors(n_neighbors=10, return_distance=False, fast=True)
+        time_list_query.append(time.time() - time_start)
+        accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
+        print "kneighbors wtaHashGpu fastdone"
+        
+        time_start = time.time()
+        kneighbors = minHash.kneighbors(n_neighbors=10, return_distance=False, fast=False)
+        time_list_query.append(time.time() - time_start)
+        accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
+        print "kneighbors minHash done"
+        
+        time_start = time.time()
+        kneighbors = minHashGpu.kneighbors(n_neighbors=10, return_distance=False, fast=False)
+        time_list_fit.append(time.time() - time_start)
+        accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
+        print "kneighbors minHashGpu done"
+        
+        time_start = time.time()
+        kneighbors = wtaHash.kneighbors(n_neighbors=10, return_distance=False, fast=False)
+        time_list_query.append(time.time() - time_start)
+        accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
+        print "kneighbors wtaHash done"
+        
+        time_start = time.time()
+        kneighbors = wtaHashGpu.kneighbors(n_neighbors=10, return_distance=False, fast=False)
+        time_list_query.append(time.time() - time_start)
+        accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
+        print "kneighbors wtaHashGpu done"
+                        
+    return [time_list_fit, time_list_query, accuracy_list]
     
     
     

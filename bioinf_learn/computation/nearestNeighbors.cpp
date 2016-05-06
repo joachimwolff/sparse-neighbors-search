@@ -30,7 +30,7 @@ NearestNeighbors::NearestNeighbors(size_t pNumberOfHashFunctions, size_t pShingl
                     int pFast, int pSimilarity, int pPruneInverseIndex, float pPruneInverseIndexAfterInstance, 
                     int pRemoveHashFunctionWithLessEntriesAs, size_t pHashAlgorithm,
                     size_t pBlockSize, size_t pShingle, size_t pRemoveValueWithLeastSigificantBit,
-                    float pCpuGpuLoadBalancing, size_t pRangeK_Wta) {
+                    float pCpuGpuLoadBalancing, size_t pGpuHash, size_t pRangeK_Wta) {
             // printf("foo%i\n", __LINE__);
 
         mInverseIndex = new InverseIndex(pNumberOfHashFunctions, pShingleSize,
@@ -40,7 +40,7 @@ NearestNeighbors::NearestNeighbors(size_t pNumberOfHashFunctions, size_t pShingl
                                     pPruneInverseIndex, pPruneInverseIndexAfterInstance, 
                                     pRemoveHashFunctionWithLessEntriesAs, pHashAlgorithm, pBlockSize, pShingle,
                                     pRemoveValueWithLeastSigificantBit, 
-                                    pCpuGpuLoadBalancing, pRangeK_Wta);
+                                    pCpuGpuLoadBalancing, pGpuHash, pRangeK_Wta);
 
         mNneighbors = pSizeOfNeighborhood;
         mFast = pFast;
@@ -49,6 +49,7 @@ NearestNeighbors::NearestNeighbors(size_t pNumberOfHashFunctions, size_t pShingl
         mSimilarity = pSimilarity;
         mExcessFactor = pExcessFactor;
         mCpuGpuLoadBalancing = pCpuGpuLoadBalancing;
+        mGpuHash = pGpuHash;
         mHash = new Hash();
         #ifdef CUDA
         mNearestNeighborsCuda = new NearestNeighborsCuda();
@@ -67,46 +68,20 @@ NearestNeighbors::~NearestNeighbors() {
 }
 
 void NearestNeighbors::fit(SparseMatrixFloat* pRawData) {
-            std::cout << __LINE__ << std::endl;
-
     mInverseIndex->fit(pRawData);
-            std::cout << __LINE__ << std::endl;
-    // #ifndef CUDA
-    if (mCpuGpuLoadBalancing == 0) {
+    if (mCpuGpuLoadBalancing == 0 ) {
         pRawData->precomputeDotProduct();
     }
-    // #endif
-    // #ifdef CUDA
-    // mNearestNeighborsCuda->setFeatureList(mInverseIndex->get_dev_FeatureList());
-    // mNearestNeighborsCuda->setValuesList(mInverseIndex->get_dev_ValuesList());
-    // mNearestNeighborsCuda->setSizeOfInstanceList(mInverseIndex->get_dev_SizeOfInstanceList());
-    // // mNearestNeighborsCuda->setJumpLenthList(mInverseIndex->get_mDev_JumpLength());
-    // mNearestNeighborsCuda->setDotProduct(mInverseIndex->get_mDev_DotProduct());
-    
-    // mNearestNeighborsCuda->setMaxNnz(mOriginalData->getMaxNnz());
-    // #endif
-    //         std::cout << __LINE__ << std::endl;
-
     return;
 }
 
 void NearestNeighbors::partialFit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
     mInverseIndex->fit(pRawData, pStartIndex);
-    #ifdef CUDA
-    mNearestNeighborsCuda->setFeatureList(mInverseIndex->get_dev_FeatureList());
-    mNearestNeighborsCuda->setValuesList(mInverseIndex->get_dev_ValuesList());
-    mNearestNeighborsCuda->setSizeOfInstanceList(mInverseIndex->get_dev_SizeOfInstanceList());
-    // mNearestNeighborsCuda->setMaxNnz(mOriginalData->getMaxNnz());
-    #endif
     return;
 }
 
 neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                                                 size_t pNneighbors, int pFast, int pSimilarity) {
-//    std::cout << "sizeof(size_t) " << sizeof(size_t) << std::endl;
-//    std::cout << "sizeof(int32_t) " << sizeof(int32_t) << std::endl;
-//    std::cout << "sizeof(uint32_t) " << sizeof(uint32_t) << std::endl; 
-    // std::cout << __LINE__ << std::endl;
     if (pFast == -1) {
         pFast = mFast;
     } 
@@ -152,7 +127,6 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
    
     neighborhood* neighborhoodCandidates = new neighborhood();
     neighborhoodCandidates->neighbors = new vvsize_t(mOriginalData->size());
-    // std::cout << __LINE__ << std::endl;
     
     // compute the exact neighbors based on the candidates given by the inverse index
     // store the neighborhood in neighborhoodCandidates to reuse neighbor if needed
@@ -162,15 +136,13 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     // if it would not be used, it would be iterated over neighborhood_ and manipulated
     // at the same time
     #ifdef CUDA
-    if (mCpuGpuLoadBalancing == 0) {
+    if (mCpuGpuLoadBalancing == 0 || mGpuHash == 1) {
     #endif
         #ifdef OPENMP
         #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
         #endif
         for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
             if (neighborhood_->neighbors->operator[](i).size() > 0) {
-                // std::cout << "candidates: " << neighborhood_->neighbors->operator[](i).size() << std::endl;
-    // std::cout << __LINE__ << std::endl;
                 
                 std::vector<sortMapFloat> exactNeighbors;
                 if (pSimilarity) {
@@ -195,22 +167,12 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                     }
                 }
             }
-    // std::cout << __LINE__ << std::endl;
-            
         }
-        // return neighborhood_;
     #ifdef CUDA
     } else {
-        // call gpu code
-        // std::cout << "GPU code is running! " << std::endl;
-        
-    //    delete neighborhoodCandidates;
        
         neighborhood* neighbors_ = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData, mOriginalData, pNneighbors+mExcessFactor);
         
-        // printf("%i", __LINE__);
-        // fflush(stdout);
-        // int jumpLength = 0;
         #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
         for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
             size_t vectorSize = neighborhood_->neighbors->operator[](i).size();
@@ -222,8 +184,6 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
             if (neighborhood_->neighbors->operator[](i).size() > 1) {
                 neighborhoodCandidates->neighbors->operator[](i) = neighborsVector;
             }
-            // free(cudaInstanceVector[i].instance);
-            // jumpLength += neighborhood_->neighbors->operator[](i).size();
         }
         delete neighbors_->neighbors;
         delete neighbors_->distances;
@@ -306,20 +266,17 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
             }
         }
     }
-    // std::cout << __LINE__ << std::endl;
 
     delete neighborhoodCandidates->neighbors;
     delete neighborhoodCandidates;
-    // std::cout << __LINE__ << std::endl;
     
     neighborhood* neighborhoodExact = new neighborhood();
     neighborhoodExact->neighbors = new vvsize_t(neighborhood_->neighbors->size());
     neighborhoodExact->distances = new vvfloat(neighborhood_->neighbors->size());
-    // std::cout << __LINE__ << std::endl;
 
     // compute the exact neighbors based on the candidate selection before.
     #ifdef CUDA
-    if (mCpuGpuLoadBalancing == 0) {
+    if (mCpuGpuLoadBalancing == 0 || mGpuHash == 1) {
     #endif
     #ifdef OPENMP
     #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
@@ -374,37 +331,11 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
         
     #ifdef CUDA
     } else {
-        // std::cout << "GPU code is running! Part2" << std::endl;
-        
         neighborhood* neighbors_ = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData, mOriginalData, pNneighbors+mExcessFactor);
         delete neighborhood_->neighbors;
-    delete neighborhood_->distances;
-    delete neighborhood_;
-    return neighbors_;
-        // #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
-        // for (size_t i = 0; i < neighborhood_->neighbors->size(); ++i) {
-        //     size_t vectorSize = std::min(neighborhood_->neighbors->operator[](i).size(), pNneighbors+mExcessFactor);
-        //     std::vector<size_t> neighborsVector(vectorSize);
-        //     std::vector<float> distancesVector(vectorSize);
-        //     if (vectorSize == 0) {
-        //         neighborsVector.push_back(i);
-        //         distancesVector.push_back(0.0);
-        //     }
-        //     for (size_t j = 0; j < vectorSize; ++j) {
-        //         neighborsVector[j] = neighbors_->neighbors->operator[](i)[j];
-        //         distancesVector[j] = neighbors_->distances->operator[](i)[j];
-                
-        //     } 
-        //     // jumpLength += neighborhood_->neighbors->operator[](i).size();
-        //     neighborhoodExact->neighbors->operator[](i) = neighborsVector;
-        //     neighborhoodExact->distances->operator[](i) = distancesVector;
-        //     // free(cudaInstanceVector[i].instance);
-        // }
-        // delete neighbors_->neighbors;
-        // delete neighbors_->distances;
-        // delete neighbors_;
-        // std::cout << "GPU code is running! Part2 DONE" << std::endl;
-        
+        delete neighborhood_->distances;
+        delete neighborhood_;
+        return neighbors_;
     }
     #endif
     

@@ -55,17 +55,17 @@ static PyObject* createObject(PyObject* self, PyObject* args) {
     size_t numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
     nNeighbors, minimalBlocksInCommon, maxBinSize,
     maximalNumberOfHashCollisions, excessFactor, hashAlgorithm,
-     blockSize, shingle, removeValueWithLeastSigificantBit, rangeK_Wta;
+     blockSize, shingle, removeValueWithLeastSigificantBit, gpu_hash, rangeK_Wta;
     int fast, similarity, pruneInverseIndex, removeHashFunctionWithLessEntriesAs;
     float pruneInverseIndexAfterInstance, cpuGpuLoadBalancing;
     
-    if (!PyArg_ParseTuple(args, "kkkkkkkkkiiifikkkkfk", &numberOfHashFunctions,
+    if (!PyArg_ParseTuple(args, "kkkkkkkkkiiifikkkkfkk", &numberOfHashFunctions,
                         &shingleSize, &numberOfCores, &chunkSize, &nNeighbors,
                         &minimalBlocksInCommon, &maxBinSize,
                         &maximalNumberOfHashCollisions, &excessFactor, &fast, &similarity,
                         &pruneInverseIndex,&pruneInverseIndexAfterInstance, &removeHashFunctionWithLessEntriesAs,
                         &hashAlgorithm, &blockSize, &shingle, &removeValueWithLeastSigificantBit, 
-                        &cpuGpuLoadBalancing, &rangeK_Wta))
+                        &cpuGpuLoadBalancing, &gpu_hash, &rangeK_Wta))
         return NULL;
     NearestNeighbors* nearestNeighbors;
     nearestNeighbors = new NearestNeighbors (numberOfHashFunctions, shingleSize, numberOfCores, chunkSize,
@@ -73,7 +73,7 @@ static PyObject* createObject(PyObject* self, PyObject* args) {
                         excessFactor, maximalNumberOfHashCollisions, fast, similarity, pruneInverseIndex,
                         pruneInverseIndexAfterInstance, removeHashFunctionWithLessEntriesAs, 
                         hashAlgorithm, blockSize, shingle, removeValueWithLeastSigificantBit,
-                        cpuGpuLoadBalancing, rangeK_Wta);
+                        cpuGpuLoadBalancing, gpu_hash, rangeK_Wta);
 
     size_t adressNearestNeighborsObject = reinterpret_cast<size_t>(nearestNeighbors);
     PyObject* pointerToInverseIndex = Py_BuildValue("k", adressNearestNeighborsObject);
@@ -107,23 +107,23 @@ static PyObject* fit(PyObject* self, PyObject* args) {
     
     // parse from python list to a c++ map<size_t, vector<size_t> >
     // where key == instance id and vector<size_t> == non null feature ids
-        printf("parse data...");
-fflush(stdout);
+//         printf("parse data...");
+// fflush(stdout);
     SparseMatrixFloat* originalDataMatrix = parseRawData(instancesListObj, featuresListObj, dataListObj, 
                                                     maxNumberOfInstances, maxNumberOfFeatures);
-        printf("parse data... DONE");
-fflush(stdout);
+//         printf("parse data... DONE");
+// fflush(stdout);
 
     // get pointer to the minhash object
     NearestNeighbors* nearestNeighbors = reinterpret_cast<NearestNeighbors* >(addressNearestNeighborsObject);
-    printf("set data...");
-fflush(stdout);
+//     printf("set data...");
+// fflush(stdout);
     nearestNeighbors->set_mOriginalData(originalDataMatrix);
-    printf("fit data...");
-fflush(stdout);
+//     printf("fit data...");
+// fflush(stdout);
     nearestNeighbors->fit(originalDataMatrix);
-    printf("fit data... DONE");
-fflush(stdout);
+//     printf("fit data... DONE");
+// fflush(stdout);
     addressNearestNeighborsObject = reinterpret_cast<size_t>(nearestNeighbors);
     PyObject * pointerToInverseIndex = Py_BuildValue("k", addressNearestNeighborsObject);
     

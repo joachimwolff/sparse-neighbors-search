@@ -38,10 +38,10 @@ class SparseMatrixFloat {
     std::unordered_map<size_t, float> mDotProductPrecomputed;
   public:
     SparseMatrixFloat(size_t pNumberOfInstances, size_t pMaxNnz) {
-        std::cout << "pMaxNNz: " << pMaxNnz << std::endl; 
+        // std::cout << "pMaxNNz: " << pMaxNnz << std::endl; 
         
         pMaxNnz = pMaxNnz + 32 - (pMaxNnz % 32);
-        std::cout << "pMaxNNz: " << pMaxNnz << std::endl; 
+        // std::cout << "pMaxNNz: " << pMaxNnz << std::endl; 
         mSparseMatrix = new int [pNumberOfInstances * pMaxNnz];
         std::fill_n(mSparseMatrix, pNumberOfInstances * pMaxNnz, MAX_VALUE);
         mSparseMatrixValues = new float [pNumberOfInstances * pMaxNnz]();
@@ -93,8 +93,8 @@ class SparseMatrixFloat {
             value3 = 0.0;
             // std::cout << "instance: " << i << ": value: " << mDotProductPrecomputed[i] << std::endl;
         }
-        std::cout << "mDotProduct[0]: " << mDotProductPrecomputed[0] << std::endl;
-        std::cout << __LINE__ << std::endl;
+        // std::cout << "mDotProduct[0]: " << mDotProductPrecomputed[0] << std::endl;
+        // std::cout << __LINE__ << std::endl;
         
     };
     float dotProduct(const size_t pIndex, const size_t pIndexNeighbor, SparseMatrixFloat* pQueryData=NULL)  {
@@ -321,38 +321,30 @@ class SparseMatrixFloat {
         const size_t pRowId = pQueryId;
         
         std::vector<sortMapFloat> returnValue(pRowIdVector.size());
-        // std::cout << __LINE__ << std::endl;
         
         const size_t valueXX = getDotProductPrecomputed(pRowId);
-        // std::cout << __LINE__ << std::endl;
         
         float valueXY = 0;
         float valueYY = 0;
         size_t instance_id;
-        // uint32_t neighbor_id = 
         for (size_t i = 0; i < pRowIdVector.size(); ++i) {
             instance_id = pRowIdVector[i];
             sortMapFloat element; 
             element.key = pRowIdVector[i];
             element.val = 0;
             
-                
-                valueXY = this->dotProduct(pRowId, instance_id, pQueryData);
-                if (pQueryData == NULL) {
-                    valueYY = getDotProductPrecomputed(instance_id);
-                } else {
-                    valueYY = pQueryData->getDotProductPrecomputed(instance_id);
-                }
-               
-                element.val = valueXX - 2* valueXY + valueYY;
-                // std::cout << "result: " << element.val << std::endl;
-                // std::cout <<  "valueXX: " << valueXX << std::endl;
-                // std::cout <<  "valueXY: " << valueXY << std::endl;
-                // std::cout <<  "valueYY: " << valueYY << std::endl;
-                
-                if (element.val <= 0) {
-                    element.val = 0;
-                }
+            valueXY = this->dotProduct(pRowId, instance_id, pQueryData);
+            if (pQueryData == NULL) {
+                valueYY = getDotProductPrecomputed(instance_id);
+            } else {
+                valueYY = pQueryData->getDotProductPrecomputed(instance_id);
+            }
+            
+            element.val = valueXX - 2* valueXY + valueYY;
+            
+            if (element.val <= 0) {
+                element.val = 0;
+            }
                 
             returnValue[i] = element;
         }
@@ -366,86 +358,44 @@ class SparseMatrixFloat {
     };
 
     std::vector<sortMapFloat> cosineSimilarity(const std::vector<size_t> pRowIdVector, const size_t pNneighbors, 
-                                                const size_t pQueryId, const SparseMatrixFloat* pQueryData=NULL) const {
-        std::cout << "cosine, queryId: " << pQueryId << std::endl;
+                                                const size_t pQueryId, SparseMatrixFloat* pQueryData=NULL)  {
+        // std::cout << "cosine, queryId: " << pQueryId << std::endl;
        
-        const SparseMatrixFloat* queryData = this;
         const size_t pRowId = pQueryId;
         
-        if (pQueryData != NULL) {
-            queryData = pQueryData;
-        }
         std::vector<sortMapFloat> returnValue(pRowIdVector.size());
-        size_t pointerToMatrixElement = 0;
-        size_t pointerToVectorElement = 0;
-        // iterate over all candidates
-
+        
+        const size_t valueXX = getDotProductPrecomputed(pRowId);
+        
+        float valueXY = 0;
+        float valueYY = 0;
+        size_t instance_id;
         for (size_t i = 0; i < pRowIdVector.size(); ++i) {
+            instance_id = pRowIdVector[i];
             sortMapFloat element; 
             element.key = pRowIdVector[i];
             element.val = 0;
-            size_t dotProduct = 0;
-            size_t magnitudeFirstVector = 0;
-            size_t magnitudeSecondVector = 0;
-
-            // features ids are stored in mSparseMatrix. 
-            // every instances starts at index indexId*mMaxNnz --> every instance can store maximal mMaxNnz feature ids
-            // how many elements per index are stored is stored in mSizesOfInstances[indexID]
-            // iterate until both instances have no more feature ids
-            bool endOfFirstVectorNotReached = pointerToMatrixElement < this->getSizeOfInstance(pRowIdVector[i]);
-            bool endOfSecondVectorNotReached = pointerToVectorElement < queryData->getSizeOfInstance(pRowId);
-
-            while (endOfFirstVectorNotReached && endOfSecondVectorNotReached) {
-                // are the feature ids of the two instances the same?
-                size_t featureIdFirstVector = this->getNextElement(pRowIdVector[i], pointerToMatrixElement);
-                size_t featureIdSecondVector = queryData->getNextElement(pRowId, pointerToVectorElement);
-
-                if (featureIdFirstVector == featureIdSecondVector) {
-                    // if they are the same substract the values, compute the square and sum it up
-                    dotProduct += this->getNextValue(pRowIdVector[i], pointerToMatrixElement) * queryData->getNextValue(pRowId, pointerToVectorElement);
-                    magnitudeFirstVector += pow(this->getNextValue(pRowIdVector[i], pointerToMatrixElement), 2);
-                    magnitudeSecondVector += pow(queryData->getNextValue(pRowId, pointerToVectorElement),2);
-                    // increase both counters to the next element 
-                    ++pointerToMatrixElement;
-                    ++pointerToVectorElement;
-                } else if (featureIdFirstVector < featureIdSecondVector) {
-                    // if the feature ids are unequal square only the smaller one and add it to the sum
-                    magnitudeFirstVector += pow(this->getNextValue(pRowIdVector[i], pointerToMatrixElement), 2);
-                    // increase counter for first vector
-                    ++pointerToMatrixElement;
-                } else {
-                    magnitudeSecondVector += pow(queryData->getNextValue(pRowId, pointerToVectorElement), 2);
-                    // increase counter for second vector
-                    ++pointerToVectorElement;
-                }
-                endOfFirstVectorNotReached = pointerToMatrixElement < this->getSizeOfInstance(pRowIdVector[i]);
-                endOfSecondVectorNotReached = pointerToVectorElement < queryData->getSizeOfInstance(pRowId);
-            }
-            while (endOfFirstVectorNotReached) {
-                magnitudeFirstVector += pow(this->getNextValue(pRowIdVector[i], pointerToMatrixElement), 2);
-                ++pointerToMatrixElement;
-                endOfFirstVectorNotReached = pointerToMatrixElement < this->getSizeOfInstance(pRowIdVector[i]);
-            }
-            while (endOfSecondVectorNotReached) {
-                magnitudeSecondVector += pow(queryData->getNextValue(pRowId, pointerToVectorElement), 2);
-                ++pointerToVectorElement;
-                endOfSecondVectorNotReached = pointerToVectorElement < queryData->getSizeOfInstance(pRowId);
-            }
-
-            pointerToMatrixElement = 0;
-            pointerToVectorElement = 0;
-            // compute cosine similarity
-            element.val = dotProduct / (magnitudeFirstVector * magnitudeSecondVector);
             
+            valueXY = this->dotProduct(pRowId, instance_id, pQueryData);
+            if (pQueryData == NULL) {
+                valueYY = getDotProductPrecomputed(instance_id);
+            } else {
+                valueYY = pQueryData->getDotProductPrecomputed(instance_id);
+            }
+            //  results[instance] = pDotProducts[instance].y / (sqrtf(pDotProducts[instance].x)* sqrtf(pDotProducts[instance].z));
+            element.val = valueXY / (sqrt(valueXX) * sqrtf(valueYY));
+            
+            if (element.val <= 0) {
+                element.val = 0;
+            }
+                
             returnValue[i] = element;
         }
         size_t numberOfElementsToSort = pNneighbors;
         if (numberOfElementsToSort > returnValue.size()) {
             numberOfElementsToSort = returnValue.size();
         }
-        // sort the values by increasing order
-        // std::sort(returnValue.begin(), returnValue.end(), mapSortDescByValueFloat);
-        
+        // sort the values by decreasing order
         std::partial_sort(returnValue.begin(), returnValue.begin()+numberOfElementsToSort, returnValue.end(), mapSortDescByValueFloat);
         return returnValue;
     };

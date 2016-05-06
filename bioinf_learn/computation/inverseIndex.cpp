@@ -42,7 +42,7 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
                     int pRemoveHashFunctionWithLessEntriesAs, size_t pHashAlgorithm,
                     size_t pBlockSize, size_t pShingle,
                     size_t pRemoveValueWithLeastSigificantBit,
-                    float pCpuGpuLoadBalancing, size_t pRangeK_Wta) {   
+                    float pCpuGpuLoadBalancing, size_t pGpuHash, size_t pRangeK_Wta) {   
     mNumberOfHashFunctions = pNumberOfHashFunctions;
     mShingleSize = pShingleSize;
     mNumberOfCores = pNumberOfCores;
@@ -61,6 +61,7 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
     mShingle = pShingle;
     mCpuGpuLoadBalancing = pCpuGpuLoadBalancing;
     mRangeK_Wta = pRangeK_Wta;
+    mGpuHash = pGpuHash;
     if (mShingle == 0) {
         if (mBlockSize == 0) {
             mBlockSize = 1;
@@ -70,7 +71,6 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
         mBlockSize = 1;
     } else {
         mInverseIndexSize = ceil(((float) (mNumberOfHashFunctions * mBlockSize) / (float) mShingleSize));
-        // std::cout << "size inverse index: " << mInverseIndexSize << std::endl;      
     }
     
     // if (mHashAlgorithm == 1) {
@@ -170,17 +170,17 @@ vsize_t* InverseIndex::computeSignatureWTA(SparseMatrixFloat* pRawData, const si
             keyValue.insert(hashIndex, pRawData->getNextValue(pInstance, j));
         } 
         
-        // float maxValue = 0.0;
-        // size_t maxValueIndex = 0;
+        float maxValue = 0.0;
+        size_t maxValueIndex = 0;
         
-        // for (size_t j = 0; j < mK; ++j) {
-        //     if (keyValue.getValue(j) > maxValue) {
-        //         maxValue = keyValue.getValue(j);
-        //         maxValueIndex = j;
-        //     }
-        // }
-        // (*signature)[i] = maxValueIndex;//keyValue.getMaxValueIndex();
-        (*signature)[i] = keyValue.getMaxValueIndex();
+        for (size_t j = 0; j < mK; ++j) {
+            if (keyValue.getValue(j) > maxValue) {
+                maxValue = keyValue.getValue(j);
+                maxValueIndex = j;
+            }
+        }
+        (*signature)[i] = maxValueIndex;//keyValue.getMaxValueIndex();
+        // (*signature)[i] = keyValue.getMaxValueIndex();
         keyValue.clear();
     }
     if (mShingle) {
@@ -198,7 +198,7 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(SparseMatrixFloat* pRawData, c
     #endif
     vvsize_t_p* signatures = new vvsize_t_p(pRawData->size(), NULL);
     #ifdef CUDA
-    if (mCpuGpuLoadBalancing == 0) {
+    if (mCpuGpuLoadBalancing == 0 && mGpuHash == 0) {
     #endif
         #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
         for (size_t instance = 0; instance < pRawData->size(); ++instance) {

@@ -5,3 +5,4 @@ from util import benchmarkNearestNeighborAlgorithms
 from util import measure_performance
 from util import plotData
 from util import plotDataBenchmark
+from util import measureMinHashWtaHash

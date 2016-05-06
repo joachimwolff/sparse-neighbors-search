@@ -48,7 +48,7 @@ class InverseIndex {
     size_t mMaxNnz;
     float mCpuGpuLoadBalancing;
     size_t mRangeK_Wta;
-    
+    size_t mGpuHash; 
     // cuda stuff
     size_t* mDev_FeatureList;
     size_t* mDev_SizeOfInstanceList;
@@ -72,7 +72,7 @@ class InverseIndex {
                     int pPruneInverseIndex, float pPruneInverseIndexAfterInstance,
                     int pRemoveHashFunctionWithLessEntriesAs, size_t pHashAlgorithm, 
                     size_t pBlockSize, size_t pShingle, size_t pRemoveValueWithLeastSigificantBit,
-                    float pCpuGpuLoadBalancing, size_t pRangeK_Wta);
+                    float pCpuGpuLoadBalancing, size_t pGpuHash, size_t pRangeK_Wta);
     ~InverseIndex();
   	vsize_t* computeSignature(SparseMatrixFloat* pRawData, const size_t pInstance);
   	vsize_t* computeSignatureWTA(SparseMatrixFloat* pRawData, const size_t pInstance);

@@ -92,7 +92,7 @@ class WtaHash():
                  similarity=False, number_of_cores=None, chunk_size=None, prune_inverse_index=-1,
                  prune_inverse_index_after_instance=-1.0, remove_hash_function_with_less_entries_as=-1, 
                  block_size = 5, shingle=0, store_value_with_least_sigificant_bit=0, 
-                 cpu_gpu_load_balancing=0, speed_optimized=None, accuracy_optimized=None):
+                 cpu_gpu_load_balancing=0, gpu_hashing=0, speed_optimized=None, accuracy_optimized=None):
                   
         if speed_optimized is not None and accuracy_optimized is not None:
             print "Speed optimization and accuracy optimization at the same time is not possible."
@@ -131,7 +131,7 @@ class WtaHash():
                 remove_hash_function_with_less_entries_as=remove_hash_function_with_less_entries_as, 
                 hash_algorithm=1, block_size=block_size, shingle=shingle,
                 store_value_with_least_sigificant_bit=store_value_with_least_sigificant_bit, 
-                cpu_gpu_load_balancing=cpu_gpu_load_balancing, rangeK_wta=rangeK_wta)
+                cpu_gpu_load_balancing=cpu_gpu_load_balancing, gpu_hashing=gpu_hashing, rangeK_wta=rangeK_wta)
 
     def __del__(self):
        del self._nearestNeighborsCppInterface
