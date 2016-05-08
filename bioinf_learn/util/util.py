@@ -657,7 +657,7 @@ def measure_performance(dataset, minHashParameters, n_neighbors_sklearn = 10, n_
             
 # minHash minhashFast, minhashgpu minhashfastgpu wtahash wtahashFast wtahashgpu wtahashFastgpu sklaern bruteforce
 # 100, 200, 400, 600, 800 hash functions 
-def measureMinHashWtaHash(dataset):
+def measureMinHashWtaHash(dataset, minHashParameters, wtaHashParameters):
     time_list_fit = []
     time_list_query = []
     accuracy_list = []
@@ -668,104 +668,116 @@ def measureMinHashWtaHash(dataset):
     time_start = time.time()
     kneighbors_true = bruteforce.kneighbors(n_neighbors=10, return_distance=False)
     time_list_query.append(time.time() - time_start)
-    for i in [100, 200, 400, 600, 800]:
-        minHash = MinHash(number_of_hash_functions=i, max_bin_size= 25, shingle_size = 4, #rangeK_wta=50,
-                        similarity=False, minimal_blocks_in_common=1,
-                        number_of_cores=4, prune_inverse_index=1, 
-                        store_value_with_least_sigificant_bit=0,
-                        excess_factor=5, prune_inverse_index_after_instance=0.5, 
-                        remove_hash_function_with_less_entries_as=0,
-                        shingle=0, block_size=4, cpu_gpu_load_balancing = 0.0)
-        wtaHash = WtaHash(number_of_hash_functions=i, max_bin_size= 25, shingle_size = 4, rangeK_wta=50,
-                        similarity=False, minimal_blocks_in_common=1,
-                        number_of_cores=4, prune_inverse_index=-1, 
-                        store_value_with_least_sigificant_bit=0,
-                        excess_factor=5, prune_inverse_index_after_instance=-1, 
-                        remove_hash_function_with_less_entries_as=-1,
-                        shingle=0, block_size=4, cpu_gpu_load_balancing = 0.0)
-        minHashGpu = MinHash(number_of_hash_functions=i, max_bin_size= 25, shingle_size = 4, #rangeK_wta=50,
-                        similarity=False, minimal_blocks_in_common=1,
-                        number_of_cores=4, prune_inverse_index=1, 
-                        store_value_with_least_sigificant_bit=0,
-                        excess_factor=5, prune_inverse_index_after_instance=0.5, 
-                        remove_hash_function_with_less_entries_as=0,
-                        shingle=0, block_size=4, cpu_gpu_load_balancing = 1.0)
-        wtaHashGpu = WtaHash(number_of_hash_functions=i, max_bin_size= 25, shingle_size = 4, rangeK_wta=50,
-                        similarity=False, minimal_blocks_in_common=1,
-                        number_of_cores=4, prune_inverse_index=-1, 
-                        store_value_with_least_sigificant_bit=0,
-                        excess_factor=5, prune_inverse_index_after_instance=-1, 
-                        remove_hash_function_with_less_entries_as=-1,
-                        shingle=0, block_size=4, cpu_gpu_load_balancing = 0.0)
-                        
+    for i in [100, 200, 400, 600, 800, 1000]:
+        print "702_1"       
+    
+        minHash = MinHash(number_of_hash_functions=i, max_bin_size= minHashParameters[0], shingle_size =  minHashParameters[1], #rangeK_wta=50,
+                        similarity=False, minimal_blocks_in_common= minHashParameters[2],
+                        number_of_cores=4, prune_inverse_index= minHashParameters[3], 
+                        store_value_with_least_sigificant_bit= minHashParameters[4],
+                        excess_factor= minHashParameters[5], prune_inverse_index_after_instance= minHashParameters[6] ,
+                        remove_hash_function_with_less_entries_as= minHashParameters[7],
+                        shingle= minHashParameters[8], block_size= minHashParameters[9], cpu_gpu_load_balancing = 0.0)
+        print "702_2"       
+       
+        wtaHash = WtaHash(number_of_hash_functions=i, max_bin_size= wtaHashParameters[0], shingle_size = wtaHashParameters[1], 
+                        rangeK_wta=wtaHashParameters[2],
+                        similarity=False, minimal_blocks_in_common=wtaHashParameters[3],
+                        number_of_cores=4, prune_inverse_index=wtaHashParameters[4], 
+                        store_value_with_least_sigificant_bit=wtaHashParameters[5],
+                        excess_factor=wtaHashParameters[6], prune_inverse_index_after_instance=wtaHashParameters[7], 
+                        remove_hash_function_with_less_entries_as=wtaHashParameters[8],
+                        shingle=wtaHashParameters[9], block_size=wtaHashParameters[10], cpu_gpu_load_balancing = 0.0)
+        print "702_3"       
+        
+        minHashGpu = MinHash(number_of_hash_functions=i, max_bin_size= minHashParameters[0], shingle_size =  minHashParameters[1], #rangeK_wta=50,
+                        similarity=False, minimal_blocks_in_common= minHashParameters[2],
+                        number_of_cores=4, prune_inverse_index= minHashParameters[3], 
+                        store_value_with_least_sigificant_bit= minHashParameters[4],
+                        excess_factor= minHashParameters[5], prune_inverse_index_after_instance= minHashParameters[6] ,
+                        remove_hash_function_with_less_entries_as= minHashParameters[7],
+                        shingle= minHashParameters[8], block_size= minHashParameters[9], cpu_gpu_load_balancing = 1.0)
+        print "702_4"       
+       
+        wtaHash = WtaHash(number_of_hash_functions=i, max_bin_size= wtaHashParameters[0], shingle_size = wtaHashParameters[1], 
+                        rangeK_wta=wtaHashParameters[2],
+                        similarity=False, minimal_blocks_in_common=wtaHashParameters[3],
+                        number_of_cores=4, prune_inverse_index=wtaHashParameters[4], 
+                        store_value_with_least_sigificant_bit=wtaHashParameters[5],
+                        excess_factor=wtaHashParameters[6], prune_inverse_index_after_instance=wtaHashParameters[7], 
+                        remove_hash_function_with_less_entries_as=wtaHashParameters[8],
+                        shingle=wtaHashParameters[9], block_size=wtaHashParameters[10], cpu_gpu_load_balancing = 0.0)
+        print "702"       
         time_start = time.time()
         minHash.fit(dataset)
         time_list_fit.append(time.time() - time_start)
-        print "fitting minHash done"
+        print "706"       
+
         
         time_start = time.time()
         minHashGpu.fit(dataset)
         time_list_fit.append(time.time() - time_start)
-        print "fitting minHashGpu done"
+
+        print "713"       
         
         time_start = time.time()
         wtaHash.fit(dataset)
         time_list_fit.append(time.time() - time_start)
-        print "fitting wtaHash done"
+        print "718"       
         
         time_start = time.time()
         wtaHashGpu.fit(dataset)
         time_list_fit.append(time.time() - time_start)
+        print "723"       
         
-        print "fitting wtaHashGPU done"
 
         time_start = time.time()
         kneighbors = minHash.kneighbors(n_neighbors=10, return_distance=False, fast=True)
         time_list_query.append(time.time() - time_start)
         accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
-        print "kneighbors minHash fast done"
+        print "730"       
         
         time_start = time.time()
         kneighbors = minHashGpu.kneighbors(n_neighbors=10, return_distance=False, fast=True)
         time_list_fit.append(time.time() - time_start)
         accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
-        print "kneighbors minHashGpu fast done"
+        print "736"       
         
         time_start = time.time()
         kneighbors = wtaHash.kneighbors(n_neighbors=10, return_distance=False, fast=True)
         time_list_query.append(time.time() - time_start)
         accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
-        print "kneighbors wtaHash fast done"
+        print "742"       
         
         time_start = time.time()
         kneighbors = wtaHashGpu.kneighbors(n_neighbors=10, return_distance=False, fast=True)
         time_list_query.append(time.time() - time_start)
         accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
-        print "kneighbors wtaHashGpu fastdone"
+        print "748"       
         
         time_start = time.time()
         kneighbors = minHash.kneighbors(n_neighbors=10, return_distance=False, fast=False)
         time_list_query.append(time.time() - time_start)
         accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
-        print "kneighbors minHash done"
+        print "754"       
         
         time_start = time.time()
         kneighbors = minHashGpu.kneighbors(n_neighbors=10, return_distance=False, fast=False)
         time_list_fit.append(time.time() - time_start)
         accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
-        print "kneighbors minHashGpu done"
+        print "760"       
         
         time_start = time.time()
         kneighbors = wtaHash.kneighbors(n_neighbors=10, return_distance=False, fast=False)
         time_list_query.append(time.time() - time_start)
         accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
-        print "kneighbors wtaHash done"
+        print "766"       
         
         time_start = time.time()
         kneighbors = wtaHashGpu.kneighbors(n_neighbors=10, return_distance=False, fast=False)
         time_list_query.append(time.time() - time_start)
         accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
-        print "kneighbors wtaHashGpu done"
+        print "772"       
                         
     return [time_list_fit, time_list_query, accuracy_list]
     
