@@ -82,8 +82,10 @@ class KSizeSortedMap {
     void clear() {
         mKSizeSortedMap->clear();
     }
+    // size_t getMaxVakue
     size_t getMaxValueIndex() {
-        size_t foo = std::distance(mKSizeSortedMap->begin(), mKSizeSortedMap->find(mMaxValueIndex));
+        return mMaxValueIndex;
+        // size_t foo = std::distance(mKSizeSortedMap->begin(), mKSizeSortedMap->find(mMaxValueIndex));
         // std::cout << foo << ", " << std::endl;
     }
 };

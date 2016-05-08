@@ -44,6 +44,7 @@ __global__ void fitCudaMinHash(const int* pFeatureIdList, const size_t* pSizeOfI
     int signatureBlockValue;
     int shingleId;
     int signatureBlockId = blockIdx.x * pNumberOfHashFunctions * pBlockSize;
+    int argmin = 0;
     // compute one instance per block
     // if one instance is computed, block takes next instance
     while (instanceId < pNumberOfInstances) {
@@ -56,9 +57,12 @@ __global__ void fitCudaMinHash(const int* pFeatureIdList, const size_t* pSizeOfI
                 hashValue = computeHashValueCuda((pFeatureIdList[featureId + i]+1) * (hashFunctionId+1), MAX_VALUE);
                 if (hashValue < nearestNeighborsValue) {
                     nearestNeighborsValue = hashValue;
+                    argmin = pFeatureIdList[featureId + i];
                 }
             }
-            pSignaturesBlockSize[signatureBlockId + hashFunctionId] = nearestNeighborsValue;
+            pSignaturesBlockSize[signatureBlockId + hashFunctionId] = argmin;
+            
+            // pSignaturesBlockSize[signatureBlockId + hashFunctionId] = nearestNeighborsValue;
             hashFunctionId += blockDim.x;
             nearestNeighborsValue = MAX_VALUE;
         }

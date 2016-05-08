@@ -164,7 +164,14 @@ def test(data):
     
     # 0.9
     print "creating object..."
-    # minHash = MinHash(accuracy_optimized=True)
+    # minHash = MinHash(cpu_gpu_load_balancing = 1.0, accuracy_optimized=True)
+    # minHash = MinHash(number_of_hash_functions=965, max_bin_size= 95, shingle_size = 1, #rangeK_wta=50,
+    #                   similarity=False, minimal_blocks_in_common=1,
+    #                   number_of_cores=4, prune_inverse_index=5, 
+    #                   store_value_with_least_sigificant_bit=1,
+    #                   excess_factor=12, prune_inverse_index_after_instance=0.0, 
+    #                   remove_hash_function_with_less_entries_as=0,
+    #                   shingle=0, block_size=1, cpu_gpu_load_balancing = 1.0, gpu_hashing=0)
     # minHash = MinHash(number_of_hash_functions=200, max_bin_size= 55, shingle_size = 2,# rangeK_wta=20,
     #                   similarity=False, minimal_blocks_in_common=2,
     #                   number_of_cores=4, prune_inverse_index=10, 
@@ -172,20 +179,28 @@ def test(data):
     #                   excess_factor=5, prune_inverse_index_after_instance=0.5, 
     #                   remove_hash_function_with_less_entries_as=0,
     #                   shingle=1, block_size=1, cpu_gpu_load_balancing = 0.0, gpu_hashing=0)
-    minHash = WtaHash(number_of_hash_functions=200, max_bin_size= 55, shingle_size = 2, rangeK_wta=20,
-                      similarity=False, minimal_blocks_in_common=2,
-                      number_of_cores=4, prune_inverse_index=10, 
-                      store_value_with_least_sigificant_bit=0,
-                      excess_factor=15, prune_inverse_index_after_instance=0.5, 
-                      remove_hash_function_with_less_entries_as=0,
-                      shingle=1, block_size=1, cpu_gpu_load_balancing = 0.0, gpu_hashing=0)
-    # minHash = WtaHash(number_of_hash_functions=237, max_bin_size= 58, shingle_size = 2, rangeK_wta=23,
-    #                   similarity=False, minimal_blocks_in_common=1,
-    #                   number_of_cores=4, prune_inverse_index=3, 
-    #                   store_value_with_least_sigificant_bit=2,
-    #                   excess_factor=13, prune_inverse_index_after_instance=0, 
-    #                   remove_hash_function_with_less_entries_as=-1,
-    #                   shingle=1, block_size=2, cpu_gpu_load_balancing = 0.0, gpu_hashing=0)
+    # minHash = WtaHash(number_of_hash_functions=200, max_bin_size= 55, shingle_size = 2, range
+    # minHash = MinHash(number_of_hash_functions=200, max_bin_size= 55, shingle_size = 2,# rangeK_wta=20,
+    #                   similarity=False, minimal_blocks_in_common=2,
+    #                   number_of_cores=4, prune_inverse_index=10, 
+    #                   store_value_with_least_sigificant_bit=0,
+    #                   excess_factor=5, prune_inverse_index_after_instance=0.5, 
+    #                   remove_hash_function_with_less_entries_as=0,
+    #                   shingle=1, block_size=1, cpu_gpu_load_balancing = 0.0, gpu_hashing=0)
+    # minHash = WtaHash(number_of_hash_functions=200, max_bin_size= 55, shingle_size = 2, rangeK_wta=20,
+    #                   similarity=False, minimal_blocks_in_common=2,
+    #                   number_of_cores=4, prune_inverse_index=10, 
+    #                   store_value_with_least_sigificant_bit=0,
+    #                   excess_factor=15, prune_inverse_index_after_instance=0.5, 
+    #                   remove_hash_function_with_less_entries_as=0,
+    #                   shingle=1, block_size=1, cpu_gpu_load_balancing = 0.0, gpu_hashing=0)
+    minHash = WtaHash(number_of_hash_functions=719, max_bin_size= 58, shingle_size = 2, rangeK_wta=23,
+                      similarity=False, minimal_blocks_in_common=1,
+                      number_of_cores=4, prune_inverse_index=3, 
+                      store_value_with_least_sigificant_bit=2,
+                      excess_factor=13, prune_inverse_index_after_instance=0, 
+                      remove_hash_function_with_less_entries_as=-1,
+                      shingle=1, block_size=2, cpu_gpu_load_balancing = 0.0, gpu_hashing=0)
     # minHash.fit(data[0])
     print "fitting..."
 

@@ -104,16 +104,19 @@ vsize_t* InverseIndex::computeSignature(SparseMatrixFloat* pRawData, const size_
 
     if (pRawData == NULL) return NULL;
     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
-
+    size_t argmin = 0;
     for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
             size_t nearestNeighborsValue = MAX_VALUE;        
             for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); i++) {
                 size_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), (j+1), MAX_VALUE);
                 if (hashValue < nearestNeighborsValue) {
                     nearestNeighborsValue = hashValue;
+                    argmin = pRawData->getNextElement(pInstance, i);
                 }
             }
-            (*signature)[j] = nearestNeighborsValue;
+            (*signature)[j] = argmin;
+            
+            // (*signature)[j] = nearestNeighborsValue;
     }
     // reduce number of hash values by a factor of mShingleSize
     if (mShingle) {
@@ -176,7 +179,9 @@ vsize_t* InverseIndex::computeSignatureWTA(SparseMatrixFloat* pRawData, const si
         for (size_t j = 0; j < mK; ++j) {
             if (keyValue.getValue(j) > maxValue) {
                 maxValue = keyValue.getValue(j);
-                maxValueIndex = j;
+                // maxValueIndex = j;
+                maxValueIndex = keyValue.getKey(j);
+                
             }
         }
         (*signature)[i] = maxValueIndex;//keyValue.getMaxValueIndex();

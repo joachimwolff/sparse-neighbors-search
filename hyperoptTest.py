@@ -49,28 +49,30 @@ def compute_score(error, memory, time, max_memory, max_time, alpha, beta):
         return 12
     if error > 0.9:
         return 11
-    if error > 0.8:
-        return 10
-    if error > 0.7:
-        return 9
-    if error > 0.6:
-        return 8
+    # if error > 0.8:
+    #     return 10
+    # if error > 0.7:
+    #     return 9
+    # if error > 0.6:
+    #     return 8
     # if error > 0.5:
     #     return 7
     # if error > 0.4:
     #     return 6
     # if error > 0.3:
     #     return 5
-    # # if error > 0.2:
-    # #     return 4
-    # # if error > 0.15:
-    # #     return 3
-    # # if error > 0.1:
-    # #     return 2   
-    if memory == 0:
-        return 15
-    if time == 0:
-        return 15
+    # if error > 0.2:
+    #     return 4
+    # if error > 0.15:
+    #     return 3
+    # if error > 0.1:
+    #     return 2   
+    # if error > 0.05:
+    #     return 1.5 
+    # if memory == 0:
+    #     return 15
+    # if time == 0:
+    #     return 15
     # error = error/(float (max_error))
     # memory = math.log(memory/float(max_memory), 10)*alpha
     # time = math.log(time/float(max_time), 10)*beta
@@ -79,7 +81,7 @@ def compute_score(error, memory, time, max_memory, max_time, alpha, beta):
     print "memory: ", memory
     print "time: ", time
     print "score: ", error + memory  + time
-    return error + memory + time
+    return error #+ memory  + time
 
  
 
@@ -127,7 +129,7 @@ def objective(args):
                 remove_hash_function_with_less_entries_as=int(removeHashFunctionWithLessEntriesAs), 
                  block_size = int(block_size), shingle=shingle,
                 store_value_with_least_sigificant_bit=remove_value_with_least_sigificant_bit, 
-                cpu_gpu_load_balancing=0, rangeK_wta=int(rangeK_wta))
+                cpu_gpu_load_balancing=0, gpu_hashing=0, rangeK_wta=int(rangeK_wta))
     print "Create minHash object...Done"
                 
     # print "Values: "
@@ -170,8 +172,8 @@ def objective(args):
     # print number_of_hash_functions
     # except:
     # print "Exception!" 
-    # print "error: ", error-0.001
-    
+    # print "error: ", error
+    # return error
         # return 5
     # alpha = args["alpha"]
     # beta = args["beta"]
@@ -200,12 +202,12 @@ else:
 # newsgroups_test = fetch_20newsgroups(subset='test',remove=('headers', 'footers', 'quotes'), categories=categories)
 # vectors_test = vectorizer.transform(newsgroups_test.data)
 # datasetBursi = vectors_test
-# rfam_ids=['RF00004','RF00005','RF00015','RF00020','RF00026','RF00169',
-#           'RF00380','RF00386','RF01051','RF01055','RF01234','RF01699',
-#           'RF01701','RF01705','RF01731','RF01734','RF01745','RF01750',
-#           'RF01942','RF01998','RF02005','RF02012','RF02034']
-# X, y = rfam_data(rfam_ids[:3], n_max=100, complexity=3, nbits=16)
-# datasetBursi = X 
+rfam_ids=['RF00004','RF00005','RF00015','RF00020','RF00026','RF00169',
+          'RF00380','RF00386','RF01051','RF01055','RF01234','RF01699',
+          'RF01701','RF01705','RF01731','RF01734','RF01745','RF01750',
+          'RF01942','RF01998','RF02005','RF02012','RF02034']
+X, y = rfam_data(rfam_ids, n_max=100, complexity=3, nbits=16)
+datasetBursi = X 
 # get values with out
 # minHash_org = MinHash(n_neighbors=10, radius=1.0, fast=False, number_of_hash_functions=800,
 #                  max_bin_size = 50, minimal_blocks_in_common = 1, shingle_size = 1, excess_factor = 1,
@@ -240,9 +242,26 @@ neighbors_sklearn = nearest_Neighbors.kneighbors(n_neighbors=10, return_distance
 # print "Max memory: ", max_memory
 # define a search space
 from hyperopt import hp
+# wta search space
+# space = {
+#         'number_of_hash_functions': hp.uniform('number_of_hash_functions', 150, 250),
+#         'max_bin_size': hp.uniform('max_bin_size', 25, 60),
+#         'shingle_size': hp.choice('shingle_size', [1, 2, 3, 4]),
+#         'excess_factor': hp.uniform('excess_factor', 1, 15),
+#         # 'chunk_size': hp.uniform('chunk_size', 1, 20),
+#         'prune_inverse_index': hp.uniform('prune_inverse_index',-1, 15),
+#         'prune_inverse_index_after_instance':  hp.choice('prune_inverse_index_after_instance', [0.0, 0.5]),
+#         'removeHashFunctionWithLessEntriesAs': hp.uniform('removeHashFunctionWithLessEntriesAs', -1, 0),
+#         'block_size': hp.choice('block_size', [1, 2, 3, 4]), 
+#         'shingle': hp.choice('shingle', [0,1]), 
+#         'remove_value_with_least_sigificant_bit': hp.choice('remove_value_with_least_sigificant_bit', [1, 2, 3, 4]),
+#         'minimal_blocks_in_common': hp.uniform('minimal_blocks_in_common', 1, 5),
+#         'rangeK_wta': hp.uniform('rangeK_wta', 15, 25),
+#         # 'alpha':hp.uniform('alpha', 0, 1),
+#         # 'beta':hp.uniform('beta', 0,1),    
 space = {
-        'number_of_hash_functions': hp.uniform('number_of_hash_functions', 150, 250),
-        'max_bin_size': hp.uniform('max_bin_size', 25, 60),
+        'number_of_hash_functions': hp.uniform('number_of_hash_functions', 100, 1000),
+        'max_bin_size': hp.uniform('max_bin_size', 10, 100),
         'shingle_size': hp.choice('shingle_size', [1, 2, 3, 4]),
         'excess_factor': hp.uniform('excess_factor', 1, 15),
         # 'chunk_size': hp.uniform('chunk_size', 1, 20),
@@ -254,8 +273,8 @@ space = {
         'remove_value_with_least_sigificant_bit': hp.choice('remove_value_with_least_sigificant_bit', [1, 2, 3, 4]),
         'minimal_blocks_in_common': hp.uniform('minimal_blocks_in_common', 1, 5),
         'rangeK_wta': hp.uniform('rangeK_wta', 15, 25),
-        # 'alpha':hp.uniform('alpha', 0, 1),
-        # 'beta':hp.uniform('beta', 0,1),    
+#         # 'alpha':hp.uniform('alpha', 0, 1),
+#         # 'beta':hp.uniform('beta', 0,1),    
 }
 
 trials = Trials()

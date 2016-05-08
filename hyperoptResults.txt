@@ -1,65 +1,152 @@
-crashed with the following values:
+MinHash: 
 
-crashed while searching k-neighbors
-Values: 
-number_of_hash_functions  629.024579953
-max_bin_size  15.9439713056
-shingle_size  3.026904046
-excess_factor  2.77204044687
-prune_inverse_index  3.29278610022
-prune_inverse_index_after_instance  0.971839378846
-removeHashFunctionWithLessEntriesAs  831.319337565
-block_size  2.82874077758
+best accuracy on bursi:
+	number_of_hash_functions  903.106274654
+	max_bin_size  49.9723188748
+	shingle_size  2
+	excess_factor  14.347008149
+	prune_inverse_index  1.52510907307
+	prune_inverse_index_after_instance  0.0
+	removeHashFunctionWithLessEntriesAs  -0.528577178087
+	block_size  4
+	shingle  1
+	remove_value_with_least_sigificant_bit  2
+
+	accuracy: 0.964
+
+best accuracy on RNA:
+	number_of_hash_functions  828.455362568
+	max_bin_size  51.4394049974
+	shingle_size  2
+	excess_factor  11.703069401
+	prune_inverse_index  -0.215130219647
+	prune_inverse_index_after_instance  0.0
+	removeHashFunctionWithLessEntriesAs  -0.866073439163
+	block_size  4
+	shingle  1
+	remove_value_with_least_sigificant_bit  1
+	accuracy: 0.83
+
+best score on bursi:
+	number_of_hash_functions  596.933990836
+	max_bin_size  49.7255281384
+	shingle_size  2
+	excess_factor  11.0176881206
+	prune_inverse_index  11.3646503672
+	prune_inverse_index_after_instance  0.5
+	removeHashFunctionWithLessEntriesAs  -0.405467732355
+	block_size  3
+	shingle  0
+	remove_value_with_least_sigificant_bit  3
+
+	score: 0.544196106034 mit alpha: 0.1 beta: 0.23
+	accuracy: 0.92
+
+best score RNA:
+	number_of_hash_functions  100.330609301
+	max_bin_size  96.6536625194
+	shingle_size  2
+	excess_factor  14.9798151253
+	prune_inverse_index  14.4892018741
+	prune_inverse_index_after_instance  0.5
+	removeHashFunctionWithLessEntriesAs  -0.277930213268
+	block_size  4
+	shingle  0
+	remove_value_with_least_sigificant_bit  2
+
+	score: 1.01
+	accuracy: 0.73
+
+	alpha 0.1 beta 0.5
+	number_of_hash_functions  660.474736559
+	max_bin_size  89.1835109381
+	shingle_size  1
+	excess_factor  14.6154491922
+	prune_inverse_index  8.53437606038
+	prune_inverse_index_after_instance  0.5
+	removeHashFunctionWithLessEntriesAs  -0.142689007102
+	block_size  1
+	shingle  0
+	remove_value_with_least_sigificant_bit  3
+	accuracy: 0.82 
+	score: 1.35
+
+bursi level 0.95:
+	number_of_hash_functions  572.464574567
+	max_bin_size  77.911730963
+	shingle_size  4
+	excess_factor  10.5418121417
+	prune_inverse_index  0.414710763893
+	prune_inverse_index_after_instance  0.5
+	removeHashFunctionWithLessEntriesAs  -0.291451888692
+	block_size  4
+	shingle  0
+	remove_value_with_least_sigificant_bit  2
+
+bursi level 0.9:
+	number_of_hash_functions  231.424514063
+	max_bin_size  69.1822160539
+	shingle_size  3
+	excess_factor  5.48297153641
+	prune_inverse_index  4.29819175275
+	prune_inverse_index_after_instance  0.5
+	removeHashFunctionWithLessEntriesAs  -0.348787334708
+	block_size  3
+	shingle  0
+	remove_value_with_least_sigificant_bit  2
+
+bursi level 0.7:
+	number_of_hash_functions  174.405634753
+	max_bin_size  86.4144634988
+	shingle_size  3
+	excess_factor  2.59865330856
+	prune_inverse_index  3.26630218399
+	prune_inverse_index_after_instance  0.0
+	removeHashFunctionWithLessEntriesAs  -0.234837876159
+	block_size  2
+	shingle  0
+	remove_value_with_least_sigificant_bit  4
+
+RNA level 0.7:
+	number_of_hash_functions  965.48463154
+	max_bin_size  95.7399307773
+	shingle_size  4
+	excess_factor  12.1271408561
+	prune_inverse_index  5.4976913889
+	prune_inverse_index_after_instance  0.0
+	removeHashFunctionWithLessEntriesAs  -0.749983903324
+	block_size  1
+	shingle  0
+	remove_value_with_least_sigificant_bit  1
+
+	error: 0.28
+
+
+best score bursi wta:
+
+number_of_hash_functions  186.750977018
+max_bin_size  87.8524209456
+shingle_size  4
+excess_factor  11.0744201299
+prune_inverse_index  6.35937922316
+prune_inverse_index_after_instance  0.0
+removeHashFunctionWithLessEntriesAs  -0.730008463342
+block_size  2
 shingle  0
-remove_value_with_least_sigificant_bit  7
+remove_value_with_least_sigificant_bit  1
+rangeK_wta 17.2264086098
 
-
-Values: 
-number_of_hash_functions  484.254571224
-max_bin_size  49.9793097967
-shingle_size  2.66449118832
-excess_factor  9.54855179696
-prune_inverse_index  -1
-prune_inverse_index_after_instance  0.104988782542
-removeHashFunctionWithLessEntriesAs  0
-block_size  3.47506056499
-shingle  0
-remove_value_with_least_sigificant_bit  8
-
-
-
-
-
-
-crashed at fitting process
-number_of_hash_functions  239.288023937
-max_bin_size  91.1270095545
-shingle_size  2.82734728146
-excess_factor  6.97678426682
-prune_inverse_index  82.8454672485
-prune_inverse_index_after_instance  0.133395636607
-removeHashFunctionWithLessEntriesAs  0
-block_size  3.94521508456
+best accuracy bursi wta:
+number_of_hash_functions  916.838802046
+max_bin_size  46.6832185344
+shingle_size  1
+excess_factor  14.6429285168
+prune_inverse_index  -0.74453564306
+prune_inverse_index_after_instance  0.5
+removeHashFunctionWithLessEntriesAs  -0.690694442377
+block_size  3
 shingle  1
-remove_value_with_least_sigificant_bit  9
+remove_value_with_least_sigificant_bit  1
+rangeK_wta 16.6779119137
 
-number_of_hash_functions  169.853316095
-max_bin_size  63.6771425086
-shingle_size  4.12502502562
-excess_factor  11.238237906
-prune_inverse_index  -1
-prune_inverse_index_after_instance  -1.0
-removeHashFunctionWithLessEntriesAs  94.4263580376
-block_size  7.46569335827
-shingle  0
-remove_value_with_least_sigificant_bit  5
-
-
-{'max_bin_size': 54.47382240515426, 'remove_value_with_least_sigificant_bit': 0, 'prune_inverse_index': 1, 'removeHashFunctionWithLessEntriesAs2': 210.6542669636088, 'number_of_hash_functions': 208.78619986649178, 'shingle': 0, 'minimal_blocks_in_common': 16.566995520170252, 'removeHashFunctionWithLessEntriesAs': 1, 'prune2': 0.7132590034217914, 'excess_factor': 13.119869581984029, 'block_size': 8.63610787288679, 'prune_inverse_index_after_instance': 1, 'shingle_size': 2.595540205119116}
-
-{'max_bin_size': 60.04407647796002, 'remove_value_with_least_sigificant_bit': 3, 'prune_inverse_index': 0, 
-'number_of_hash_functions': 305.99897584014036,
- 'shingle': 1,
-  'minimal_blocks_in_common': 3.888721013927136, 'removeHashFunctionWithLessEntriesAs': 0, 'prune2': 0.46651807355820407, 'prune1': 1.7227248891939002, 'excess_factor': 2.0562574790693064,
-   'block_size': 8.05348721414712, 'prune_inverse_index_after_instance': 1,
-    'shingle_size': 3.6453157697998586}
+error: 0.077
