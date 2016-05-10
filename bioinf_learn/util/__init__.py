@@ -6,3 +6,5 @@ from util import measure_performance
 from util import plotData
 from util import plotDataBenchmark
 from util import measureMinHashWtaHash
+from util import measureCpuScalability
+from util import measureCpuScalability_Gpu

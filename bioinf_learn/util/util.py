@@ -784,3 +784,66 @@ def measureMinHashWtaHash(dataset, minHashParameters, wtaHashParameters):
     
     
     
+def measureCpuScalability(dataset, minHashParameters, cpu_cores):
+    time_list_fit_minHash = []
+    time_list_query_minHash = []
+    time_list_query_bruteforce = []
+    accuracy_list = []
+    
+    for i in cpu_cores:
+        bruteforce = NearestNeighbors(n_neighbors=10, n_jobs=i)
+        time_start = time.time()
+        bruteforce.fit(dataset)
+        # time_list_fit.append(time.time() - time_start)
+        time_start = time.time()
+        kneighbors_true = bruteforce.kneighbors(n_neighbors=10, return_distance=False)
+        time_list_query_bruteforce.append(time.time() - time_start)
+        
+        minHash = MinHash(number_of_hash_functions=minHashParameters[10], max_bin_size= minHashParameters[0], shingle_size =  minHashParameters[1], #rangeK_wta=50,
+                        similarity=False, minimal_blocks_in_common= minHashParameters[2],
+                        number_of_cores=i, prune_inverse_index= minHashParameters[3], 
+                        store_value_with_least_sigificant_bit= minHashParameters[4],
+                        excess_factor= minHashParameters[5], prune_inverse_index_after_instance= minHashParameters[6] ,
+                        remove_hash_function_with_less_entries_as= minHashParameters[7],
+                        shingle= minHashParameters[8], block_size= minHashParameters[9], cpu_gpu_load_balancing = 0.0)
+        time_start = time.time()
+        minHash.fit(dataset)
+        time_list_fit_minHash.append(time.time() - time_start)
+        time_start = time.time()
+        kneighbors = minHash.kneighbors(n_neighbors=10, return_distance=False)
+        time_list_query_minHash.append(time.time() - time_start)
+        accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
+    return [time_list_fit_minHash, time_list_query_bruteforce, time_list_query_minHash, accuracy_list]
+    # return [time_list_fit, time_list_query, accuracy_list]
+
+def measureCpuScalability_Gpu(dataset, minHashParameters, cpu_cores):
+    time_list_fit_minHash = []
+    time_list_query_minHash = []
+    time_list_query_bruteforce = []
+    
+    accuracy_list = []
+    
+    for i in cpu_cores:
+        bruteforce = NearestNeighbors(n_neighbors=10, n_jobs=i)
+        time_start = time.time()
+        bruteforce.fit(dataset)
+        # time_list_fit.append(time.time() - time_start)
+        time_start = time.time()
+        kneighbors_true = bruteforce.kneighbors(n_neighbors=10, return_distance=False)
+        time_list_query_bruteforce.append(time.time() - time_start)
+        
+        minHash = MinHash(number_of_hash_functions=minHashParameters[10], max_bin_size= minHashParameters[0], shingle_size =  minHashParameters[1], #rangeK_wta=50,
+                        similarity=False, minimal_blocks_in_common= minHashParameters[2],
+                        number_of_cores=i, prune_inverse_index= minHashParameters[3], 
+                        store_value_with_least_sigificant_bit= minHashParameters[4],
+                        excess_factor= minHashParameters[5], prune_inverse_index_after_instance= minHashParameters[6] ,
+                        remove_hash_function_with_less_entries_as= minHashParameters[7],
+                        shingle= minHashParameters[8], block_size= minHashParameters[9], cpu_gpu_load_balancing = 1.0)
+        time_start = time.time()
+        minHash.fit(dataset)
+        time_list_fit_minHash.append(time.time() - time_start)
+        time_start = time.time()
+        kneighbors = minHash.kneighbors(n_neighbors=10, return_distance=False)
+        time_list_query_minHash.append(time.time() - time_start)
+        accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
+    return [time_list_fit_minHash, time_list_query_bruteforce, time_list_query_minHash, accuracy_list]
