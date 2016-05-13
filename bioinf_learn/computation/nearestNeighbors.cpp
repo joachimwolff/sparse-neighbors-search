@@ -331,11 +331,11 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
         
     #ifdef CUDA
     } else {
-        neighborhood* neighbors_ = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData, mOriginalData, pNneighbors+mExcessFactor);
+        neighborhood* neighbors_part2 = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData, mOriginalData, pNneighbors+mExcessFactor);
         delete neighborhood_->neighbors;
         delete neighborhood_->distances;
         delete neighborhood_;
-        return neighbors_;
+        return neighbors_part2;
     }
     #endif
     
