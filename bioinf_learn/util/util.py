@@ -511,6 +511,7 @@ def measure_performance(dataset, minHashParameters, n_neighbors_sklearn = 10, n_
 
     time_fit_sklearn = []
     time_fit_minHash = []
+    time_fit_minHash_gpu = []
     time_fit_lshf = []
     time_fit_annoy = []
     time_fit_flann = []
@@ -557,6 +558,19 @@ def measure_performance(dataset, minHashParameters, n_neighbors_sklearn = 10, n_
                                 remove_hash_function_with_less_entries_as=minHashParameters[9], 
                                 shingle=minHashParameters[10], 
                                 block_size=minHashParameters[11])
+        nearest_neighbor_minHash_gpu = MinHash(n_neighbors = minHashParameters[0], 
+                                number_of_hash_functions=hash_function,
+                                max_bin_size= minHashParameters[1], 
+                                shingle_size = minHashParameters[2], 
+                                similarity=minHashParameters[3], 
+                                number_of_cores=minHashParameters[4],
+                                prune_inverse_index=minHashParameters[5], 
+                                store_value_with_least_sigificant_bit=minHashParameters[6], 
+                                excess_factor=minHashParameters[7],
+                                prune_inverse_index_after_instance=minHashParameters[8], 
+                                remove_hash_function_with_less_entries_as=minHashParameters[9], 
+                                shingle=minHashParameters[10], 
+                                block_size=minHashParameters[11], cpu_gpu_load_balancing = 1.0)
         nearest_neighbor_lshf = LSHForest(n_estimators=20, n_candidates=200, n_neighbors=n_neighbors_minHash)
         time_start = time.time()
         nearest_neighbor_sklearn.fit(dataset)
@@ -567,6 +581,10 @@ def measure_performance(dataset, minHashParameters, n_neighbors_sklearn = 10, n_
         nearest_neighbor_minHash.fit(dataset)
         time_end = time.time()
         time_fit_minHash.append(time_end - time_start)
+        time_start = time.time()
+        nearest_neighbor_minHash_gpu.fit(dataset)
+        time_end = time.time()
+        time_fit_minHash_gpu.append(time_end - time_start)
         # print "Fitting of minHash_nneighbors done!"
         data_projection = SparseRandomProjection(n_components=hash_function, random_state=1)
         dataset_dense = data_projection.fit_transform(dataset)
@@ -644,6 +662,7 @@ def measure_performance(dataset, minHashParameters, n_neighbors_sklearn = 10, n_
 
     return  (time_fit_sklearn, 
                 time_fit_minHash, 
+                time_fit_minHash_gpu, 
                 time_fit_lshf,
                 time_fit_annoy,
             time_query_time_1_50_sklearn,
@@ -847,3 +866,70 @@ def measureCpuScalability_Gpu(dataset, minHashParameters, cpu_cores):
         time_list_query_minHash.append(time.time() - time_start)
         accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
     return [time_list_fit_minHash, time_list_query_bruteforce, time_list_query_minHash, accuracy_list]
+    
+def measureRandomProjection(dataset, minHashParameters, wtaHashParameters):
+    time_list_query_bruteforce = []
+    time_list_query_minHash = []
+    time_list_query_wtaHash = []
+    
+    accuracy_list_bruteforce = []
+    accuracy_list_minHash = []
+    accuracy_list_wtaHash = []
+    
+    bruteforce = NearestNeighbors(n_neighbors=10, n_jobs=4)
+    time_start = time.time()
+    bruteforce.fit(dataset)
+    # time_list_fit.append(time.time() - time_start)
+    time_start = time.time()
+    kneighbors_true = bruteforce.kneighbors(n_neighbors=10, return_distance=False)
+    
+    
+    for i in [100, 200, 400, 600, 800, 1000]:
+            # print "702_1"       
+        
+        minHash = MinHash(number_of_hash_functions=i, max_bin_size= minHashParameters[0], shingle_size =  minHashParameters[1], #rangeK_wta=50,
+                        similarity=False, minimal_blocks_in_common= minHashParameters[2],
+                        number_of_cores=4, prune_inverse_index= minHashParameters[3], 
+                        store_value_with_least_sigificant_bit= minHashParameters[4],
+                        excess_factor= minHashParameters[5], prune_inverse_index_after_instance= minHashParameters[6] ,
+                        remove_hash_function_with_less_entries_as= minHashParameters[7],
+                        shingle= minHashParameters[8], block_size= minHashParameters[9], cpu_gpu_load_balancing = 0.0)
+        # print "702_2"       
+        
+        wtaHash = WtaHash(number_of_hash_functions=i, max_bin_size= wtaHashParameters[0], shingle_size = wtaHashParameters[1], 
+                        rangeK_wta=wtaHashParameters[2],
+                        similarity=False, minimal_blocks_in_common=wtaHashParameters[3],
+                        number_of_cores=4, prune_inverse_index=wtaHashParameters[4], 
+                        store_value_with_least_sigificant_bit=wtaHashParameters[5],
+                        excess_factor=wtaHashParameters[6], prune_inverse_index_after_instance=wtaHashParameters[7], 
+                        remove_hash_function_with_less_entries_as=wtaHashParameters[8],
+                        shingle=wtaHashParameters[9], block_size=wtaHashParameters[10], cpu_gpu_load_balancing = 0.0)
+    # print "702_3"       
+    
+        minHash.fit(dataset)
+        wtaHash.fit(dataset)
+        
+        data_projection = SparseRandomProjection(n_components=i, random_state=1)
+        dataset_dense = data_projection.fit_transform(dataset)
+        
+        bruteforce = NearestNeighbors(n_neighbors=10, n_jobs=4)
+        time_start = time.time()
+        bruteforce.fit(dataset_dense)
+        # time_list_fit.append(time.time() - time_start)
+        time_start = time.time()
+        kneighbors = bruteforce.kneighbors(n_neighbors=10, return_distance=False)
+        time_list_query_bruteforce.append(time.time() - time_start)
+        accuracy_list_bruteforce.append(neighborhood_accuracy(kneighbors, kneighbors_true))
+        time_start = time.time()
+        kneighbors = minHash.kneighbors(n_neighbors=10, return_distance=False)
+        time_list_query_minHash.append(time.time() - time_start)
+        accuracy_list_minHash.append(neighborhood_accuracy(kneighbors, kneighbors_true))
+        time_start = time.time()
+        kneighbors = wtaHash.kneighbors(n_neighbors=10, return_distance=False)
+        time_list_query_wtaHash.append(time.time() - time_start)
+        accuracy_list_wtaHash.append(neighborhood_accuracy(kneighbors, kneighbors_true))
+        
+    return [time_list_query_bruteforce, time_list_query_minHash, time_list_query_wtaHash,
+            accuracy_list_bruteforce, accuracy_list_minHash, accuracy_list_wtaHash]
+        
+        

@@ -8,3 +8,4 @@ from util import plotDataBenchmark
 from util import measureMinHashWtaHash
 from util import measureCpuScalability
 from util import measureCpuScalability_Gpu
+from util import measureRandomProjection
