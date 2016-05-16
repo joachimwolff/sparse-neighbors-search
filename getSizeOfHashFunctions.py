@@ -11,7 +11,7 @@
 #
 __author__ = 'wolffjoachim'
 
-from neighborsMinHash import MinHash
+from bioinf_learn import MinHash
 from sklearn.neighbors import NearestNeighbors
 
 import time

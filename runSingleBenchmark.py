@@ -11,7 +11,7 @@
 #
 __author__ = 'wolffjoachim'
 
-from neighborsMinHash import MinHash
+from bioinf_learn import MinHash
 from sklearn.neighbors import NearestNeighbors
 from eden.converter.graph.gspan import gspan_to_eden
 from eden.graph import Vectorizer
@@ -71,14 +71,13 @@ if __name__ == "__main__":
                 number_of_hash_functions=int(args.number_of_hash_functions),
                 max_bin_size = int(args.max_bin_size), minimal_blocks_in_common = int(args.minimal_blocks_in_common),
                 shingle_size = int(args.shingle_size), excess_factor = int(args.excess_factor),
-                similarity=bool(args.similarity), bloomierFilter=False,
+                similarity=bool(args.similarity), 
                 number_of_cores=int(args.number_of_cores),
                 chunk_size=int(args.chunk_size), prune_inverse_index=int(args.prune_inverse_index),
                 prune_inverse_index_after_instance=float(args.prune_inverse_index_after_instance),
-                removeHashFunctionWithLessEntriesAs=int(args.removeHashFunctionWithLessEntriesAs), 
-                hash_algorithm = int(args.hash_algorithm),
+                remove_hash_function_with_less_entries_as=int(args.removeHashFunctionWithLessEntriesAs),
                  block_size = int(args.block_size), 
-                 shingle = int(args.shingle), remove_value_with_least_sigificant_bit=int(args.lsb))
+                 shingle = int(args.shingle), store_value_with_least_sigificant_bit=int(args.lsb))
                  
     time_start = time.time()
     minHash.fit(datasetBursi)
@@ -93,7 +92,7 @@ if __name__ == "__main__":
     if not os.path.isfile("neighbors_sklearn"):
         nearest_Neighbors = NearestNeighbors(n_jobs=4)
         nearest_Neighbors.fit(datasetBursi)
-        neighbors_sklearn = nearest_Neighbors.kneighbors(return_distance=False)
+        neighbors_sklearn = nearest_Neighbors.kneighbors(n_neighbors=10, return_distance=False)
         fileObject = open("neighbors_sklearn",'wb')
         pickle.dump(neighbors_sklearn,fileObject)
         fileObject.close()
