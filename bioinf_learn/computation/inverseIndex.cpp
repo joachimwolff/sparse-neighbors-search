@@ -203,7 +203,7 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(SparseMatrixFloat* pRawData, c
     #endif
     vvsize_t_p* signatures = new vvsize_t_p(pRawData->size(), NULL);
     #ifdef CUDA
-    if (mCpuGpuLoadBalancing == 0 && mGpuHash == 0) {
+    if ((mCpuGpuLoadBalancing == 0 && mGpuHash == 0) || mHashAlgorithm == 1 ) {
     #endif
         #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
         for (size_t instance = 0; instance < pRawData->size(); ++instance) {

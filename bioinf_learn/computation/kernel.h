@@ -11,11 +11,12 @@ __global__ void fitCudaMinHash(const int* pFeatureIdList, const size_t* pSizeOfI
                     const size_t pNumberOfInstances, const size_t pStartInstance, 
                     const size_t pBlockSize, const size_t pShingleSize,
                     int* pSignaturesBlockSize);
-__global__ void fitCudaWtaHash(const int* pFeatureIdList, const int* pSizeOfInstanceList,
-                    const int pNumberOfHashFunctions, const int* pJumpLengthList,
+__global__ void fitCudaWtaHash(const int* pFeatureIdList, const float* pValueList,
+                    const size_t* pSizeOfInstanceList,
+                    const size_t pNumberOfHashFunctions, const size_t pMaxNnz,
                     int* pComputedSignatures, 
-                    const int pNumberOfInstances, const int pStartInstance, 
-                    const int pBlockSize, const int pShingleSize,
+                    const size_t pNumberOfInstances, const size_t pStartInstance, 
+                    const size_t pBlockSize, const size_t pShingleSize,
                     int* pSignaturesBlockSize, const int pRangeK);
 __global__ void euclideanDistanceCuda(float3* pDotProducts, size_t pSize, float* results);
 __global__ void cosineSimilarityCuda(float3* pDotProducts, size_t pSize, float* results);

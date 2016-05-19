@@ -47,12 +47,12 @@ def compute_score(error, memory, time, max_memory, max_time, alpha, beta):
     print "error1: ", error
     if error >= 1.0:
         return 12
-    # if error > 0.9:
-    #     return 11
-    # if error > 0.8:
-    #     return 10
-    # if error > 0.7:
-    #     return 9
+    if error > 0.9:
+        return 11
+    if error > 0.8:
+        return 10
+    if error > 0.7:
+        return 9
     # if error > 0.6:
     #     return 8
     # if error > 0.5:
@@ -76,12 +76,14 @@ def compute_score(error, memory, time, max_memory, max_time, alpha, beta):
     # error = error/(float (max_error))
     # memory = math.log(memory/float(max_memory), 10)*alpha
     # time = math.log(time/float(max_time), 10)*beta
+    print "memory: ", memory
+    print "time: ", time
     memory = math.log(memory, 10)*alpha
     time = math.log(time, 10)*beta
     print "memory: ", memory
     print "time: ", time
     print "score: ", error + memory  + time
-    return error #+ memory  + time
+    return error + memory  + time
 
  
 
@@ -119,7 +121,7 @@ def objective(args):
     if number_of_hash_functions < 50:
         return 10
     print "Create minHash object"
-    minHash = WtaHash(n_neighbors=10, radius=1.0, fast=False, number_of_hash_functions=int(number_of_hash_functions),
+    minHash = MinHash(n_neighbors=10, radius=1.0, fast=False, number_of_hash_functions=int(number_of_hash_functions),
                 max_bin_size = int(max_bin_size), minimal_blocks_in_common = int(minimal_blocks_in_common),
                 shingle_size = int(shingle_size),
                 excess_factor = int(excess_factor),
@@ -129,7 +131,7 @@ def objective(args):
                 remove_hash_function_with_less_entries_as=int(removeHashFunctionWithLessEntriesAs), 
                  block_size = int(block_size), shingle=shingle,
                 store_value_with_least_sigificant_bit=remove_value_with_least_sigificant_bit, 
-                cpu_gpu_load_balancing=0, gpu_hashing=0, rangeK_wta=int(rangeK_wta))
+                cpu_gpu_load_balancing=0, gpu_hashing=1)#, rangeK_wta=int(rangeK_wta))
     print "Create minHash object...Done"
                 
     # print "Values: "
@@ -179,35 +181,35 @@ def objective(args):
     # beta = args["beta"]
     max_memory = 1
     max_time = 1
-    return compute_score(error, memory, time_end, max_memory, max_time, 0.1, 0.5)
+    return compute_score(error, memory, time_end, max_memory, max_time, 0.5, 0.7)
     # return error-0.001
 
 
 # get data set  
-if not os.path.isfile("bursiDataset"):
-    graphs = gspan_to_eden( 'http://www.bioinf.uni-freiburg.de/~costa/bursi.gspan' )
-    vectorizer = Vectorizer( r=2,d=5 )
-    datasetBursi = vectorizer.transform( graphs )
-    fileObject = open("bursiDataset",'wb')
-    pickle.dump(datasetBursi,fileObject)
-    fileObject.close()
-else:
-    fileObject = open("bursiDataset",'r')
-    datasetBursi = pickle.load(fileObject)
-categories = ['alt.atheism', 'talk.religion.misc', 'comp.graphics', 'sci.space']
-newsgroups_train = fetch_20newsgroups(subset='train', categories=categories)
-vectorizer = TfidfVectorizer()
-vectors_training = vectorizer.fit_transform(newsgroups_train.data)
+# if not os.path.isfile("bursiDataset"):
+#     graphs = gspan_to_eden( 'http://www.bioinf.uni-freiburg.de/~costa/bursi.gspan' )
+#     vectorizer = Vectorizer( r=2,d=5 )
+#     datasetBursi = vectorizer.transform( graphs )
+#     fileObject = open("bursiDataset",'wb')
+#     pickle.dump(datasetBursi,fileObject)
+#     fileObject.close()
+# else:
+#     fileObject = open("bursiDataset",'r')
+#     datasetBursi = pickle.load(fileObject)
+# categories = ['alt.atheism', 'talk.religion.misc', 'comp.graphics', 'sci.space']
+# newsgroups_train = fetch_20newsgroups(subset='train', categories=categories)
+# vectorizer = TfidfVectorizer()
+# vectors_training = vectorizer.fit_transform(newsgroups_train.data)
 
-newsgroups_test = fetch_20newsgroups(subset='test',remove=('headers', 'footers', 'quotes'), categories=categories)
-vectors_test = vectorizer.transform(newsgroups_test.data)
-datasetBursi = vectors_test
-# rfam_ids=['RF00004','RF00005','RF00015','RF00020','RF00026','RF00169',
-#           'RF00380','RF00386','RF01051','RF01055','RF01234','RF01699',
-#           'RF01701','RF01705','RF01731','RF01734','RF01745','RF01750',
-#           'RF01942','RF01998','RF02005','RF02012','RF02034']
-# X, y = rfam_data(rfam_ids, n_max=100, complexity=3, nbits=16)
-# datasetBursi = X 
+# newsgroups_test = fetch_20newsgroups(subset='test',remove=('headers', 'footers', 'quotes'), categories=categories)
+# vectors_test = vectorizer.transform(newsgroups_test.data)
+# datasetBursi = vectors_test
+rfam_ids=['RF00004','RF00005','RF00015','RF00020','RF00026','RF00169',
+          'RF00380','RF00386','RF01051','RF01055','RF01234','RF01699',
+          'RF01701','RF01705','RF01731','RF01734','RF01745','RF01750',
+          'RF01942','RF01998','RF02005','RF02012','RF02034']
+X, y = rfam_data(rfam_ids, n_max=100, complexity=3, nbits=16)
+datasetBursi = X 
 # get values with out
 # minHash_org = MinHash(n_neighbors=10, radius=1.0, fast=False, number_of_hash_functions=800,
 #                  max_bin_size = 50, minimal_blocks_in_common = 1, shingle_size = 1, excess_factor = 1,
@@ -228,18 +230,18 @@ datasetBursi = vectors_test
 # neighbors_org = minHash_org.kneighbors(return_distance=False)
 # max_time = time.time() - time_start
 
-minHashGpu = MinHash(number_of_hash_functions=903, max_bin_size= 50, shingle_size =  2, #rangeK_wta=50,
-                        similarity=False, minimal_blocks_in_common= 1,
-                        number_of_cores=4, prune_inverse_index=-1, 
-                        store_value_with_least_sigificant_bit= 0,
-                        excess_factor= 30, prune_inverse_index_after_instance= -1,
-                        remove_hash_function_with_less_entries_as= -1,
-                        shingle= 0, block_size= 4, cpu_gpu_load_balancing = 0.0)
-# nearest_Neighbors = NearestNeighbors(n_jobs=4)
-# nearest_Neighbors.fit(datasetBursi)
-# neighbors_sklearn = nearest_Neighbors.kneighbors(n_neighbors=10, return_distance=False)
-minHashGpu.fit(datasetBursi)
-neighbors_sklearn = minHashGpu.kneighbors(n_neighbors=10, return_distance=False, fast=False)
+# minHashGpu = MinHash(number_of_hash_functions=903, max_bin_size= 50, shingle_size =  2, #rangeK_wta=50,
+#                         similarity=False, minimal_blocks_in_common= 1,
+#                         number_of_cores=4, prune_inverse_index=-1, 
+#                         store_value_with_least_sigificant_bit= 0,
+#                         excess_factor= 30, prune_inverse_index_after_instance= -1,
+#                         remove_hash_function_with_less_entries_as= -1,
+#                         shingle= 0, block_size= 4, cpu_gpu_load_balancing = 0.0)
+nearest_Neighbors = NearestNeighbors(n_jobs=4)
+nearest_Neighbors.fit(datasetBursi)
+neighbors_sklearn = nearest_Neighbors.kneighbors(n_neighbors=10, return_distance=False)
+# minHashGpu.fit(datasetBursi)
+# neighbors_sklearn = minHashGpu.kneighbors(n_neighbors=10, return_distance=False, fast=False)
 
 # max_error = 0.0
 # # for x, y in zip(neighbors_org, neighbors_sklearn):

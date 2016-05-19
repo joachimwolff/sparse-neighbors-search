@@ -88,55 +88,21 @@ __global__ void fitCudaMinHash(const int* pFeatureIdList, const size_t* pSizeOfI
     }
 }
 
-__global__ void fitCudaWtaHash(const int* pFeatureIdList, const size_t* pSizeOfInstanceList,
+__global__ void fitCudaWtaHash(const int* pFeatureIdList, const float* pValueList,
+                    const size_t* pSizeOfInstanceList,
                     const size_t pNumberOfHashFunctions, const size_t pMaxNnz,
                     int* pComputedSignatures, 
                     const size_t pNumberOfInstances, const size_t pStartInstance, 
                     const size_t pBlockSize, const size_t pShingleSize,
                     int* pSignaturesBlockSize, const int pRangeK) {
                         
-    
-    //    size_t sizeOfInstance = pRawData->getSizeOfInstance(pInstance);
-    
-    // size_t mSeed = 42;
-    // size_t mK = mRangeK_Wta;
-    
-    // vsize_t* signature = new vsize_t (mNumberOfHashFunctions * mBlockSize);
-    // if (sizeOfInstance < mK) {
-    //     mK = sizeOfInstance;
-    // }
-    // KSizeSortedMap keyValue(mK);
-    
-    // for (size_t i = 0; i < mNumberOfHashFunctions * mBlockSize; ++i) {
-        
-    //     for (size_t j = 0; j < sizeOfInstance; ++j) {
-    //         size_t hashIndex = mHash->hash((pRawData->getNextElement(pInstance, j) +1), mSeed+i, MAX_VALUE);
-    //         keyValue.insert(hashIndex, pRawData->getNextValue(pInstance, j));
-    //     } 
-        
-    //     // float maxValue = 0.0;
-    //     // size_t maxValueIndex = 0;
-        
-    //     // for (size_t j = 0; j < mK; ++j) {
-    //     //     if (keyValue.getValue(j) > maxValue) {
-    //     //         maxValue = keyValue.getValue(j);
-    //     //         maxValueIndex = j;
-    //     //     }
-    //     // }
-    //     // (*signature)[i] = maxValueIndex;//keyValue.getMaxValueIndex();
-    //     (*signature)[i] = keyValue.getMaxValueIndex();
-    //     keyValue.clear();
-    // }
-    // if (mShingle) {
-    //     return shingle(signature);
-    // }
-    // return signature;   
-    
-         
-    // int index [pRangeK]; 
-    // float values [pRangeK]; 
+    // int* index = new int [pRangeK]; 
+    // float* values = new float [pRangeK]; 
     // float maxValue = 0.0;
     // int maxIndex = 0;
+    // int maxValueHashValue = 0;
+    // int maxHashValue = 0;
+    // // int maxIndexRange = 0;
     // int rangeKCount = 0;
     // int instanceId = blockIdx.x + pStartInstance;
     // int nearestNeighborsValue = MAX_VALUE;
@@ -160,22 +126,38 @@ __global__ void fitCudaWtaHash(const int* pFeatureIdList, const size_t* pSizeOfI
     //             hashValue = computeHashValueCuda((pFeatureIdList[featureId + i]+1) * (hashFunctionId+1), MAX_VALUE);
 
     //             if (rangeKCount < pRangeK) {
-    //                 index[rangeKCount] = featureId + i;
-    //                 values[rangeKCount] = hashValue;
+    //                 index[rangeKCount] = hashValue;
+    //                 values[rangeKCount] = pValueList[featureId + i];
+    //                 // maxIndexRange = rangeKCount;
     //                 ++rangeKCount;
-    //                 if (hashValue > maxValue) {
-    //                     maxValue = hashValue;
-    //                     maxIndex = featureId + i;
+    //                 if (hashValue > maxHashValue) {
+    //                     maxHashValue = hashValue;
+    //                     maxIndex = rangeKCount;
+    //                 }
+    //                 if (pValueList[featureId + i] > maxValue) {
+    //                     maxValue = pValueList[featureId + i];
+    //                     maxValueHashValue = rangeKCount;
     //                 }
     //             } else {
-    //                 if (maxIndex < featureId + i) {
+    //                 if (maxValue < hashValue) {
     //                     continue;
     //                 } else {
+    //                     index[maxIndex] = hashValue;
+    //                     values[maxIndex] = pValueList[featureId + i];
     //                     int j = 0;
+    //                     maxIndex = 0;
+    //                     maxHashValue = 0;
+    //                     maxValue = 0;
+    //                     maxValueHashValue = 0;
     //                     while (j < pRangeK) {
-    //                         if (ma < featureId+i) {
-                                
-    //                         }                        
+    //                         if (index[j] > maxHashValue) {
+    //                             maxHashValue = index[i];
+    //                             maxIndex = j;
+    //                         }            
+    //                         if (values[j] > maxValue) {
+    //                             maxValue = values[j];
+    //                             maxValueHashValue = index[i];
+    //                         } 
     //                         ++j;
     //                     }
     //                 }
@@ -183,9 +165,14 @@ __global__ void fitCudaWtaHash(const int* pFeatureIdList, const size_t* pSizeOfI
                     
     //             }
     //         }
-    //         pSignaturesBlockSize[signatureBlockId + hashFunctionId] = nearestNeighborsValue;
+    //         pSignaturesBlockSize[signatureBlockId + hashFunctionId] = maxValueHashValue;
     //         hashFunctionId += blockDim.x;
     //         nearestNeighborsValue = MAX_VALUE;
+    //         maxIndex = 0;
+    //         maxHashValue = 0;
+    //         maxValue = 0;
+    //         maxValueHashValue = 0;
+    //         rangeKCount = 0;
     //     }
     //     __syncthreads();
     //     // merge pShingleSize values together.
@@ -207,7 +194,8 @@ __global__ void fitCudaWtaHash(const int* pFeatureIdList, const size_t* pSizeOfI
     //     nearestNeighborsValue = MAX_VALUE;
     //     hashFunctionId = threadIdx.x;
     // }
-                  
+    // delete index; 
+    // delete values;      
 }
 
 

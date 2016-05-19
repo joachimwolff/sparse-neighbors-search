@@ -670,9 +670,9 @@ def measure_performance(dataset, minHashParameters, n_neighbors_sklearn = 10, n_
             time_query_time_1_50_minHash_approx,
             time_query_time_1_50_lshf,
             time_query_time_50_1_annoy,
-            accuracy_1_50_lshf,
             accuracy_1_50_minHash_exact, 
             accuracy_1_50_minHash_aprox, 
+            accuracy_1_50_lshf,
             accuracy_1_50_annoy)
             
 # minHash minhashFast, minhashgpu minhashfastgpu wtahash wtahashFast wtahashgpu wtahashFastgpu sklaern bruteforce
@@ -726,7 +726,7 @@ def measureMinHashWtaHash(dataset, minHashParameters, wtaHashParameters):
                     store_value_with_least_sigificant_bit=wtaHashParameters[5],
                     excess_factor=wtaHashParameters[6], prune_inverse_index_after_instance=wtaHashParameters[7], 
                     remove_hash_function_with_less_entries_as=wtaHashParameters[8],
-                    shingle=wtaHashParameters[9], block_size=wtaHashParameters[10], cpu_gpu_load_balancing = 0.0)
+                    shingle=wtaHashParameters[9], block_size=wtaHashParameters[10], cpu_gpu_load_balancing = 1.0)
     # print "702"       
     time_start = time.time()
     minHash.fit(dataset)
@@ -747,7 +747,7 @@ def measureMinHashWtaHash(dataset, minHashParameters, wtaHashParameters):
     
     time_start = time.time()
     wtaHashGpu.fit(dataset)
-    time_list_fit.append(time.time() - time_start)
+    # time_list_fit.append(time.time() - time_start)
     # print "723"       
     
 
@@ -757,10 +757,10 @@ def measureMinHashWtaHash(dataset, minHashParameters, wtaHashParameters):
     accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
     # print "730"       
     
-    time_start = time.time()
-    kneighbors = minHashGpu.kneighbors(n_neighbors=10, return_distance=False, fast=True)
-    time_list_query.append(time.time() - time_start)
-    accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
+    # time_start = time.time()
+    # kneighbors = minHashGpu.kneighbors(n_neighbors=10, return_distance=False, fast=True)
+    # time_list_query.append(time.time() - time_start)
+    # accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
     # print "736"       
     
     time_start = time.time()
@@ -769,10 +769,10 @@ def measureMinHashWtaHash(dataset, minHashParameters, wtaHashParameters):
     accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
     # print "742"       
     
-    time_start = time.time()
-    kneighbors = wtaHashGpu.kneighbors(n_neighbors=10, return_distance=False, fast=True)
-    time_list_query.append(time.time() - time_start)
-    accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
+    # time_start = time.time()
+    # kneighbors = wtaHashGpu.kneighbors(n_neighbors=10, return_distance=False, fast=True)
+    # time_list_query.append(time.time() - time_start)
+    # accuracy_list.append(neighborhood_accuracy(kneighbors, kneighbors_true))
     # print "748"       
     
     time_start = time.time()

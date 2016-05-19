@@ -23,11 +23,7 @@ InverseIndexCuda::InverseIndexCuda(size_t pNumberOfHashFunctions,
     mHashAlgorithm = pHashAlgorithm;
 }
 InverseIndexCuda::~InverseIndexCuda() {
-    // cudaFree(mDev_FeatureList);
-    // cudaFree(mDev_ValuesList);
-    // cudaFree(mDev_SizeOfInstanceList);
-    // cudaFree(mDev_JumpLength);
-    // cudaFree(mDev_DotProduct);
+  
 }
 void InverseIndexCuda::copyDataToGpu(SparseMatrixFloat* pRawData, int** pDevFeatureList,
                                       float** pDevValueList, size_t** pSizeList) {
@@ -161,12 +157,14 @@ void InverseIndexCuda::computeSignaturesQueryOnGpu(SparseMatrixFloat* pRawData,
         cudaDeviceSynchronize();
     } else {
         // fitCudaWtaHash<<<128, 128>>>
-        // (mDev_FeatureList, 
-        // mDev_SizeOfInstanceList,  
+        // (featureList, 
+        // valueList,
+        // sizeOfInstances,  
         // mNumberOfHashFunctions, 
-        // mDev_JumpLength,
-        //         mDev_ComputedSignaturesPerInstance, 
-        //         end, start, mBlockSize, mShingleSize, dev_SignaturesBlockSize);
+        // pRawData->getMaxNnz(),
+        // computedSignaturesPerInstance, 
+        // pRawData->size(), 0, mBlockSize, mShingleSize, dev_SignaturesBlockSize, (int) pRangeK);
+        // cudaDeviceSynchronize();
     }
                                         
     // copy results back to host  
