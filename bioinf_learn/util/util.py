@@ -456,6 +456,7 @@ def benchmarkNearestNeighborAlgorithms(dataset, n_neighbors = 10, reduce_dimensi
 def plotData(data, color, label, title, xticks, ylabel,
          number_of_instances, number_of_features,
          figure_size=(10,5),  bar_width=0.1,log=True, xlabel=None):
+    plt.rcParams.update({'font.size': 14})
     plt.figure(figsize=figure_size)
     N = number_of_instances * number_of_features
 
@@ -479,6 +480,7 @@ def plotData(data, color, label, title, xticks, ylabel,
 def plotDataBenchmark(data, color, label, title, xticks, ylabel,
          number_of_instances, number_of_features,
          figure_size=(10,5),  bar_width=0.1,log=True, xlabel=None):
+    plt.rcParams.update({'font.size': 14})
     plt.figure(figsize=figure_size)
     N = number_of_instances * number_of_features
 

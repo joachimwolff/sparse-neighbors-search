@@ -12,6 +12,8 @@
 __author__ = 'wolffjoachim'
 
 from bioinf_learn import MinHash
+from bioinf_learn import WtaHash
+
 from sklearn.neighbors import NearestNeighbors
 from eden.converter.graph.gspan import gspan_to_eden
 from eden.graph import Vectorizer
@@ -67,7 +69,7 @@ if __name__ == "__main__":
         datasetBursi = pickle.load(fileObject)
     fitting_time = 0
     query_time = 0
-    minHash = MinHash(n_neighbors=int(args.n_neighbors), radius=float(args.radius), fast=bool(args.fast), 
+    minHash = WtaHash(n_neighbors=int(args.n_neighbors), radius=float(args.radius), fast=bool(args.fast), 
                 number_of_hash_functions=int(args.number_of_hash_functions),
                 max_bin_size = int(args.max_bin_size), minimal_blocks_in_common = int(args.minimal_blocks_in_common),
                 shingle_size = int(args.shingle_size), excess_factor = int(args.excess_factor),

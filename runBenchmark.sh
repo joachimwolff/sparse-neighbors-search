@@ -21,19 +21,19 @@
 --number_of_cores 4 --chunk_size 0 --prune_inverse_index -1 \
 --prune_inverse_index_after_instance -1.0 \
 --removeHashFunctionWithLessEntriesAs -1 \
---hash_algorithm  0 --block_size  1 --shingle 0 --file_name result/init_values -lsb 0
+--hash_algorithm  0 --block_size  1 --shingle 0 --file_name result/init_values_wta -lsb 0
 # store it on disk
 # read file by python script to get the values and store them in the shell script
 
 # Best pruning value for the frequency of occurences of hash values
-./getFrequencyOfOccurencesOfHashValues.py -i result/init_values -o result/max_value_init
-MAX_VALUE_OCCURENCE_OF_HASH_VALUE=`cat result/max_value_init`
-#echo $MAX_VALUE_OCCURENCE_OF_HASH_VALUE
-# MAX_VALUE_OCCURENCE_OF_HASH_VALUE=10
+# ./getFrequencyOfOccurencesOfHashValues.py -i result/init_values -o result/max_value_init
+# MAX_VALUE_OCCURENCE_OF_HASH_VALUE=`cat result/max_value_init`
+# echo $MAX_VALUE_OCCURENCE_OF_HASH_VALUE
+# # MAX_VALUE_OCCURENCE_OF_HASH_VALUE=10
 # for (( i=1; i<=$MAX_VALUE_OCCURENCE_OF_HASH_VALUE; i++ ))
 # do
 #     echo $i
-#             ./runSingleBenchmark.py --n_neighbors 10c --radius 1.0 --fast False --number_of_hash_functions 400 \
+#             ./runSingleBenchmark.py --n_neighbors 10 --radius 1.0 --fast False --number_of_hash_functions 400 \
 # --max_bin_size  50 --minimal_blocks_in_common 1 \
 # --shingle_size 4 --excess_factor 5 \
 # --similarity False --bloomierFilter False \
@@ -47,7 +47,7 @@ MAX_VALUE_OCCURENCE_OF_HASH_VALUE=`cat result/max_value_init`
 
 
 # Removing hash functions with less hash values than ncc
-./getSizeOfHashFunctions.py -i result/init_values -o result/size_of_hash_functions
+./getSizeOfHashFunctions.py -i result/init_values_wta -o result/size_of_hash_functions_wta
 MAX_VALUE_OCCURENCE_OF_HASH_FUNCTION=`cat result/size_of_hash_functions`
 echo $MAX_VALUE_OCCURENCE_OF_HASH_FUNCTION
 # for i in $MAX_VALUE_OCCURENCE_OF_HASH_FUNCTION

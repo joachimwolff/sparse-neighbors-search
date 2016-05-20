@@ -117,19 +117,19 @@ def test(data):
     # newsgroups_test = fetch_20newsgroups(subset='test',remove=('headers', 'footers', 'quotes'), categories=categories)
     # vectors_test = vectorizer.transform(newsgroups_test.data)
     # datasetBursi = vectors_training
-    if not os.path.isfile("rnaDataset"):
-        rfam_ids=['RF00004','RF00005','RF00015','RF00020','RF00026','RF00169',
-              'RF00380','RF00386','RF01051','RF01055','RF01234','RF01699',
-              'RF01701','RF01705','RF01731','RF01734','RF01745','RF01750',
-              'RF01942','RF01998','RF02005','RF02012','RF02034']
-        X, y = rfam_data(rfam_ids, n_max=50, complexity=3, nbits=16)
-        fileObject = open("rnaDataset",'wb')
-        pickle.dump(X,fileObject)
-        fileObject.close()
-        datasetBursi = X
-    else:
-        fileObject = open("rnaDataset",'r')
-        datasetBursi = pickle.load(fileObject)
+    # if not os.path.isfile("rnaDataset"):
+    #     rfam_ids=['RF00004','RF00005','RF00015','RF00020','RF00026','RF00169',
+    #           'RF00380','RF00386','RF01051','RF01055','RF01234','RF01699',
+    #           'RF01701','RF01705','RF01731','RF01734','RF01745','RF01750',
+    #           'RF01942','RF01998','RF02005','RF02012','RF02034']
+    #     X, y = rfam_data(rfam_ids, n_max=50, complexity=3, nbits=16)
+    #     fileObject = open("rnaDataset",'wb')
+    #     pickle.dump(X,fileObject)
+    #     fileObject.close()
+    #     datasetBursi = X
+    # else:
+    #     fileObject = open("rnaDataset",'r')
+    #     datasetBursi = pickle.load(fileObject)
     # print "Build inverse index for approximate..."
     #{'max_bin_size': 66.3710562451178, 'remove_value_with_least_sigificant_bit': 5, 
     # 'prune_inverse_index': 1, 'number_of_hash_functions': 253.3929503190519, 'shingle': 1,
@@ -137,16 +137,16 @@ def test(data):
     #   'chunk_size': 2.2477032655582794, 'excess_factor': 18.234021666380613, 
     #   'block_size': 7.880427429793286, 'prune_inverse_index_after_instance': 1, 'shingle_size': 2.393356246460925}
 
-    # query = datasetBursi[0::86]
-    # query_ids = set()
-    # query_list = []
-    # for i in range(50):
-    #     query_ids.add(random.randint(0, datasetBursi.shape[0]-1))
-    # # query_dense = dataset_dense[query_ids]    
-    # for i in query_ids:
-    #     query_list.append(datasetBursi.getrow(i))
-    # query = vstack(query_list)
-    query=None
+    query = datasetBursi[0::86]
+    query_ids = set()
+    query_list = []
+    for i in range(50):
+        query_ids.add(random.randint(0, datasetBursi.shape[0]-1))
+    # query_dense = dataset_dense[query_ids]    
+    for i in query_ids:
+        query_list.append(datasetBursi.getrow(i))
+    query = vstack(query_list)
+    # query=None
     # query = datasetBursi[sorted(list(query_ids))]
     # print query_ids
     # print query
@@ -201,13 +201,13 @@ def test(data):
     #                   remove_hash_function_with_less_entries_as=0,
     #                   shingle=1, block_size=1, cpu_gpu_load_balancing = 0.0, gpu_hashing=0)
     # minHash = WtaHash(number_of_hash_functions=200, max_bin_size= 55, shingle_size = 2, range
-    minHash = MinHash(number_of_hash_functions=100, max_bin_size= 96, shingle_size = 2,# rangeK_wta=20,
-                      similarity=False, minimal_blocks_in_common=1,
-                      number_of_cores=4, prune_inverse_index=14, 
-                      store_value_with_least_sigificant_bit=2,
-                      excess_factor=14, prune_inverse_index_after_instance=0.5, 
-                      remove_hash_function_with_less_entries_as=0,
-                      shingle=0, block_size=4, cpu_gpu_load_balancing = 0.0, gpu_hashing=0)
+    # minHash = MinHash(number_of_hash_functions=100, max_bin_size= 96, shingle_size = 2,# rangeK_wta=20,
+    #                   similarity=False, minimal_blocks_in_common=1,
+    #                   number_of_cores=4, prune_inverse_index=14, 
+    #                   store_value_with_least_sigificant_bit=2,
+    #                   excess_factor=14, prune_inverse_index_after_instance=0.5, 
+    #                   remove_hash_function_with_less_entries_as=0,
+    #                   shingle=0, block_size=4, cpu_gpu_load_balancing = 0.0, gpu_hashing=0)
     # minHash = WtaHash(number_of_hash_functions=200, max_bin_size= 55, shingle_size = 2, rangeK_wta=20,
     #                   similarity=False, minimal_blocks_in_common=2,
     #                   number_of_cores=4, prune_inverse_index=10, 
@@ -215,13 +215,13 @@ def test(data):
     #                   excess_factor=15, prune_inverse_index_after_instance=0.5, 
     #                   remove_hash_function_with_less_entries_as=0,
     #                   shingle=1, block_size=1, cpu_gpu_load_balancing = 0.0, gpu_hashing=0)
-    # minHash = WtaHash(number_of_hash_functions=200, max_bin_size= 46, shingle_size = 1, rangeK_wta=16,
-    #                   similarity=False, minimal_blocks_in_common=1,
-    #                   number_of_cores=4, prune_inverse_index=0, 
-    #                   store_value_with_least_sigificant_bit=1,
-    #                   excess_factor=14, prune_inverse_index_after_instance=0.5, 
-    #                   remove_hash_function_with_less_entries_as=0,
-    #                   shingle=1, block_size=3, cpu_gpu_load_balancing = 1.0)
+    minHash = WtaHash(number_of_hash_functions=200, max_bin_size= 46, shingle_size = 1, rangeK_wta=16,
+                      similarity=False, minimal_blocks_in_common=1,
+                      number_of_cores=4, prune_inverse_index=0, 
+                      store_value_with_least_sigificant_bit=1,
+                      excess_factor=14, prune_inverse_index_after_instance=0.5, 
+                      remove_hash_function_with_less_entries_as=0,
+                      shingle=1, block_size=3, cpu_gpu_load_balancing = 0.0)
     # minHash.fit(data[0])
     print "fitting..."
 
