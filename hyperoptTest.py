@@ -131,7 +131,7 @@ def objective(args):
                 remove_hash_function_with_less_entries_as=int(removeHashFunctionWithLessEntriesAs), 
                  block_size = int(block_size), shingle=shingle,
                 store_value_with_least_sigificant_bit=remove_value_with_least_sigificant_bit, 
-                cpu_gpu_load_balancing=0, gpu_hashing=1)#, rangeK_wta=int(rangeK_wta))
+                cpu_gpu_load_balancing=0, gpu_hashing = 1)#, rangeK_wta=int(rangeK_wta))
     print "Create minHash object...Done"
                 
     # print "Values: "
@@ -181,7 +181,7 @@ def objective(args):
     # beta = args["beta"]
     max_memory = 1
     max_time = 1
-    return compute_score(error, memory, time_end, max_memory, max_time, 0.5, 0.7)
+    return compute_score(error, memory, time_end, max_memory, max_time, 0.1, 0.5)
     # return error-0.001
 
 
@@ -208,7 +208,7 @@ rfam_ids=['RF00004','RF00005','RF00015','RF00020','RF00026','RF00169',
           'RF00380','RF00386','RF01051','RF01055','RF01234','RF01699',
           'RF01701','RF01705','RF01731','RF01734','RF01745','RF01750',
           'RF01942','RF01998','RF02005','RF02012','RF02034']
-X, y = rfam_data(rfam_ids, n_max=100, complexity=3, nbits=16)
+X, y = rfam_data(rfam_ids, n_max=50, complexity=3, nbits=16)
 datasetBursi = X 
 # get values with out
 # minHash_org = MinHash(n_neighbors=10, radius=1.0, fast=False, number_of_hash_functions=800,
