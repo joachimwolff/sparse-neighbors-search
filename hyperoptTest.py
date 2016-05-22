@@ -1,5 +1,7 @@
 #! /usr/bin/python
 from bioinf_learn.neighbors import MinHash
+from bioinf_learn.neighbors import MinHashClassifier
+
 from bioinf_learn.util import neighborhood_accuracy
 import matplotlib.pyplot as plt
 import numpy as np

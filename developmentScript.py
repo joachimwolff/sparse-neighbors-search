@@ -34,7 +34,10 @@ import time
 import cPickle as pickle
 # from neighborsMinHash import MinHashKNeighborsClassifier
 from bioinf_learn.neighbors import MinHash
+from bioinf_learn.neighbors import MinHashClassifier
 from bioinf_learn.neighbors import WtaHash
+from bioinf_learn.neighbors import WtaHashClassifier
+
 # from neighborsMinHash.computation import InverseIndex
 import inspect
 from scipy.sparse import csr_matrix
@@ -126,10 +129,17 @@ def test(data):
     #     fileObject = open("rnaDataset",'wb')
     #     pickle.dump(X,fileObject)
     #     fileObject.close()
+    #     fileObject = open("rnaDataset_y",'wb')
+    #     pickle.dump(y,fileObject)
+    #     fileObject.close()
     #     datasetBursi = X
     # else:
     #     fileObject = open("rnaDataset",'r')
     #     datasetBursi = pickle.load(fileObject)
+    #     fileObject.close()
+    #     fileObject = open("rnaDataset_y",'r')
+    #     y = pickle.load(fileObject)
+    #     fileObject.close()
     # print "Build inverse index for approximate..."
     #{'max_bin_size': 66.3710562451178, 'remove_value_with_least_sigificant_bit': 5, 
     # 'prune_inverse_index': 1, 'number_of_hash_functions': 253.3929503190519, 'shingle': 1,
@@ -146,7 +156,7 @@ def test(data):
     for i in query_ids:
         query_list.append(datasetBursi.getrow(i))
     query = vstack(query_list)
-    # query=None
+    query=None
     # query = datasetBursi[sorted(list(query_ids))]
     # print query_ids
     # print query
@@ -186,13 +196,13 @@ def test(data):
     #                     remove_hash_function_with_less_entries_as= minHashParameters[7],
     #                     shingle= minHashParameters[8], block_size= minHashParameters[9], cpu_gpu_load_balancing = 1.0)
     # minHash = MinHash(cpu_gpu_load_balancing = 1.0, accuracy_optimized=True)
-    # minHash = MinHash(number_of_hash_functions=200, max_bin_size= 49, shingle_size = 2, #rangeK_wta=50,
+    # minHash = WtaHash(number_of_hash_functions=100, max_bin_size= 90, shingle_size = 2, rangeK_wta=50,
     #                   similarity=False, minimal_blocks_in_common=1,
-    #                   number_of_cores=4, prune_inverse_index=1, 
+    #                   number_of_cores=4, prune_inverse_index=14, 
     #                   store_value_with_least_sigificant_bit=2,
-    #                   excess_factor=14, prune_inverse_index_after_instance=0.0, 
+    #                   excess_factor=13, prune_inverse_index_after_instance=0.5, 
     #                   remove_hash_function_with_less_entries_as=0,
-    #                   shingle=1, block_size=4, cpu_gpu_load_balancing = 1.0, gpu_hashing=0)
+    #                   shingle=0, block_size=4, cpu_gpu_load_balancing = 1.0)#, gpu_hashing=0)
     # minHash = MinHash(number_of_hash_functions=200, max_bin_size= 55, shingle_size = 2,# rangeK_wta=20,
     #                   similarity=False, minimal_blocks_in_common=2,
     #                   number_of_cores=4, prune_inverse_index=10, 
@@ -208,25 +218,56 @@ def test(data):
     #                   excess_factor=14, prune_inverse_index_after_instance=0.5, 
     #                   remove_hash_function_with_less_entries_as=0,
     #                   shingle=0, block_size=4, cpu_gpu_load_balancing = 0.0, gpu_hashing=0)
-    # minHash = WtaHash(number_of_hash_functions=200, max_bin_size= 55, shingle_size = 2, rangeK_wta=20,
-    #                   similarity=False, minimal_blocks_in_common=2,
-    #                   number_of_cores=4, prune_inverse_index=10, 
-    #                   store_value_with_least_sigificant_bit=0,
-    #                   excess_factor=15, prune_inverse_index_after_instance=0.5, 
+    # wtaHash = WtaHashClassifier(number_of_hash_functions=168, max_bin_size= 47, shingle_size = 2, rangeK_wta=19,
+    #                   similarity=False, minimal_blocks_in_common=1,
+    #                   number_of_cores=4, prune_inverse_index=14, 
+    #                   store_value_with_least_sigificant_bit=1,
+    #                   excess_factor=11, prune_inverse_index_after_instance=0.5, 
     #                   remove_hash_function_with_less_entries_as=0,
-    #                   shingle=1, block_size=1, cpu_gpu_load_balancing = 0.0, gpu_hashing=0)
+    #                   shingle=0, block_size=1, cpu_gpu_load_balancing = 0.0)
     minHash = WtaHash(number_of_hash_functions=200, max_bin_size= 46, shingle_size = 1, rangeK_wta=16,
                       similarity=False, minimal_blocks_in_common=1,
                       number_of_cores=4, prune_inverse_index=0, 
                       store_value_with_least_sigificant_bit=1,
                       excess_factor=14, prune_inverse_index_after_instance=0.5, 
                       remove_hash_function_with_less_entries_as=0,
-                      shingle=1, block_size=3, cpu_gpu_load_balancing = 0.0)
+                      shingle=1, block_size=3, cpu_gpu_load_balancing = 1.0)
     # minHash.fit(data[0])
     print "fitting..."
 
     minHash.fit(datasetBursi)
+    # wtaHash.fit(datasetBursi, y)
+    # nearest_NeighborsClassifier = KNeighborsClassifier(n_jobs=4, n_neighbors=10, algorithm='brute', metric='euclidean')
+
+    # nearest_NeighborsClassifier.fit(datasetBursi, y)
     print "get distribution..."
+    # minHash.kneighbors(X=query, n_neighbors=10,fast=True,return_distance=False)
+    # minHash.kneighbors(X=query, n_neighbors=10,fast=False,return_distance=False)
+    # wtaHash.kneighbors(X=query, n_neighbors=10,fast=True,return_distance=False)
+    # wtaHash.kneighbors(X=query, n_neighbors=10,fast=False,return_distance=False)
+    # sklearn_kneighbors = nearest_NeighborsClassifier.kneighbors(X=query, n_neighbors=10)
+
+
+    #  accuracy_score_ = 0.0
+    # for x, y in zip(exact1, sklearn_):
+    #     accuracy_score_ += accuracy_score(x, y)
+    # print "\t\tMinhash fast: ", accuracy_score_ / float(len(exact1))
+
+    #  accuracy_score_ = 0.0
+    # for x, y in zip(exact1, sklearn_):
+    #     accuracy_score_ += accuracy_score(x, y)
+    # print "\t\tMinHash: ", accuracy_score_ / float(len(exact1))
+
+    #  accuracy_score_ = 0.0
+    # for x, y in zip(exact1, sklearn_):
+    #     accuracy_score_ += accuracy_score(x, y)
+    # print "\t\tWta hash fast: ", accuracy_score_ / float(len(exact1))
+
+    #  accuracy_score_ = 0.0
+    # for x, y in zip(exact1, sklearn_):
+    #     accuracy_score_ += accuracy_score(x, y)
+    # print "\t\tnon fast: ", accuracy_score_ / float(len(exact1))
+
 
     minHash.get_distribution_of_inverse_index()
     print "Fitting time: ",  time.time() - time_build_approx_start
@@ -241,9 +282,9 @@ def test(data):
         else:
             dist_count += key * distribution[0][key]
     print "dist count: ", dist_count
-    # time_build_approx_end = time.time()
-    # print "Build inverse index for approximate... Done!"
-    # print "Time: ", time_build_approx_end - time_build_approx_start
+    time_build_approx_end = time.time()
+    print "Build inverse index for approximate... Done!"
+    print "Time: ", time_build_approx_end - time_build_approx_start
 
 
     # centroids_list = []
@@ -271,7 +312,8 @@ def test(data):
     time_comp_approx_end = time.time()
     print "Time: ", time_comp_approx_end  - time_comp_approx
     # print "\n\n"
-
+     # minHash.score(X=datasetBursi, y=y)
+    # print preditMeinhash
     # minHash2 = MinHash(number_of_hash_functions=400, max_bin_size=300, shingle_size = 4,
     #  similarity=False, bloomierFilter=False, number_of_cores=4, minimal_blocks_in_common = 1,
     #                  prune_inverse_index=1, remove_value_with_least_sigificant_bit=4,
@@ -329,7 +371,14 @@ def test(data):
     time_exact_fit = time.time()
     # nearest_Neighbors = KNeighborsClassifier()
     nearest_Neighbors = NearestNeighbors(n_jobs=4, algorithm='brute', metric='euclidean')
-    
+    # nearest_NeighborsClassifier = KNeighborsClassifier(n_jobs=4, n_neighbors=10, algorithm='brute', metric='euclidean')
+
+    # nearest_NeighborsClassifier.fit(datasetBursi, y)
+    # sklearn_pred = nearest_NeighborsClassifier.score(X=datasetBursi, y=y)
+
+    # print "classes proba oredict: ", sklearn_pred
+    # print "length: ", len(sklearn_pred[0])
+    # print "predicted accuracy", accuracy_score(sklearn_pred, preditMeinhash)
     nearest_Neighbors.fit(datasetBursi)
     time_exact_fit_end = time.time()
     print "Time to build index exact: ", time_exact_fit_end - time_exact_fit
