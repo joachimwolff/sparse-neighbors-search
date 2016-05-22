@@ -38,7 +38,11 @@ class KSizeSortedMap {
         mMaxValueIndex = 0;
     };
     ~KSizeSortedMap() {
+            // std::cout << __LINE__ << std::endl;
+
         delete mKSizeSortedMap;
+            // std::cout << __LINE__ << std::endl;
+
     };
     void insert(size_t pInstance, float pValue) {
         if (mKSizeSortedMap->size() <= mK) {

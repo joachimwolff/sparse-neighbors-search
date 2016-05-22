@@ -86,6 +86,8 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
 }
  
 InverseIndex::~InverseIndex() {
+        // std::cout << __LINE__ << std::endl;
+
     for (auto it = mSignatureStorage->begin(); it != mSignatureStorage->end(); ++it) {
             delete (*it).second.instances;
             delete (*it).second.signature;
@@ -93,6 +95,8 @@ InverseIndex::~InverseIndex() {
     delete mSignatureStorage;
     delete mHash;
     delete mInverseIndexStorage;
+        // std::cout << __LINE__ << std::endl;
+
 } 
 
 distributionInverseIndex* InverseIndex::getDistribution() {
@@ -116,7 +120,6 @@ vsize_t* InverseIndex::computeSignature(SparseMatrixFloat* pRawData, const size_
             }
             (*signature)[j] = argmin;
             
-            // (*signature)[j] = nearestNeighborsValue;
     }
     // reduce number of hash values by a factor of mShingleSize
     if (mShingle) {
@@ -270,6 +273,9 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(SparseMatrixFloat* pRawDat
             } 
         }
     }
+    for (size_t i = 0; i < signatures->size(); ++i) {
+    
+    }
     delete signatures;
     return instanceSignature;
 }
@@ -283,7 +289,6 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
     #ifdef OPENMP
     omp_set_dynamic(0);
     #endif
-            std::cout << __LINE__ << std::endl;
 
     // store signatures in signatureStorage
 // #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)

@@ -26,7 +26,6 @@
 class InverseIndex {
 
   protected: 
-  	// const double A = sqrt(2) - 1;
     size_t mNumberOfHashFunctions;
     size_t mShingleSize;
     size_t mNumberOfCores;
@@ -49,11 +48,7 @@ class InverseIndex {
     float mCpuGpuLoadBalancing;
     size_t mRangeK_Wta;
     size_t mGpuHash; 
-    // cuda stuff
-    size_t* mDev_FeatureList;
-    size_t* mDev_SizeOfInstanceList;
-    size_t* mDev_ComputedSignaturesPerInstance;
-    float* mDev_ValuesList;
+
 
     InverseIndexStorageUnorderedMap* mInverseIndexStorage;
   	umap_uniqueElement* mSignatureStorage;
@@ -89,26 +84,6 @@ class InverseIndex {
     distributionInverseIndex* getDistribution();
     vvsize_t_p* computeSignaturesOnGpu(SparseMatrixFloat* pRawData, size_t pStartIndex, size_t pEndIndex, size_t pNumberOfInstances,
     size_t pNumberOfBlocks, size_t pNumberOfThreads);
-    #ifdef CUDA
-   int** get_dev_FeatureList() {
-       return mInverseIndexCuda->get_mDev_FeatureList();
-   };
-   
-   size_t** get_dev_SizeOfInstanceList() {
-       return mInverseIndexCuda->get_mDev_SizeOfInstanceList();
-   };
-   int** get_dev_ComputedSignaturesPerInstance() {
-       return mInverseIndexCuda->get_mDev_ComputedSignaturesPerInstance();
-   };
-   float** get_dev_ValuesList() {
-       return mInverseIndexCuda->get_mDev_ValuesList();
-   };       
-   size_t** get_mDev_JumpLength() {
-       return mInverseIndexCuda->get_mDev_JumpLength();
-   };
-   float** get_mDev_DotProduct() {
-       return mInverseIndexCuda->get_mDev_DotProduct();
-   };                            
-   #endif                           
+                
 };
 #endif // INVERSE_INDEX_H

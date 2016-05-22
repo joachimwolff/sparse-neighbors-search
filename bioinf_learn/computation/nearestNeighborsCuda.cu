@@ -192,6 +192,7 @@ neighborhood* NearestNeighborsCuda::computeNearestNeighbors(neighborhood* neighb
     free(candidates);
     free(candidatesSize);
     free(results);
+    cudaDeviceSynchronize();
     
     return neighbors_;
 }
