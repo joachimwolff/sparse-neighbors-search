@@ -107,23 +107,12 @@ static PyObject* fit(PyObject* self, PyObject* args) {
     
     // parse from python list to a c++ map<size_t, vector<size_t> >
     // where key == instance id and vector<size_t> == non null feature ids
-//         printf("parse data...");
-// fflush(stdout);
     SparseMatrixFloat* originalDataMatrix = parseRawData(instancesListObj, featuresListObj, dataListObj, 
                                                     maxNumberOfInstances, maxNumberOfFeatures);
-//         printf("parse data... DONE");
-// fflush(stdout);
-
     // get pointer to the minhash object
     NearestNeighbors* nearestNeighbors = reinterpret_cast<NearestNeighbors* >(addressNearestNeighborsObject);
-//     printf("set data...");
-// fflush(stdout);
     nearestNeighbors->set_mOriginalData(originalDataMatrix);
-//     printf("fit data...");
-// fflush(stdout);
     nearestNeighbors->fit(originalDataMatrix);
-//     printf("fit data... DONE");
-// fflush(stdout);
     addressNearestNeighborsObject = reinterpret_cast<size_t>(nearestNeighbors);
     PyObject * pointerToInverseIndex = Py_BuildValue("k", addressNearestNeighborsObject);
     
