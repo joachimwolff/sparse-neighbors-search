@@ -47,10 +47,10 @@ NearestNeighbors* createNearestNeighborsObj(size_t pNumberOfHashFunctions, size_
                             size_t pRemoveValueWithLeastSigificantBit) {
 	NearestNeighbors* nearestNeighborsObj = new NearestNeighbors (pNumberOfHashFunctions, pShingleSize, pNumberOfCores, pChunkSize,
                     pMaxBinSize, pNneighbors, pMinimalBlocksInCommon, 
-                    pExcessFactor, pMaximalNumberOfHashCollisions, pFast, pSimilarity, pBloomierFilter,
+                    pExcessFactor, pMaximalNumberOfHashCollisions, pFast, pSimilarity,
                     pPrune_inverse_index, pPrune_inverse_index_after_instance,
                     pRemoveHashFunctionWithLessEntriesAs, pHash_algorithm,
-                    pBlock_size, pShingle, pRemoveValueWithLeastSigificantBit);
+                    pBlock_size, pShingle, pRemoveValueWithLeastSigificantBit, 0, 0, 0);
 	return nearestNeighborsObj;
 }
 
