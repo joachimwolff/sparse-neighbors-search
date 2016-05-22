@@ -261,7 +261,7 @@ class MinHashClassifier():
                 result_classification.append(y_proba[:])
         return asarray(result_classification)
         
-    def score(self, X, y , sample_weight=None):
+    def score(self, X, y , sample_weight=None, fast=None):
         """Returns the mean accuracy on the given test data and labels.
         In multi-label classification, this is the subset accuracy
         which is a harsh metric since you require for each sample that
@@ -281,7 +281,7 @@ class MinHashClassifier():
             Mean accuracy of self.predict(X) wrt. y.
         """
         
-        return accuracy_score(y, self.predict(X), sample_weight=sample_weight)
+        return accuracy_score(y, self.predict(X, fast=fast), sample_weight=sample_weight)
 
     # def _getYValues(self, candidate_list):
     #     if self._minHash._getY_is_csr():
