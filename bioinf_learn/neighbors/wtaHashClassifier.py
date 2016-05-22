@@ -13,8 +13,10 @@ __author__ = 'joachimwolff'
 from collections import Counter
 
 import numpy as np
-from sklearn.neighbors import KNeighborsClassifier
+from numpy import asarray
 from sklearn.utils import check_array
+from sklearn.utils import check_X_y
+from sklearn.metrics import accuracy_score
 import logging
 
 from wtaHash import WtaHash
@@ -200,22 +202,20 @@ class WtaHashClassifier():
                                                 return_distance=False,
                                                 fast=fast, similarity=similarity)
        
-        y_values = self._getYValues(candidate_list)
-
-        # print neighbors
         result_classification = []
         for instance in neighbors:
             y_value = []
             for instance_ in instance:
                 if instance_ != -1:
                 # get all class labels
-                    y_value.append(y_values[instance_])
+                    # y_value.append(y_values[instance_])
+                    y_value.append(self._minHash._getY()[instance_])
             if len(y_value) > 0:
                 # sort class labels by frequency and take the highest one
                 result_classification.append(Counter(y_value).keys()[0])
             else:
                 result_classification.append(-1)
-        return result_classification
+        return asarray(result_classification)
 
 
 
@@ -235,16 +235,17 @@ class WtaHashClassifier():
         neighbors = self._wtaHash.kneighbors(X=X, n_neighbors=n_neighbors,
                                                 return_distance=False,
                                                 fast=fast, similarity=similarity)
-        y_values = self._getYValues(candidate_list)
-
+         # y_values = self._getYValues(candidate_list)
+        number_of_classes = len(set(self._minHash._getY()))
         result_classification = []
         for instance in neighbors:
             y_value = []
             for instance_ in instance:
                 if instance_ != -1:
                 # get all class labels
-                    y_value.append(y_values[instance_])
+                    y_value.append(self._minHash._getY()[instance_])
             if len(y_value) > 0:
+            
                 # sort class labels by frequency
                 y_proba = [0.0] * number_of_classes
                 sorted_classes = Counter(y_value)
@@ -256,7 +257,7 @@ class WtaHashClassifier():
                 for key, value in sorted_classes.iteritems():
                     y_proba[key] = value / float(total_class_count)
                 result_classification.append(y_proba[:])
-        return result_classification
+        return asarray(result_classification)
         
     def score(self, X, y , sample_weight=None):
         """Returns the mean accuracy on the given test data and labels.
@@ -277,21 +278,14 @@ class WtaHashClassifier():
         score : float
             Mean accuracy of self.predict(X) wrt. y.
         """
-        neighbors = self._wtaHash.kneighbors(X=X, n_neighbors=n_neighbors,
-                                                return_distance=False,
-                                                fast=fast, similarity=similarity)
+        return accuracy_score(y, self.predict(X), sample_weight=sample_weight)
 
-        nearest_neighborsSK = KNeighborsClassifier(n_neighbors=n_neighbors)
 
-        nearest_neighborsSK.fit(
-            self.nearestNeighbors._X[candidate_list], self._getYValues(candidate_list))
-        return nearest_neighborsSK.score(X, y, sample_weight)
-
-    def _getYValues(self, candidate_list):
-        if self.nearestNeighbors._y_is_csr:
-            return self.nearestNeighbors._y[candidate_list]
-        else:
-            y_list = []
-            for i in xrange(len(candidate_list)):
-                y_list.append(self.nearestNeighbors._y[candidate_list[i]])
-            return y_list
+    # def _getYValues(self, candidate_list):
+    #     if self.nearestNeighbors._y_is_csr:
+    #         return self.nearestNeighbors._y[candidate_list]
+    #     else:
+    #         y_list = []
+    #         for i in xrange(len(candidate_list)):
+    #             y_list.append(self.nearestNeighbors._y[candidate_list[i]])
+    #         return y_list

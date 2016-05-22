@@ -428,3 +428,8 @@ class WtaHash():
             the average size of elements per hash value per hash function,
             the mean and the standard deviation."""
         return self._nearestNeighborsCppInterface.get_distribution_of_inverse_index()
+        
+    def _getY(self):
+        return self._nearestNeighborsCppInterface._getY()
+    def _getY_is_csr(self):
+        return self._nearestNeighborsCppInterface._getY_is_csr()

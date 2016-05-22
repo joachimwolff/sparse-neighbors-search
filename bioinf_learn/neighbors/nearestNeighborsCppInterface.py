@@ -13,7 +13,7 @@ import multiprocessing as mp
 from scipy.sparse import csr_matrix
 from sklearn.random_projection import SparseRandomProjection
 from sklearn import random_projection
-
+from sklearn.utils import check_X_y
 from numpy import asarray
 
 import math
@@ -99,6 +99,8 @@ class NearestNeighborsCppInterface():
                   prune_inverse_index_after_instance=-1.0, remove_hash_function_with_less_entries_as=-1, 
                   hash_algorithm = 0, block_size = 5, shingle=0, store_value_with_least_sigificant_bit=0, 
                   cpu_gpu_load_balancing=0, gpu_hashing=0, rangeK_wta=10):
+        # self._X
+        # self._y = None
         if number_of_cores is None:
             number_of_cores = mp.cpu_count()
         if chunk_size is None:
@@ -132,14 +134,16 @@ class NearestNeighborsCppInterface():
                 this case.
             y : list, optional (default = None)
                 List of classes for the given input of X. Size have to be n_samples."""
-         # if y is not None:
-         #    _y_is_csr = True
-         #    _X, self._y = check_X_y(X, y, "csr", multi_output=True)
-         #    if ._y.ndim == 1 or self._y.shape[1] == 1:
-         #        self._y_is_csr = False
-        # else:
+        
+        if y is not None:
+            self._y_is_csr = True
+            _, self._y = check_X_y(X, y, "csr", multi_output=True)
+            if self._y.ndim == 1 or self._y.shape[1] == 1:
+                self._y_is_csr = False
+        else:
+            self._y_is_csr = False
         X_csr = csr_matrix(X)
-        # _y_is_csr = False
+       
         self._index_elements_count = X_csr.shape[0]
         instances, features = X_csr.nonzero()
         maxFeatures = int(max(X_csr.getnnz(1)))
@@ -161,13 +165,19 @@ class NearestNeighborsCppInterface():
                 Training data. Shape = [n_samples, n_features]
             y : list, optional (default = None)
                 List of classes for the given input of X. Size have to be n_samples."""
+        if y is not None:
+            if self._y_is_csr:
+                self._y = vstack([self._y, y])
+            else:
+                self._y = np.concatenate((self._y, y), axis=0)
+        
         X_csr = csr_matrix(X)
 
         instances, features = X_csr.nonzero()
         data = X_csr.data
         for i in xrange(len(instances)):
             instances[i] += self._index_elements_count 
-        self._index_elements_count  += X.shape[0]
+        self._index_elements_count += X.shape[0]
         
         self._pointer_address_of_nearestNeighbors_object = _nearestNeighbors.fit(instances.tolist(), features.tolist(), data.tolist(),
                                                                     self._pointer_address_of_nearestNeighbors_object)
@@ -728,3 +738,8 @@ class NearestNeighborsCppInterface():
             the average size of elements per hash value per hash function,
             the mean and the standard deviation."""
         return _nearestNeighbors.get_distribution_of_inverse_index(self._pointer_address_of_nearestNeighbors_object)
+        
+    def _getY(self):
+        return self._y
+    def _getY_is_csr(self):
+        return self._y_is_csr
