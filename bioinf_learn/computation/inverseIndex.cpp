@@ -455,7 +455,11 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             for (auto it = neighborhoodVectorForSorting.begin();
                     it != neighborhoodVectorForSorting.end(); ++it) {
                 neighborhoodVector.push_back((*it).key);
-                distanceVector.push_back(1 - (((*it).val) / (float)(mMaximalNumberOfHashCollisions)));
+                float value = 1 - (((*it).val) / (float)(mMaximalNumberOfHashCollisions));
+                if (value < 0) {
+                    value = 0;
+                }
+                distanceVector.push_back(value);
                 ++count;
                 if (count >= sizeOfNeighborhoodAdjusted) {
                     neighborsForThisInstance[j] = neighborhoodVector;
