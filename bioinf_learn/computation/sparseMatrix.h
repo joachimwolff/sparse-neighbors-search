@@ -215,9 +215,15 @@ class SparseMatrixFloat {
             
             valueXY = this->dotProduct(pRowId, instance_id, pQueryData);
             if (pQueryData == NULL) {
+                // std::cout << "instance_id: " << instance_id << std::endl;
                 valueYY = getDotProductPrecomputed(instance_id);
+                // std::cout << "\tDONE" << std::endl;
             } else {
+                // std::cout << "instance_id: " << instance_id << std::endl;
+                
                 valueYY = pQueryData->getDotProductPrecomputed(instance_id);
+                // std::cout << "\tDONE" << std::endl;
+                
             }
             
             element.val = valueXX - 2* valueXY + valueYY;
@@ -233,7 +239,11 @@ class SparseMatrixFloat {
             numberOfElementsToSort = returnValue.size();
         }
         // sort the values by increasing order
+            // std::cout << __LINE__ << std::endl;
+
         std::partial_sort(returnValue.begin(), returnValue.begin()+numberOfElementsToSort, returnValue.end(), mapSortAscByValueFloat);
+        //   std::cout << __LINE__ << std::endl;
+
         return returnValue;
     };
 

@@ -73,10 +73,7 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
         mInverseIndexSize = ceil(((float) (mNumberOfHashFunctions * mBlockSize) / (float) mShingleSize));
     }
     
-    // if (mHashAlgorithm == 1) {
-    //     mInverseIndexSize = mNumberOfHashFunctions * 
-    // }
-        mInverseIndexStorage = new InverseIndexStorageUnorderedMap(mInverseIndexSize, mMaxBinSize);
+    mInverseIndexStorage = new InverseIndexStorageUnorderedMap(mInverseIndexSize, mMaxBinSize);
     mRemoveValueWithLeastSigificantBit = pRemoveValueWithLeastSigificantBit;
     #ifdef CUDA
     mInverseIndexCuda = new InverseIndexCuda(pNumberOfHashFunctions, mShingle,
@@ -86,8 +83,6 @@ InverseIndex::InverseIndex(size_t pNumberOfHashFunctions, size_t pShingleSize,
 }
  
 InverseIndex::~InverseIndex() {
-        // std::cout << __LINE__ << std::endl;
-
     for (auto it = mSignatureStorage->begin(); it != mSignatureStorage->end(); ++it) {
             delete (*it).second.instances;
             delete (*it).second.signature;
@@ -95,8 +90,6 @@ InverseIndex::~InverseIndex() {
     delete mSignatureStorage;
     delete mHash;
     delete mInverseIndexStorage;
-        // std::cout << __LINE__ << std::endl;
-
 } 
 
 distributionInverseIndex* InverseIndex::getDistribution() {
@@ -182,13 +175,11 @@ vsize_t* InverseIndex::computeSignatureWTA(SparseMatrixFloat* pRawData, const si
         for (size_t j = 0; j < mK; ++j) {
             if (keyValue.getValue(j) > maxValue) {
                 maxValue = keyValue.getValue(j);
-                // maxValueIndex = j;
                 maxValueIndex = keyValue.getKey(j);
                 
             }
         }
         (*signature)[i] = maxValueIndex;//keyValue.getMaxValueIndex();
-        // (*signature)[i] = keyValue.getMaxValueIndex();
         keyValue.clear();
     }
     if (mShingle) {
