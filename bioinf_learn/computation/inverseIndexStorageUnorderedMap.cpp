@@ -88,6 +88,7 @@ void InverseIndexStorageUnorderedMap::insert(size_t pVectorId, size_t pHashValue
 vsize_t* InverseIndexStorageUnorderedMap::getElement(size_t pVectorId, size_t pHashValue) {
 
     if (mInverseIndex == NULL) return NULL;
+    if (pVectorId > mInverseIndex->size()) return NULL;
     if (pVectorId < mInverseIndex->size() && (*mInverseIndex)[pVectorId] != NULL) {
                 (*mInverseIndex)[pVectorId];
         auto iterator = (*mInverseIndex)[pVectorId]->find(pHashValue);
