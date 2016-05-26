@@ -272,6 +272,8 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                     
                 }
                 delete instance_signature;
+                delete neighborhood_instance->neighbors;
+                delete neighborhood_instance->distances;
                 delete neighborhood_instance;
             }
             // add the neighbors + mExcessFactor to the candidate list 
@@ -296,12 +298,11 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     // std::cout << __LINE__ << std::endl;
 
     delete neighborhoodCandidates->neighbors;
+    delete neighborhoodCandidates->distances;
     delete neighborhoodCandidates;
     // std::cout << __LINE__ << std::endl;
     
-    neighborhood* neighborhoodExact = new neighborhood();
-    neighborhoodExact->neighbors = new vvsize_t(neighborhood_->neighbors->size());
-    neighborhoodExact->distances = new vvfloat(neighborhood_->neighbors->size());
+    
     // compute the exact neighbors based on the candidate selection before.
     // std::cout << __LINE__ << std::endl;
     
@@ -309,6 +310,9 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     if (mCpuGpuLoadBalancing == 0){// || mGpuHash == 1) {
     #endif
     
+    neighborhood* neighborhoodExact = new neighborhood();
+    neighborhoodExact->neighbors = new vvsize_t(neighborhood_->neighbors->size());
+    neighborhoodExact->distances = new vvfloat(neighborhood_->neighbors->size());
     #ifdef OPENMP
     #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     #endif   
@@ -360,7 +364,12 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
             }
         }
     // std::cout << __LINE__ << std::endl;
+        delete neighborhood_->neighbors;
+        delete neighborhood_->distances;
+        delete neighborhood_;
+        // std::cout << __LINE__ << std::endl;
         
+        return neighborhoodExact;
     #ifdef CUDA
     } else {
         
@@ -373,12 +382,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     #endif
     // std::cout << __LINE__ << std::endl;
     
-    delete neighborhood_->neighbors;
-    delete neighborhood_->distances;
-    delete neighborhood_;
-    // std::cout << __LINE__ << std::endl;
     
-    return neighborhoodExact;
 }
 
 distributionInverseIndex* NearestNeighbors::getDistributionOfInverseIndex() {

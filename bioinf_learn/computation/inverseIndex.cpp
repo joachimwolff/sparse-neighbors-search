@@ -260,12 +260,10 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(SparseMatrixFloat* pRawDat
                 {
                     (*instanceSignature)[signatureId].instances->push_back(i);
                     mDoubleElementsQueryCount += 1;
+                    delete (*signatures)[i];
                 }
             } 
         }
-    }
-    for (size_t i = 0; i < signatures->size(); ++i) {
-    
     }
     delete signatures;
     return instanceSignature;
@@ -284,7 +282,7 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
     // store signatures in signatureStorage
 // #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     for (size_t i = 0; i < signatures->size(); ++i) {
-
+        bool deleteSignature = false;
         if ((*signatures)[i] == NULL) continue;
         size_t signatureId = 0;
         for (size_t j = 0; j < pRawData->getSizeOfInstance(i); ++j) {
@@ -302,21 +300,31 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
             {            
                 mSignatureStorage->operator[](signatureId).instances->push_back(i+pStartIndex);
                 mDoubleElementsStorageCount += 1;
+                deleteSignature = true;
+                // if ((*signatures)[i] != NULL) {
+                   
+                //     (*signatures)[i] = NULL;
+                // }
             }
         }      
-            for (size_t j = 0; j < (*signatures)[i]->size(); ++j) {
-                mInverseIndexStorage->insert(j, (*(*signatures)[i])[j], i+pStartIndex, mRemoveValueWithLeastSigificantBit);
-            }
-            if (signatures->size() == pruneEveryNInstances) {
-                
-                    pruneEveryNInstances += pruneEveryNInstances;
-                    if (mPruneInverseIndex > -1) {
-                        mInverseIndexStorage->prune(mPruneInverseIndex);
-                    }
-                    if (mRemoveHashFunctionWithLessEntriesAs > -1) {
-                        mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
-                    }
-            }
+        for (size_t j = 0; j < (*signatures)[i]->size(); ++j) {
+            mInverseIndexStorage->insert(j, (*(*signatures)[i])[j], i+pStartIndex, mRemoveValueWithLeastSigificantBit);
+        }
+        // delete (*signatures)[i] if it appeares for the second time
+        if (deleteSignature) {
+             delete (*signatures)[i];
+             deleteSignature = false;
+        }
+        if (signatures->size() == pruneEveryNInstances) {
+            
+                pruneEveryNInstances += pruneEveryNInstances;
+                if (mPruneInverseIndex > -1) {
+                    mInverseIndexStorage->prune(mPruneInverseIndex);
+                }
+                if (mRemoveHashFunctionWithLessEntriesAs > -1) {
+                    mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
+                }
+        }
     }
 
     if (mPruneInverseIndex > -1) {
