@@ -106,6 +106,11 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
         neighborhood_ = mInverseIndex->kneighbors(x_inverseIndex, pNneighbors, 
                                                 doubleElementsStorageCount);
        for (auto it = x_inverseIndex->begin(); it != x_inverseIndex->end(); ++it) {
+            // for (auto it2 = (*it).second.instances->begin(); it2 != (*it).second.instances->end();
+            //             ++it2){
+            //                 std::cout << (*it2) << ", ";
+            //             }
+            //             std::cout << std::endl;
             delete (*it).second.instances;
             delete (*it).second.signature;
        }
@@ -148,11 +153,11 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                 
                 std::vector<sortMapFloat> exactNeighbors;
                 if (pSimilarity) {
-                     #pragma omp critical
+                    //  #pragma omp critical
                     exactNeighbors = 
                         mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), pNneighbors+mExcessFactor, i, pRawData);
                 } else {
-                     #pragma omp critical
+                    //  #pragma omp critical
                     exactNeighbors = 
                         mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), pNneighbors+mExcessFactor, i, pRawData);
                 } 

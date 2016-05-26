@@ -16,6 +16,10 @@
 #include <iostream>
 #include "typeDefinitionsBasic.h"
 
+#ifdef OPENMP
+#include <omp.h>
+#endif
+
 #ifndef SPARSE_MATRIX_H
 #define SPARSE_MATRIX_H
 
@@ -103,7 +107,16 @@ class SparseMatrixFloat {
         }
         return (float) value; 
     };
-    float getDotProductPrecomputed(size_t pIndex) {
+    float getDotProductPrecomputed(size_t pIndex, SparseMatrixFloat* pQueryData=NULL) {
+        // return 1;
+        auto it = mDotProductPrecomputed.find(pIndex);
+        if (it != mDotProductPrecomputed.end()) {
+            return it->second;
+        } else {
+            float value = dotProduct(pIndex, pIndex, pQueryData);
+            #pragma omp critical 
+            mDotProductPrecomputed[pIndex] = value;
+        }
         return mDotProductPrecomputed[pIndex];
     }
     int* getSparseMatrixIndex() const{
@@ -201,8 +214,13 @@ class SparseMatrixFloat {
         const size_t pRowId = pQueryId;
         
         std::vector<sortMapFloat> returnValue(pRowIdVector.size());
-        
-        const size_t valueXX = getDotProductPrecomputed(pRowId);
+        size_t valueXX;
+        if (pQueryData == NULL) {
+            valueXX = getDotProductPrecomputed(pRowId);
+        } else {
+            valueXX = pQueryData->getDotProductPrecomputed(pRowId, pQueryData);
+        }
+         
         
         float valueXY = 0;
         float valueYY = 0;
@@ -214,17 +232,17 @@ class SparseMatrixFloat {
             element.val = 0;
             
             valueXY = this->dotProduct(pRowId, instance_id, pQueryData);
-            if (pQueryData == NULL) {
+            // if (pQueryData == NULL) {
                 // std::cout << "instance_id: " << instance_id << std::endl;
-                valueYY = getDotProductPrecomputed(instance_id);
+            valueYY = getDotProductPrecomputed(instance_id);
                 // std::cout << "\tDONE" << std::endl;
-            } else {
+            // } else {
                 // std::cout << "instance_id: " << instance_id << std::endl;
                 
-                valueYY = pQueryData->getDotProductPrecomputed(instance_id);
+                // valueYY = pQueryData->getDotProductPrecomputed(instance_id);
                 // std::cout << "\tDONE" << std::endl;
                 
-            }
+            // }
             
             element.val = valueXX - 2* valueXY + valueYY;
             
