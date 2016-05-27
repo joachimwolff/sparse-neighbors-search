@@ -1,5 +1,6 @@
 #! /usr/bin/python
 # Copyright 2016 Joachim Wolff
+# For license see file LICENSE
 # Master Thesis
 # Tutors: Fabrizio Costa, Milad Miladi
 # Winter semester 2015/2016
@@ -11,18 +12,27 @@
 
 ## CUDA extension based on the example by Robert McGibbon and Yutong Zhao
 ## https://github.com/rmcgibbo/npcuda-example
+# Copyright (c) 2014, Robert T. McGibbon and the Authors
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import time 
 __author__ = "Joachim Wolff"
 __contact__ = "wolffj@informatik.uni-freiburg.de"
 __copyright__ = "Copyright 2016, Joachim Wolff"
 __credits__ = ["Milad Miladi", "Fabrizio Costa"]
-__license__ = "No License"
+__license__ = "MIT"
 __date__ = time.strftime("%d/%m/%Y")
-__version_ = "0.1.dev"
+__version_ = "0.1"
 
 from setuptools import setup, find_packages
-# from distutils.core import Extension
 import platform
 import sys
 
@@ -37,15 +47,7 @@ import numpy
 
 import distutils.sysconfig
 import distutils.ccompiler
-compiler = distutils.ccompiler.new_compiler()
-distutils.sysconfig.customize_compiler(compiler)
-print "FOO ", compiler.compiler_so
-compiler.compiler_so.remove("-O2")
-compiler.compiler_so.remove("-g")
-compiler.compiler_so.remove("-DNDEBUG")
-print "FOO 2", compiler.compiler_so
 
-# compiler_so.remove("-O%s" % i)
 sources_list = ['bioinf_learn/computation/interface/nearestNeighbors_PythonInterface.cpp', 'bioinf_learn/computation/nearestNeighbors.cpp', 
                  'bioinf_learn/computation/inverseIndex.cpp', 'bioinf_learn/computation/inverseIndexStorageUnorderedMap.cpp']
 depends_list = ['bioinf_learn/computation/nearestNeighbors.h', 'bioinf_learn/computation/inverseIndex.h', 'bioinf_learn/computation/kSizeSortedMap.h',
@@ -55,8 +57,7 @@ openmp = True
 if "--openmp" in sys.argv:
     module1 = Extension('_nearestNeighbors', sources = sources_list, depends = depends_list,
          define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
-        extra_compile_args=["-fopenmp", "-O3", "-std=c++11", "-funroll-loops"])#, include_dirs=['/home/wolffj/Software/boost_1_59_0', '/home/wolffj/Software/mtl4'])
-# extra_link_args=(['-Wl,--no-undefined'])
+        extra_compile_args=["-fopenmp", "-O3", "-std=c++11", "-funroll-loops"])
 elif platform.system() == 'Darwin' or "--noopenmp" in sys.argv:
     module1 = Extension('_nearestNeighbors', sources = sources_list, depends = depends_list, 
         extra_compile_args=["-O3", "-std=c++11", "-funroll-loops"])
@@ -78,8 +79,6 @@ if "--noopenmp" in sys.argv:
     sys.argv.remove("--noopenmp")
 
 
-    
-    
 
 def find_in_path(name, path):
     "Find a file in a search path"

@@ -1,11 +1,11 @@
-# Approximate nearest neighbors search on sparse datasets
+# Approximate k-nearest neighbors search on sparse datasets
 ========
-With minHashNearestNeighbors it is possible to search the k-nearest neighbors 
-inside a sparse data structure. 
+With MinHash and WTA-Hash from the bioinf-learn package it is possible to search the approximate k-nearest neighbors 
+within a sparse data structure. It works best for very high dimensional and very sparse datasets, e.g. one million dimensions and 400 non-zero feature ids on average.
 
 To use it:
 
-    from neighborsMinHash import MinHash
+    from bioinf_learn import MinHash
     minHash = MinHash()
     minHash.fit(X)
     minHash.kneighbors(return_distance=False)
@@ -19,7 +19,7 @@ Features
 Installation
 ------------
 
-Install minHashNearestNeighbors by running:
+Install bioinf-learn by running:
 
     python setup.py install
 
@@ -43,9 +43,9 @@ Instead of cloning the repository via git clone and than running the installatio
 
 Uninstall
 ---------
-To delete neighborsMinHash run the following command:
+To delete bioinf-learn run the following command:
 
-	pip uninstall neighborsMinHash
+	pip uninstall bioinf-learn
 
 If you have run the uninstall command and want to make sure everything is gone, look at your python installation directory.
 If you have used the --user flag the path in Ubuntu 14.04 is:
@@ -62,5 +62,5 @@ Support
 -------
 
 If you are having issues, please let me know.
-Mail adress: wolffj@informatik.uni-freiburg.de
+Mail adress: wolffj[at]informatik[dot]uni-freiburg[dot]de
 
