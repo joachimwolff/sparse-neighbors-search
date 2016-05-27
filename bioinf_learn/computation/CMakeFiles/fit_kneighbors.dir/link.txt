@@ -1,1 +1,0 @@
-/usr/bin/c++   -std=c++0x  -O3 -DNDEBUG    CMakeFiles/fit_kneighbors.dir/fit_kneighbors.cpp.o CMakeFiles/fit_kneighbors.dir/inverseIndex.cpp.o CMakeFiles/fit_kneighbors.dir/inverseIndexStorageUnorderedMap.cpp.o CMakeFiles/fit_kneighbors.dir/nearestNeighbors.cpp.o  -o fit_kneighbors -rdynamic 
