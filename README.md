@@ -1,5 +1,4 @@
 # Approximate k-nearest neighbors search on sparse datasets
-========
 With MinHash and WTA-Hash from the bioinf-learn package it is possible to search the approximate k-nearest neighbors 
 within a sparse data structure. It works best for very high dimensional and very sparse datasets, e.g. one million dimensions and 400 non-zero feature ids on average.
 
