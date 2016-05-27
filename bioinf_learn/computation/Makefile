@@ -39,10 +39,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation
+CMAKE_SOURCE_DIR = /home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation
+CMAKE_BINARY_DIR = /home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -69,9 +69,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/CMakeFiles /home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/CMakeFiles /home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/CMakeFiles/progress.marks
 	$(MAKE) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -110,102 +110,6 @@ fit_kneighbors: cmake_check_build_system
 fit_kneighbors/fast:
 	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/build
 .PHONY : fit_kneighbors/fast
-
-bloomierFilter/bloomierFilter.o: bloomierFilter/bloomierFilter.cpp.o
-.PHONY : bloomierFilter/bloomierFilter.o
-
-# target to build an object file
-bloomierFilter/bloomierFilter.cpp.o:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/bloomierFilter/bloomierFilter.cpp.o
-.PHONY : bloomierFilter/bloomierFilter.cpp.o
-
-bloomierFilter/bloomierFilter.i: bloomierFilter/bloomierFilter.cpp.i
-.PHONY : bloomierFilter/bloomierFilter.i
-
-# target to preprocess a source file
-bloomierFilter/bloomierFilter.cpp.i:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/bloomierFilter/bloomierFilter.cpp.i
-.PHONY : bloomierFilter/bloomierFilter.cpp.i
-
-bloomierFilter/bloomierFilter.s: bloomierFilter/bloomierFilter.cpp.s
-.PHONY : bloomierFilter/bloomierFilter.s
-
-# target to generate assembly for a file
-bloomierFilter/bloomierFilter.cpp.s:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/bloomierFilter/bloomierFilter.cpp.s
-.PHONY : bloomierFilter/bloomierFilter.cpp.s
-
-bloomierFilter/bloomierHash.o: bloomierFilter/bloomierHash.cpp.o
-.PHONY : bloomierFilter/bloomierHash.o
-
-# target to build an object file
-bloomierFilter/bloomierHash.cpp.o:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/bloomierFilter/bloomierHash.cpp.o
-.PHONY : bloomierFilter/bloomierHash.cpp.o
-
-bloomierFilter/bloomierHash.i: bloomierFilter/bloomierHash.cpp.i
-.PHONY : bloomierFilter/bloomierHash.i
-
-# target to preprocess a source file
-bloomierFilter/bloomierHash.cpp.i:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/bloomierFilter/bloomierHash.cpp.i
-.PHONY : bloomierFilter/bloomierHash.cpp.i
-
-bloomierFilter/bloomierHash.s: bloomierFilter/bloomierHash.cpp.s
-.PHONY : bloomierFilter/bloomierHash.s
-
-# target to generate assembly for a file
-bloomierFilter/bloomierHash.cpp.s:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/bloomierFilter/bloomierHash.cpp.s
-.PHONY : bloomierFilter/bloomierHash.cpp.s
-
-bloomierFilter/encoder.o: bloomierFilter/encoder.cpp.o
-.PHONY : bloomierFilter/encoder.o
-
-# target to build an object file
-bloomierFilter/encoder.cpp.o:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/bloomierFilter/encoder.cpp.o
-.PHONY : bloomierFilter/encoder.cpp.o
-
-bloomierFilter/encoder.i: bloomierFilter/encoder.cpp.i
-.PHONY : bloomierFilter/encoder.i
-
-# target to preprocess a source file
-bloomierFilter/encoder.cpp.i:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/bloomierFilter/encoder.cpp.i
-.PHONY : bloomierFilter/encoder.cpp.i
-
-bloomierFilter/encoder.s: bloomierFilter/encoder.cpp.s
-.PHONY : bloomierFilter/encoder.s
-
-# target to generate assembly for a file
-bloomierFilter/encoder.cpp.s:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/bloomierFilter/encoder.cpp.s
-.PHONY : bloomierFilter/encoder.cpp.s
-
-bloomierFilter/orderAndMatchFinder.o: bloomierFilter/orderAndMatchFinder.cpp.o
-.PHONY : bloomierFilter/orderAndMatchFinder.o
-
-# target to build an object file
-bloomierFilter/orderAndMatchFinder.cpp.o:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/bloomierFilter/orderAndMatchFinder.cpp.o
-.PHONY : bloomierFilter/orderAndMatchFinder.cpp.o
-
-bloomierFilter/orderAndMatchFinder.i: bloomierFilter/orderAndMatchFinder.cpp.i
-.PHONY : bloomierFilter/orderAndMatchFinder.i
-
-# target to preprocess a source file
-bloomierFilter/orderAndMatchFinder.cpp.i:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/bloomierFilter/orderAndMatchFinder.cpp.i
-.PHONY : bloomierFilter/orderAndMatchFinder.cpp.i
-
-bloomierFilter/orderAndMatchFinder.s: bloomierFilter/orderAndMatchFinder.cpp.s
-.PHONY : bloomierFilter/orderAndMatchFinder.s
-
-# target to generate assembly for a file
-bloomierFilter/orderAndMatchFinder.cpp.s:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/bloomierFilter/orderAndMatchFinder.cpp.s
-.PHONY : bloomierFilter/orderAndMatchFinder.cpp.s
 
 fit_kneighbors.o: fit_kneighbors.cpp.o
 .PHONY : fit_kneighbors.o
@@ -255,30 +159,6 @@ inverseIndex.cpp.s:
 	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/inverseIndex.cpp.s
 .PHONY : inverseIndex.cpp.s
 
-inverseIndexStorageBloomierFilter.o: inverseIndexStorageBloomierFilter.cpp.o
-.PHONY : inverseIndexStorageBloomierFilter.o
-
-# target to build an object file
-inverseIndexStorageBloomierFilter.cpp.o:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/inverseIndexStorageBloomierFilter.cpp.o
-.PHONY : inverseIndexStorageBloomierFilter.cpp.o
-
-inverseIndexStorageBloomierFilter.i: inverseIndexStorageBloomierFilter.cpp.i
-.PHONY : inverseIndexStorageBloomierFilter.i
-
-# target to preprocess a source file
-inverseIndexStorageBloomierFilter.cpp.i:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/inverseIndexStorageBloomierFilter.cpp.i
-.PHONY : inverseIndexStorageBloomierFilter.cpp.i
-
-inverseIndexStorageBloomierFilter.s: inverseIndexStorageBloomierFilter.cpp.s
-.PHONY : inverseIndexStorageBloomierFilter.s
-
-# target to generate assembly for a file
-inverseIndexStorageBloomierFilter.cpp.s:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/inverseIndexStorageBloomierFilter.cpp.s
-.PHONY : inverseIndexStorageBloomierFilter.cpp.s
-
 inverseIndexStorageUnorderedMap.o: inverseIndexStorageUnorderedMap.cpp.o
 .PHONY : inverseIndexStorageUnorderedMap.o
 
@@ -303,53 +183,29 @@ inverseIndexStorageUnorderedMap.cpp.s:
 	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/inverseIndexStorageUnorderedMap.cpp.s
 .PHONY : inverseIndexStorageUnorderedMap.cpp.s
 
-minHash.o: minHash.cpp.o
-.PHONY : minHash.o
+nearestNeighbors.o: nearestNeighbors.cpp.o
+.PHONY : nearestNeighbors.o
 
 # target to build an object file
-minHash.cpp.o:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/minHash.cpp.o
-.PHONY : minHash.cpp.o
+nearestNeighbors.cpp.o:
+	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/nearestNeighbors.cpp.o
+.PHONY : nearestNeighbors.cpp.o
 
-minHash.i: minHash.cpp.i
-.PHONY : minHash.i
-
-# target to preprocess a source file
-minHash.cpp.i:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/minHash.cpp.i
-.PHONY : minHash.cpp.i
-
-minHash.s: minHash.cpp.s
-.PHONY : minHash.s
-
-# target to generate assembly for a file
-minHash.cpp.s:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/minHash.cpp.s
-.PHONY : minHash.cpp.s
-
-minHashBase.o: minHashBase.cpp.o
-.PHONY : minHashBase.o
-
-# target to build an object file
-minHashBase.cpp.o:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/minHashBase.cpp.o
-.PHONY : minHashBase.cpp.o
-
-minHashBase.i: minHashBase.cpp.i
-.PHONY : minHashBase.i
+nearestNeighbors.i: nearestNeighbors.cpp.i
+.PHONY : nearestNeighbors.i
 
 # target to preprocess a source file
-minHashBase.cpp.i:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/minHashBase.cpp.i
-.PHONY : minHashBase.cpp.i
+nearestNeighbors.cpp.i:
+	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/nearestNeighbors.cpp.i
+.PHONY : nearestNeighbors.cpp.i
 
-minHashBase.s: minHashBase.cpp.s
-.PHONY : minHashBase.s
+nearestNeighbors.s: nearestNeighbors.cpp.s
+.PHONY : nearestNeighbors.s
 
 # target to generate assembly for a file
-minHashBase.cpp.s:
-	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/minHashBase.cpp.s
-.PHONY : minHashBase.cpp.s
+nearestNeighbors.cpp.s:
+	$(MAKE) -f CMakeFiles/fit_kneighbors.dir/build.make CMakeFiles/fit_kneighbors.dir/nearestNeighbors.cpp.s
+.PHONY : nearestNeighbors.cpp.s
 
 # Help Target
 help:
@@ -360,36 +216,18 @@ help:
 	@echo "... edit_cache"
 	@echo "... fit_kneighbors"
 	@echo "... rebuild_cache"
-	@echo "... bloomierFilter/bloomierFilter.o"
-	@echo "... bloomierFilter/bloomierFilter.i"
-	@echo "... bloomierFilter/bloomierFilter.s"
-	@echo "... bloomierFilter/bloomierHash.o"
-	@echo "... bloomierFilter/bloomierHash.i"
-	@echo "... bloomierFilter/bloomierHash.s"
-	@echo "... bloomierFilter/encoder.o"
-	@echo "... bloomierFilter/encoder.i"
-	@echo "... bloomierFilter/encoder.s"
-	@echo "... bloomierFilter/orderAndMatchFinder.o"
-	@echo "... bloomierFilter/orderAndMatchFinder.i"
-	@echo "... bloomierFilter/orderAndMatchFinder.s"
 	@echo "... fit_kneighbors.o"
 	@echo "... fit_kneighbors.i"
 	@echo "... fit_kneighbors.s"
 	@echo "... inverseIndex.o"
 	@echo "... inverseIndex.i"
 	@echo "... inverseIndex.s"
-	@echo "... inverseIndexStorageBloomierFilter.o"
-	@echo "... inverseIndexStorageBloomierFilter.i"
-	@echo "... inverseIndexStorageBloomierFilter.s"
 	@echo "... inverseIndexStorageUnorderedMap.o"
 	@echo "... inverseIndexStorageUnorderedMap.i"
 	@echo "... inverseIndexStorageUnorderedMap.s"
-	@echo "... minHash.o"
-	@echo "... minHash.i"
-	@echo "... minHash.s"
-	@echo "... minHashBase.o"
-	@echo "... minHashBase.i"
-	@echo "... minHashBase.s"
+	@echo "... nearestNeighbors.o"
+	@echo "... nearestNeighbors.i"
+	@echo "... nearestNeighbors.s"
 .PHONY : help
 
 

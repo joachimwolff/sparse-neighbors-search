@@ -6,73 +6,85 @@
 
 #IncludeRegexTransform: 
 
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/hash.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/hash.h
 typeDefinitions.h
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/typeDefinitions.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/typeDefinitions.h
 functional
 -
 
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/inverseIndex.cpp
-algorithm
--
-iostream
--
-iterator
--
-utility
--
-omp.h
--
-time.h
--
-inverseIndex.h
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/inverseIndex.h
-kSizeSortedMap.h
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/kSizeSortedMap.h
-
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/inverseIndex.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/inverseIndex.h
 functional
 -
 hash.h
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/hash.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/hash.h
 inverseIndexStorageUnorderedMap.h
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/inverseIndexStorageUnorderedMap.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/inverseIndexStorageUnorderedMap.h
 inverseIndexCuda.h
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/inverseIndexCuda.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/inverseIndexCuda.h
 typeDefinitions.h
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/typeDefinitions.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/typeDefinitions.h
 
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/inverseIndexCuda.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/inverseIndexCuda.h
 typeDefinitions.h
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/typeDefinitions.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/typeDefinitions.h
 
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/inverseIndexStorage.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/inverseIndexStorage.h
 typeDefinitions.h
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/typeDefinitions.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/typeDefinitions.h
 
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/inverseIndexStorageUnorderedMap.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/inverseIndexStorageUnorderedMap.h
 inverseIndexStorage.h
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/inverseIndexStorage.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/inverseIndexStorage.h
 
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/kSizeSortedMap.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/nearestNeighbors.cpp
+iostream
+-
+set
+-
+nearestNeighbors.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/nearestNeighbors.h
+sparseMatrix.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/sparseMatrix.h
+omp.h
+-
 
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/sparseMatrix.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/nearestNeighbors.h
+inverseIndex.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/inverseIndex.h
+hash.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/hash.h
+nearestNeighborsCuda.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/nearestNeighborsCuda.h
+
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/nearestNeighborsCuda.h
+typeDefinitions.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/typeDefinitions.h
+typeDefinitionsCuda.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/typeDefinitionsCuda.h
+
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/sparseMatrix.h
 math.h
+-
+xmmintrin.h
+-
+cstring
 -
 algorithm
 -
 iostream
 -
 typeDefinitionsBasic.h
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/typeDefinitionsBasic.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/typeDefinitionsBasic.h
+omp.h
+-
 
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/typeDefinitions.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/typeDefinitions.h
 typeDefinitionsBasic.h
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/typeDefinitionsBasic.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/typeDefinitionsBasic.h
 sparseMatrix.h
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/sparseMatrix.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/sparseMatrix.h
 
-/home/joachim/thesis/minHashNearestNeighbors/neighborsMinHash/computation/typeDefinitionsBasic.h
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/typeDefinitionsBasic.h
 vector
 -
 map
@@ -83,4 +95,6 @@ utility
 -
 limits
 -
+
+/home/joachim/thesis/minHashNearestNeighbors/bioinf_learn/computation/typeDefinitionsCuda.h
 
