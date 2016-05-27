@@ -243,12 +243,12 @@ class NearestNeighborsCppInterface():
                                     max_number_of_instances, maxFeatures,
                                     n_neighbors if n_neighbors else 0,
                                     1 if return_distance else 0,
+
                                     fast, similarity, 
                                     self._pointer_address_of_nearestNeighbors_object)
 
         # print result[0]
         # print result[1]
-        
         
         if return_distance:
             return asarray(result[0]), asarray(result[1])

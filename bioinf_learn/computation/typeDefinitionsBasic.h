@@ -56,6 +56,7 @@ struct sortMapFloat {
     float val;
 };
 
+
 typedef unsigned char bitVector;
 
 typedef std::vector<bitVector*> bloomierTable;
@@ -76,6 +77,7 @@ struct distributionInverseIndex {
 static bool mapSortDescByValueFloat(const sortMapFloat& a, const sortMapFloat& b) {
         return a.val > b.val;
 };
+
 static bool mapSortAscByValueFloat(const sortMapFloat& a, const sortMapFloat& b) {
         return a.val < b.val;
 };
