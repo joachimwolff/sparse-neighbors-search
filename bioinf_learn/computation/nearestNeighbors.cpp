@@ -79,7 +79,7 @@ void NearestNeighbors::partialFit(SparseMatrixFloat* pRawData, size_t pStartInde
 }
 
 neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
-                                                size_t pNneighbors, int pFast, int pSimilarity) {
+                                                size_t pNneighbors, int pFast, int pSimilarity, float pRadius) {
     if (pFast == -1) {
         pFast = mFast;
     } 
@@ -98,13 +98,13 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
         // no query data given, use stored signatures
         x_inverseIndex = mInverseIndex->getSignatureStorage();
         neighborhood_  = mInverseIndex->kneighbors(x_inverseIndex, 
-                                                    pNneighbors, true);
+                                                    pNneighbors, true, pRadius);
         doubleElementsStorageCount = true;
     } else {
         pRawData->precomputeDotProduct();
         x_inverseIndex = (mInverseIndex->computeSignatureMap(pRawData));
         neighborhood_ = mInverseIndex->kneighbors(x_inverseIndex, pNneighbors, 
-                                                doubleElementsStorageCount);
+                                                doubleElementsStorageCount, pRadius);
        for (auto it = x_inverseIndex->begin(); it != x_inverseIndex->end(); ++it) {
             delete (*it).second.instances;
             delete (*it).second.signature;
@@ -150,19 +150,30 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                     exactNeighbors = 
                         mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), pNneighbors+mExcessFactor, i, pRawData);
                 } 
-                
-                size_t vectorSize = std::min(exactNeighbors.size(),pNneighbors+mExcessFactor);
-                std::vector<size_t> neighborsVector(vectorSize);
-                for (size_t j = 0; j < vectorSize; ++j) {
-                    neighborsVector[j] = exactNeighbors[j].key;
-                    neighborsListFirstRound[i].push_back(exactNeighbors[j].key);
-                } 
-                
+                std::vector<size_t> neighborsVector;
+                if (pRadius == -1.0) {
+                    size_t vectorSize = std::min(exactNeighbors.size(),pNneighbors+mExcessFactor);
+                    neighborsVector.resize(vectorSize);
+                    for (size_t j = 0; j < vectorSize; ++j) {
+                        neighborsVector[j] = exactNeighbors[j].key;
+                        neighborsListFirstRound[i].push_back(exactNeighbors[j].key);
+                    } 
+                } else {
+                    
+                    for (size_t j = 0; j < exactNeighbors.size(); ++j) {
+                        if (exactNeighbors[j].val <= pRadius) {
+                            neighborsVector.push_back(exactNeighbors[j].key);
+                            neighborsListFirstRound[i].push_back(exactNeighbors[j].key);
+                        } else {
+                            break;
+                        }
+                    } 
+                }
                 #ifdef OPENMP
                 #pragma omp critical
                 #endif
                 {
-                    if (exactNeighbors.size() > 1) {
+                    if (neighborsVector.size() > 1) {
                         neighborhoodCandidates->neighbors->operator[](exactNeighbors[0].key) = neighborsVector;
                     }
                 }
@@ -177,13 +188,26 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
         #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
         for (size_t i = 0; i < neighbors_->neighbors->size(); ++i) {
             size_t vectorSize = neighbors_->neighbors->operator[](i).size();
-            std::vector<size_t> neighborsVector(vectorSize);
-            for (size_t j = 0; j < vectorSize; ++j) {
-                neighborsVector[j] = neighbors_->neighbors->operator[](i)[j];
-                neighborsListFirstRound[i].push_back(neighbors_->neighbors->operator[](i)[j]);
-            } 
-            if (neighbors_->neighbors->operator[](i).size() > 1) {
-                neighborhoodCandidates->neighbors->operator[](i) = neighborsVector;
+            if (pRadius == -1.0) {
+                std::vector<size_t> neighborsVector(vectorSize);
+                for (size_t j = 0; j < vectorSize; ++j) {
+                    neighborsVector[j] = neighbors_->neighbors->operator[](i)[j];
+                    neighborsListFirstRound[i].push_back(neighbors_->neighbors->operator[](i)[j]);
+                } 
+                if (neighbors_->neighbors->operator[](i).size() > 1) {
+                    neighborhoodCandidates->neighbors->operator[](i) = neighborsVector;
+                }
+            } else {
+                std::vector<size_t> neighborsVector;
+                for (size_t j = 0; j < vectorSize; ++j) {
+                    if (neighbors_->distances->operator[](i)[j] <= pRadius) {
+                        neighborsVector.push_back(neighbors_->neighbors->operator[](i)[j]);
+                        neighborsListFirstRound[i].push_back(neighbors_->neighbors->operator[](i)[j]);
+                    }
+                } 
+                if (neighborsVector.size() > 1) {
+                    neighborhoodCandidates->neighbors->operator[](i) = neighborsVector;
+                }
             }
         }
         #pragma omp barrier

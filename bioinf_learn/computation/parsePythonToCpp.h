@@ -68,22 +68,25 @@ static PyObject* radiusNeighborhood(const neighborhood* pNeighborhood, const flo
 
     for (size_t i = 0; i < sizeOfNeighborList; ++i) {
         size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
+        // std::cout << "Size: " << sizeOfInnerNeighborList << std::endl;
         PyObject* innerListNeighbors = PyList_New(0);
         PyObject* innerListDistances = PyList_New(0);
 
         for (size_t j = 0 + pCutFirstValue; j < sizeOfInnerNeighborList; ++j) {
+            // std::cout << "neighbor: " << pNeighborhood->neighbors->operator[](i)[j] << " distance: " << pNeighborhood->distances->operator[](i)[j] << " pRadius: " << pRadius << std::endl;
             if (pNeighborhood->distances->operator[](i)[j] <= pRadius) {
                 PyObject* valueNeighbor = Py_BuildValue("i", static_cast<int>(pNeighborhood->neighbors->operator[](i)[j]));
-                PyList_SetItem(innerListNeighbors, j - pCutFirstValue, valueNeighbor);
+                PyList_Append(innerListNeighbors, valueNeighbor);
                 
                 PyObject* valueDistance = Py_BuildValue("f", pNeighborhood->distances->operator[](i)[j]);
-                PyList_SetItem(innerListDistances, j - pCutFirstValue, valueDistance);
+                PyList_Append(innerListDistances,  valueDistance);
             } else {
                 break;
             }
         }
         PyList_SetItem(outerListNeighbors, i, innerListNeighbors);
         PyList_SetItem(outerListDistances, i, innerListDistances);
+     
     }
     delete pNeighborhood->neighbors;
     delete pNeighborhood->distances;

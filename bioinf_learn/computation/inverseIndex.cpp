@@ -336,7 +336,7 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                         const size_t pNneighborhood, 
                                         const bool pDoubleElementsStorageCount,
-                                        const bool pNoneSingleInstance) {
+                                        const bool pNoneSingleInstance, const float pRadius) {
     size_t doubleElements = 0;
     if (pNoneSingleInstance) {
         if (pDoubleElementsStorageCount) {
@@ -458,12 +458,22 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             std::vector<float> distanceVector;
             for (auto it = neighborhoodVectorForSorting.begin();
                     it != neighborhoodVectorForSorting.end(); ++it) {
-                neighborhoodVector.push_back((*it).key);
                 float value = 1 - (((*it).val) / (float)(mMaximalNumberOfHashCollisions));
                 if (value < 0) {
                     value = 0;
                 }
-                distanceVector.push_back(value);
+                if (pRadius == -1.0) {
+                    neighborhoodVector.push_back((*it).key);
+                    distanceVector.push_back(value);
+                } else {
+                    if (value <= pRadius) {
+                        neighborhoodVector.push_back((*it).key);
+                        distanceVector.push_back(value);
+                    } else {
+                        break;
+                    }
+                }    
+                
                 ++count;
                 if (count >= sizeOfNeighborhoodAdjusted) {
                     neighborsForThisInstance[j] = neighborhoodVector;

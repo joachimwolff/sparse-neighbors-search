@@ -404,9 +404,9 @@ class NearestNeighborsCppInterface():
                                     fast, similarity, 
                                     self._pointer_address_of_nearestNeighbors_object)
         if return_distance:
-            return result[0], result[1]
+            return asarray(result[0]), asarray(result[1])
         else:
-            return result[0]
+            return asarray(result[0])
 
     def radius_neighbors_graph(self, X=None, radius=None, mode='connectivity', fast=None, symmetric=True, similarity=None):
         """Computes the (weighted) graph of Neighbors for points in X
