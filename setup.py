@@ -250,7 +250,7 @@ if (locate_cuda() == None or no_cuda):
                         #  'bioinf.computation',
                     ],
             platforms = "Linux, Mac OS X",
-            version = '0.1.dev'
+            version = '0.1'
             )
 else:
     print "CUDA found on system. Installing MinHash with CUDA-Support."
@@ -325,4 +325,4 @@ else:
                     #  'bioinf.computation',
                 ],
         platforms = "Linux, Mac OS X",
-        version = '0.1.dev')
+        version = '0.1')

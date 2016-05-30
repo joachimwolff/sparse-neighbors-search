@@ -206,12 +206,13 @@ static PyObject* kneighborsGraph(PyObject* self, PyObject* args) {
     return buildGraph(neighborhood_, nNeighbors, returnDistance, symmetric);
 }
 static PyObject* radiusNeighbors(PyObject* self, PyObject* args) {
-    size_t addressNearestNeighborsObject, radius, maxNumberOfInstances,
+    size_t addressNearestNeighborsObject, maxNumberOfInstances,
              maxNumberOfFeatures, returnDistance, similarity;
     int fast;
+    float radius;
     PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!kkkkiik", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkfkiik", 
                         &PyList_Type, &instancesListObj,
                         &PyList_Type, &featuresListObj,  
                         &PyList_Type, &dataListObj,
@@ -230,12 +231,13 @@ static PyObject* radiusNeighbors(PyObject* self, PyObject* args) {
     return radiusNeighborhood(neighborhood_, radius, cutFirstValue, returnDistance); 
 }
 static PyObject* radiusNeighborsGraph(PyObject* self, PyObject* args) {
-    size_t addressNearestNeighborsObject, radius, maxNumberOfInstances,
+    size_t addressNearestNeighborsObject, maxNumberOfInstances,
             maxNumberOfFeatures, returnDistance, symmetric;
     int fast, similarity;
+    float radius;
     PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!kkkkikik", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkfkikik", 
                         &PyList_Type, &instancesListObj,
                         &PyList_Type, &featuresListObj,  
                         &PyList_Type, &dataListObj,
@@ -305,11 +307,12 @@ static PyObject* fitKneighborsGraph(PyObject* self, PyObject* args) {
 }
 static PyObject* fitRadiusNeighbors(PyObject* self, PyObject* args) {
     size_t addressNearestNeighborsObject, maxNumberOfInstances, maxNumberOfFeatures,
-            radius, returnDistance;
+            returnDistance;
     int fast, similarity;
+    float radius;
     PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!kkkkiik", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkfkiik", 
                             &PyList_Type, &instancesListObj, 
                             &PyList_Type, &featuresListObj,
                             &PyList_Type, &dataListObj,
@@ -327,11 +330,12 @@ static PyObject* fitRadiusNeighbors(PyObject* self, PyObject* args) {
 }
 static PyObject* fitRadiusNeighborsGraph(PyObject* self, PyObject* args) {
     size_t addressNearestNeighborsObject, maxNumberOfInstances, maxNumberOfFeatures,
-            radius, returnDistance, symmetric;
+            returnDistance, symmetric;
     int fast, similarity;
+    float radius;
     PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!kkkkikikO!O!O!kk", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkfkikik", 
                             &PyList_Type, &instancesListObj, 
                             &PyList_Type, &featuresListObj,
                             &PyList_Type, &dataListObj,

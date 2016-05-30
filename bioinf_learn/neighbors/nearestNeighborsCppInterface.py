@@ -383,9 +383,9 @@ class NearestNeighborsCppInterface():
         max_number_of_instances = 0
         max_number_of_features = 0
         if X is None:
-            result = _nearestNeighbors.kneighbors([], [], [], 
+            result = _nearestNeighbors.radius_neighbors([], [], [], 
                                     0, 0,
-                                    n_neighbors if n_neighbors else 0,
+                                    radius if radius else 0,
                                     1 if return_distance else 0,
                                     fast, similarity, 
                                     self._pointer_address_of_nearestNeighbors_object)
@@ -397,16 +397,16 @@ class NearestNeighborsCppInterface():
             data = X_csr.data
             max_number_of_instances = X.shape[0]
             maxFeatures = int(max(X_csr.getnnz(1)))
-            result = _nearestNeighbors.kneighbors(instances.tolist(), features.tolist(), data.tolist(), 
+            result = _nearestNeighbors.radius_neighbors(instances.tolist(), features.tolist(), data.tolist(), 
                                     max_number_of_instances, maxFeatures,
-                                    radius,
+                                    radius if radius else 0,
                                     1 if return_distance else 0,
                                     fast, similarity, 
                                     self._pointer_address_of_nearestNeighbors_object)
         if return_distance:
-            return asarray(result[0]), asarray(result[1])
+            return result[0], result[1]
         else:
-            return asarray(result[0])
+            return result[0]
 
     def radius_neighbors_graph(self, X=None, radius=None, mode='connectivity', fast=None, symmetric=True, similarity=None):
         """Computes the (weighted) graph of Neighbors for points in X
@@ -461,7 +461,7 @@ class NearestNeighborsCppInterface():
         if X is None:
             row, column, data = _nearestNeighbors.radius_neighbors_graph([], [], [],
                                     0, 0,
-                                    n_neighbors if n_neighbors else 0,
+                                    radius if radius else 0,
                                     1 if return_distance else 0,
                                     fast, 1 if symmetric else 0,
                                     similarity, 

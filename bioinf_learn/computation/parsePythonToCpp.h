@@ -7,7 +7,7 @@
  Chair of Bioinformatics
  Department of Computer Science
  Faculty of Engineering
- Albert-Ludwig-University Freiburg im Breisgau
+ Albert-Ludwigs-University Freiburg im Breisgau
 **/
 #include <Python.h>
 #include <iostream>
@@ -23,10 +23,8 @@ SparseMatrixFloat* parseRawData(PyObject * pInstancesListObj, PyObject * pFeatur
     PyObject * instanceSize_tObj;
     PyObject * featureSize_tObj;
     PyObject * dataSize_tObj;
-    // printf("Max number of instances: %i\n", pMaxNumberOfInstances);
     size_t instanceOld = 0;
     size_t sizeOfFeatureVector = PyList_Size(pInstancesListObj);
-    // printf("maxNumberOfFeatures: %u", pMaxNumberOfFeatures);
     SparseMatrixFloat* originalData = new SparseMatrixFloat(pMaxNumberOfInstances, pMaxNumberOfFeatures);
     size_t featuresCount = 0;
     size_t featureValue;
@@ -42,7 +40,6 @@ SparseMatrixFloat* parseRawData(PyObject * pInstancesListObj, PyObject * pFeatur
         PyArg_Parse(dataSize_tObj, "f", &dataValue);
 
         if (instanceOld != instanceValue) {
-            // printf("size of instance %u: %u\n", instanceOld, featuresCount);
             originalData->insertToSizesOfInstances(instanceOld, featuresCount);
             while (instanceOld+1 != instanceValue) {
                 ++instanceOld;
@@ -54,7 +51,6 @@ SparseMatrixFloat* parseRawData(PyObject * pInstancesListObj, PyObject * pFeatur
         instanceOld = instanceValue;
         ++featuresCount;
     }
-    // printf("size of instance %u: %u\n", instanceOld, featuresCount);
     
     originalData->insertToSizesOfInstances(instanceOld, featuresCount);
     while (instanceOld+1 < pMaxNumberOfInstances) {
@@ -65,7 +61,7 @@ SparseMatrixFloat* parseRawData(PyObject * pInstancesListObj, PyObject * pFeatur
     return originalData;
 }
 
-static PyObject* radiusNeighborhood(const neighborhood* pNeighborhood, const size_t pRadius, const size_t pCutFirstValue, const size_t pReturnDistance) {
+static PyObject* radiusNeighborhood(const neighborhood* pNeighborhood, const float pRadius, const size_t pCutFirstValue, const size_t pReturnDistance) {
     size_t sizeOfNeighborList = pNeighborhood->neighbors->size();
     PyObject * outerListNeighbors = PyList_New(sizeOfNeighborList);
     PyObject * outerListDistances = PyList_New(sizeOfNeighborList);
@@ -188,7 +184,6 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
             size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
 
             for (size_t j = 0; j < sizeOfInnerNeighborList && j < pNneighbors; ++j) {
-                // if (pNeighborhood->neighbors->operator[](i)[j] == -1) break;
                 size_t node = pNeighborhood->neighbors->operator[](i)[j];
                 float distance;
                 if (pReturnDistance) {
@@ -228,7 +223,6 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
             PyObject* root = Py_BuildValue("i", static_cast<int>(pNeighborhood->neighbors->operator[](i)[0]));
             size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
             for (size_t j = 1; j < sizeOfInnerNeighborList && j < pNneighbors; ++j) {
-                // if (pNeighborhood->neighbors->operator[](i)[j] == -1) break;
                 PyObject* node = Py_BuildValue("i", static_cast<int>(pNeighborhood->neighbors->operator[](i)[j]));
                 PyObject* distance;
                 if (pReturnDistance) {
@@ -254,7 +248,7 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
     return graph;
 }
 
-static PyObject* radiusNeighborhoodGraph(const neighborhood* pNeighborhood, const size_t pRadius, const size_t pReturnDistance, 
+static PyObject* radiusNeighborhoodGraph(const neighborhood* pNeighborhood, const float pRadius, const size_t pReturnDistance, 
                                             const size_t symmetric) {
     size_t sizeOfNeighborList = pNeighborhood->neighbors->size();
 
@@ -269,7 +263,6 @@ static PyObject* radiusNeighborhoodGraph(const neighborhood* pNeighborhood, cons
             size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
 
             for (size_t j = 0; j < sizeOfInnerNeighborList; ++j) {
-                // if (pNeighborhood->neighbors->operator[](i)[j] == -1) break;
                 if (pNeighborhood->distances->operator[](i)[j] <= pRadius) {
                     size_t node = pNeighborhood->neighbors->operator[](i)[j];
                     float distance;
@@ -312,7 +305,6 @@ static PyObject* radiusNeighborhoodGraph(const neighborhood* pNeighborhood, cons
             PyObject* root = Py_BuildValue("i", static_cast<int>(pNeighborhood->neighbors->operator[](i)[0]));
             size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
             for (size_t j = 1; j < sizeOfInnerNeighborList; ++j) {
-                // if (pNeighborhood->neighbors->operator[](i)[j] == -1) break;
                 if (pNeighborhood->distances->operator[](i)[j] <= pRadius) {
                     PyObject* node = Py_BuildValue("i", static_cast<int>(pNeighborhood->neighbors->operator[](i)[j]));
                     PyObject* distance;
