@@ -301,10 +301,6 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
                 mSignatureStorage->operator[](signatureId).instances->push_back(i+pStartIndex);
                 mDoubleElementsStorageCount += 1;
                 deleteSignature = true;
-                // if ((*signatures)[i] != NULL) {
-                   
-                //     (*signatures)[i] = NULL;
-                // }
             }
         }      
         for (size_t j = 0; j < (*signatures)[i]->size(); ++j) {
