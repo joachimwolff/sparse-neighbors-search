@@ -232,17 +232,7 @@ class SparseMatrixFloat {
             element.val = 0;
             
             valueXY = this->dotProduct(pRowId, instance_id, pQueryData);
-            // if (pQueryData == NULL) {
-                // std::cout << "instance_id: " << instance_id << std::endl;
             valueYY = getDotProductPrecomputed(instance_id);
-                // std::cout << "\tDONE" << std::endl;
-            // } else {
-                // std::cout << "instance_id: " << instance_id << std::endl;
-                
-                // valueYY = pQueryData->getDotProductPrecomputed(instance_id);
-                // std::cout << "\tDONE" << std::endl;
-                
-            // }
             
             element.val = valueXX - 2* valueXY + valueYY;
             
@@ -257,22 +247,22 @@ class SparseMatrixFloat {
             numberOfElementsToSort = returnValue.size();
         }
         // sort the values by increasing order
-            // std::cout << __LINE__ << std::endl;
-
         std::partial_sort(returnValue.begin(), returnValue.begin()+numberOfElementsToSort, returnValue.end(), mapSortAscByValueFloat);
-        //   std::cout << __LINE__ << std::endl;
-
         return returnValue;
     };
 
     std::vector<sortMapFloat> cosineSimilarity(const std::vector<size_t> pRowIdVector, const size_t pNneighbors, 
                                                 const size_t pQueryId, SparseMatrixFloat* pQueryData=NULL)  {
        
-        const size_t pRowId = pQueryId;
+       const size_t pRowId = pQueryId;
         
         std::vector<sortMapFloat> returnValue(pRowIdVector.size());
-        
-        const size_t valueXX = getDotProductPrecomputed(pRowId);
+        size_t valueXX;
+        if (pQueryData == NULL) {
+            valueXX = getDotProductPrecomputed(pRowId);
+        } else {
+            valueXX = pQueryData->getDotProductPrecomputed(pRowId, pQueryData);
+        }
         
         float valueXY = 0;
         float valueYY = 0;
@@ -284,11 +274,8 @@ class SparseMatrixFloat {
             element.val = 0;
             
             valueXY = this->dotProduct(pRowId, instance_id, pQueryData);
-            if (pQueryData == NULL) {
-                valueYY = getDotProductPrecomputed(instance_id);
-            } else {
-                valueYY = pQueryData->getDotProductPrecomputed(instance_id);
-            }
+            valueYY = getDotProductPrecomputed(instance_id);
+
             element.val = valueXY / (sqrt(valueXX) * sqrtf(valueYY));
             
             if (element.val <= 0) {
@@ -303,6 +290,7 @@ class SparseMatrixFloat {
         }
         // sort the values by decreasing order
         std::partial_sort(returnValue.begin(), returnValue.begin()+numberOfElementsToSort, returnValue.end(), mapSortDescByValueFloat);
+       
         return returnValue;
     };
 };
