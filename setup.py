@@ -169,10 +169,10 @@ def customize_compiler_gcc(self):
 
 
 # run the customize_compiler
-class custom_build_ext_gcc(build_ext):
-    def build_extensions(self):
-        customize_compiler_for_gcc(self.compiler)
-        build_ext.build_extensions(self)
+# class custom_build_ext_gcc(build_ext):
+#     def build_extensions(self):
+#         customize_compiler_for_gcc(self.compiler)
+#         build_ext.build_extensions(self)
 
 
 
@@ -230,11 +230,12 @@ class custom_build_ext(build_ext):
 
 
 if (locate_cuda() == None or no_cuda):
+    print "No Cuda found or no cuda forced. Installation without GPU support."
     setup (name = 'bioinf_learn',
             author = 'Joachim Wolff',
             author_email = 'wolffj@informatik.uni-freiburg.de',
             url='https://github.com/joachimwolff/minHashNearestNeighbors',
-            license='LICENSE',
+            license='MIT',
             description='An approximate computation of nearest neighbors based on locality sensitive hash functions.',
             long_description=open('README.md').read(),
             install_requires=[
@@ -242,7 +243,7 @@ if (locate_cuda() == None or no_cuda):
             "scipy >= 0.14.0",
             "scikit-learn >= 0.16.0",],
             ext_modules = [module1],
-            cmdclass={'build_ext': custom_build_ext_gcc},
+            # cmdclass={'build_ext': custom_build_ext_gcc},
             packages=['bioinf_learn',
                         'bioinf_learn.neighbors',
                         'bioinf_learn.util',
@@ -310,7 +311,7 @@ else:
         zip_safe=False,
         author_email = 'wolffj@informatik.uni-freiburg.de',
         url='https://github.com/joachimwolff/minHashNearestNeighbors',
-        license='LICENSE',
+        license='MIT',
         description='An approximate computation of nearest neighbors based on locality sensitive hash functions.',
         long_description=open('README.md').read(),
         install_requires=[
