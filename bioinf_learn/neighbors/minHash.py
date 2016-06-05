@@ -45,24 +45,37 @@ class MinHash():
             precision of the :meth:`algorithm=exact` version of the implementation.
             E.g.: n_neighbors = 5, excess_factor = 5. Internally n_neighbors*excess_factor = 25 neighbors will be returned.
             Now the reduced data set for sklearn.NearestNeighbors is of size 25 and not 5.
-        similarity : bool, optional
+        similarity : {True, False}, optional (default = False)
             If true: cosine similarity is used
             If false: Euclidean distance is used
-        number_of_cores : int, optional
+        number_of_cores : int, optional (default = None)
             Number of cores that should be used for openmp. If your system doesn't support openmp, this value
             will have no effect. If it supports openmp and it is not defined, the maximum number of cores is used.
-        chunk_size : int, optional
+        chunk_size : int, optional (default = None)
             Number of elements one cpu core should work on. If it is set to "0" the default behaviour of openmp is used;
             all cores are getting the same amount of data at once; e.g. 8-core cpu and 128 elements to process, every core will
             get 16 elements at once.
-        prune_inverse_index=-1, Remove every hash value with less occurence than prune_inverse_index. if -1 it is deactivated
-        prune_inverse_index_after_instance=-1.0, Start all the pruning routines after x% of the fitting process
-        remove_hash_function_with_less_entries_as=-1, Remove every hash function with less hash values as n
-        block_size = 5, 
-        shingle=0,
-        store_value_with_least_sigificant_bit=0
-        cpu_gpu_load_balancing 0 if 100% cpu, 1 if 100% gpu. if e.g. 0.7 it means 70% gpu, 30% cpu
-        
+        prune_inverse_index : int, optional (default = -1)
+            Remove every hash value with less occurence than n. If -1 it is deactivated.
+        prune_inverse_index_after_instance: float, optional (default = -1.0)
+            Start all the pruning routines after x% of the data during the fitting process.
+        remove_hash_function_with_less_entries_as: int, optional (default =-1)
+            Remove every hash function with less hash values as n.
+        block_size : int, optional (default = 5)
+            How much more hash functions should be computed. Number is relevant for the shingels. 
+        shingle : int, optional (default = 0)
+        store_value_with_least_sigificant_bit : int, optional (default = 0)
+        cpu_gpu_load_balancing : int, optional (default = 1) 
+            0 if 100% cpu, 1 if 100% gpu.
+        gpu_hashing : int, optional (default = 1)
+            If the hashing of MinHash should be computed on the GPU (1) but the prediction is computed on the CPU.
+            If 0 it is deactivated.
+        speed_optimized : {True, False}, optional (default = None)
+            A parameter setting that is optimized for the best speed. Can not be used together with the parameter 'accuracy_optimized'.
+            If bad results are computed, try 'accuracy_optimized' or optimize the parameters with a hyperparameter optimization.
+        accuracy_optimized : {True, False}, optional (default = None) 
+            A parameter setting that is optimized for the best accuracy. Can not be used together with the parameter 'speed_optimized'.
+            If results are computed to slow, try 'speed_optimized' or optimize the parameters with a hyperparameter optimization.
         Notes
         -----
 
@@ -95,29 +108,29 @@ class MinHash():
             print "Speed optimization and accuracy optimization at the same time is not possible."
             return
         if speed_optimized:
-            number_of_hash_functions = 163
+            number_of_hash_functions = 200
             max_bin_size = 54
             minimal_blocks_in_common = 1
             shingle_size = 4
             excess_factor = 8
             prune_inverse_index = 0
-            prune_inverse_index_after_instance = 0.5
+            prune_inverse_index_after_instance = 0.0
             remove_hash_function_with_less_entries_as = 0
             block_size = 4
             shingle = 1
             store_value_with_least_sigificant_bit = 1
         elif accuracy_optimized:
-            number_of_hash_functions = 289
-            max_bin_size = 45
-            minimal_blocks_in_common = 4
+            number_of_hash_functions = 596
+            max_bin_size = 49
+            minimal_blocks_in_common = 1
             shingle_size = 1
-            excess_factor = 10
-            prune_inverse_index = 14
-            prune_inverse_index_after_instance = 0.0
+            excess_factor = 11
+            prune_inverse_index = 11
+            prune_inverse_index_after_instance = 0.5
             remove_hash_function_with_less_entries_as = 0
             block_size = 1
             shingle = 0
-            store_value_with_least_sigificant_bit = 0
+            store_value_with_least_sigificant_bit = 3
                 
         self._nearestNeighborsCppInterface = NearestNeighborsCppInterface(n_neighbors=n_neighbors, radius=radius,
                 fast=fast, number_of_hash_functions=number_of_hash_functions,
@@ -180,6 +193,10 @@ class MinHash():
                                 the original data from the data set to answer a k_neighbor query. The
                                 original data is stored in the memory.
                                 If not passed, default value is what was passed to the constructor.
+            similarity: {True, False}, optional (default = None)
+                If true: cosine similarity is used
+                If false: Euclidean distance is used
+                If None: Value that was defined at the init is taken.
 
             Returns
             -------
@@ -194,6 +211,7 @@ class MinHash():
 
     def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', fast=None, symmetric=True, similarity=None):
         """Computes the (weighted) graph of k-Neighbors for points in X
+            
             Parameters
             ----------
             X : array-like, last dimension same as that of fit data, optional
@@ -207,12 +225,20 @@ class MinHash():
                 Type of returned matrix: 'connectivity' will return the
                 connectivity matrix with ones and zeros, in 'distance' the
                 edges are Euclidean distance between points.
-            algorithm : {'approximate', 'exact'}, optional (default = 'approximate')
-            - 'approximate':    will only use an inverse index to compute a k_neighbor query.
-            - 'exact':          an inverse index is used to preselect instances, and these are used to get
+            fast : {'True', 'False'}, optional (default = 'None')
+            - 'True':    will only use an inverse index to compute a k_neighbor query.
+            - 'False':          an inverse index is used to preselect instances, and these are used to get
                                 the original data from the data set to answer a k_neighbor query. The
                                 original data is stored in the memory.
                                 If not passed, default value is what was passed to the constructor.
+            similarity: {True, False}, optional (default = None)
+                If true: cosine similarity is used
+                If false: Euclidean distance is used
+                If None: Value that was defined at the init is taken.
+                
+            symmetric: {True, False} (default = True)
+                If true the returned graph is symmetric, otherwise not.
+                
             Returns
             -------
             A : sparse matrix in CSR format, shape = [n_samples, n_samples_fit]
@@ -246,6 +272,11 @@ class MinHash():
                                 the original data from the data set to answer a k_neighbor query. The
                                 original data is stored in the memory.
                                 If not passed, default value is what was passed to the constructor.
+        similarity: {True, False}, optional (default = None)
+                If true: cosine similarity is used
+                If false: Euclidean distance is used
+                If None: Value that was defined at the init is taken.                        
+        
         Returns
         -------
         dist : array, shape (n_samples,) of arrays 
@@ -279,12 +310,20 @@ class MinHash():
             Type of returned matrix: 'connectivity' will return the
             connectivity matrix with ones and zeros, in 'distance' the
             edges are Euclidean distance between points.
-        algorithm : {'approximate', 'exact'}, optional (default = 'approximate')
-        - 'approximate':    will only use an inverse index to compute a k_neighbor query.
-        - 'exact':          an inverse index is used to preselect instances, and these are used to get
-                            the original data from the data set to answer a k_neighbor query. The
-                            original data is stored in the memory.
-                            If not passed, default value is what was passed to the constructor.
+        fast : bool, optional (default = 'False')
+            - 'True':    will only use an inverse index to compute a k_neighbor query.
+            - 'False':          an inverse index is used to preselect instances, and these are used to get
+                                the original data from the data set to answer a k_neighbor query. The
+                                original data is stored in the memory.
+                                If not passed, default value is what was passed to the constructor.
+        similarity: {True, False}, optional (default = None)
+                If true: cosine similarity is used
+                If false: Euclidean distance is used
+                If None: Value that was defined at the init is taken.
+                
+        symmetric: {True, False} (default = True)
+                If true the returned graph is symmetric, otherwise not.
+                
         Returns
         -------
         A : sparse matrix in CSR format, shape = [n_samples, n_samples]
@@ -298,18 +337,24 @@ class MinHash():
 
         Parameters
             ----------
-            X : {array-like, sparse matrix}
-                Data point(s) to be fitted and searched for n_neighbors. Shape = [n_samples, n_features]
+            X : {array-like, sparse matrix}, optional
+                Data point(s) to be searched for n_neighbors. Shape = [n_samples, n_features]
+                If not provided, neighbors of each indexed point are returned.
+                In this case, the query point is not considered its own neighbor.
             n_neighbors : int, optional
                 Number of neighbors to get (default is the value passed to the constructor).
             return_distance : boolean, optional. Defaults to True.
                 If False, distances will not be returned
-            algorithm : {'approximate', 'exact'}, optional (default = 'approximate')
-            - 'approximate':    will only use an inverse index to compute a k_neighbor query.
-            - 'exact':          an inverse index is used to preselect instances, and these are used to get
+            fast : {'True', 'False'}, optional (default = 'None')
+            - 'True':    will only use an inverse index to compute a k_neighbor query.
+            - 'False':          an inverse index is used to preselect instances, and these are used to get
                                 the original data from the data set to answer a k_neighbor query. The
                                 original data is stored in the memory.
                                 If not passed, default value is what was passed to the constructor.
+            similarity: {True, False}, optional (default = None)
+                If true: cosine similarity is used
+                If false: Euclidean distance is used
+                If None: Value that was defined at the init is taken.
 
             Returns
             -------
@@ -324,10 +369,13 @@ class MinHash():
 
     def fit_kneighbor_graph(self, X, n_neighbors=None, mode='connectivity', fast=None, symmetric=True, similarity=None):
         """Fits and computes the (weighted) graph of k-Neighbors for points in X
+            
             Parameters
             ----------
-            X : array-like, last dimension same as that of fit data
+            X : array-like, last dimension same as that of fit data, optional
                 The query point or points.
+                If not provided, neighbors of each indexed point are returned.
+                In this case, the query point is not considered its own neighbor.
             n_neighbors : int
                 Number of neighbors for each sample.
                 (default is value passed to the constructor).
@@ -335,12 +383,20 @@ class MinHash():
                 Type of returned matrix: 'connectivity' will return the
                 connectivity matrix with ones and zeros, in 'distance' the
                 edges are Euclidean distance between points.
-            algorithm : {'approximate', 'exact'}, optional (default = 'approximate')
-            - 'approximate':    will only use an inverse index to compute a k_neighbor query.
-            - 'exact':          an inverse index is used to preselect instances, and these are used to get
+            fast : {'True', 'False'}, optional (default = 'None')
+            - 'True':    will only use an inverse index to compute a k_neighbor query.
+            - 'False':          an inverse index is used to preselect instances, and these are used to get
                                 the original data from the data set to answer a k_neighbor query. The
                                 original data is stored in the memory.
                                 If not passed, default value is what was passed to the constructor.
+            similarity: {True, False}, optional (default = None)
+                If true: cosine similarity is used
+                If false: Euclidean distance is used
+                If None: Value that was defined at the init is taken.
+                
+            symmetric: {True, False} (default = True)
+                If true the returned graph is symmetric, otherwise not.
+                
             Returns
             -------
             A : sparse matrix in CSR format, shape = [n_samples, n_samples_fit]
@@ -353,7 +409,7 @@ class MinHash():
                                                                         similarity=similarity)
 
     def fit_radius_neighbors(self, X, radius=None, return_distance=None, fast=None, similarity=None):
-        """Finds the neighbors within a given radius of a point or points.
+       """Fits the data and finds the neighbors within a given radius of a point or points.
         Return the indices and distances of each point from the dataset
         lying in a ball with size ``radius`` around the points of the query
         array. Points lying on the boundary are included in the results.
@@ -361,19 +417,26 @@ class MinHash():
         query point.
         Parameters
         ----------
-        X : array-like, (n_samples, n_features)
-            The to be fitted data and query point or points.
+        X : array-like, (n_samples, n_features), optional
+            The query point or points.
+            If not provided, neighbors of each indexed point are returned.
+            In this case, the query point is not considered its own neighbor.
         radius : float
             Limiting distance of neighbors to return.
             (default is the value passed to the constructor).
         return_distance : boolean, optional. Defaults to True.
             If False, distances will not be returned
-        algorithm : {'approximate', 'exact'}, optional (default = 'approximate')
-            - 'approximate':    will only use an inverse index to compute a k_neighbor query.
-            - 'exact':          an inverse index is used to preselect instances, and these are used to get
+        fast : bool, optional (default = 'False')
+            - 'True':    will only use an inverse index to compute a k_neighbor query.
+            - 'False':          an inverse index is used to preselect instances, and these are used to get
                                 the original data from the data set to answer a k_neighbor query. The
                                 original data is stored in the memory.
                                 If not passed, default value is what was passed to the constructor.
+        similarity: {True, False}, optional (default = None)
+                If true: cosine similarity is used
+                If false: Euclidean distance is used
+                If None: Value that was defined at the init is taken.                        
+        
         Returns
         -------
         dist : array, shape (n_samples,) of arrays 
@@ -395,8 +458,10 @@ class MinHash():
 
         Parameters
         ----------
-        X : array-like, (n_samples, n_features)
-            The to be fitted data and query point or points.   
+        X : array-like, shape = [n_samples, n_features], optional
+            The query point or points.
+            If not provided, neighbors of each indexed point are returned.
+            In this case, the query point is not considered its own neighbor.
         radius : float
             Radius of neighborhoods.
             (default is the value passed to the constructor).
@@ -404,12 +469,20 @@ class MinHash():
             Type of returned matrix: 'connectivity' will return the
             connectivity matrix with ones and zeros, in 'distance' the
             edges are Euclidean distance between points.
-        algorithm : {'approximate', 'exact'}, optional (default = 'approximate')
-        - 'approximate':    will only use an inverse index to compute a k_neighbor query.
-        - 'exact':          an inverse index is used to preselect instances, and these are used to get
-                            the original data from the data set to answer a k_neighbor query. The
-                            original data is stored in the memory.
-                            If not passed, default value is what was passed to the constructor.
+        fast : bool, optional (default = 'False')
+            - 'True':    will only use an inverse index to compute a k_neighbor query.
+            - 'False':          an inverse index is used to preselect instances, and these are used to get
+                                the original data from the data set to answer a k_neighbor query. The
+                                original data is stored in the memory.
+                                If not passed, default value is what was passed to the constructor.
+        similarity: {True, False}, optional (default = None)
+                If true: cosine similarity is used
+                If false: Euclidean distance is used
+                If None: Value that was defined at the init is taken.
+                
+        symmetric: {True, False} (default = True)
+                If true the returned graph is symmetric, otherwise not.
+                
         Returns
         -------
         A : sparse matrix in CSR format, shape = [n_samples, n_samples]
