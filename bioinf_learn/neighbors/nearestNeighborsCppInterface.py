@@ -426,7 +426,7 @@ class NearestNeighborsCppInterface():
             return asarray(result[0])
 
     def radius_neighbors_graph(self, X=None, radius=None, mode='connectivity', fast=None, symmetric=True, similarity=None):
-         """Computes the (weighted) graph of Neighbors for points in X
+        """Computes the (weighted) graph of Neighbors for points in X
         Neighborhoods are restricted the points at a distance lower than
         radius.
 
@@ -511,7 +511,7 @@ class NearestNeighborsCppInterface():
 
 
     def fit_kneighbors(self, X, n_neighbors=None, return_distance=True, fast=None, similarity=None):
-         """"Fits and returns the n_neighbors of X.
+        """"Fits and returns the n_neighbors of X.
 
         Parameters
             ----------
@@ -574,7 +574,7 @@ class NearestNeighborsCppInterface():
             return asarray(result[0])
 
     def fit_kneighbor_graph(self, X, n_neighbors=None, mode='connectivity', fast=None, symmetric=True, similarity=None):
-       """Fits and computes the (weighted) graph of k-Neighbors for points in X
+        """Fits and computes the (weighted) graph of k-Neighbors for points in X
             
             Parameters
             ----------
@@ -646,7 +646,7 @@ class NearestNeighborsCppInterface():
         return csr_matrix((data, (row, column)))
 
     def fit_radius_neighbors(self, X, radius=None, return_distance=None, fast=None, similarity=None):
-         """Fits the data and finds the neighbors within a given radius of a point or points.
+        """Fits the data and finds the neighbors within a given radius of a point or points.
         Return the indices and distances of each point from the dataset
         lying in a ball with size ``radius`` around the points of the query
         array. Points lying on the boundary are included in the results.
@@ -718,7 +718,7 @@ class NearestNeighborsCppInterface():
             return asarray(result[0])
         
     def fit_radius_neighbors_graph(self, X, radius=None, mode='connectivity', fast=None, symmetric=True, similarity=None):
-         """Fits and computes the (weighted) graph of Neighbors for points in X
+        """Fits and computes the (weighted) graph of Neighbors for points in X
         Neighborhoods are restricted the points at a distance lower than
         radius.
 

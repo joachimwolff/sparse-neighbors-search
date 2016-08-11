@@ -409,7 +409,7 @@ class MinHash():
                                                                         similarity=similarity)
 
     def fit_radius_neighbors(self, X, radius=None, return_distance=None, fast=None, similarity=None):
-       """Fits the data and finds the neighbors within a given radius of a point or points.
+        """Fits the data and finds the neighbors within a given radius of a point or points.
         Return the indices and distances of each point from the dataset
         lying in a ball with size ``radius`` around the points of the query
         array. Points lying on the boundary are included in the results.
