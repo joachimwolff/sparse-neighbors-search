@@ -14,5 +14,4 @@ from neighbors.minHashClassifier import MinHashClassifier
 from neighbors.minHash import MinHash
 from neighbors.wtaHashClassifier import WtaHashClassifier
 from neighbors.wtaHash import WtaHash
-import util
 import cluster
