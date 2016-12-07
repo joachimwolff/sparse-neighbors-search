@@ -1,11 +1,15 @@
 #include "typeDefinitions.h"
 #include <functional>
+#include <xmmintrin.h>
 #ifndef HASH_H
 #define HASH_H
 class Hash {
   private:
     const double A = sqrt(2) - 1;
     
+    // hash_SSE() {
+
+    // }
     size_t size_tHashSimple(size_t key, size_t aModulo) {
           // source:  Thomas Wang: Integer Hash Functions, 1997 / 2007 
           // https://gist.github.com/badboy/6267743

@@ -96,6 +96,39 @@ distributionInverseIndex* InverseIndex::getDistribution() {
     return mInverseIndexStorage->getDistribution();
 }
 
+// compute the signature for one instance with SSE support
+// vsize_t* InverseIndex::computeSignatureSSE(SparseMatrixFloat* pRawData, const size_t pInstance) {
+
+//     if (pRawData == NULL) return NULL;
+//     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
+//     size_t argmin = 0;
+//     for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
+//             size_t nearestNeighborsValue = MAX_VALUE;      
+//             size_t iterations = pRawData->getSizeOfInstance(pInstance);
+//             __m128i minimumVector = {MAX_VALUE, MAX_VALUE, MAX_VALUE, MAX_VALUE};
+//             for (size_t i = 0; i < iterations; i+=4) {
+//                 __m128i value = {(pRawData->getNextElement(pInstance, i) +1), 
+//                                     (pRawData->getNextElement(pInstance, i+1) +1),
+//                                     (pRawData->getNextElement(pInstance, i+2) +1),
+//                                     (pRawData->getNextElement(pInstance, i+3) +1)};
+//                 __m128i hashValue = mHash->hashSSE(value, (j+1), MAX_VALUE);
+
+                
+//                 if (hashValue < nearestNeighborsValue) {
+//                     nearestNeighborsValue = hashValue;
+//                     argmin = pRawData->getNextElement(pInstance, i);
+//                 }
+//             }
+
+//             (*signature)[j] = argmin;
+            
+//     }
+//     // reduce number of hash values by a factor of mShingleSize
+//     if (mShingle) {
+//         return shingle(signature);
+//     }
+//     return signature;
+// }  
 // compute the signature for one instance
 vsize_t* InverseIndex::computeSignature(SparseMatrixFloat* pRawData, const size_t pInstance) {
 
