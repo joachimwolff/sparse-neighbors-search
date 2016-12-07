@@ -246,7 +246,6 @@ if (locate_cuda() == None or no_cuda):
             # cmdclass={'build_ext': custom_build_ext_gcc},
             packages=['bioinf_learn',
                         'bioinf_learn.neighbors',
-                        'bioinf_learn.util',
                         'bioinf_learn.cluster',
                         #  'bioinf.computation',
                     ],
@@ -321,9 +320,7 @@ else:
         # ext_modules = [module1],
         packages=['bioinf_learn',
                     'bioinf_learn.neighbors',
-                    'bioinf_learn.util',
                     'bioinf_learn.cluster',
-                    #  'bioinf.computation',
                 ],
         platforms = "Linux, Mac OS X",
         version = '0.1')
