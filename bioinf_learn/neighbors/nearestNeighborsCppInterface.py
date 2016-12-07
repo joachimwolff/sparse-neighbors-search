@@ -19,7 +19,7 @@ from numpy import asarray
 import math
 import _nearestNeighbors
 
-class NearestNeighborsCppInterface():
+class _NearestNeighborsCppInterface():
     """Approximate unsupervised learner for implementing neighbor searches on sparse data sets. Based on a
         dimension reduction with minimum hash functions or winner takes it all hashing.
 
