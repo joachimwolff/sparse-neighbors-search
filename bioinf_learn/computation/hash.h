@@ -52,7 +52,7 @@ class Hash {
         
         
 
-        
+        return keys;
 
     }
     size_t size_tHashSimple(size_t key, size_t aModulo) {

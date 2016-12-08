@@ -105,16 +105,16 @@ vsize_t* InverseIndex::computeSignatureSSE(SparseMatrixFloat* pRawData, const si
     size_t argmin = 0;
     for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
             size_t nearestNeighborsValue = MAX_VALUE;      
-            size_t iterations = pRawData->getSizeOfInstance(pInstance);
             __m128i minimumVector = {MAX_VALUE, MAX_VALUE, MAX_VALUE, MAX_VALUE};
-            for (size_t i = 0; i < iterations; i+=4) {
+            for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); i+=4) {
                 __m128i value = {(pRawData->getNextElement(pInstance, i) +1), 
                                     (pRawData->getNextElement(pInstance, i+1) +1),
                                     (pRawData->getNextElement(pInstance, i+2) +1),
                                     (pRawData->getNextElement(pInstance, i+3) +1)};
                 __m128i hashValue = mHash->hashSSE(value, (j+1), MAX_VALUE);
 
-                // compare 
+                // compare all four hash values and store minimum for each element
+
                 if (hashValue < nearestNeighborsValue) {
                     nearestNeighborsValue = hashValue;
                     argmin = pRawData->getNextElement(pInstance, i);
