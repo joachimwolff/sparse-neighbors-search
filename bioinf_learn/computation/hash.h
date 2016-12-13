@@ -50,8 +50,6 @@ class Hash {
         keys = _mm_xor_si128(keys_tmp, keys); 
         // return key % aModulo;
         
-        
-
         return keys;
 
     }
