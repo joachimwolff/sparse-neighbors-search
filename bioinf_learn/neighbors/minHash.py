@@ -105,7 +105,7 @@ class MinHash():
                  block_size = 5, shingle=0, store_value_with_least_sigificant_bit=0, 
                  gpu_hashing=0, speed_optimized=None, accuracy_optimized=None): #cpu_gpu_load_balancing=0,
         if speed_optimized is not None and accuracy_optimized is not None:
-            print "Speed optimization and accuracy optimization at the same time is not possible."
+            print("Speed optimization and accuracy optimization at the same time is not possible.")
             return
         if speed_optimized:
             number_of_hash_functions = 200
