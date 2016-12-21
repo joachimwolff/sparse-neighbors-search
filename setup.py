@@ -48,11 +48,11 @@ import numpy
 import distutils.sysconfig
 import distutils.ccompiler
 
-sources_list = ['bioinf_learn/computation/interface/nearestNeighbors_PythonInterface.cpp', 'bioinf_learn/computation/nearestNeighbors.cpp', 
-                 'bioinf_learn/computation/inverseIndex.cpp', 'bioinf_learn/computation/inverseIndexStorageUnorderedMap.cpp']
-depends_list = ['bioinf_learn/computation/nearestNeighbors.h', 'bioinf_learn/computation/inverseIndex.h', 'bioinf_learn/computation/kSizeSortedMap.h',
-         'bioinf_learn/computation/typeDefinitions.h', 'bioinf_learn/computation/parsePythonToCpp.h', 'bioinf_learn/computation/sparseMatrix.h',
-          'bioinf_learn/computation/inverseIndexStorage.h', 'bioinf_learn/computation/inverseIndexStorageUnorderedMap.h','bioinf_learn/computation/hash.h']
+sources_list = ['sklearn_freiburg_extension/computation/interface/nearestNeighbors_PythonInterface.cpp', 'sklearn_freiburg_extension/computation/nearestNeighbors.cpp', 
+                 'sklearn_freiburg_extension/computation/inverseIndex.cpp', 'sklearn_freiburg_extension/computation/inverseIndexStorageUnorderedMap.cpp']
+depends_list = ['sklearn_freiburg_extension/computation/nearestNeighbors.h', 'sklearn_freiburg_extension/computation/inverseIndex.h', 'sklearn_freiburg_extension/computation/kSizeSortedMap.h',
+         'sklearn_freiburg_extension/computation/typeDefinitions.h', 'sklearn_freiburg_extension/computation/parsePythonToCpp.h', 'sklearn_freiburg_extension/computation/sparseMatrix.h',
+          'sklearn_freiburg_extension/computation/inverseIndexStorage.h', 'sklearn_freiburg_extension/computation/inverseIndexStorageUnorderedMap.h','sklearn_freiburg_extension/computation/hash.h']
 openmp = True
 if "--openmp" in sys.argv:
     module1 = Extension('_nearestNeighbors', sources = sources_list, depends = depends_list,
@@ -231,7 +231,7 @@ class custom_build_ext(build_ext):
 
 if (locate_cuda() == None or no_cuda):
     print("No Cuda found or no cuda forced. Installation without GPU support.")
-    setup (name = 'bioinf_learn',
+    setup (name = 'sklearn_freiburg_extension',
             author = 'Joachim Wolff',
             author_email = 'wolffj@informatik.uni-freiburg.de',
             url='https://github.com/joachimwolff/minHashNearestNeighbors',
@@ -244,9 +244,9 @@ if (locate_cuda() == None or no_cuda):
             "scikit-learn >= 0.16.0",],
             ext_modules = [module1],
             # cmdclass={'build_ext': custom_build_ext_gcc},
-            packages=['bioinf_learn',
-                        'bioinf_learn.neighbors',
-                        'bioinf_learn.cluster',
+            packages=['sklearn_freiburg_extension',
+                        'sklearn_freiburg_extension.neighbors',
+                        'sklearn_freiburg_extension.cluster',
                         #  'bioinf.computation',
                     ],
             platforms = "Linux, Mac OS X",
@@ -254,8 +254,8 @@ if (locate_cuda() == None or no_cuda):
             )
 else:
     print ("CUDA found on system. Installing MinHash with CUDA-Support.")
-    sources_list.extend(['bioinf_learn/computation/kernel.cu', 'bioinf_learn/computation/inverseIndexCuda.cu', 'bioinf_learn/computation/nearestNeighborsCuda.cu'])
-    depends_list.extend(['bioinf_learn/computation/typeDefinitionsCuda.h', 'bioinf_learn/computation/kernel.h', 'bioinf_learn/computation/inverseIndexCuda.h', 'bioinf_learn/computation/nearestNeighborsCuda.h', ])
+    sources_list.extend(['sklearn_freiburg_extension/computation/kernel.cu', 'sklearn_freiburg_extension/computation/inverseIndexCuda.cu', 'sklearn_freiburg_extension/computation/nearestNeighborsCuda.cu'])
+    depends_list.extend(['sklearn_freiburg_extension/computation/typeDefinitionsCuda.h', 'sklearn_freiburg_extension/computation/kernel.h', 'sklearn_freiburg_extension/computation/inverseIndexCuda.h', 'sklearn_freiburg_extension/computation/nearestNeighborsCuda.h', ])
     # Extension('_nearestNeighbors', sources = sources_list, depends = depends_list,
     #      define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
     #     extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])
@@ -298,7 +298,7 @@ else:
                     platforms = "Linux, Mac OS X"
                     )
                 
-    setup(name='bioinf_learn',
+    setup(name='sklearn_freiburg_extension',
         # random metadata. there's more you can supploy
         author='Joachim Wolff',
         ext_modules = [ext],
@@ -318,9 +318,9 @@ else:
         "scipy >= 0.14.0",
         "scikit-learn >= 0.16.0",],
         # ext_modules = [module1],
-        packages=['bioinf_learn',
-                    'bioinf_learn.neighbors',
-                    'bioinf_learn.cluster',
+        packages=['sklearn_freiburg_extension',
+                    'sklearn_freiburg_extension.neighbors',
+                    'sklearn_freiburg_extension.cluster',
                 ],
         platforms = "Linux, Mac OS X",
         version = '0.1')
