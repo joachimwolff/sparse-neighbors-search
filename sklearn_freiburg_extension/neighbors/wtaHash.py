@@ -10,11 +10,13 @@
 
 __author__ = 'joachimwolff'
 from scipy.sparse import csr_matrix
+
+
 from nearestNeighborsCppInterface import _NearestNeighborsCppInterface
 
-class MinHash():
+class WtaHash():
     """Approximate unsupervised learner for implementing neighbor searches on sparse data sets. Based on a
-        dimension reduction with minimum hash functions.
+        dimension reduction with winner takes is all hash.
 
         Parameters
         ----------
@@ -65,10 +67,8 @@ class MinHash():
             How much more hash functions should be computed. Number is relevant for the shingels. 
         shingle : int, optional (default = 0)
         store_value_with_least_sigificant_bit : int, optional (default = 0)
-        # cpu_gpu_load_balancing : int, optional (default = 1) 
-        #     0 if 100% cpu, 1 if 100% gpu.
         gpu_hashing : int, optional (default = 1)
-            If the hashing of MinHash should be computed on the GPU (1) but the prediction is computed on the CPU.
+            If the hashing of WtaHash should be computed on the GPU (1) but the prediction is computed on the CPU.
             If 0 it is deactivated.
         speed_optimized : {True, False}, optional (default = None)
             A parameter setting that is optimized for the best speed. Can not be used together with the parameter 'accuracy_optimized'.
@@ -97,51 +97,61 @@ class MinHash():
         Heyne, S., Costa, F., Rose, D., & Backofen, R. (2012).
         GraphClust: alignment-free structural clustering of local RNA secondary structures.
         Bioinformatics, 28(12), i224-i232.
-        http://bioinformatics.oxfordjournals.org/content/28/12/i224.full.pdf+html"""
-    def __init__(self, n_neighbors = 5, radius = 1.0, fast=False, number_of_hash_functions=400,
+        http://bioinformatics.oxfordjournals.org/content/28/12/i224.full.pdf+html
+        
+        Winner takes it all hash based on:
+        Yagnik, Jay, et al. "The power of comparative reasoning." C
+        omputer Vision (ICCV), 2011 IEEE International Conference on. IEEE, 2011.
+        http://www.dennis-strelow.com/papers/documents/iccv11.pdf
+        """
+    def __init__(self, n_neighbors = 5, radius = 1.0, fast=False, number_of_hash_functions=400, rangeK_wta=20,
                  max_bin_size = 50, minimal_blocks_in_common = 1, shingle_size = 4, excess_factor = 5,
                  similarity=False, number_of_cores=None, chunk_size=None, prune_inverse_index=-1,
                  prune_inverse_index_after_instance=-1.0, remove_hash_function_with_less_entries_as=-1, 
                  block_size = 5, shingle=0, store_value_with_least_sigificant_bit=0, 
-                 gpu_hashing=0, speed_optimized=None, accuracy_optimized=None): #cpu_gpu_load_balancing=0,
+                 speed_optimized=None, accuracy_optimized=None): #cpu_gpu_load_balancing=0,
+                  
         if speed_optimized is not None and accuracy_optimized is not None:
             print("Speed optimization and accuracy optimization at the same time is not possible.")
             return
         if speed_optimized:
-            number_of_hash_functions = 200
-            max_bin_size = 54
-            minimal_blocks_in_common = 1
-            shingle_size = 4
-            excess_factor = 8
-            prune_inverse_index = 0
-            prune_inverse_index_after_instance = 0.0
-            remove_hash_function_with_less_entries_as = 0
-            block_size = 4
-            shingle = 1
-            store_value_with_least_sigificant_bit = 1
-        elif accuracy_optimized:
-            number_of_hash_functions = 596
-            max_bin_size = 49
+            number_of_hash_functions = 186
+            max_bin_size = 87
             minimal_blocks_in_common = 1
             shingle_size = 1
             excess_factor = 11
-            prune_inverse_index = 11
+            prune_inverse_index = 6
+            prune_inverse_index_after_instance = 0.0
+            remove_hash_function_with_less_entries_as = 0
+            block_size = 1
+            shingle = 0
+            store_value_with_least_sigificant_bit = 1
+            rangeK_wta = 17
+        elif accuracy_optimized:
+            number_of_hash_functions = 739
+            max_bin_size = 30
+            minimal_blocks_in_common = 1
+            shingle_size = 3
+            excess_factor = 14
+            prune_inverse_index = 1
             prune_inverse_index_after_instance = 0.5
             remove_hash_function_with_less_entries_as = 0
             block_size = 1
             shingle = 0
-            store_value_with_least_sigificant_bit = 3
-                
-        self._nearestNeighborsCppInterface = NearestNeighborsCppInterface(n_neighbors=n_neighbors, radius=radius,
+            store_value_with_least_sigificant_bit = 2
+            rangeK_wta = 23
+        
+        cpu_gpu_load_balancing = 0
+        self._nearestNeighborsCppInterface = _NearestNeighborsCppInterface(n_neighbors=n_neighbors, radius=radius,
                 fast=fast, number_of_hash_functions=number_of_hash_functions,
                 max_bin_size=max_bin_size, minimal_blocks_in_common=minimal_blocks_in_common,
                 shingle_size=shingle_size, excess_factor=excess_factor,
                 similarity=similarity, number_of_cores=number_of_cores, chunk_size=chunk_size, prune_inverse_index=prune_inverse_index,
                 prune_inverse_index_after_instance=prune_inverse_index_after_instance,
                 remove_hash_function_with_less_entries_as=remove_hash_function_with_less_entries_as, 
-                hash_algorithm=0, block_size=block_size, shingle=shingle,
+                hash_algorithm=1, block_size=block_size, shingle=shingle,
                 store_value_with_least_sigificant_bit=store_value_with_least_sigificant_bit, 
-                cpu_gpu_load_balancing=0, gpu_hashing=gpu_hashing)
+                cpu_gpu_load_balancing=cpu_gpu_load_balancing, gpu_hashing=0, rangeK_wta=rangeK_wta)
 
     def __del__(self):
        del self._nearestNeighborsCppInterface
@@ -152,7 +162,7 @@ class MinHash():
 
             Parameters
             ----------
-            X : {array-like, sparse matrix}
+            X : {array-like, sparse matrix}, optional
                 Training data. If array or matrix, shape = [n_samples, n_features]
                 If X is None, a "lazy fitting" is performed. If kneighbors is called, the fitting
                 with with the data there is done. Also the caching of computed hash values is deactivated in
@@ -498,7 +508,7 @@ class MinHash():
             the average size of elements per hash value per hash function,
             the mean and the standard deviation."""
         return self._nearestNeighborsCppInterface.get_distribution_of_inverse_index()
-    
+        
     def _getY(self):
         return self._nearestNeighborsCppInterface._getY()
     def _getY_is_csr(self):
