@@ -4,7 +4,7 @@ within a sparse data structure. It works best for very high dimensional and very
 
 To use it:
 
-    from bioinf_learn import MinHash
+    from sklearn_freiburg_extension import MinHash
     minHash = MinHash()
     minHash.fit(X)
     minHash.kneighbors(return_distance=False)
@@ -18,7 +18,7 @@ Features
 Installation
 ------------
 
-Install bioinf_learn by running:
+Install sklearn_freiburg_extension by running:
 
     python setup.py install
 
@@ -48,7 +48,7 @@ Uninstall
 ---------
 To delete bioinf-learn run the following command:
 
-	pip uninstall bioinf-learn
+	pip uninstall sklearn-freiburg-extension
 
 If you have run the uninstall command and want to make sure everything is gone, look at your python installation directory.
 If you have used the --user flag the path in Ubuntu 14.04 is:
