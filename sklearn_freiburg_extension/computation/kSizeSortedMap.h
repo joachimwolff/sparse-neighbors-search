@@ -17,7 +17,7 @@
 class KSizeSortedMap {
 
   private: 
-    std::map<size_t, float>* mKSizeSortedMap;
+    std::map<size_t, float>* mKSizeSortedMap = NULL;
     size_t mK;
     float mMaxValue;
     size_t mMaxValueIndex;

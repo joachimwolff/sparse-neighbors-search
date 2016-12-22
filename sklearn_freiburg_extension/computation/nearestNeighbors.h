@@ -23,8 +23,8 @@
 
 class NearestNeighbors {
   protected:
-    InverseIndex* mInverseIndex;
-    SparseMatrixFloat* mOriginalData;
+    InverseIndex* mInverseIndex = NULL;
+    SparseMatrixFloat* mOriginalData = NULL;
 
 	neighborhood computeNeighborhood();
     neighborhood computeExactNeighborhood();
@@ -38,9 +38,9 @@ class NearestNeighbors {
     size_t mExcessFactor;
     float mCpuGpuLoadBalancing;
     size_t mGpuHash;
-    Hash* mHash;
+    Hash* mHash = NULL;
     #ifdef CUDA
-    NearestNeighborsCuda* mNearestNeighborsCuda;
+    NearestNeighborsCuda* mNearestNeighborsCuda = NULL;
     #endif
     public:
     NearestNeighbors();
