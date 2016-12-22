@@ -4,7 +4,7 @@ within a sparse data structure. It works best for very high dimensional and very
 
 To use it:
 
-    from sklearn_freiburg_extension import MinHash
+    from sparse_neighbors_search import MinHash
     minHash = MinHash()
     minHash.fit(X)
     minHash.kneighbors(return_distance=False)
@@ -18,7 +18,7 @@ Features
 Installation
 ------------
 
-Install sklearn_freiburg_extension by running:
+Install sparse_neighbors_search by running:
 
     python setup.py install
 
@@ -46,9 +46,9 @@ The software was tested on Ubuntu 14.04 with g++ 4.8, CUDA 7.5, numpy 1.10.1, sc
 
 Uninstall
 ---------
-To delete bioinf-learn run the following command:
+To delete sparse-neighbors-search run the following command:
 
-	pip uninstall sklearn-freiburg-extension
+	pip uninstall sparse-neighbors-search
 
 If you have run the uninstall command and want to make sure everything is gone, look at your python installation directory.
 If you have used the --user flag the path in Ubuntu 14.04 is:
