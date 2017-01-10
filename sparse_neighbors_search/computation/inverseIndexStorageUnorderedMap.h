@@ -4,7 +4,7 @@
 #define INVERSE_INDEX_STORAGE_UNORDERED_MAP_H
 class InverseIndexStorageUnorderedMap {
   private:
-	vector__umapVector_ptr* mInverseIndex;
+	vector__umapVector_ptr* mInverseIndex = NULL;
 	size_t mMaxBinSize;
 	// vvsize_t* mKeys;
 	// vvsize_t* mValues;

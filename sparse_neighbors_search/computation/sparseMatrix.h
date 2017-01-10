@@ -30,9 +30,9 @@ class SparseMatrixFloat {
     // stores only the pointer addresses to:
     //      if even index: size_t which is pointer for vsize
     //      if odd indeX: size_t which is pointer for vfloat
-    int* mSparseMatrix;
-    float*  mSparseMatrixValues;
-    size_t* mSizesOfInstances;
+    int* mSparseMatrix = NULL;
+    float*  mSparseMatrixValues = NULL;
+    size_t* mSizesOfInstances = NULL;
     
     size_t mMaxNnz;
     size_t mNumberOfInstances;

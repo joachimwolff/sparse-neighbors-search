@@ -14,15 +14,14 @@ from collections import Counter
 
 import numpy as np
 from numpy import asarray
-# from sklearn.neighbors import KNeighborsClassifier
 from sklearn.utils import check_array
 from sklearn.utils import check_X_y
 from sklearn.metrics import accuracy_score
 import logging
 
-from minHash import MinHash
+from wtaHash import WtaHash
 
-class MinHashClassifier():
+class WtaHashClassifier():
     """Classifier implementing the k-nearest neighbors vote on sparse data sets.
         Based on a dimension reduction with minimum hash functions.
         
@@ -89,8 +88,9 @@ class MinHashClassifier():
                  similarity=False, number_of_cores=None, chunk_size=None, prune_inverse_index=-1,
                   prune_inverse_index_after_instance=-1.0, remove_hash_function_with_less_entries_as=-1, 
                  block_size = 5, shingle=0, store_value_with_least_sigificant_bit=0, 
-                  cpu_gpu_load_balancing=0, gpu_hashing=0, speed_optimized=None, accuracy_optimized=None):
-        self._minHash = MinHash(n_neighbors=n_neighbors, radius=radius,
+                  rangeK_wta=20, speed_optimized=None, accuracy_optimized=None): #cpu_gpu_load_balancing=0, 
+        cpu_gpu_load_balancing = 0
+        self._wtaHash = WtaHash(n_neighbors=n_neighbors, radius=radius,
                 fast=fast, number_of_hash_functions=number_of_hash_functions,
                 max_bin_size=max_bin_size, minimal_blocks_in_common=minimal_blocks_in_common,
                 shingle_size=shingle_size, excess_factor=excess_factor,
@@ -99,11 +99,11 @@ class MinHashClassifier():
                 remove_hash_function_with_less_entries_as=remove_hash_function_with_less_entries_as, 
                 block_size=block_size, shingle=shingle,
                 store_value_with_least_sigificant_bit=store_value_with_least_sigificant_bit, 
-                cpu_gpu_load_balancing=cpu_gpu_load_balancing, gpu_hashing=gpu_hashing,
-                speed_optimized=speed_optimized, accuracy_optimized=accuracy_optimized)
+                cpu_gpu_load_balancing=cpu_gpu_load_balancing,
+                speed_optimized=speed_optimized, rangeK_wta=rangeK_wta, accuracy_optimized=accuracy_optimized)
     
     def __del__(self):
-        del self._minHash
+        del self._wtaHash
     
     def fit(self, X, y):
         """Fit the model using X as training data.
@@ -114,8 +114,7 @@ class MinHashClassifier():
                 Training data, shape = [n_samples, n_features]
             y : {array-like, sparse matrix}
                 Target values of shape = [n_samples] or [n_samples, n_outputs]"""
-        self._minHash.fit(X, y)
-       
+        self._wtaHash.fit(X, y)
     def partial_fit(self, X, y):
         """Extend the model by X as additional training data.
 
@@ -125,7 +124,7 @@ class MinHashClassifier():
                 Training data. Shape = [n_samples, n_features]
             y : {array-like, sparse matrix}
                 Target values of shape = [n_samples] or [n_samples, n_outputs]"""
-        self._minHash.partial_fit(X, y)
+        self._wtaHash.partial_fit(X, y)
 
     def kneighbors(self, X = None, n_neighbors = None, return_distance = True, fast=None):
         """Finds the K-neighbors of a point.
@@ -157,7 +156,7 @@ class MinHashClassifier():
             ind : array, shape = [n_samples, neighbors]
                 Indices of the nearest points in the population matrix."""
         
-        return self._minHash.kneighbors(X=X, n_neighbors=n_neighbors, return_distance=return_distance, fast=fast)
+        return self._wtaHash.kneighbors(X=X, n_neighbors=n_neighbors, return_distance=return_distance, fast=fast)
 
 
     def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', fast=None):
@@ -186,7 +185,7 @@ class MinHashClassifier():
             A : sparse matrix in CSR format, shape = [n_samples, n_samples_fit]
                 n_samples_fit is the number of samples in the fitted data
                 A[i, j] is assigned the weight of edge that connects i to j."""
-        return self._minHash.kneighbors_graph(X=X, n_neighbors=n_neighbors, mode=mode, fast=fast)
+        return self._wtaHash.kneighbors_graph(X=X, n_neighbors=n_neighbors, mode=mode, fast=fast)
 
 
     def predict(self, X, n_neighbors=None, fast=None, similarity=None):
@@ -200,10 +199,10 @@ class MinHashClassifier():
             y : array of shape [n_samples] or [n_samples, n_outputs]
                 Class labels for each data sample.
         """
-        neighbors = self._minHash.kneighbors(X=X, n_neighbors=n_neighbors,
+        neighbors = self._wtaHash.kneighbors(X=X, n_neighbors=n_neighbors,
                                                 return_distance=False,
                                                 fast=fast, similarity=similarity)
-        
+       
         result_classification = []
         for instance in neighbors:
             y_value = []
@@ -211,7 +210,7 @@ class MinHashClassifier():
                 if instance_ != -1:
                 # get all class labels
                     # y_value.append(y_values[instance_])
-                    y_value.append(self._minHash._getY()[instance_])
+                    y_value.append(self._wtaHash._getY()[instance_])
             if len(y_value) > 0:
                 # sort class labels by frequency and take the highest one
                 result_classification.append(Counter(y_value).keys()[0])
@@ -234,18 +233,18 @@ class MinHashClassifier():
                 The class probabilities of the input samples. Classes are ordered
                 by lexicographic order.
         """
-        neighbors = self._minHash.kneighbors(X=X, n_neighbors=n_neighbors,
+        neighbors = self._wtaHash.kneighbors(X=X, n_neighbors=n_neighbors,
                                                 return_distance=False,
                                                 fast=fast, similarity=similarity)
-        # y_values = self._getYValues(candidate_list)
-        number_of_classes = len(set(self._minHash._getY()))
+         # y_values = self._getYValues(candidate_list)
+        number_of_classes = len(set(self._wtaHash._getY()))
         result_classification = []
         for instance in neighbors:
             y_value = []
             for instance_ in instance:
                 if instance_ != -1:
                 # get all class labels
-                    y_value.append(self._minHash._getY()[instance_])
+                    y_value.append(self._wtaHash._getY()[instance_])
             if len(y_value) > 0:
             
                 # sort class labels by frequency
@@ -280,14 +279,14 @@ class MinHashClassifier():
         score : float
             Mean accuracy of self.predict(X) wrt. y.
         """
-        
         return accuracy_score(y, self.predict(X, fast=fast), sample_weight=sample_weight)
 
+
     # def _getYValues(self, candidate_list):
-    #     if self._minHash._getY_is_csr():
-    #         return self._minHash._getY()[candidate_list]
+    #     if self.nearestNeighbors._y_is_csr:
+    #         return self.nearestNeighbors._y[candidate_list]
     #     else:
     #         y_list = []
     #         for i in xrange(len(candidate_list)):
-    #             y_list.append(self._minHash._getY()[candidate_list[i]])
+    #             y_list.append(self.nearestNeighbors._y[candidate_list[i]])
     #         return y_list

@@ -48,11 +48,11 @@ import numpy
 import distutils.sysconfig
 import distutils.ccompiler
 
-sources_list = ['bioinf_learn/computation/interface/nearestNeighbors_PythonInterface.cpp', 'bioinf_learn/computation/nearestNeighbors.cpp', 
-                 'bioinf_learn/computation/inverseIndex.cpp', 'bioinf_learn/computation/inverseIndexStorageUnorderedMap.cpp']
-depends_list = ['bioinf_learn/computation/nearestNeighbors.h', 'bioinf_learn/computation/inverseIndex.h', 'bioinf_learn/computation/kSizeSortedMap.h',
-         'bioinf_learn/computation/typeDefinitions.h', 'bioinf_learn/computation/parsePythonToCpp.h', 'bioinf_learn/computation/sparseMatrix.h',
-          'bioinf_learn/computation/inverseIndexStorage.h', 'bioinf_learn/computation/inverseIndexStorageUnorderedMap.h','bioinf_learn/computation/hash.h']
+sources_list = ['sparse_neighbors_search/computation/interface/nearestNeighbors_PythonInterface.cpp', 'sparse_neighbors_search/computation/nearestNeighbors.cpp', 
+                 'sparse_neighbors_search/computation/inverseIndex.cpp', 'sparse_neighbors_search/computation/inverseIndexStorageUnorderedMap.cpp']
+depends_list = ['sparse_neighbors_search/computation/nearestNeighbors.h', 'sparse_neighbors_search/computation/inverseIndex.h', 'sparse_neighbors_search/computation/kSizeSortedMap.h',
+         'sparse_neighbors_search/computation/typeDefinitions.h', 'sparse_neighbors_search/computation/parsePythonToCpp.h', 'sparse_neighbors_search/computation/sparseMatrix.h',
+          'sparse_neighbors_search/computation/inverseIndexStorage.h', 'sparse_neighbors_search/computation/inverseIndexStorageUnorderedMap.h','sparse_neighbors_search/computation/hash.h']
 openmp = True
 if "--openmp" in sys.argv:
     module1 = Extension('_nearestNeighbors', sources = sources_list, depends = depends_list,
@@ -169,10 +169,10 @@ def customize_compiler_gcc(self):
 
 
 # run the customize_compiler
-class custom_build_ext_gcc(build_ext):
-    def build_extensions(self):
-        customize_compiler_for_gcc(self.compiler)
-        build_ext.build_extensions(self)
+# class custom_build_ext_gcc(build_ext):
+#     def build_extensions(self):
+#         customize_compiler_for_gcc(self.compiler)
+#         build_ext.build_extensions(self)
 
 
 
@@ -230,11 +230,12 @@ class custom_build_ext(build_ext):
 
 
 if (locate_cuda() == None or no_cuda):
-    setup (name = 'bioinf_learn',
+    print("No Cuda found or no cuda forced. Installation without GPU support.")
+    setup (name = 'sparse_neighbors_search',
             author = 'Joachim Wolff',
             author_email = 'wolffj@informatik.uni-freiburg.de',
             url='https://github.com/joachimwolff/minHashNearestNeighbors',
-            license='LICENSE',
+            license='MIT',
             description='An approximate computation of nearest neighbors based on locality sensitive hash functions.',
             long_description=open('README.md').read(),
             install_requires=[
@@ -242,20 +243,19 @@ if (locate_cuda() == None or no_cuda):
             "scipy >= 0.14.0",
             "scikit-learn >= 0.16.0",],
             ext_modules = [module1],
-            cmdclass={'build_ext': custom_build_ext_gcc},
-            packages=['bioinf_learn',
-                        'bioinf_learn.neighbors',
-                        'bioinf_learn.util',
-                        'bioinf_learn.cluster',
+            # cmdclass={'build_ext': custom_build_ext_gcc},
+            packages=['sparse_neighbors_search',
+                        'sparse_neighbors_search.neighbors',
+                        'sparse_neighbors_search.cluster',
                         #  'bioinf.computation',
                     ],
             platforms = "Linux, Mac OS X",
             version = '0.1'
             )
 else:
-    print "CUDA found on system. Installing MinHash with CUDA-Support."
-    sources_list.extend(['bioinf_learn/computation/kernel.cu', 'bioinf_learn/computation/inverseIndexCuda.cu', 'bioinf_learn/computation/nearestNeighborsCuda.cu'])
-    depends_list.extend(['bioinf_learn/computation/typeDefinitionsCuda.h', 'bioinf_learn/computation/kernel.h', 'bioinf_learn/computation/inverseIndexCuda.h', 'bioinf_learn/computation/nearestNeighborsCuda.h', ])
+    print ("CUDA found on system. Installing MinHash with CUDA-Support.")
+    sources_list.extend(['sparse_neighbors_search/computation/kernel.cu', 'sparse_neighbors_search/computation/inverseIndexCuda.cu', 'sparse_neighbors_search/computation/nearestNeighborsCuda.cu'])
+    depends_list.extend(['sparse_neighbors_search/computation/typeDefinitionsCuda.h', 'sparse_neighbors_search/computation/kernel.h', 'sparse_neighbors_search/computation/inverseIndexCuda.h', 'sparse_neighbors_search/computation/nearestNeighborsCuda.h', ])
     # Extension('_nearestNeighbors', sources = sources_list, depends = depends_list,
     #      define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
     #     extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])
@@ -298,7 +298,7 @@ else:
                     platforms = "Linux, Mac OS X"
                     )
                 
-    setup(name='bioinf_learn',
+    setup(name='sparse_neighbors_search',
         # random metadata. there's more you can supploy
         author='Joachim Wolff',
         ext_modules = [ext],
@@ -310,7 +310,7 @@ else:
         zip_safe=False,
         author_email = 'wolffj@informatik.uni-freiburg.de',
         url='https://github.com/joachimwolff/minHashNearestNeighbors',
-        license='LICENSE',
+        license='MIT',
         description='An approximate computation of nearest neighbors based on locality sensitive hash functions.',
         long_description=open('README.md').read(),
         install_requires=[
@@ -318,11 +318,9 @@ else:
         "scipy >= 0.14.0",
         "scikit-learn >= 0.16.0",],
         # ext_modules = [module1],
-        packages=['bioinf_learn',
-                    'bioinf_learn.neighbors',
-                    'bioinf_learn.util',
-                    'bioinf_learn.cluster',
-                    #  'bioinf.computation',
+        packages=['sparse_neighbors_search',
+                    'sparse_neighbors_search.neighbors',
+                    'sparse_neighbors_search.cluster',
                 ],
         platforms = "Linux, Mac OS X",
         version = '0.1')

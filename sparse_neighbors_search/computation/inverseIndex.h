@@ -50,11 +50,11 @@ class InverseIndex {
     size_t mGpuHash; 
 
 
-    InverseIndexStorageUnorderedMap* mInverseIndexStorage;
-  	umap_uniqueElement* mSignatureStorage;
-    Hash* mHash;
+    InverseIndexStorageUnorderedMap* mInverseIndexStorage = NULL;
+  	umap_uniqueElement* mSignatureStorage = NULL;
+    Hash* mHash = NULL;
     #ifdef CUDA
-    InverseIndexCuda* mInverseIndexCuda;
+    InverseIndexCuda* mInverseIndexCuda = NULL;
     #endif
     vsize_t* shingle(vsize_t* pSignature);
   public:
