@@ -12,7 +12,7 @@ class Hash {
 	    // Returns ~x, the bitwise complement of x:
 	    return _mm_xor_si128(x, _mm_cmpeq_epi32(_mm_setzero_si128(), _mm_setzero_si128()));
     }
-    __m128i hash_SSE(__m128i keys, _m128i aModulo) {
+    __m128i hash_SSE_priv(__m128i keys, _m128i aModulo) {
         // key = key * A;
         __m128i keys_temp = {A, A, A, A};
         keys = _mm_mul_epi32(keys_temp, keys);
@@ -88,6 +88,10 @@ class Hash {
         std::hash<size_t> hash_function;
         
         return hash_function(pKey*pSeed) % pModulo;
+    };
+    __m128i hash_SSE(__m128i pKeys, __m128i pSeed, __m128i pModulo) {
+        pKeys = _mm_mul_epi32(pKeys, pSeed);
+        return hash_SSE_priv(pKeys, pModulo);
     }
 };
 #endif // HASH_H
