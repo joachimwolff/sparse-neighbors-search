@@ -66,7 +66,7 @@ elif platform.system() == 'Darwin' or "--noopenmp" in sys.argv:
 else:
     module1 = Extension('_nearestNeighbors', sources = sources_list, depends = depends_list,
         define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"],
-         extra_compile_args=["-fopenmp", "-O3", "-std=c++11", "-funroll-loops"])
+         extra_compile_args=["-fopenmp", "-O3", "-std=c++11", "-funroll-loops", "-msse4.1"])
 no_cuda = False
 
 if "--nocuda" in sys.argv:
