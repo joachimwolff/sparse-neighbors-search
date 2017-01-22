@@ -70,7 +70,9 @@ class InverseIndex {
                     float pCpuGpuLoadBalancing, size_t pGpuHash, size_t pRangeK_Wta);
     ~InverseIndex();
   	vsize_t* computeSignature(SparseMatrixFloat* pRawData, const size_t pInstance);
-  	vsize_t* computeSignatureWTA(SparseMatrixFloat* pRawData, const size_t pInstance);
+  	vsize_t* computeSignatureSSE(SparseMatrixFloat* pRawData, const size_t pInstance);
+
+    vsize_t* computeSignatureWTA(SparseMatrixFloat* pRawData, const size_t pInstance);
     vvsize_t_p* computeSignatureVectors(SparseMatrixFloat* pRawData, const bool pFitting);
   	umap_uniqueElement* computeSignatureMap(SparseMatrixFloat* pRawData);
   	void fit(SparseMatrixFloat* pRawData, size_t pStartIndex=0);
