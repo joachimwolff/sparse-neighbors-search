@@ -102,26 +102,49 @@ vsize_t* InverseIndex::computeSignatureSSE(SparseMatrixFloat* pRawData, const si
 
     if (pRawData == NULL) return NULL;
     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
-    size_t argmin = 0;
+    // size_t argmin = 0;
+    uint32_t minHashValue;
+    __m128i minimumVector;
+    __m128i seed;
+    __m128i argmin;
+    size_t argmin_size_t = 0;
     for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
             size_t nearestNeighborsValue = MAX_VALUE;      
-            __m128i minimumVector = {MAX_VALUE, MAX_VALUE, MAX_VALUE, MAX_VALUE};
-            for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); i+=4) {
-                __m128i value = {(pRawData->getNextElement(pInstance, i) +1), 
+            minimumVector = _mm_set_epi32(MAX_VALUE, MAX_VALUE, MAX_VALUE, MAX_VALUE);
+            argmin = _mm_set_epi32(0,0,0,0);
+            for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance) - 4; i+=4) {
+                __m128i value = _mm_set_epi32((pRawData->getNextElement(pInstance, i) +1), 
                                     (pRawData->getNextElement(pInstance, i+1) +1),
                                     (pRawData->getNextElement(pInstance, i+2) +1),
-                                    (pRawData->getNextElement(pInstance, i+3) +1)};
-                __m128i hashValue = mHash->hashSSE(value, (j+1), MAX_VALUE);
-
+                                    (pRawData->getNextElement(pInstance, i+3) +1));
+                seed = _mm_set_epi32(j+1, j+1, j+1, j+1);                   
+                __m128i hashValue = mHash->hash_SSE(value, seed);
+                // if (i == 0 && j == 0) {
+                //     std::cout << hashValue[0] << "; "<< hashValue[1] << "; "<< hashValue[2] << "; "<< hashValue[3] << std::endl;
+                // }
+                for (size_t k = 0; k < 4; ++k) {
+                    if (hashValue[k] < minimumVector[k]) {
+                        minimumVector[k] = hashValue[k];
+                        argmin[k] = pRawData->getNextElement(pInstance, i+k);
+                    }
+                }
+                // _mm_cmplt_epi32
                 // compare all four hash values and store minimum for each element
 
-                if (hashValue < nearestNeighborsValue) {
-                    nearestNeighborsValue = hashValue;
-                    argmin = pRawData->getNextElement(pInstance, i);
+                // if (hashValue < nearestNeighborsValue) {
+                //     nearestNeighborsValue = hashValue;
+                //     argmin = pRawData->getNextElement(pInstance, i);
+                // }
+            }
+            minHashValue = minimumVector[0];
+            argmin_size_t = argmin[0];
+            for (size_t k = 1; k < 4; ++k) {
+                if (minimumVector[k] < minHashValue) {
+                    minHashValue = minimumVector[k];
+                    argmin_size_t = argmin[k];
                 }
             }
-
-            (*signature)[j] = argmin;
+            (*signature)[j] = argmin_size_t;
             
     }
     // reduce number of hash values by a factor of mShingleSize
@@ -132,21 +155,26 @@ vsize_t* InverseIndex::computeSignatureSSE(SparseMatrixFloat* pRawData, const si
 }  
 // compute the signature for one instance
 vsize_t* InverseIndex::computeSignature(SparseMatrixFloat* pRawData, const size_t pInstance) {
-
+    // return computeSignatureSSE(pRawData, pInstance);
     if (pRawData == NULL) return NULL;
     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
     size_t argmin = 0;
     for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
-            size_t nearestNeighborsValue = MAX_VALUE;        
+            uint32_t nearestNeighborsValue = MAX_VALUE;        
             for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); i++) {
-                size_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), (j+1), MAX_VALUE);
+                uint32_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), (j+1), MAX_VALUE);
+                // if (i < 4 && j == 0) {
+                //     std::cout << hashValue << "; ";
+                // }
                 if (hashValue < nearestNeighborsValue) {
                     nearestNeighborsValue = hashValue;
                     argmin = pRawData->getNextElement(pInstance, i);
                 }
             }
             (*signature)[j] = argmin;
-            
+            if (j == 0) {
+                std::cout << std::endl;
+            }
     }
     // reduce number of hash values by a factor of mShingleSize
     if (mShingle) {
