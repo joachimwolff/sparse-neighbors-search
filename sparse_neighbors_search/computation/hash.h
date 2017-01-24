@@ -30,8 +30,6 @@ class Hash {
         keys = _mm_slli_epi32(keys, 15);
         keys = _mm_add_epi32(keys_temp_int, keys);
 
-
-
         // key = key ^ (key >> 12);
         keys_temp_int = keys;
         keys = _mm_srli_epi32(keys, 12);
@@ -51,7 +49,7 @@ class Hash {
         // key = key * 2057;
         uint32_t value = 2057;
         __m128i constant_value = _mm_set_epi32(value, value, value, value);
-        keys = _mm_mul_epi32_4int(constant_value, keys);
+        keys = _mm_mullo_epi32(constant_value, keys);
         // return keys;
 
         // key = key ^ (key >> 16);
@@ -68,20 +66,13 @@ class Hash {
           // source:  Thomas Wang: Integer Hash Functions, 1997 / 2007 
           // https://gist.github.com/badboy/6267743
           key = key * A;
-          
           key = ~key + (key << 15);
           key = key ^ (key >> 12);
-          
           key = key + (key << 2);
-            // key = (key << 2);
-          
           key = key ^ (key >> 4);
-        
           key = key * 2057;
-        //   return key;
-          
           key = key ^ (key >> 16);
-          return key % aModulo;
+          return key;// % aModulo;
     }; 
     
     short unsigned int shortHashSimple(short unsigned int key, short unsigned int aModulo) {
@@ -109,7 +100,7 @@ class Hash {
         return hash_function(pKey*pSeed) % pModulo;
     };
     __m128i hash_SSE(__m128i pKeys, __m128i pSeed) {
-        pKeys = _mm_mul_epi32_4int(pKeys, pSeed);
+        pKeys = _mm_mullo_epi32(pKeys, pSeed);
 
         // return pKeys;
         return hash_SSE_priv(pKeys);
