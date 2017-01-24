@@ -20,43 +20,43 @@ class Hash {
         // conversion to float
         __m128 keys_float = _mm_cvtepi32_ps(keys);
         // multiplication of key * A
-        keys_float =_mm_mul_ps(keys_float, keys_temp);
+        keys_float = _mm_mul_ps(keys_float, keys_temp);
         // conversion back to int
         keys = _mm_cvtps_epi32(keys_float);
 
         
-        // // key = ~key + (key << 15); 
-        // __m128i keys_temp_int = keys;
-        // // negate keys_temp
-        // keys_temp_int = _mm_not_si128(keys_temp_int);
-        // // left shift 15 bits
-        // keys = _mm_slli_epi32(keys, 15);
-        // keys = _mm_add_epi32(keys_temp_int, keys);
+        // key = ~key + (key << 15); 
+        __m128i keys_temp_int = keys;
+        // negate keys_temp
+        keys_temp_int = _mm_not_si128(keys_temp_int);
+        // left shift 15 bits
+        keys = _mm_slli_epi32(keys, 15);
+        keys = _mm_add_epi32(keys_temp_int, keys);
 
-        // // key = key ^ (key >> 12);
-        // keys_temp_int = keys;
-        // keys = _mm_srli_epi32(keys, 12);
-        // keys = _mm_xor_si128(keys_temp_int, keys);
+        // key = key ^ (key >> 12);
+        keys_temp_int = keys;
+        keys = _mm_srli_epi32(keys, 12);
+        keys = _mm_xor_si128(keys_temp_int, keys);
 
-        // // key = key + (key << 2);
-        // keys_temp_int = keys;
-        // keys = _mm_slli_epi32(keys, 2);
-        // keys = _mm_add_epi32(keys_temp_int, keys);
+        // key = key + (key << 2);
+        keys_temp_int = keys;
+        keys = _mm_slli_epi32(keys, 2);
+        keys = _mm_add_epi32(keys_temp_int, keys);
 
-        // // key = key ^ (key >> 4);
-        // keys_temp_int = keys;
-        // keys = _mm_srli_epi32(keys, 4);
-        // keys = _mm_xor_si128(keys_temp_int, keys);           
+        // key = key ^ (key >> 4);
+        keys_temp_int = keys;
+        keys = _mm_srli_epi32(keys, 4);
+        keys = _mm_xor_si128(keys_temp_int, keys);           
 
-        // // key = key * 2057;
-        // uint32_t value = 2057;
-        // __m128i constant_value = _mm_set_epi32(value, value, value, value);
-        // keys = _mm_mul_epi32(constant_value, keys);
+        // key = key * 2057;
+        uint32_t value = 2057;
+        __m128i constant_value = _mm_set_epi32(value, value, value, value);
+        keys = _mm_mul_epi32(constant_value, keys);
 
-        // // key = key ^ (key >> 16);
-        // keys_temp_int = keys;
-        // keys = _mm_srli_epi32(keys, 16);
-        // keys = _mm_xor_si128(keys_temp_int, keys); 
+        // key = key ^ (key >> 16);
+        keys_temp_int = keys;
+        keys = _mm_srli_epi32(keys, 16);
+        keys = _mm_xor_si128(keys_temp_int, keys); 
 
         // return key % aModulo;
         // exit(0);
@@ -88,8 +88,8 @@ class Hash {
     };
   public:      
     uint32_t hash(uint32_t pKey, uint32_t pSeed, uint32_t pModulo) {
-        return pKey * pSeed;
-        // return size_tHashSimple(pKey * pSeed, pModulo);
+        // return pKey * pSeed;
+        return size_tHashSimple(pKey * pSeed, pModulo);
     };
     short unsigned int hashShort(short unsigned int pKey, short unsigned int pSeed, short unsigned int pModulo) {
         return shortHashSimple(pKey * pSeed, pModulo);
@@ -101,9 +101,9 @@ class Hash {
         return hash_function(pKey*pSeed) % pModulo;
     };
     __m128i hash_SSE(__m128i pKeys, __m128i pSeed) {
-        pKeys = _mm_mul_epi32(pKeys, pSeed);
-        return pKeys;
-        // return hash_SSE_priv(pKeys);
+        pKeys = _mm_mul_epu32(pKeys, pSeed);
+        // return pKeys;
+        return hash_SSE_priv(pKeys);
     }
 };
 #endif // HASH_H
