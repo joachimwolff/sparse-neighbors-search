@@ -24,7 +24,7 @@
 #include <time.h>
 #include "inverseIndex.h"
 #include "kSizeSortedMap.h"
-
+#include "sseExtension.h"
 class sort_map {
   public:
     size_t key;
@@ -112,34 +112,23 @@ vsize_t* InverseIndex::computeSignatureSSE(SparseMatrixFloat* pRawData, const si
             size_t nearestNeighborsValue = MAX_VALUE;      
             minimumVector = _mm_set_epi32(MAX_VALUE, MAX_VALUE, MAX_VALUE, MAX_VALUE);
             argmin = _mm_set_epi32(0,0,0,0);
+            seed = _mm_set_epi32(j+1, j+1, j+1, j+1);                   
+
             for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance) - 4; i+=4) {
-                __m128i value = _mm_set_epi32((pRawData->getNextElement(pInstance, i) +1), 
+                __m128i value = _mm_setr_epi32((pRawData->getNextElement(pInstance, i) +1), 
                                     (pRawData->getNextElement(pInstance, i+1) +1),
                                     (pRawData->getNextElement(pInstance, i+2) +1),
                                     (pRawData->getNextElement(pInstance, i+3) +1));
-                seed = _mm_set_epi32(j+1, j+1, j+1, j+1);                   
                 __m128i hashValue = mHash->hash_SSE(value, seed);
-                // if (i == 0 && j == 0) {
-                //     std::cout << hashValue[0] << "; "<< hashValue[1] << "; "<< hashValue[2] << "; "<< hashValue[3] << std::endl;
-                // }
-                for (size_t k = 0; k < 4; ++k) {
-                    if (hashValue[k] < minimumVector[k]) {
-                        minimumVector[k] = hashValue[k];
-                        argmin[k] = pRawData->getNextElement(pInstance, i+k);
-                    }
-                }
-                // _mm_cmplt_epi32
+                
+                minimumVector = _mm_min_epu32(hashValue, minimumVector);
                 // compare all four hash values and store minimum for each element
-
-                // if (hashValue < nearestNeighborsValue) {
-                //     nearestNeighborsValue = hashValue;
-                //     argmin = pRawData->getNextElement(pInstance, i);
-                // }
+                argmin = _mm_argmin_change_epi32(argmin, minimumVector, hashValue);
             }
-            minHashValue = minimumVector[0];
-            argmin_size_t = argmin[0];
+            minHashValue = (uint32_t) _mm_extract_epi32(minimumVector, 0);
+            argmin_size_t = (uint32_t) _mm_extract_epi32(argmin, 0);
             for (size_t k = 1; k < 4; ++k) {
-                if (minimumVector[k] < minHashValue) {
+                if ((uint32_t) _mm_extract_epi32(minimumVector, k) < minHashValue) {
                     minHashValue = minimumVector[k];
                     argmin_size_t = argmin[k];
                 }
@@ -159,10 +148,12 @@ vsize_t* InverseIndex::computeSignature(SparseMatrixFloat* pRawData, const size_
     if (pRawData == NULL) return NULL;
     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
     size_t argmin = 0;
+    size_t seed = 0;
     for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
-            uint32_t nearestNeighborsValue = MAX_VALUE;        
+            uint32_t nearestNeighborsValue = MAX_VALUE;    
+            seed = j + 1;    
             for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); i++) {
-                uint32_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), (j+1), MAX_VALUE);
+                uint32_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), seed, MAX_VALUE);
                 // if (i < 4 && j == 0) {
                 //     std::cout << hashValue << "; ";
                 // }
