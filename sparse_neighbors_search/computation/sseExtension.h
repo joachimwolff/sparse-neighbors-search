@@ -29,12 +29,13 @@ static inline uint32_t _mm_get_argmin(const __m128i &pArgmin, const __m128i &pMi
     __m128i max3 = _mm_shuffle_epi32(max2, _MM_SHUFFLE(0,0,0,1));
     __m128i max4 = _mm_min_epi32(max2,max3);
     int minValue = _mm_cvtsi128_si32(max4);
+    // std::cout << minValue << std::endl;
      __m128i compare = _mm_setr_epi32(minValue, minValue, minValue, minValue);
      __m128i argmin = _mm_and_si128(pArgmin, _mm_cmpeq_epi32(pMinHashValues, compare));
     max1 = _mm_shuffle_epi32(argmin, _MM_SHUFFLE(0,0,3,2));
-    max2 = _mm_min_epi32(argmin,max1);
+    max2 = _mm_max_epi32(argmin,max1);
     max3 = _mm_shuffle_epi32(max2, _MM_SHUFFLE(0,0,0,1));
-    max4 = _mm_min_epi32(max2,max3);
+    max4 = _mm_max_epi32(max2,max3); 
     return (uint32_t) _mm_cvtsi128_si32(max4);
 }
 #endif // SSE_EXTENSION 
