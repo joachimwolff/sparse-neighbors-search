@@ -20,7 +20,7 @@
 #include <omp.h>
 #endif
 #include <nmmintrin.h>
-
+#include <stdlib.h>
 #include <time.h>
 #include "inverseIndex.h"
 #include "kSizeSortedMap.h"
@@ -107,7 +107,7 @@ vsize_t* InverseIndex::computeSignatureSSE(SparseMatrixFloat* pRawData, const si
     __m128i minimumVector;
     __m128i seed;
     __m128i argmin;
-    size_t argmin_size_t = 0;
+    // size_t argmin_size_t = 0;
     for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
             size_t nearestNeighborsValue = MAX_VALUE;      
             minimumVector = _mm_set_epi32(MAX_VALUE, MAX_VALUE, MAX_VALUE, MAX_VALUE);
@@ -123,18 +123,10 @@ vsize_t* InverseIndex::computeSignatureSSE(SparseMatrixFloat* pRawData, const si
                 
                 minimumVector = _mm_min_epu32(hashValue, minimumVector);
                 // compare all four hash values and store minimum for each element
-                argmin = _mm_argmin_change_epi32(argmin, minimumVector, hashValue);
+                argmin = _mm_argmin_change_epi32(argmin, minimumVector, hashValue, value);
             }
-            minHashValue = (uint32_t) _mm_extract_epi32(minimumVector, 0);
-            argmin_size_t = (uint32_t) _mm_extract_epi32(argmin, 0);
-            for (size_t k = 1; k < 4; ++k) {
-                if ((uint32_t) _mm_extract_epi32(minimumVector, k) < minHashValue) {
-                    minHashValue = minimumVector[k];
-                    argmin_size_t = argmin[k];
-                }
-            }
-            (*signature)[j] = argmin_size_t;
-            
+             
+            (*signature)[j] = _mm_get_argmin(argmin, minimumVector);
     }
     // reduce number of hash values by a factor of mShingleSize
     if (mShingle) {
@@ -144,7 +136,7 @@ vsize_t* InverseIndex::computeSignatureSSE(SparseMatrixFloat* pRawData, const si
 }  
 // compute the signature for one instance
 vsize_t* InverseIndex::computeSignature(SparseMatrixFloat* pRawData, const size_t pInstance) {
-    // return computeSignatureSSE(pRawData, pInstance);
+    return computeSignatureSSE(pRawData, pInstance);
     if (pRawData == NULL) return NULL;
     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
     size_t argmin = 0;
@@ -163,9 +155,9 @@ vsize_t* InverseIndex::computeSignature(SparseMatrixFloat* pRawData, const size_
                 }
             }
             (*signature)[j] = argmin;
-            if (j == 0) {
-                std::cout << std::endl;
-            }
+            // if (j == 0) {
+            //     std::cout << std::endl;
+            // }
     }
     // reduce number of hash values by a factor of mShingleSize
     if (mShingle) {
