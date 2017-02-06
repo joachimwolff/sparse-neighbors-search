@@ -49,7 +49,7 @@ if __name__ == "__main__":
     # mmwrite(open("bursi_test.mtx", 'w+'), dataset)
     # print type(data)
     start = time.time()
-    sklearn = NearestNeighbors(n_neighbors=5, n_jobs=4)
+    sklearn = NearestNeighbors(n_neighbors=5, n_jobs=8)
     sklearn.fit(dataset)
     end = time.time()
     print "fitting: ", end - start
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     print 'neighbors computing time: ', end - start 
 
     start = time.time()
-    minhash = MinHash(n_neighbors=5, number_of_cores=4)
+    minhash = MinHash(n_neighbors=5, number_of_cores=8)
     minhash.fit(dataset)
     end = time.time()
     print "fitting: ", end - start
