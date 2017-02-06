@@ -9,6 +9,12 @@ To use it:
     minHash.fit(X)
     minHash.kneighbors(return_distance=False)
 
+Disclaimer
+----------
+
+With the update to version 0.3 'Charlie Brown' which needs support for SSE4.1 by your operating system and cpu macOS is no longer supported. Feel free to use it and or to get it run on this platform but I cannot test it there and probably it will not run.
+
+
 Features
 --------
 
