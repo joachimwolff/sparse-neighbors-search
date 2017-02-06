@@ -6,7 +6,7 @@
 # Chair of Bioinformatics
 # Department of Computer Science
 # Faculty of Engineering
-# Albert-Ludwig-University Freiburg im Breisgau
+# Albert-Ludwigs-University Freiburg im Breisgau
 
 from sklearn.cluster import DBSCAN
 from ..neighbors import MinHash
