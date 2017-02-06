@@ -30,7 +30,7 @@ __copyright__ = "Copyright 2016, Joachim Wolff"
 __credits__ = ["Milad Miladi", "Fabrizio Costa"]
 __license__ = "MIT"
 __date__ = time.strftime("%d/%m/%Y")
-__version_ = "0.1"
+__version_ = "0.3"
 
 from setuptools import setup, find_packages
 import platform
@@ -52,15 +52,15 @@ sources_list = ['sparse_neighbors_search/computation/interface/nearestNeighbors_
                  'sparse_neighbors_search/computation/inverseIndex.cpp', 'sparse_neighbors_search/computation/inverseIndexStorageUnorderedMap.cpp']
 depends_list = ['sparse_neighbors_search/computation/nearestNeighbors.h', 'sparse_neighbors_search/computation/inverseIndex.h', 'sparse_neighbors_search/computation/kSizeSortedMap.h',
          'sparse_neighbors_search/computation/typeDefinitions.h', 'sparse_neighbors_search/computation/parsePythonToCpp.h', 'sparse_neighbors_search/computation/sparseMatrix.h',
-          'sparse_neighbors_search/computation/inverseIndexStorage.h', 'sparse_neighbors_search/computation/inverseIndexStorageUnorderedMap.h','sparse_neighbors_search/computation/hash.h']
+          'sparse_neighbors_search/computation/inverseIndexStorage.h', 'sparse_neighbors_search/computation/inverseIndexStorageUnorderedMap.h','sparse_neighbors_search/computation/sseExtension.h','sparse_neighbors_search/computation/hash.h']
 openmp = True
 if "--openmp" in sys.argv:
     module1 = Extension('_nearestNeighbors', sources = sources_list, depends = depends_list,
          define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
-        extra_compile_args=["-fopenmp", "-O3", "-std=c++11", "-funroll-loops"])
+        extra_compile_args=["-fopenmp", "-O3", "-std=c++11", "-funroll-loops", "-msse4.1"])
 elif platform.system() == 'Darwin' or "--noopenmp" in sys.argv:
     module1 = Extension('_nearestNeighbors', sources = sources_list, depends = depends_list, 
-        extra_compile_args=["-O3", "-std=c++11", "-funroll-loops"])
+        extra_compile_args=["-O3", "-std=c++11", "-funroll-loops", "-msse4.1"])
     openmp = False
 
 else:
@@ -273,7 +273,7 @@ else:
                     # extra_link_args={'gcc': ["-lm", "-lrt","-lgomp"], 
                     #                   'nvcc' :[]  },
                     extra_link_args=["-lm", "-lrt","-lgomp"],
-                    extra_compile_args={'gcc': ["-fopenmp", "-O3", "-std=c++11", "-funroll-loops"],
+                    extra_compile_args={'gcc': ["-fopenmp", "-O3", "-std=c++11", "-funroll-loops", "-msse4.1"],
                                         'nvcc': ['-arch=sm_20', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
                     include_dirs = [CUDA['include'], 'src'],#, '/home/joachim/Software/cub-1.5.1'],
                     platforms = "Linux, Mac OS X"
@@ -292,7 +292,7 @@ else:
                     # extra_link_args={'gcc': ["-lm", "-lrt","-lgomp"], 
                     #                   'nvcc' :[]  },
                     extra_link_args=["-lm", "-lrt","-lgomp"],
-                    extra_compile_args={'gcc': ["-O3", "-std=c++11"],
+                    extra_compile_args={'gcc': ["-O3", "-std=c++11", "-msse4.1"],
                                         'nvcc': ['-arch=sm_30', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
                     include_dirs = [CUDA['include'], 'src'],#, '/home/joachim/Software/cub-1.5.1'],
                     platforms = "Linux, Mac OS X"
@@ -323,4 +323,4 @@ else:
                     'sparse_neighbors_search.cluster',
                 ],
         platforms = "Linux, Mac OS X",
-        version = '0.1')
+        version = '0.3')
