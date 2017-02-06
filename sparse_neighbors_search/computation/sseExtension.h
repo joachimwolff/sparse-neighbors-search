@@ -1,5 +1,6 @@
 // #include <xmmintrin.h>
-#include <emmintrin.h>
+// #include <emmintrin.h>
+#include <smmintrin.h>
 #ifndef SSE_EXTENSION
 #define SSE_EXTENSION
 // source: http://stackoverflow.com/questions/10500766/sse-multiplication-of-4-32-bit-integers
