@@ -1,9 +1,8 @@
 #include "typeDefinitions.h"
-#include <functional>
-#include <xmmintrin.h>
-#include <emmintrin.h>
-// #include <intrin.h>
 #include "sseExtension.h"
+
+#include <smmintrin.h>
+#include <functional>
 #ifndef HASH_H
 #define HASH_H
 class Hash {
