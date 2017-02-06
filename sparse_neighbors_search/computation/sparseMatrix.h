@@ -9,8 +9,6 @@
  Albert-Ludwig-University Freiburg im Breisgau
 **/
 #include <math.h>
-#include <xmmintrin.h>
-// #include <stdio.h>
 #include <cstring>
 #include <algorithm>
 #include <iostream>
