@@ -382,10 +382,39 @@ static PyMethodDef nearestNeighborsFunctions[] = {
     
     {NULL, NULL, 0, NULL}
 };
+static struct PyModuleDef nearestNeighborsModule = {
+    PyModuleDef_HEAD_INIT,
+    "_nearestNeighbors",
+    NULL,
+    -1,
+    nearestNeighborsFunctions
+};
+// definition of the module for python
+// PyMODINIT_FUNC
+// init_nearestNeighbors(void)
+// {
+//     (void) Py_InitModule("_nearestNeighbors", nearestNeighborsFunctions);
+// }
 
 // definition of the module for python
 PyMODINIT_FUNC
 init_nearestNeighbors(void)
 {
-    (void) Py_InitModule("_nearestNeighbors", nearestNeighborsFunctions);
+    return PyModule_Create(&nearestNeighborsModule);
+    // (void) Py_InitModule("_nearestNeighbors", nearestNeighborsModule);
 }
+
+// // definition of available functions for python and which function parsing function in c++ should be called.
+// static PyMethodDef hicBuildMatrixFunctions[] = {
+//     {"buildMatrix", (PyCFunction) buildMatrix, METH_VARARGS, "Builds a Hi-C interaction matrix."},
+   
+//     {NULL, NULL, 0, NULL}
+// };
+
+
+
+// // definition of the module for python
+// PyMODINIT_FUNC PyInit_hicBuildMatrixCpp(void)
+// {
+//     return PyModule_Create(&hicBuildMatrixCppModule);
+// }

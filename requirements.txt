@@ -1,0 +1,7 @@
+python >=3.6
+cython
+numpy
+scipy
+scikit-learn
+gxx_linux-64
+openmp

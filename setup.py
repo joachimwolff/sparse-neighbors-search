@@ -30,7 +30,7 @@ __copyright__ = "Copyright 2016, Joachim Wolff"
 __credits__ = ["Milad Miladi", "Fabrizio Costa"]
 __license__ = "MIT"
 __date__ = time.strftime("%d/%m/%Y")
-__version_ = "0.3"
+__version__ = "0.4"
 
 from setuptools import setup, find_packages
 import platform
@@ -116,8 +116,8 @@ def locate_cuda():
     cudaconfig = {'home':home, 'nvcc':nvcc,
                   'include': pjoin(home, 'include'),
                   'lib64': pjoin(home, 'lib64')}
-    for k, v in cudaconfig.iteritems():
-        if not os.path.exists(v):
+    for k, v in cudaconfig.items():
+        if not os.path.exists(cudaconfig[k]):
             # raise EnvironmentError('The CUDA %s path could not be located in %s' % (k, v))
             return None
 
@@ -250,7 +250,7 @@ if (locate_cuda() == None or no_cuda):
                         #  'bioinf.computation',
                     ],
             platforms = "Linux, Mac OS X",
-            version = '0.1'
+            version = __version__
             )
 else:
     print ("CUDA found on system. Installing MinHash with CUDA-Support.")
@@ -314,13 +314,13 @@ else:
         description='An approximate computation of nearest neighbors based on locality sensitive hash functions.',
         long_description=open('README.md').read(),
         install_requires=[
-        "numpy >= 1.8.0",
-        "scipy >= 0.14.0",
-        "scikit-learn >= 0.16.0",],
+        "numpy >= 1.16.0",
+        "scipy >= 1.20.0",
+        "scikit-learn >= 0.20.0",],
         # ext_modules = [module1],
         packages=['sparse_neighbors_search',
                     'sparse_neighbors_search.neighbors',
                     'sparse_neighbors_search.cluster',
                 ],
         platforms = "Linux, Mac OS X",
-        version = '0.3')
+        version = __version__)
