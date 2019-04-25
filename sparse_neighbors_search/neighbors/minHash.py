@@ -10,7 +10,7 @@
 
 __author__ = 'joachimwolff'
 from scipy.sparse import csr_matrix
-from nearestNeighborsCppInterface import _NearestNeighborsCppInterface
+from .nearestNeighborsCppInterface import _NearestNeighborsCppInterface
 
 class MinHash():
     """Approximate unsupervised learner for implementing neighbor searches on sparse data sets. Based on a

@@ -398,7 +398,7 @@ static struct PyModuleDef nearestNeighborsModule = {
 
 // definition of the module for python
 PyMODINIT_FUNC
-init_nearestNeighbors(void)
+PyInit__nearestNeighbors(void)
 {
     return PyModule_Create(&nearestNeighborsModule);
     // (void) Py_InitModule("_nearestNeighbors", nearestNeighborsModule);
