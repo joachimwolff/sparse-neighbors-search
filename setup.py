@@ -26,7 +26,7 @@
 import time 
 __author__ = "Joachim Wolff"
 __contact__ = "wolffj@informatik.uni-freiburg.de"
-__copyright__ = "Copyright 2016, Joachim Wolff"
+__copyright__ = "Copyright 2019, Joachim Wolff"
 __credits__ = ["Milad Miladi", "Fabrizio Costa"]
 __license__ = "MIT"
 __date__ = time.strftime("%d/%m/%Y")
@@ -249,7 +249,7 @@ if (locate_cuda() == None or no_cuda):
                         'sparse_neighbors_search.cluster',
                         #  'bioinf.computation',
                     ],
-            platforms = "Linux, Mac OS X",
+            platforms = "Linux",
             version = __version__
             )
 else:
