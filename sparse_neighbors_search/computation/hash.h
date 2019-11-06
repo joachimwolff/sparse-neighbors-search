@@ -37,7 +37,6 @@ class Hash {
         // key = key + (key << 2);
         keys_temp_int = keys;
         keys = _mm_slli_epi32(keys, 2);
-
         keys = _mm_add_epi32(keys_temp_int, keys);
 
         // key = key ^ (key >> 4);
@@ -49,15 +48,12 @@ class Hash {
         uint32_t value = 2057;
         __m128i constant_value = _mm_set_epi32(value, value, value, value);
         keys = _mm_mullo_epi32(constant_value, keys);
-        // return keys;
 
         // key = key ^ (key >> 16);
         keys_temp_int = keys;
         keys = _mm_srli_epi32(keys, 16);
         keys = _mm_xor_si128(keys_temp_int, keys); 
 
-        // return key % aModulo;
-        // exit(0);
         return keys;
 
     }
@@ -86,7 +82,6 @@ class Hash {
     };
   public:      
     uint32_t hash(uint32_t pKey, uint32_t pSeed, uint32_t pModulo) {
-        // return pKey * pSeed;
         return size_tHashSimple(pKey * pSeed, pModulo);
     };
     short unsigned int hashShort(short unsigned int pKey, short unsigned int pSeed, short unsigned int pModulo) {
@@ -95,13 +90,10 @@ class Hash {
     
     size_t hash_cpp_lib(size_t pKey, size_t pSeed, size_t pModulo) {
         std::hash<size_t> hash_function;
-        
         return hash_function(pKey*pSeed) % pModulo;
     };
     __m128i hash_SSE(__m128i pKeys, __m128i pSeed) {
         pKeys = _mm_mullo_epi32(pKeys, pSeed);
-
-        // return pKeys;
         return hash_SSE_priv(pKeys);
     }
 };

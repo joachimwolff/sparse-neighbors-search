@@ -7,7 +7,7 @@
  Chair of Bioinformatics
  Department of Computer Science
  Faculty of Engineering
- Albert-Ludwig-University Freiburg im Breisgau
+ Albert-Ludwigs-University Freiburg im Breisgau
 **/
  
 #ifndef TYPE_DEFINTIONS_H
