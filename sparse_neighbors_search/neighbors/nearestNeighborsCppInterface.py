@@ -15,6 +15,7 @@ from sklearn.random_projection import SparseRandomProjection
 from sklearn import random_projection
 from sklearn.utils import check_X_y
 from numpy import asarray
+import numpy as np
 
 import math
 import _nearestNeighbors
@@ -144,13 +145,14 @@ class _NearestNeighborsCppInterface():
         X_csr = csr_matrix(X)
        
         self._index_elements_count = X_csr.shape[0]
-        instances, features = X_csr.nonzero()
+        # instances, features = X_csr.nonzero()
+        
         maxFeatures = int(max(X_csr.getnnz(1)))
         
-        data = X_csr.data
+        # data = X_csr.data
         
         # returns a pointer to the inverse index stored in c++
-        self._pointer_address_of_nearestNeighbors_object = _nearestNeighbors.fit(instances.tolist(), features.tolist(), data.tolist(), 
+        self._pointer_address_of_nearestNeighbors_object = _nearestNeighbors.fit(X_csr.indptr.tolist(), X_csr.indices.tolist(), X_csr.data.tolist(), 
                                                     X_csr.shape[0], maxFeatures,
                                                     self._pointer_address_of_nearestNeighbors_object)
         

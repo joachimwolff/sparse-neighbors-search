@@ -1,3 +1,3 @@
-from minHashSpectralClustering import MinHashSpectralClustering
-from minHashDBSCAN import MinHashDBSCAN
-from minHashClustering import MinHashClustering
+from .minHashSpectralClustering import MinHashSpectralClustering
+from .minHashDBSCAN import MinHashDBSCAN
+from .minHashClustering import MinHashClustering

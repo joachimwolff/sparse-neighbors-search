@@ -19,7 +19,7 @@ from sklearn.utils import check_X_y
 from sklearn.metrics import accuracy_score
 import logging
 
-from wtaHash import WtaHash
+from .wtaHash import WtaHash
 
 class WtaHashClassifier():
     """Classifier implementing the k-nearest neighbors vote on sparse data sets.
