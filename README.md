@@ -22,8 +22,16 @@ Features
 - Efficient approximate k-nearest neighbors search
 - works only on sparse datasets
 
-Installation
-------------
+## Installation
+
+#### Installation via conda
+
+The package is available via the bioconda channel:
+
+	conda install sparse-neighbors-search -c bioconda
+
+
+#### Installation from source
 
 Install sparse_neighbors_search by running:
 
