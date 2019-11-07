@@ -214,7 +214,9 @@ def customize_compiler_for_nvcc(self):
         if os.path.splitext(src)[1] == '.cpp' or os.path.splitext(src)[1] == '.h':
             if '-O2' in self.compiler_so:
                 self.compiler_so.remove('-O2')
+            if '-g' in self.compiler_so:
                 self.compiler_so.remove('-g')
+            if '-DNDEBUG' in self.compiler_so:
                 self.compiler_so.remove('-DNDEBUG')
 
     # inject our redefined _compile method into the class
@@ -239,9 +241,9 @@ if (locate_cuda() == None or no_cuda):
             description='An approximate computation of nearest neighbors based on locality sensitive hash functions.',
             long_description=open('README.md').read(),
             install_requires=[
-            "numpy >= 1.8.0",
-            "scipy >= 0.14.0",
-            "scikit-learn >= 0.16.0",],
+            "numpy >= 1.17.0",
+            "scipy >= 1.3.0",
+            "scikit-learn >= 0.21.0",],
             ext_modules = [module1],
             # cmdclass={'build_ext': custom_build_ext_gcc},
             packages=['sparse_neighbors_search',
@@ -274,7 +276,7 @@ else:
                     #                   'nvcc' :[]  },
                     extra_link_args=["-lm", "-lrt","-lgomp"],
                     extra_compile_args={'gcc': ["-fopenmp", "-O3", "-std=c++11", "-funroll-loops", "-msse4.1"],
-                                        'nvcc': ['-arch=sm_20', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
+                                        'nvcc': ['-arch=sm_60', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
                     include_dirs = [CUDA['include'], 'src'],#, '/home/joachim/Software/cub-1.5.1'],
                     platforms = "Linux, Mac OS X"
                     )
@@ -293,7 +295,7 @@ else:
                     #                   'nvcc' :[]  },
                     extra_link_args=["-lm", "-lrt","-lgomp"],
                     extra_compile_args={'gcc': ["-O3", "-std=c++11", "-msse4.1"],
-                                        'nvcc': ['-arch=sm_30', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
+                                        'nvcc': ['-arch=sm_60', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
                     include_dirs = [CUDA['include'], 'src'],#, '/home/joachim/Software/cub-1.5.1'],
                     platforms = "Linux, Mac OS X"
                     )
@@ -314,9 +316,9 @@ else:
         description='An approximate computation of nearest neighbors based on locality sensitive hash functions.',
         long_description=open('README.md').read(),
         install_requires=[
-        "numpy >= 1.16.0",
-        "scipy >= 1.20.0",
-        "scikit-learn >= 0.20.0",],
+        "numpy >= 1.17.0",
+        "scipy >= 1.3.0",
+        "scikit-learn >= 0.21.0",],
         # ext_modules = [module1],
         packages=['sparse_neighbors_search',
                     'sparse_neighbors_search.neighbors',
