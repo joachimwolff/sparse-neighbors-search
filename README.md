@@ -14,6 +14,7 @@ Disclaimer
 
 With the update to version 0.3 'Charlie Brown' which needs support for SSE4.1 by your operating system and cpu macOS is no longer supported. Feel free to use it and or to get it run on this platform but I cannot test it there and probably it will not run.
 
+Version 0.4 'Lucy van Pelt' drops Python 2 support and introduces the support of Python 3. Additional, CUDA compile level is set to sm_60, requiring CUDA 8 and a 'Pascal'  GPU architecture, GTX 10X0 family. However, nothing in the source code is changed feel free to set it to an older version.
 
 Features
 --------
