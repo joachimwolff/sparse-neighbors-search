@@ -10,8 +10,11 @@
 
 __author__ = 'joachimwolff'
 
-from neighbors.minHashClassifier import MinHashClassifier
-from neighbors.minHash import MinHash
-from neighbors.wtaHashClassifier import WtaHashClassifier
-from neighbors.wtaHash import WtaHash
-import cluster
+from .neighbors.minHashClassifier import MinHashClassifier
+from .neighbors.minHash import MinHash
+from .neighbors.wtaHashClassifier import WtaHashClassifier
+from .neighbors.wtaHash import WtaHash
+# import cluster
+from .cluster.minHashSpectralClustering import MinHashSpectralClustering
+from .cluster.minHashDBSCAN import MinHashDBSCAN
+from .cluster.minHashClustering import MinHashClustering

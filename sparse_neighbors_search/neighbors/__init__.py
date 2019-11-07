@@ -10,7 +10,7 @@
 
 __author__ = 'joachimwolff'
 
-from minHash import MinHash
-from minHashClassifier import MinHashClassifier
-from wtaHash import WtaHash
-from wtaHashClassifier import WtaHashClassifier
+from .minHash import MinHash
+from .minHashClassifier import MinHashClassifier
+from .wtaHash import WtaHash
+from .wtaHashClassifier import WtaHashClassifier

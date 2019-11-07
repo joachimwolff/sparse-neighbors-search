@@ -26,11 +26,11 @@
 import time 
 __author__ = "Joachim Wolff"
 __contact__ = "wolffj@informatik.uni-freiburg.de"
-__copyright__ = "Copyright 2016, Joachim Wolff"
+__copyright__ = "Copyright 2019, Joachim Wolff"
 __credits__ = ["Milad Miladi", "Fabrizio Costa"]
 __license__ = "MIT"
 __date__ = time.strftime("%d/%m/%Y")
-__version_ = "0.3"
+__version__ = "0.4"
 
 from setuptools import setup, find_packages
 import platform
@@ -116,8 +116,8 @@ def locate_cuda():
     cudaconfig = {'home':home, 'nvcc':nvcc,
                   'include': pjoin(home, 'include'),
                   'lib64': pjoin(home, 'lib64')}
-    for k, v in cudaconfig.iteritems():
-        if not os.path.exists(v):
+    for k, v in cudaconfig.items():
+        if not os.path.exists(cudaconfig[k]):
             # raise EnvironmentError('The CUDA %s path could not be located in %s' % (k, v))
             return None
 
@@ -214,7 +214,9 @@ def customize_compiler_for_nvcc(self):
         if os.path.splitext(src)[1] == '.cpp' or os.path.splitext(src)[1] == '.h':
             if '-O2' in self.compiler_so:
                 self.compiler_so.remove('-O2')
+            if '-g' in self.compiler_so:
                 self.compiler_so.remove('-g')
+            if '-DNDEBUG' in self.compiler_so:
                 self.compiler_so.remove('-DNDEBUG')
 
     # inject our redefined _compile method into the class
@@ -239,9 +241,9 @@ if (locate_cuda() == None or no_cuda):
             description='An approximate computation of nearest neighbors based on locality sensitive hash functions.',
             long_description=open('README.md').read(),
             install_requires=[
-            "numpy >= 1.8.0",
-            "scipy >= 0.14.0",
-            "scikit-learn >= 0.16.0",],
+            "numpy >= 1.17.0",
+            "scipy >= 1.3.0",
+            "scikit-learn >= 0.21.0",],
             ext_modules = [module1],
             # cmdclass={'build_ext': custom_build_ext_gcc},
             packages=['sparse_neighbors_search',
@@ -249,8 +251,8 @@ if (locate_cuda() == None or no_cuda):
                         'sparse_neighbors_search.cluster',
                         #  'bioinf.computation',
                     ],
-            platforms = "Linux, Mac OS X",
-            version = '0.1'
+            platforms = "Linux",
+            version = __version__
             )
 else:
     print ("CUDA found on system. Installing MinHash with CUDA-Support.")
@@ -274,7 +276,7 @@ else:
                     #                   'nvcc' :[]  },
                     extra_link_args=["-lm", "-lrt","-lgomp"],
                     extra_compile_args={'gcc': ["-fopenmp", "-O3", "-std=c++11", "-funroll-loops", "-msse4.1"],
-                                        'nvcc': ['-arch=sm_20', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
+                                        'nvcc': ['-arch=sm_60', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
                     include_dirs = [CUDA['include'], 'src'],#, '/home/joachim/Software/cub-1.5.1'],
                     platforms = "Linux, Mac OS X"
                     )
@@ -293,7 +295,7 @@ else:
                     #                   'nvcc' :[]  },
                     extra_link_args=["-lm", "-lrt","-lgomp"],
                     extra_compile_args={'gcc': ["-O3", "-std=c++11", "-msse4.1"],
-                                        'nvcc': ['-arch=sm_30', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
+                                        'nvcc': ['-arch=sm_60', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
                     include_dirs = [CUDA['include'], 'src'],#, '/home/joachim/Software/cub-1.5.1'],
                     platforms = "Linux, Mac OS X"
                     )
@@ -314,13 +316,13 @@ else:
         description='An approximate computation of nearest neighbors based on locality sensitive hash functions.',
         long_description=open('README.md').read(),
         install_requires=[
-        "numpy >= 1.8.0",
-        "scipy >= 0.14.0",
-        "scikit-learn >= 0.16.0",],
+        "numpy >= 1.17.0",
+        "scipy >= 1.3.0",
+        "scikit-learn >= 0.21.0",],
         # ext_modules = [module1],
         packages=['sparse_neighbors_search',
                     'sparse_neighbors_search.neighbors',
                     'sparse_neighbors_search.cluster',
                 ],
         platforms = "Linux, Mac OS X",
-        version = '0.3')
+        version = __version__)

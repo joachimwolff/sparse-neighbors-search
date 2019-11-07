@@ -18,45 +18,83 @@
 #ifndef PARSE_H
 #define PARSE_H
 
-SparseMatrixFloat* parseRawData(PyObject * pInstancesListObj, PyObject * pFeaturesListObj, PyObject * pDataListObj,
+SparseMatrixFloat* parseRawData(PyObject * pIndptrListObj, PyObject * pIndicesListObj, PyObject * pDataListObj,
                                               size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures) {
-    PyObject * instanceSize_tObj;
+    // PyObject * instanceSize_tObj;
     PyObject * featureSize_tObj;
+
+    PyObject * jstart_Obj;
+    PyObject * jend_Obj;
     PyObject * dataSize_tObj;
     size_t instanceOld = 0;
-    size_t sizeOfFeatureVector = PyList_Size(pInstancesListObj);
+    // size_t sizeOfFeatureVector = PyList_Size(pIndicesListObj);
+    size_t sizeOfInptr = PyList_Size(pIndptrListObj);
     SparseMatrixFloat* originalData = new SparseMatrixFloat(pMaxNumberOfInstances, pMaxNumberOfFeatures);
     size_t featuresCount = 0;
     size_t featureValue;
-    size_t instanceValue;
-    float dataValue;
-    for (size_t i = 0; i < sizeOfFeatureVector; ++i) {
-        instanceSize_tObj = PyList_GetItem(pInstancesListObj, i);
-        featureSize_tObj = PyList_GetItem(pFeaturesListObj, i);
-        dataSize_tObj = PyList_GetItem(pDataListObj, i); 
-        
-        PyArg_Parse(instanceSize_tObj, "k", &instanceValue);
-        PyArg_Parse(featureSize_tObj, "k", &featureValue);
-        PyArg_Parse(dataSize_tObj, "f", &dataValue);
-
-        if (instanceOld != instanceValue) {
-            originalData->insertToSizesOfInstances(instanceOld, featuresCount);
-            while (instanceOld+1 != instanceValue) {
-                ++instanceOld;
-                originalData->insertToSizesOfInstances(instanceOld, 0);
-            }
-            featuresCount = 0;
-        }
-        originalData->insertElement(instanceValue, featuresCount, featureValue, dataValue);
-        instanceOld = instanceValue;
-        ++featuresCount;
-    }
+    // size_t instanceValue;
     
-    originalData->insertToSizesOfInstances(instanceOld, featuresCount);
-    while (instanceOld+1 < pMaxNumberOfInstances) {
-        ++instanceOld;
-        originalData->insertToSizesOfInstances(instanceOld, 0);
+    float dataValue;
+
+    size_t i = 0;
+    size_t j_start = 0;
+    size_t j_end = 0;
+    while (i < sizeOfInptr - 1) {
+        // PyList_GetItem(pInstancesListObj, i);
+        jstart_Obj = PyList_GetItem(pIndptrListObj, i);
+        PyArg_Parse(jstart_Obj, "k", &j_start);
+
+        jend_Obj = PyList_GetItem(pIndptrListObj, i+1);
+        PyArg_Parse(jend_Obj, "k", &j_end);
+        // j_start = input_indptr(i);
+        // j_end = input_indptr(i+1);
+
+        while (j_start < j_end) {
+            
+            // triplets.push_back(T(i, input_indices(j_start),
+            //                 float(input_values(j_start))));
+            featureSize_tObj = PyList_GetItem(pIndicesListObj, j_start);
+            dataSize_tObj = PyList_GetItem(pDataListObj, j_start); 
+            PyArg_Parse(featureSize_tObj, "k", &featureValue);
+            PyArg_Parse(dataSize_tObj, "f", &dataValue);
+            originalData->insertElement(i, featuresCount, featureValue, dataValue);
+
+            j_start++;
+            featuresCount++;
+
+        }
+        originalData->insertToSizesOfInstances(i, featuresCount);
+        featuresCount = 0;
+        i++;
     }
+
+    // for (size_t i = 0; i < sizeOfFeatureVector; ++i) {
+    //     instanceSize_tObj = PyList_GetItem(pInstancesListObj, i);
+    //     featureSize_tObj = PyList_GetItem(pFeaturesListObj, i);
+    //     dataSize_tObj = PyList_GetItem(pDataListObj, i); 
+        
+    //     PyArg_Parse(instanceSize_tObj, "k", &instanceValue);
+    //     PyArg_Parse(featureSize_tObj, "k", &featureValue);
+    //     PyArg_Parse(dataSize_tObj, "f", &dataValue);
+
+    //     if (instanceOld != instanceValue) {
+    //         originalData->insertToSizesOfInstances(instanceOld, featuresCount);
+    //         while (instanceOld+1 != instanceValue) {
+    //             ++instanceOld;
+    //             originalData->insertToSizesOfInstances(instanceOld, 0);
+    //         }
+    //         featuresCount = 0;
+    //     }
+    //     originalData->insertElement(instanceValue, featuresCount, featureValue, dataValue);
+    //     instanceOld = instanceValue;
+    //     ++featuresCount;
+    // }
+    
+    // originalData->insertToSizesOfInstances(instanceOld, featuresCount);
+    // while (i+1 < pMaxNumberOfInstances) {
+    //     ++i;
+    //     originalData->insertToSizesOfInstances(i, 0);
+    // }
    
     return originalData;
 }

@@ -20,7 +20,7 @@ from sklearn.utils import check_X_y
 from sklearn.metrics import accuracy_score
 import logging
 
-from minHash import MinHash
+from .minHash import MinHash
 
 class MinHashClassifier():
     """Classifier implementing the k-nearest neighbors vote on sparse data sets.

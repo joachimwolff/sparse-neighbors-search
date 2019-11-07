@@ -41,7 +41,7 @@ class MinHashDBSCAN():
         self.n_neighbors = n_neighbors
 
         self._dbscan = DBSCAN(eps=self.eps, min_samples=min_samples, metric='precomputed',
-                algorithm=self.algorithm, leaf_size=self.leaf_size, p=self.p, random_state=self.random_state)
+                algorithm=self.algorithm, leaf_size=self.leaf_size, p=self.p)
         self.labels_ = None
         # only for compatible issues
     def fit(self, X, y=None):
