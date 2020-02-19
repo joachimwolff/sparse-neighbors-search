@@ -15,15 +15,25 @@ class MinHashClustering():
     def __init__(self, minHashObject, clusteringObject):
         self._minHashObject = minHashObject
         self._clusteringObject = clusteringObject
-        
-    def fit(self, X, y=None):
-        self._minHashObject.fit(X)
-        precomputed_graph = self._minHashObject.kneighbors_graph(mode='distance')
-        self._clusteringObject.fit(precomputed_graph)
+        self._precomputed_graph = None
+    def fit(self, X, y=None, saveMemory=None):
+
+        if saveMemory:
+            print('partial fitting')
+            self._minHashObject.fit(X.getrow(0))
+            for i in range(1, X.shape[0]):
+                self._minHashObject.partial_fit(X.getrow(i))
+            print('partial fitting ...DONE')
+            
+        else:
+            self._minHashObject.fit(X)
+        self._precomputed_graph = self._minHashObject.kneighbors_graph(mode='distance')
+        self._clusteringObject.fit(self._precomputed_graph)
 	
-    def fit_predict(self, X, y=None):
-        self.fit(X, y)
-        return self.predict(X, y)
+    def fit_predict(self, X, y=None, saveMemory=None):
+
+        self.fit(X, y, saveMemory=saveMemory)
+        return self.predict(self._precomputed_graph, y)
 		
     def predict(self, X, y=None):
         if hasattr(self._clusteringObject, 'labels_'):

@@ -43,6 +43,7 @@ class MinHashDBSCAN():
         self._dbscan = DBSCAN(eps=self.eps, min_samples=min_samples, metric='precomputed',
                 algorithm=self.algorithm, leaf_size=self.leaf_size, p=self.p)
         self.labels_ = None
+        self._precomputed_graph = None
         # only for compatible issues
     def fit(self, X, y=None):
         minHashNeighbors = MinHash(n_neighbors = self.n_neighbors, 
@@ -55,8 +56,8 @@ class MinHashDBSCAN():
         number_of_cores = self.number_of_cores,
         chunk_size = self.chunk_size, similarity=False)
         minHashNeighbors.fit(X, y)
-        graph_result = minHashNeighbors.kneighbors_graph(mode='distance')
-        self._dbscan.fit(graph_result)
+        self._precomputed_graph = minHashNeighbors.kneighbors_graph(mode='distance')
+        self._dbscan.fit(self._precomputed_graph)
         self.labels_ = self._dbscan.labels_
     def fit_predict(self, X, y=None):
         self.fit(X, y)

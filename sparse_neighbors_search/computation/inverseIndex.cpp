@@ -98,41 +98,68 @@ distributionInverseIndex* InverseIndex::getDistribution() {
 
 // compute the signature for one instance with SSE support
 vsize_t* InverseIndex::computeSignatureSSE(SparseMatrixFloat* pRawData, const size_t pInstance) {
+        // std::cout << __LINE__ << std::endl;
 
     if (pRawData == NULL) return NULL;
+        // std::cout << __LINE__ << std::endl;
+
     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
     __m128i minimumVector;
     __m128i seed;
     __m128i argmin;
     __m128i value;
     __m128i hashValue;
-    for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
-            minimumVector = _mm_set_epi32(MAX_VALUE, MAX_VALUE, MAX_VALUE, MAX_VALUE);
-            argmin = _mm_set_epi32(0,0,0,0);
-            seed = _mm_set_epi32(j+1, j+1, j+1, j+1);                   
+        // std::cout << __LINE__ << std::endl;
 
+    for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
+        // std::cout << __LINE__ << std::endl;
+
+            minimumVector = _mm_set_epi32(MAX_VALUE, MAX_VALUE, MAX_VALUE, MAX_VALUE);
+        // std::cout << __LINE__ << std::endl;
+
+            argmin = _mm_set_epi32(0,0,0,0);
+        // std::cout << __LINE__ << std::endl;
+
+            seed = _mm_set_epi32(j+1, j+1, j+1, j+1);                   
+        // std::cout << __LINE__ << std::endl;
+            // std::cout << "pInstance" << pInstance << std::endl;
             for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance) - 4; i+=4) {
+        // std::cout << __LINE__ << std::endl;
+                // std::cout << "length: " <<  pRawData->getSizeOfInstance(pInstance) << " i: " << i << std::endl;
                 value = _mm_setr_epi32((pRawData->getNextElement(pInstance, i) +1), 
                                     (pRawData->getNextElement(pInstance, i+1) +1),
                                     (pRawData->getNextElement(pInstance, i+2) +1),
                                     (pRawData->getNextElement(pInstance, i+3) +1));
                 hashValue = mHash->hash_SSE(value, seed);
+        // std::cout << __LINE__ << std::endl;
                 
                 minimumVector = _mm_min_epu32(hashValue, minimumVector);
                 // compare all four hash values and store minimum for each element
+        // std::cout << __LINE__ << std::endl;
+
                 argmin = _mm_argmin_change_epi32(argmin, minimumVector, hashValue, value);
+        // std::cout << __LINE__ << std::endl;
+
             }
+        // std::cout << __LINE__ << std::endl;
              
             (*signature)[j] = _mm_get_argmin(argmin, minimumVector);
     }
+        // std::cout << __LINE__ << std::endl;
+
     // reduce number of hash values by a factor of mShingleSize
     if (mShingle) {
         return shingle(signature);
     }
+        // std::cout << __LINE__ << std::endl;
+
     return signature;
 }  
+
 // compute the signature for one instance
 vsize_t* InverseIndex::computeSignature(SparseMatrixFloat* pRawData, const size_t pInstance) {
+        // std::cout << __LINE__ << std::endl;
+
     return computeSignatureSSE(pRawData, pInstance);
     if (pRawData == NULL) return NULL;
     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
@@ -149,12 +176,18 @@ vsize_t* InverseIndex::computeSignature(SparseMatrixFloat* pRawData, const size_
                     argmin = pRawData->getNextElement(pInstance, i);
                 }
             }
+        std::cout << __LINE__ << std::endl;
+
             (*signature)[j] = argmin;
     }
+        std::cout << __LINE__ << std::endl;
+
     // reduce number of hash values by a factor of mShingleSize
     if (mShingle) {
         return shingle(signature);
     }
+        std::cout << __LINE__ << std::endl;
+
     return signature;
 }
 
@@ -226,13 +259,21 @@ vsize_t* InverseIndex::computeSignatureWTA(SparseMatrixFloat* pRawData, const si
 }
 
 vvsize_t_p* InverseIndex::computeSignatureVectors(SparseMatrixFloat* pRawData, const bool pFitting) {
+    // std::cout << __LINE__ << std::endl;
+    // std::cout << "pRawData->size(): " << pRawData->size() << std::endl;
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
+    // std::cout << "mChunkSize: " << mChunkSize << std::endl;
+
     #ifdef OPENMP
     omp_set_dynamic(0);
     #endif
+    //    std::cout << __LINE__ << std::endl;
+
     vvsize_t_p* signatures = new vvsize_t_p(pRawData->size(), NULL);
+        // std::cout << __LINE__ << std::endl;
+
     #ifdef CUDA
     if ((mCpuGpuLoadBalancing == 0 && mGpuHash == 0) || mHashAlgorithm == 1 ) {
     #endif
@@ -240,12 +281,18 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(SparseMatrixFloat* pRawData, c
         for (size_t instance = 0; instance < pRawData->size(); ++instance) {
             if (mHashAlgorithm == 0) {
                 // use nearestNeighbors 
+        // std::cout << __LINE__ << std::endl;
+
                 (*signatures)[instance] = computeSignature(pRawData, instance);
+        // std::cout << __LINE__ << std::endl;
+
             } else if (mHashAlgorithm == 1) {
                 // use wta hash
                 (*signatures)[instance] = computeSignatureWTA(pRawData, instance);
             }
         }
+        // std::cout << __LINE__ << std::endl;
+
     #ifdef CUDA 
     } else {
         if (pFitting) {
@@ -266,6 +313,8 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(SparseMatrixFloat* pRawData, c
                                                     signatures, mRangeK_Wta);
             } 
     }
+        // std::cout << __LINE__ << std::endl;
+
     #endif
     return signatures;
 }
@@ -306,8 +355,11 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(SparseMatrixFloat* pRawDat
     return instanceSignature;
 }
 void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
+    // std::cout << __LINE__ << std::endl;
+    // std::cout << "pStartIndex " << pStartIndex << std::endl;
 
     vvsize_t_p* signatures = computeSignatureVectors(pRawData, true);
+        // std::cout << __LINE__ << std::endl;
 
     if (signatures == NULL) return;
     // compute how often the inverse index should be pruned 
@@ -315,6 +367,7 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
     #ifdef OPENMP
     omp_set_dynamic(0);
     #endif
+    // std::cout << __LINE__ << std::endl;
 
     // store signatures in signatureStorage
 // #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
@@ -325,6 +378,8 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
         for (size_t j = 0; j < pRawData->getSizeOfInstance(i); ++j) {
                 signatureId = mHash->hash((pRawData->getNextElement(i, j) +1), (signatureId+1), MAX_VALUE);
         }
+    // std::cout << __LINE__ << std::endl;
+
         auto itSignatureStorage = mSignatureStorage->find(signatureId);
         if (itSignatureStorage == mSignatureStorage->end()) {
             vsize_t* doubleInstanceVector = new vsize_t(1);
@@ -339,15 +394,21 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
                 mDoubleElementsStorageCount += 1;
                 deleteSignature = true;
             }
-        }      
+        }     
+    // std::cout << __LINE__ << std::endl;
+
         for (size_t j = 0; j < (*signatures)[i]->size(); ++j) {
             mInverseIndexStorage->insert(j, (*(*signatures)[i])[j], i+pStartIndex, mRemoveValueWithLeastSigificantBit);
         }
+    // std::cout << __LINE__ << std::endl;
+
         // delete (*signatures)[i] if it appeares for the second time
         if (deleteSignature) {
              delete (*signatures)[i];
              deleteSignature = false;
         }
+    // std::cout << __LINE__ << std::endl;
+
         if (signatures->size() == pruneEveryNInstances) {
             
                 pruneEveryNInstances += pruneEveryNInstances;
@@ -358,15 +419,21 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
                     mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
                 }
         }
+    // std::cout << __LINE__ << std::endl;
+
     }
+    // std::cout << __LINE__ << std::endl;
 
     if (mPruneInverseIndex > -1) {
         mInverseIndexStorage->prune(mPruneInverseIndex);
     }
+    // std::cout << __LINE__ << std::endl;
 
     if (mRemoveHashFunctionWithLessEntriesAs > -1) {
         mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
     }
+    // std::cout << __LINE__ << std::endl;
+
     delete signatures;
 }
 

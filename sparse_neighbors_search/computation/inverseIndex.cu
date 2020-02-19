@@ -235,7 +235,7 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(SparseMatrixFloat* pRawData) {
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
-    std::cout << __LINE__ << std::endl;
+    // std::cout << __LINE__ << std::endl;
     
     vvsize_t_p* signatures = new vvsize_t_p();
     // omp_set_nested(1);
@@ -254,9 +254,9 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(SparseMatrixFloat* pRawData) {
     // how many blocks, how many threads?
     size_t numberOfBlocksForGpu = 192;
     size_t numberOfThreadsForGpu = 128;
-    std::cout << __LINE__ << std::endl;
+   // std::cout << __LINE__ << std::endl;
     #endif
-    std::cout << "Number of cores: " << mNumberOfCores << std::endl;
+    //std::cout << "Number of cores: " << mNumberOfCores << std::endl;
     
     // #pragma omp parallel //num_threads(mNumberOfCores)
     // {

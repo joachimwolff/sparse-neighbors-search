@@ -175,8 +175,16 @@ class SparseMatrixFloat {
     };
     void addNewInstancesPartialFit(const SparseMatrixFloat* pMatrix) {
         size_t numberOfInstances = this->getNumberOfInstances();
+        // std::cout << "numberOfInstances" << numberOfInstances<< std::endl;
+
         numberOfInstances += pMatrix->getNumberOfInstances();
+        // std::cout << "numberOfInstances" << numberOfInstances<< std::endl;
+
         size_t maxNnz = std::max(mMaxNnz, pMatrix->getMaxNnz());
+        // std::cout << "maxNnz" << maxNnz << std::endl;
+        // std::cout << "mMaxNnz" << mMaxNnz << std::endl;
+        // std::cout << "pMatrix->getMaxNnz()" << pMatrix->getMaxNnz() << std::endl;
+
         
         uint32_t* tmp_mSparseMatrix = new uint32_t [numberOfInstances * maxNnz];
         float* tmp_mSparseMatrixValues = new float [numberOfInstances * maxNnz];
@@ -196,12 +204,16 @@ class SparseMatrixFloat {
             }
             tmp_mSizesOfInstances[i+this->getNumberOfInstances()] = pMatrix->getSizeOfInstance(i);
         }
+        // std::cout << "new mMaxNnz" << mMaxNnz << std::endl;
+        // std::cout << "new mNumberOfInstances" << mNumberOfInstances << std::endl;
+       
+
         mMaxNnz = maxNnz;
         mNumberOfInstances = numberOfInstances;
         delete [] mSparseMatrix;
         delete [] mSparseMatrixValues;
         delete [] mSizesOfInstances;
-        delete pMatrix;
+        // delete pMatrix;
         mSparseMatrix = tmp_mSparseMatrix;
         mSparseMatrixValues = tmp_mSparseMatrixValues;
         mSizesOfInstances = tmp_mSizesOfInstances;        

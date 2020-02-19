@@ -30,7 +30,7 @@ __copyright__ = "Copyright 2019, Joachim Wolff"
 __credits__ = ["Milad Miladi", "Fabrizio Costa"]
 __license__ = "MIT"
 __date__ = time.strftime("%d/%m/%Y")
-__version__ = "0.4"
+__version__ = "0.5-dev"
 
 from setuptools import setup, find_packages
 import platform

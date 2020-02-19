@@ -29,7 +29,11 @@ SparseMatrixFloat* parseRawData(PyObject * pIndptrListObj, PyObject * pIndicesLi
     size_t instanceOld = 0;
     // size_t sizeOfFeatureVector = PyList_Size(pIndicesListObj);
     size_t sizeOfInptr = PyList_Size(pIndptrListObj);
+    // std::cout << "pMaxNumberOfFeatures" << pMaxNumberOfFeatures << std::endl;
+    // std::cout << "pMaxNumberOfInstances" << pMaxNumberOfInstances << std::endl;
+
     SparseMatrixFloat* originalData = new SparseMatrixFloat(pMaxNumberOfInstances, pMaxNumberOfFeatures);
+    
     size_t featuresCount = 0;
     size_t featureValue;
     // size_t instanceValue;
@@ -67,6 +71,7 @@ SparseMatrixFloat* parseRawData(PyObject * pIndptrListObj, PyObject * pIndicesLi
         featuresCount = 0;
         i++;
     }
+    // std::cout << "originalData->size()" << originalData->getSizeOfInstance(0) << std::endl;
 
     // for (size_t i = 0; i < sizeOfFeatureVector; ++i) {
     //     instanceSize_tObj = PyList_GetItem(pInstancesListObj, i);
@@ -218,11 +223,15 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
     PyObject * rowList = PyList_New(0);
     PyObject * columnList = PyList_New(0);
     PyObject * dataList = PyList_New(0);
+    std::cout << __LINE__ << std::endl;
     std::map<std::pair<size_t, size_t>, float> symmetricMatrix;
     if (symmetric) {
+    std::cout << __LINE__ << std::endl;
+
         for (size_t i = 0; i < sizeOfNeighborList; ++i) {
             size_t root = pNeighborhood->neighbors->operator[](i)[0];
             size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
+    std::cout << __LINE__ << std::endl;
 
             for (size_t j = 0; j < sizeOfInnerNeighborList && j < pNneighbors; ++j) {
                 size_t node = pNeighborhood->neighbors->operator[](i)[j];
@@ -232,6 +241,8 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
                 } else {
                     distance = 1.0;
                 }
+    std::cout << __LINE__ << std::endl;
+
                 std::pair<size_t, size_t> rootNodePair = std::make_pair(root, node);
                 auto it = symmetricMatrix.find(rootNodePair);
                 if (it != symmetricMatrix.end()) {
@@ -239,6 +250,8 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
                 } else {
                     symmetricMatrix[rootNodePair] = distance;
                 }
+    std::cout << __LINE__ << std::endl;
+
                 rootNodePair = std::make_pair(node, root);
                 it = symmetricMatrix.find(rootNodePair);
                 if (it != symmetricMatrix.end()) {
@@ -246,8 +259,11 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
                 } else {
                     symmetricMatrix[rootNodePair] = distance;
                 }
+    std::cout << __LINE__ << std::endl;
+
             }
         }
+    std::cout << __LINE__ << std::endl;
 
         for (auto itSymmetric = symmetricMatrix.begin(); itSymmetric != symmetricMatrix.end(); ++itSymmetric) {
             PyObject* root = Py_BuildValue("i", itSymmetric->first.first);
@@ -258,8 +274,10 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
             PyList_Append(dataList, distance);
         }
     } else {
+    std::cout << __LINE__ << std::endl;
 
         for (size_t i = 0; i < sizeOfNeighborList; ++i) {
+    std::cout << __LINE__ << std::endl;
 
             PyObject* root = Py_BuildValue("i", static_cast<int>(pNeighborhood->neighbors->operator[](i)[0]));
             size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
@@ -277,14 +295,18 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
             }
         }
     }
+    std::cout << __LINE__ << std::endl;
+
     delete pNeighborhood->neighbors;
     delete pNeighborhood->distances;
     delete pNeighborhood;
+    std::cout << __LINE__ << std::endl;
 
     PyObject* graph = PyList_New(3);
     PyList_SetItem(graph, 0, rowList);
     PyList_SetItem(graph, 1, columnList);
     PyList_SetItem(graph, 2, dataList);
+    std::cout << __LINE__ << std::endl;
 
     return graph;
 }
