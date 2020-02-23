@@ -461,8 +461,6 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         mChunkSize = ceil(mInverseIndexStorage->size() / static_cast<float>(mNumberOfCores));
     }
     
-    mChunkSize = 1;
-    mNumberOfCores  = 1 ;
     // std::cout << "Computing kneighbors inverse index" << std::endl;
 
 #ifdef OPENMP
