@@ -605,12 +605,12 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         {   // write vector to every instance with identical signatures
             if (pNoneSingleInstance) {
                 for (size_t j = 0; j < instanceId->second.instances->size(); ++j) {
-                    std::cout << "instances write to j: " << j << "(*instanceId->second.instances)[j]: " << (*instanceId->second.instances)[j] << std::endl;
+                    // std::cout << "instances write to j: " << j << "(*instanceId->second.instances)[j]: " << (*instanceId->second.instances)[j] << std::endl;
                     (*neighbors)[(*instanceId->second.instances)[j]] = neighborsForThisInstance[j];
                     (*distances)[(*instanceId->second.instances)[j]] = distancesForThisInstance[j];
                 }
             } else {
-                std::cout << "write to 0" << std::endl;
+                // std::cout << "write to 0" << std::endl;
                 (*neighbors)[0] = neighborsForThisInstance[0];
                 (*distances)[0] = distancesForThisInstance[0];
             }

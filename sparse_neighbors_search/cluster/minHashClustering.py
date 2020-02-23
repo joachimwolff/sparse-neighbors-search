@@ -21,13 +21,22 @@ class MinHashClustering():
 
         if saveMemory:
             print('partial fitting')
+            number_of_elements = X.shape[0]
 
-            if pThreads and pThreads > 1:
-                pass
-            else:
-                self._minHashObject.fit(X.getrow(0))
-                for i in range(1, X.shape[0]):
-                    self._minHashObject.partial_fit(X.getrow(i))
+            batch_size = int(np.floor(number_of_elements * 0.25))
+
+            self._minHashObject.fit(X[0:batch_size, :])
+
+            for i in range(batch_size, X.shape[0], batch_size):
+                self._minHashObject.partial_fit(X[i:i+batch_size, :])
+
+
+            # if pThreads and pThreads > 1:
+            #     pass
+            # else:
+            #     self._minHashObject.fit(X.getrow(0))
+            #     for i in range(1, X.shape[0]):
+            #         self._minHashObject.partial_fit(X.getrow(i))
             print('partial fitting ...DONE')
             
         else:

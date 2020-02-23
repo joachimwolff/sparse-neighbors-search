@@ -227,7 +227,7 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
     if (symmetric) {
 
         for (size_t i = 0; i < sizeOfNeighborList; ++i) {
-            std::cout << "size of neighborhood i: " << i << " size: " << pNeighborhood->neighbors->operator[](i).size() << std::endl;
+            // std::cout << "size of neighborhood i: " << i << " size: " << pNeighborhood->neighbors->operator[](i).size() << std::endl;
             if (pNeighborhood->neighbors->operator[](i).size() == 0) {
                 continue;
             } 
