@@ -383,7 +383,7 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
         auto itSignatureStorage = mSignatureStorage->find(signatureId);
         if (itSignatureStorage == mSignatureStorage->end()) {
             vsize_t* doubleInstanceVector = new vsize_t(1);
-            (*doubleInstanceVector)[0] = i;
+            (*doubleInstanceVector)[0] = i+pStartIndex;
             uniqueElement element;
             element.instances = doubleInstanceVector;
             element.signature = (*signatures)[i];
@@ -460,12 +460,17 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
     if (mChunkSize <= 0) {
         mChunkSize = ceil(mInverseIndexStorage->size() / static_cast<float>(mNumberOfCores));
     }
- 
+    
+    mChunkSize = 1;
+    mNumberOfCores  = 1 ;
+    // std::cout << "Computing kneighbors inverse index" << std::endl;
+
 #ifdef OPENMP
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
 #endif 
 
     for (size_t i = 0; i < pSignaturesMap->size(); ++i) {
+        // std::cout << "signatrue i: " << i << std::endl;
         umap_uniqueElement::const_iterator instanceId = pSignaturesMap->begin();
         
         std::advance(instanceId, i);
@@ -493,6 +498,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 if (collisionSize < mMaxBinSize && collisionSize > 0) {
                     for (size_t k = 0; k < instances->size(); ++k) {
                         neighborhood[(*instances)[k]] += 1;
+                        // std::cout << "(*instances)[k]" << (*instances)[k] << std::endl;
                     }
                 } 
             }
@@ -557,15 +563,19 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         vvsize_t neighborsForThisInstance(instanceId->second.instances->size());
         vvfloat distancesForThisInstance(instanceId->second.instances->size());
 
+        // std::cout << "neighborsForThisInstance.size()" << neighborsForThisInstance.size() << std::endl;
         for (size_t j = 0; j < neighborsForThisInstance.size(); ++j) {
+            // std::cout << "neighbor j:" << j << ":: " << std::endl;
             vsize_t neighborhoodVector;
             std::vector<float> distanceVector;
-            for (auto it = neighborhoodVectorForSorting.begin();
-                    it != neighborhoodVectorForSorting.end(); ++it) {
+            for (auto it = neighborhoodVectorForSorting.begin(); it != neighborhoodVectorForSorting.end(); ++it) {
+                
                 float value = 1 - (((*it).val) / (float)(mMaximalNumberOfHashCollisions));
                 if (value < 0) {
                     value = 0;
                 }
+            // std::cout << (*it).key << " ";
+
                 if (pRadius == -1.0) {
                     neighborhoodVector.push_back((*it).key);
                     distanceVector.push_back(value);
@@ -585,6 +595,7 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                     break;
                 }
             }
+            // std::cout << std::endl;
         }
 
 #ifdef OPENMP
@@ -594,11 +605,12 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         {   // write vector to every instance with identical signatures
             if (pNoneSingleInstance) {
                 for (size_t j = 0; j < instanceId->second.instances->size(); ++j) {
-                    
+                    std::cout << "instances write to j: " << j << "(*instanceId->second.instances)[j]: " << (*instanceId->second.instances)[j] << std::endl;
                     (*neighbors)[(*instanceId->second.instances)[j]] = neighborsForThisInstance[j];
                     (*distances)[(*instanceId->second.instances)[j]] = distancesForThisInstance[j];
                 }
             } else {
+                std::cout << "write to 0" << std::endl;
                 (*neighbors)[0] = neighborsForThisInstance[0];
                 (*distances)[0] = distancesForThisInstance[0];
             }

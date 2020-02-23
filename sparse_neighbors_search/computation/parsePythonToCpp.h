@@ -223,15 +223,16 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
     PyObject * rowList = PyList_New(0);
     PyObject * columnList = PyList_New(0);
     PyObject * dataList = PyList_New(0);
-    std::cout << __LINE__ << std::endl;
     std::map<std::pair<size_t, size_t>, float> symmetricMatrix;
     if (symmetric) {
-    std::cout << __LINE__ << std::endl;
 
         for (size_t i = 0; i < sizeOfNeighborList; ++i) {
+            std::cout << "size of neighborhood i: " << i << " size: " << pNeighborhood->neighbors->operator[](i).size() << std::endl;
+            if (pNeighborhood->neighbors->operator[](i).size() == 0) {
+                continue;
+            } 
             size_t root = pNeighborhood->neighbors->operator[](i)[0];
             size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
-    std::cout << __LINE__ << std::endl;
 
             for (size_t j = 0; j < sizeOfInnerNeighborList && j < pNneighbors; ++j) {
                 size_t node = pNeighborhood->neighbors->operator[](i)[j];
@@ -241,7 +242,6 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
                 } else {
                     distance = 1.0;
                 }
-    std::cout << __LINE__ << std::endl;
 
                 std::pair<size_t, size_t> rootNodePair = std::make_pair(root, node);
                 auto it = symmetricMatrix.find(rootNodePair);
@@ -250,7 +250,6 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
                 } else {
                     symmetricMatrix[rootNodePair] = distance;
                 }
-    std::cout << __LINE__ << std::endl;
 
                 rootNodePair = std::make_pair(node, root);
                 it = symmetricMatrix.find(rootNodePair);
@@ -259,12 +258,8 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
                 } else {
                     symmetricMatrix[rootNodePair] = distance;
                 }
-    std::cout << __LINE__ << std::endl;
-
             }
         }
-    std::cout << __LINE__ << std::endl;
-
         for (auto itSymmetric = symmetricMatrix.begin(); itSymmetric != symmetricMatrix.end(); ++itSymmetric) {
             PyObject* root = Py_BuildValue("i", itSymmetric->first.first);
             PyObject* node = Py_BuildValue("i", itSymmetric->first.second);
@@ -274,11 +269,7 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
             PyList_Append(dataList, distance);
         }
     } else {
-    std::cout << __LINE__ << std::endl;
-
         for (size_t i = 0; i < sizeOfNeighborList; ++i) {
-    std::cout << __LINE__ << std::endl;
-
             PyObject* root = Py_BuildValue("i", static_cast<int>(pNeighborhood->neighbors->operator[](i)[0]));
             size_t sizeOfInnerNeighborList = pNeighborhood->neighbors->operator[](i).size();
             for (size_t j = 1; j < sizeOfInnerNeighborList && j < pNneighbors; ++j) {
@@ -295,18 +286,15 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
             }
         }
     }
-    std::cout << __LINE__ << std::endl;
 
     delete pNeighborhood->neighbors;
     delete pNeighborhood->distances;
     delete pNeighborhood;
-    std::cout << __LINE__ << std::endl;
 
     PyObject* graph = PyList_New(3);
     PyList_SetItem(graph, 0, rowList);
     PyList_SetItem(graph, 1, columnList);
     PyList_SetItem(graph, 2, dataList);
-    std::cout << __LINE__ << std::endl;
 
     return graph;
 }

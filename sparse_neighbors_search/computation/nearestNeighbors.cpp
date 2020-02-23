@@ -69,12 +69,13 @@ NearestNeighbors::~NearestNeighbors() {
 
 void NearestNeighbors::fit(SparseMatrixFloat* pRawData) {
     mInverseIndex->fit(pRawData);
-    pRawData->precomputeDotProduct();
+    // pRawData->precomputeDotProduct();
     return;
 }
 
 void NearestNeighbors::partialFit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
     mInverseIndex->fit(pRawData, pStartIndex);
+    // pRawData->precomputeDotProduct();
     return;
 }
 
@@ -115,6 +116,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     if (pFast) {     
         return neighborhood_;
     }
+    mOriginalData->precomputeDotProduct();
     if (mChunkSize <= 0) {
             mChunkSize = ceil(neighborhood_->neighbors->size() / static_cast<float>(mNumberOfCores));
         }
