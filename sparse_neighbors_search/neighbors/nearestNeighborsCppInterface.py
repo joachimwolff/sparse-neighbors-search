@@ -1,6 +1,9 @@
-# Copyright 2016 Joachim Wolff
+# Copyright 2016, 2017, 2018, 2019, 2020 Joachim Wolff
+# PhD Thesis
+#
+# Copyright 2015, 2016 Joachim Wolff
 # Master Thesis
-# Tutor: Fabrizio Costa, Milad Miladi
+# Tutor: Fabrizio Costa
 # Winter semester 2015/2016
 #
 # Chair of Bioinformatics
@@ -98,9 +101,10 @@ class _NearestNeighborsCppInterface():
                  similarity=False, number_of_cores=None, chunk_size=None, prune_inverse_index=-1,
                   prune_inverse_index_after_instance=-1.0, remove_hash_function_with_less_entries_as=-1, 
                   hash_algorithm = 0, block_size = 5, shingle=0, store_value_with_least_sigificant_bit=0, 
-                  cpu_gpu_load_balancing=0, gpu_hashing=0, rangeK_wta=10):
+                  cpu_gpu_load_balancing=0, gpu_hashing=0, rangeK_wta=10, maxFeatures=None):
         # self._X
         # self._y = None
+        self._maxFeatures = maxFeatures
         if number_of_cores is None:
             number_of_cores = mp.cpu_count()
         if chunk_size is None:
@@ -146,14 +150,14 @@ class _NearestNeighborsCppInterface():
        
         self._index_elements_count = X_csr.shape[0]
         # instances, features = X_csr.nonzero()
-        
-        maxFeatures = int(max(X_csr.getnnz(1)))
+        if self._maxFeatures == None:
+            self._maxFeatures = int(max(X_csr.getnnz(1)))
         
         # data = X_csr.data
         
         # returns a pointer to the inverse index stored in c++
         self._pointer_address_of_nearestNeighbors_object = _nearestNeighbors.fit(X_csr.indptr.tolist(), X_csr.indices.tolist(), X_csr.data.tolist(), 
-                                                    X_csr.shape[0], maxFeatures,
+                                                    X_csr.shape[0], self._maxFeatures,
                                                     self._pointer_address_of_nearestNeighbors_object)
         
 
@@ -174,14 +178,17 @@ class _NearestNeighborsCppInterface():
         
         X_csr = csr_matrix(X)
 
-        instances, features = X_csr.nonzero()
-        data = X_csr.data
-        for i in xrange(len(instances)):
-            instances[i] += self._index_elements_count 
+        # instances, features = X_csr.nonzero()
+        # data = X_csr.data
+        # for i in xrange(len(instances)):
+        #     instances[i] += self._index_elements_count 
         self._index_elements_count += X.shape[0]
         
-        self._pointer_address_of_nearestNeighbors_object = _nearestNeighbors.fit(instances.tolist(), features.tolist(), data.tolist(),
-                                                                    self._pointer_address_of_nearestNeighbors_object)
+        # self._pointer_address_of_nearestNeighbors_object = _nearestNeighbors.fit(instances.tolist(), features.tolist(), data.tolist(),
+        #                                                             self._pointer_address_of_nearestNeighbors_object)
+
+        self._pointer_address_of_nearestNeighbors_object = _nearestNeighbors.partial_fit(X_csr.indptr.tolist(), X_csr.indices.tolist(), X_csr.data.tolist(), 
+                                                    X_csr.shape[0], self._maxFeatures, self._pointer_address_of_nearestNeighbors_object)
        
         
     def kneighbors(self,X=None, n_neighbors=None, return_distance=True, fast=None, similarity=None):

@@ -1,7 +1,10 @@
 /**
- Copyright 2015 Joachim Wolff
+ Copyright 2016, 2017, 2018, 2019, 2020 Joachim Wolff
+ PhD Thesis
+
+ Copyright 2015, 2016 Joachim Wolff
  Master Thesis
- Tutors: Milad Miladi, Fabrizio Costa
+ Tutor: Fabrizio Costa
  Winter semester 2015/2016
 
  Chair of Bioinformatics
@@ -69,7 +72,6 @@ NearestNeighbors::~NearestNeighbors() {
 
 void NearestNeighbors::fit(SparseMatrixFloat* pRawData) {
     mInverseIndex->fit(pRawData);
-    pRawData->precomputeDotProduct();
     return;
 }
 
@@ -115,6 +117,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     if (pFast) {     
         return neighborhood_;
     }
+    mOriginalData->precomputeDotProduct();
     if (mChunkSize <= 0) {
             mChunkSize = ceil(neighborhood_->neighbors->size() / static_cast<float>(mNumberOfCores));
         }

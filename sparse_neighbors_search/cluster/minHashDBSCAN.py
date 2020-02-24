@@ -1,4 +1,7 @@
-# Copyright 2015 Joachim Wolff
+# Copyright 2016, 2017, 2018, 2019, 2020 Joachim Wolff
+# PhD Thesis
+#
+# Copyright 2015, 2016 Joachim Wolff
 # Master Thesis
 # Tutor: Fabrizio Costa
 # Winter semester 2015/2016
@@ -43,8 +46,9 @@ class MinHashDBSCAN():
         self._dbscan = DBSCAN(eps=self.eps, min_samples=min_samples, metric='precomputed',
                 algorithm=self.algorithm, leaf_size=self.leaf_size, p=self.p)
         self.labels_ = None
+        self._precomputed_graph = None
         # only for compatible issues
-    def fit(self, X, y=None):
+    def fit(self, X, y=None, pSaveMemory=None):
         minHashNeighbors = MinHash(n_neighbors = self.n_neighbors, 
         radius = self.radius, fast = self.fast,
         number_of_hash_functions = self.number_of_hash_functions,
@@ -54,10 +58,26 @@ class MinHashDBSCAN():
         excess_factor = self.excess_factor,
         number_of_cores = self.number_of_cores,
         chunk_size = self.chunk_size, similarity=False)
-        minHashNeighbors.fit(X, y)
-        graph_result = minHashNeighbors.kneighbors_graph(mode='distance')
-        self._dbscan.fit(graph_result)
+
+        if pSaveMemory is not None and pSaveMemory > 0:
+            if pSaveMemory > 1:
+                pSaveMemory = 1
+            number_of_elements = X.shape[0]
+            batch_size = int(np.floor(number_of_elements * pSaveMemory))
+            if batch_size < 1:
+                batch_size = 1
+            minHashNeighbors.fit(X[0:batch_size, :])
+            if batch_size < number_of_elements:
+                for i in range(batch_size, X.shape[0], batch_size):
+                    minHashNeighbors.partial_fit(X[i:i+batch_size, :])
+        else:
+            minHashNeighbors.fit(X)
+
+
+        # minHashNeighbors.fit(X, y)
+        self._precomputed_graph = minHashNeighbors.kneighbors_graph(mode='distance')
+        self._dbscan.fit(self._precomputed_graph)
         self.labels_ = self._dbscan.labels_
-    def fit_predict(self, X, y=None):
-        self.fit(X, y)
+    def fit_predict(self, X, y=None, pSaveMemory=None):
+        self.fit(X, y, pSaveMemory=None)
         return self.labels_

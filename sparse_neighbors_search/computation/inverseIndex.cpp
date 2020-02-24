@@ -1,7 +1,10 @@
 /**
- Copyright 2016 Joachim Wolff
+ Copyright 2016, 2017, 2018, 2019, 2020 Joachim Wolff
+ PhD Thesis
+
+ Copyright 2015, 2016 Joachim Wolff
  Master Thesis
- Tutors: Fabrizio Costa, Milad Miladi
+ Tutor: Fabrizio Costa
  Winter semester 2015/2016
 
  Chair of Bioinformatics
@@ -100,17 +103,21 @@ distributionInverseIndex* InverseIndex::getDistribution() {
 vsize_t* InverseIndex::computeSignatureSSE(SparseMatrixFloat* pRawData, const size_t pInstance) {
 
     if (pRawData == NULL) return NULL;
+
     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
     __m128i minimumVector;
     __m128i seed;
     __m128i argmin;
     __m128i value;
     __m128i hashValue;
-    for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
-            minimumVector = _mm_set_epi32(MAX_VALUE, MAX_VALUE, MAX_VALUE, MAX_VALUE);
-            argmin = _mm_set_epi32(0,0,0,0);
-            seed = _mm_set_epi32(j+1, j+1, j+1, j+1);                   
 
+    for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
+
+            minimumVector = _mm_set_epi32(MAX_VALUE, MAX_VALUE, MAX_VALUE, MAX_VALUE);
+
+            argmin = _mm_set_epi32(0,0,0,0);
+
+            seed = _mm_set_epi32(j+1, j+1, j+1, j+1);                   
             for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance) - 4; i+=4) {
                 value = _mm_setr_epi32((pRawData->getNextElement(pInstance, i) +1), 
                                     (pRawData->getNextElement(pInstance, i+1) +1),
@@ -122,7 +129,6 @@ vsize_t* InverseIndex::computeSignatureSSE(SparseMatrixFloat* pRawData, const si
                 // compare all four hash values and store minimum for each element
                 argmin = _mm_argmin_change_epi32(argmin, minimumVector, hashValue, value);
             }
-             
             (*signature)[j] = _mm_get_argmin(argmin, minimumVector);
     }
     // reduce number of hash values by a factor of mShingleSize
@@ -131,8 +137,10 @@ vsize_t* InverseIndex::computeSignatureSSE(SparseMatrixFloat* pRawData, const si
     }
     return signature;
 }  
+
 // compute the signature for one instance
 vsize_t* InverseIndex::computeSignature(SparseMatrixFloat* pRawData, const size_t pInstance) {
+
     return computeSignatureSSE(pRawData, pInstance);
     if (pRawData == NULL) return NULL;
     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
@@ -149,12 +157,18 @@ vsize_t* InverseIndex::computeSignature(SparseMatrixFloat* pRawData, const size_
                     argmin = pRawData->getNextElement(pInstance, i);
                 }
             }
+        std::cout << __LINE__ << std::endl;
+
             (*signature)[j] = argmin;
     }
+        std::cout << __LINE__ << std::endl;
+
     // reduce number of hash values by a factor of mShingleSize
     if (mShingle) {
         return shingle(signature);
     }
+        std::cout << __LINE__ << std::endl;
+
     return signature;
 }
 
@@ -229,10 +243,13 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(SparseMatrixFloat* pRawData, c
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
+
     #ifdef OPENMP
     omp_set_dynamic(0);
     #endif
+
     vvsize_t_p* signatures = new vvsize_t_p(pRawData->size(), NULL);
+
     #ifdef CUDA
     if ((mCpuGpuLoadBalancing == 0 && mGpuHash == 0) || mHashAlgorithm == 1 ) {
     #endif
@@ -317,7 +334,6 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
     #endif
 
     // store signatures in signatureStorage
-// #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     for (size_t i = 0; i < signatures->size(); ++i) {
         bool deleteSignature = false;
         if ((*signatures)[i] == NULL) continue;
@@ -325,10 +341,11 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
         for (size_t j = 0; j < pRawData->getSizeOfInstance(i); ++j) {
                 signatureId = mHash->hash((pRawData->getNextElement(i, j) +1), (signatureId+1), MAX_VALUE);
         }
+
         auto itSignatureStorage = mSignatureStorage->find(signatureId);
         if (itSignatureStorage == mSignatureStorage->end()) {
             vsize_t* doubleInstanceVector = new vsize_t(1);
-            (*doubleInstanceVector)[0] = i;
+            (*doubleInstanceVector)[0] = i+pStartIndex;
             uniqueElement element;
             element.instances = doubleInstanceVector;
             element.signature = (*signatures)[i];
@@ -339,15 +356,18 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
                 mDoubleElementsStorageCount += 1;
                 deleteSignature = true;
             }
-        }      
+        }     
+
         for (size_t j = 0; j < (*signatures)[i]->size(); ++j) {
             mInverseIndexStorage->insert(j, (*(*signatures)[i])[j], i+pStartIndex, mRemoveValueWithLeastSigificantBit);
         }
+
         // delete (*signatures)[i] if it appeares for the second time
         if (deleteSignature) {
              delete (*signatures)[i];
              deleteSignature = false;
         }
+
         if (signatures->size() == pruneEveryNInstances) {
             
                 pruneEveryNInstances += pruneEveryNInstances;
@@ -358,6 +378,7 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
                     mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
                 }
         }
+
     }
 
     if (mPruneInverseIndex > -1) {
@@ -367,6 +388,7 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
     if (mRemoveHashFunctionWithLessEntriesAs > -1) {
         mInverseIndexStorage->removeHashFunctionWithLessEntriesAs(mRemoveHashFunctionWithLessEntriesAs);
     }
+
     delete signatures;
 }
 
@@ -393,7 +415,8 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
     if (mChunkSize <= 0) {
         mChunkSize = ceil(mInverseIndexStorage->size() / static_cast<float>(mNumberOfCores));
     }
- 
+    
+
 #ifdef OPENMP
 #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
 #endif 
@@ -493,12 +516,13 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         for (size_t j = 0; j < neighborsForThisInstance.size(); ++j) {
             vsize_t neighborhoodVector;
             std::vector<float> distanceVector;
-            for (auto it = neighborhoodVectorForSorting.begin();
-                    it != neighborhoodVectorForSorting.end(); ++it) {
+            for (auto it = neighborhoodVectorForSorting.begin(); it != neighborhoodVectorForSorting.end(); ++it) {
+                
                 float value = 1 - (((*it).val) / (float)(mMaximalNumberOfHashCollisions));
                 if (value < 0) {
                     value = 0;
                 }
+
                 if (pRadius == -1.0) {
                     neighborhoodVector.push_back((*it).key);
                     distanceVector.push_back(value);
@@ -527,7 +551,6 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
         {   // write vector to every instance with identical signatures
             if (pNoneSingleInstance) {
                 for (size_t j = 0; j < instanceId->second.instances->size(); ++j) {
-                    
                     (*neighbors)[(*instanceId->second.instances)[j]] = neighborsForThisInstance[j];
                     (*distances)[(*instanceId->second.instances)[j]] = distancesForThisInstance[j];
                 }
