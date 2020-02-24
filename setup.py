@@ -1,8 +1,10 @@
 #! /usr/bin/python
-# Copyright 2016 Joachim Wolff
-# For license see file LICENSE
+# Copyright 2016, 2017, 2018, 2019, 2020 Joachim Wolff
+# PhD Thesis
+#
+# Copyright 2015, 2016 Joachim Wolff
 # Master Thesis
-# Tutors: Fabrizio Costa, Milad Miladi
+# Tutor: Fabrizio Costa
 # Winter semester 2015/2016
 #
 # Chair of Bioinformatics
@@ -26,11 +28,11 @@
 import time 
 __author__ = "Joachim Wolff"
 __contact__ = "wolffj@informatik.uni-freiburg.de"
-__copyright__ = "Copyright 2019, Joachim Wolff"
+__copyright__ = "Copyright 2020, Joachim Wolff"
 __credits__ = ["Milad Miladi", "Fabrizio Costa"]
 __license__ = "MIT"
 __date__ = time.strftime("%d/%m/%Y")
-__version__ = "0.5-dev"
+__version__ = "0.5"
 
 from setuptools import setup, find_packages
 import platform
@@ -125,11 +127,6 @@ def locate_cuda():
 CUDA = locate_cuda()
 
 
-# Obtain the numpy include directory.  This logic works across numpy versions.
-# try:
-#     numpy_include = numpy.get_include()
-# except AttributeError:
-#     numpy_include = numpy.get_numpy_include()
 def customize_compiler_gcc(self):
     """inject deep into distutils to customize how the dispatch
     to gcc/nvcc works.
@@ -151,13 +148,6 @@ def customize_compiler_gcc(self):
     # object but distutils doesn't have the ability to change compilers
     # based on source extension: we add it.
     def _compile(obj, src, ext, cc_args, extra_postargs, pp_opts):
-        # if os.path.splitext(src)[1] == '.cu':
-        #     # use the cuda for .cu files
-        #     self.set_executable('compiler_so', CUDA['nvcc'])
-        #     # use only a subset of the extra_postargs, which are 1-1 translated
-        #     # from the extra_compile_args in the Extension class
-        #     postargs = extra_postargs['nvcc']
-        # else:
         postargs = extra_postargs['gcc']
 
         super(obj, src, ext, cc_args, postargs, pp_opts)
@@ -166,15 +156,6 @@ def customize_compiler_gcc(self):
 
     # inject our redefined _compile method into the class
     self._compile = _compile
-
-
-# run the customize_compiler
-# class custom_build_ext_gcc(build_ext):
-#     def build_extensions(self):
-#         customize_compiler_for_gcc(self.compiler)
-#         build_ext.build_extensions(self)
-
-
 
 
 
@@ -245,11 +226,9 @@ if (locate_cuda() == None or no_cuda):
             "scipy >= 1.3.0",
             "scikit-learn >= 0.21.0",],
             ext_modules = [module1],
-            # cmdclass={'build_ext': custom_build_ext_gcc},
             packages=['sparse_neighbors_search',
                         'sparse_neighbors_search.neighbors',
                         'sparse_neighbors_search.cluster',
-                        #  'bioinf.computation',
                     ],
             platforms = "Linux",
             version = __version__
@@ -258,9 +237,6 @@ else:
     print ("CUDA found on system. Installing MinHash with CUDA-Support.")
     sources_list.extend(['sparse_neighbors_search/computation/kernel.cu', 'sparse_neighbors_search/computation/inverseIndexCuda.cu', 'sparse_neighbors_search/computation/nearestNeighborsCuda.cu'])
     depends_list.extend(['sparse_neighbors_search/computation/typeDefinitionsCuda.h', 'sparse_neighbors_search/computation/kernel.h', 'sparse_neighbors_search/computation/inverseIndexCuda.h', 'sparse_neighbors_search/computation/nearestNeighborsCuda.h', ])
-    # Extension('_nearestNeighbors', sources = sources_list, depends = depends_list,
-    #      define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
-    #     extra_compile_args=["-fopenmp", "-O3", "-std=c++11"])
     if openmp:
         ext = Extension('_nearestNeighbors',
                     sources = sources_list, depends = depends_list,
@@ -272,12 +248,10 @@ else:
                     # we're only going to use certain compiler args with nvcc and not with gcc
                     # the implementation of this trick is in customize_compiler() below
                     define_macros=[('OPENMP', None), ('CUDA', None)],
-                    # extra_link_args={'gcc': ["-lm", "-lrt","-lgomp"], 
-                    #                   'nvcc' :[]  },
                     extra_link_args=["-lm", "-lrt","-lgomp"],
                     extra_compile_args={'gcc': ["-fopenmp", "-O3", "-std=c++11", "-funroll-loops", "-msse4.1"],
                                         'nvcc': ['-arch=sm_60', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
-                    include_dirs = [CUDA['include'], 'src'],#, '/home/joachim/Software/cub-1.5.1'],
+                    include_dirs = [CUDA['include'], 'src'],
                     platforms = "Linux, Mac OS X"
                     )
     else:
@@ -291,17 +265,14 @@ else:
                     # we're only going to use certain compiler args with nvcc and not with gcc
                     # the implementation of this trick is in customize_compiler() below
                     define_macros=[('CUDA', None)],
-                    # extra_link_args={'gcc': ["-lm", "-lrt","-lgomp"], 
-                    #                   'nvcc' :[]  },
                     extra_link_args=["-lm", "-lrt","-lgomp"],
                     extra_compile_args={'gcc': ["-O3", "-std=c++11", "-msse4.1"],
                                         'nvcc': ['-arch=sm_60', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
-                    include_dirs = [CUDA['include'], 'src'],#, '/home/joachim/Software/cub-1.5.1'],
+                    include_dirs = [CUDA['include'], 'src'],
                     platforms = "Linux, Mac OS X"
                     )
                 
     setup(name='sparse_neighbors_search',
-        # random metadata. there's more you can supploy
         author='Joachim Wolff',
         ext_modules = [ext],
     
@@ -319,7 +290,6 @@ else:
         "numpy >= 1.17.0",
         "scipy >= 1.3.0",
         "scikit-learn >= 0.21.0",],
-        # ext_modules = [module1],
         packages=['sparse_neighbors_search',
                     'sparse_neighbors_search.neighbors',
                     'sparse_neighbors_search.cluster',

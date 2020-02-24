@@ -1,5 +1,11 @@
 /**
- Copyright 2019 Joachim Wolff
+ Copyright 2016, 2017, 2018, 2019, 2020 Joachim Wolff
+ PhD Thesis
+
+ Copyright 2015, 2016 Joachim Wolff
+ Master Thesis
+ Tutor: Fabrizio Costa
+ Winter semester 2015/2016
 
  Chair of Bioinformatics
  Department of Computer Science
@@ -17,24 +23,19 @@ static neighborhood* neighborhoodComputation(size_t pNearestNeighborsAddress, Py
                                                 size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures, 
                                                 size_t pNneighbors, int pFast, int pSimilarity, float pRadius = -1.0) {
     SparseMatrixFloat* originalDataMatrix = NULL;
-    // std::cout << __LINE__ << std::endl;
     if (pMaxNumberOfInstances != 0) {
         originalDataMatrix = parseRawData(pInstancesListObj, pFeaturesListObj, pDataListObj, 
                                                     pMaxNumberOfInstances, pMaxNumberOfFeatures);
     }
-    // std::cout << __LINE__ << std::endl;
 
     NearestNeighbors* nearestNeighbors = reinterpret_cast<NearestNeighbors* >(pNearestNeighborsAddress);
-    // std::cout << __LINE__ << std::endl;
 
     // compute the k-nearest neighbors
     neighborhood* neighbors_ =  nearestNeighbors->kneighbors(originalDataMatrix, pNneighbors, pFast, pSimilarity, pRadius);
-    // std::cout << __LINE__ << std::endl;
 
     if (originalDataMatrix != NULL) {
         delete originalDataMatrix;    
     } 
-    // std::cout << __LINE__ << std::endl;
 
     return neighbors_;
 }
@@ -43,7 +44,6 @@ static neighborhood* fitNeighborhoodComputation(size_t pNearestNeighborsAddress,
                                                 PyObject* pFeaturesListObj,PyObject* pDataListObj,
                                                 size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures, 
                                                 size_t pNneighbors, int pFast, int pSimilarity, float pRadius = -1.0) {
-    // std::cout << "fitNeighborhoodComputation" << std::endl;
     SparseMatrixFloat* originalDataMatrix = parseRawData(pInstancesListObj, pFeaturesListObj, pDataListObj, 
                                                     pMaxNumberOfInstances, pMaxNumberOfFeatures);
     // get pointer to the minhash object
@@ -53,8 +53,6 @@ static neighborhood* fitNeighborhoodComputation(size_t pNearestNeighborsAddress,
     nearestNeighbors->fit(originalDataMatrix);
     SparseMatrixFloat* emptyMatrix = NULL;
     neighborhood* neighborhood_ = nearestNeighbors->kneighbors(emptyMatrix, pNneighbors, pFast, pSimilarity, pRadius);
-    // delete emptyMatrix;
-    // std::cout << "fitNeighborhoodComputation done" << std::endl;
 
     return neighborhood_;
 }
@@ -100,7 +98,6 @@ static PyObject* deleteObject(PyObject* self, PyObject* args) {
 }
 
 static PyObject* fit(PyObject* self, PyObject* args) {
-    // std::cout << "Fitting started" << std::endl;
     size_t addressNearestNeighborsObject, maxNumberOfInstances, maxNumberOfFeatures;
     PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
@@ -117,21 +114,16 @@ static PyObject* fit(PyObject* self, PyObject* args) {
     // where key == instance id and vector<size_t> == non null feature ids
     SparseMatrixFloat* originalDataMatrix = parseRawData(instancesListObj, featuresListObj, dataListObj, 
                                                     maxNumberOfInstances, maxNumberOfFeatures);
-    // std::cout << "parsing done" << std::endl;
     // get pointer to the minhash object
     NearestNeighbors* nearestNeighbors = reinterpret_cast<NearestNeighbors* >(addressNearestNeighborsObject);
     nearestNeighbors->set_mOriginalData(originalDataMatrix);
-    // std::cout << "start to fit" << std::endl;
     nearestNeighbors->fit(originalDataMatrix);
-    // std::cout << "fitting done" << std::endl;
     addressNearestNeighborsObject = reinterpret_cast<size_t>(nearestNeighbors);
     PyObject * pointerToInverseIndex = Py_BuildValue("k", addressNearestNeighborsObject);
-    // std::cout << "Fitting DONE" << std::endl;
     
     return pointerToInverseIndex;
 }
 static PyObject* partialFit(PyObject* self, PyObject* args) {
-    // std::cout << "partial Fitting started" << std::endl;
 
     size_t addressNearestNeighborsObject, maxNumberOfInstances, maxNumberOfFeatures;
     PyObject* instancesListObj, *featuresListObj, *dataListObj;
@@ -147,20 +139,15 @@ static PyObject* partialFit(PyObject* self, PyObject* args) {
     
     // parse from python list to a c++ map<size_t, vector<size_t> >
     // where key == instance id and vector<size_t> == non null feature ids
-    // std::cout << "retrieve old instance" << std::endl;
 
     SparseMatrixFloat* originalDataMatrix = parseRawData(instancesListObj, featuresListObj, dataListObj, 
                                                     maxNumberOfInstances, maxNumberOfFeatures);
     // get pointer to the minhash object
     NearestNeighbors* nearestNeighbors = reinterpret_cast<NearestNeighbors* >(addressNearestNeighborsObject);
     size_t numberOfInstancesOld = nearestNeighbors->getOriginalData()->size();
-    // std::cout << "numberOfInstancesOld: " << numberOfInstancesOld << std::endl;
     nearestNeighbors->getOriginalData()->addNewInstancesPartialFit(originalDataMatrix);
-    // nearestNeighbors->set_mOriginalData(originalDataMatrix);
-    // std::cout << "old information retrieved, start partial fit" << std::endl;
 
     nearestNeighbors->partialFit(originalDataMatrix, numberOfInstancesOld);
-    // std::cout << "parsing done" << std::endl;
     delete originalDataMatrix;
     addressNearestNeighborsObject = reinterpret_cast<size_t>(nearestNeighbors);
     PyObject * pointerToInverseIndex = Py_BuildValue("k", addressNearestNeighborsObject);
@@ -168,7 +155,6 @@ static PyObject* partialFit(PyObject* self, PyObject* args) {
     return pointerToInverseIndex;
 }
 static PyObject* kneighbors(PyObject* self, PyObject* args) {
-    // std::cout << "kneighbors start" << std::endl;
     
     size_t addressNearestNeighborsObject, nNeighbors, maxNumberOfInstances,
             maxNumberOfFeatures, returnDistance;
@@ -197,12 +183,10 @@ static PyObject* kneighbors(PyObject* self, PyObject* args) {
         NearestNeighbors* nearestNeighbors = reinterpret_cast<NearestNeighbors* >(addressNearestNeighborsObject);
         nNeighbors = nearestNeighbors->getNneighbors();
     }
-    // std::cout << "kneighbors successful -> bring neighborhood i shape missing" << std::endl;
     return bringNeighborhoodInShape(neighborhood_, nNeighbors, cutFirstValue, returnDistance);
 }
 
 static PyObject* kneighborsGraph(PyObject* self, PyObject* args) {
-    // std::cout << "kneighbors graph start" << std::endl;
 
     size_t addressNearestNeighborsObject, nNeighbors, maxNumberOfInstances,
             maxNumberOfFeatures, returnDistance, symmetric;
@@ -218,20 +202,14 @@ static PyObject* kneighborsGraph(PyObject* self, PyObject* args) {
                         &nNeighbors, &returnDistance,
                         &fast, &symmetric, &similarity, &addressNearestNeighborsObject))
         return NULL;
-    std::cout << __LINE__ << std::endl;
-    // compute the k-nearest neighbors
     neighborhood* neighborhood_ = neighborhoodComputation(addressNearestNeighborsObject, instancesListObj, featuresListObj, dataListObj, 
                                                 maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast, similarity);
-    std::cout << __LINE__ << std::endl;
     
     if (nNeighbors == 0) {
         NearestNeighbors* nearestNeighbors = reinterpret_cast<NearestNeighbors* >(addressNearestNeighborsObject);
-    std::cout << __LINE__ << std::endl;
         
         nNeighbors = nearestNeighbors->getNneighbors();
     }
-    // std::cout << "kneighbors graph successful -> build graph missing" << std::endl;
-    std::cout << __LINE__ << std::endl;
 
     return buildGraph(neighborhood_, nNeighbors, returnDistance, symmetric);
 }
@@ -419,32 +397,10 @@ static struct PyModuleDef nearestNeighborsModule = {
     -1,
     nearestNeighborsFunctions
 };
-// definition of the module for python
-// PyMODINIT_FUNC
-// init_nearestNeighbors(void)
-// {
-//     (void) Py_InitModule("_nearestNeighbors", nearestNeighborsFunctions);
-// }
 
 // definition of the module for python
 PyMODINIT_FUNC
 PyInit__nearestNeighbors(void)
 {
     return PyModule_Create(&nearestNeighborsModule);
-    // (void) Py_InitModule("_nearestNeighbors", nearestNeighborsModule);
 }
-
-// // definition of available functions for python and which function parsing function in c++ should be called.
-// static PyMethodDef hicBuildMatrixFunctions[] = {
-//     {"buildMatrix", (PyCFunction) buildMatrix, METH_VARARGS, "Builds a Hi-C interaction matrix."},
-   
-//     {NULL, NULL, 0, NULL}
-// };
-
-
-
-// // definition of the module for python
-// PyMODINIT_FUNC PyInit_hicBuildMatrixCpp(void)
-// {
-//     return PyModule_Create(&hicBuildMatrixCppModule);
-// }

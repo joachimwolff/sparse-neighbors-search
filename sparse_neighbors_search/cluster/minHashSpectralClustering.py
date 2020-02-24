@@ -1,6 +1,9 @@
-# Copyright 2015 Joachim Wolff
+# Copyright 2016, 2017, 2018, 2019, 2020 Joachim Wolff
+# PhD Thesis
+#
+# Copyright 2015, 2016 Joachim Wolff
 # Master Thesis
-# Tutors: Milad Miladi, Fabrizio Costa
+# Tutor: Fabrizio Costa
 # Winter semester 2015/2016
 #
 # Chair of Bioinformatics
@@ -58,7 +61,7 @@ class MinHashSpectralClustering():
                                                 kernel_params = self.kernel_params)
         # only for compatible issues
         self.labels_ = None
-    def fit(self, X, y=None):
+    def fit(self, X, y=None, pSaveMemory=None):
         minHashNeighbors = MinHash(n_neighbors = self.n_neighbors, 
         radius = self.radius, fast = self.fast,
         number_of_hash_functions = self.number_of_hash_functions,
@@ -68,11 +71,25 @@ class MinHashSpectralClustering():
         excess_factor = self.excess_factor,
         number_of_cores = self.number_of_cores,
         chunk_size = self.chunk_size, similarity=True)
-        minHashNeighbors.fit(X, y)
+        
+        if pSaveMemory is not None and pSaveMemory > 0:
+            if pSaveMemory > 1:
+                pSaveMemory = 1
+            number_of_elements = X.shape[0]
+            batch_size = int(np.floor(number_of_elements * pSaveMemory))
+            if batch_size < 1:
+                batch_size = 1
+            minHashNeighbors.fit(X[0:batch_size, :])
+            if batch_size < number_of_elements:
+                for i in range(batch_size, X.shape[0], batch_size):
+                    minHashNeighbors.partial_fit(X[i:i+batch_size, :])
+        else:
+            minHashNeighbors.fit(X)
+
         graph_result = minHashNeighbors.kneighbors_graph(mode='distance')
         self._spectralClustering.fit(graph_result)
         self.labels_ = self._spectralClustering.labels_
-    def fit_predict(self, X, y=None):
+    def fit_predict(self, X, y=None, pSaveMemory=None):
         self.fit(X, y)
 
         return self._spectralClustering.labels_

@@ -1,6 +1,9 @@
-# Copyright 2015 Joachim Wolff
+# Copyright 2016, 2017, 2018, 2019, 2020 Joachim Wolff
+# PhD Thesis
+#
+# Copyright 2015, 2016 Joachim Wolff
 # Master Thesis
-# Tutors: Milad Miladi, Fabrizio Costa
+# Tutor: Fabrizio Costa
 # Winter semester 2015/2016
 #
 # Chair of Bioinformatics
@@ -17,38 +20,26 @@ class MinHashClustering():
         self._minHashObject = minHashObject
         self._clusteringObject = clusteringObject
         self._precomputed_graph = None
-    def fit(self, X, y=None, saveMemory=None, pThreads=None):
-
-        if saveMemory:
-            print('partial fitting')
+    def fit(self, X, y=None, pSaveMemory=None):
+        if pSaveMemory is not None and pSaveMemory > 0:
+            if pSaveMemory > 1:
+                pSaveMemory = 1
             number_of_elements = X.shape[0]
-
-            batch_size = int(np.floor(number_of_elements * 0.25))
-
+            batch_size = int(np.floor(number_of_elements * pSaveMemory))
+            if batch_size < 1:
+                batch_size = 1
             self._minHashObject.fit(X[0:batch_size, :])
-
-            for i in range(batch_size, X.shape[0], batch_size):
-                self._minHashObject.partial_fit(X[i:i+batch_size, :])
-
-
-            # if pThreads and pThreads > 1:
-            #     pass
-            # else:
-            #     self._minHashObject.fit(X.getrow(0))
-            #     for i in range(1, X.shape[0]):
-            #         self._minHashObject.partial_fit(X.getrow(i))
-            print('partial fitting ...DONE')
-            
+            if batch_size < number_of_elements:
+                for i in range(batch_size, X.shape[0], batch_size):
+                    self._minHashObject.partial_fit(X[i:i+batch_size, :])
         else:
-            print('full fit')
             self._minHashObject.fit(X)
         self._precomputed_graph = self._minHashObject.kneighbors_graph(mode='distance')
         self._clusteringObject.fit(self._precomputed_graph)
 	
-    def fit_predict(self, X, y=None, saveMemory=None):
+    def fit_predict(self, X, y=None, pSaveMemory=None):
 
-        self.fit(X, y, saveMemory=saveMemory)
-        # self.fit(X, y, saveMemory=False)
+        self.fit(X, y, pSaveMemory=pSaveMemory)
 
         return self.predict(self._precomputed_graph, y)
 		

@@ -1,7 +1,10 @@
 /**
- Copyright 2016 Joachim Wolff
+ Copyright 2016, 2017, 2018, 2019, 2020 Joachim Wolff
+ PhD Thesis
+
+ Copyright 2015, 2016 Joachim Wolff
  Master Thesis
- Tutors: Fabrizio Costa, Milad Miladi
+ Tutor: Fabrizio Costa
  Winter semester 2015/2016
 
  Chair of Bioinformatics
