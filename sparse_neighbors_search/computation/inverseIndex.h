@@ -82,7 +82,7 @@ class InverseIndex {
   	neighborhood* kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                 const size_t pNneighborhood, 
                                 const bool pDoubleElementsStorageCount,
-                                const bool pNoneSingleInstance=true, float pRadius = -1.0);
+                                const bool pNoneSingleInstance=true, float pRadius = -1.0, const bool pAbsoluteNumbers=false);
   	umap_uniqueElement* getSignatureStorage() { 
       return mSignatureStorage;
     };

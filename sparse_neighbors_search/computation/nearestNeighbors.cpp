@@ -81,7 +81,7 @@ void NearestNeighbors::partialFit(SparseMatrixFloat* pRawData, size_t pStartInde
 }
 
 neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
-                                                size_t pNneighbors, int pFast, int pSimilarity, float pRadius) {
+                                                size_t pNneighbors, int pFast, int pSimilarity, float pRadius, bool pAbsoluteNumbers) {
     if (pFast == -1) {
         pFast = mFast;
     } 
@@ -100,13 +100,13 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
         // no query data given, use stored signatures
         x_inverseIndex = mInverseIndex->getSignatureStorage();
         neighborhood_  = mInverseIndex->kneighbors(x_inverseIndex, 
-                                                    pNneighbors, true, pRadius);
+                                                    pNneighbors, true, pRadius, pAbsoluteNumbers);
         doubleElementsStorageCount = true;
     } else {
         pRawData->precomputeDotProduct();
         x_inverseIndex = (mInverseIndex->computeSignatureMap(pRawData));
         neighborhood_ = mInverseIndex->kneighbors(x_inverseIndex, pNneighbors, 
-                                                doubleElementsStorageCount, pRadius);
+                                                doubleElementsStorageCount, pRadius, pAbsoluteNumbers);
        for (auto it = x_inverseIndex->begin(); it != x_inverseIndex->end(); ++it) {
             delete (*it).second.instances;
             delete (*it).second.signature;
@@ -253,7 +253,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                 }
                 (*instance_signature)[signatureId] = (*x_inverseIndex)[signatureId];
                  neighborhood* neighborhood_instance = mInverseIndex->kneighbors(instance_signature, 
-                                                                pNneighbors, false, false);
+                                                                pNneighbors, false, false, pAbsoluteNumbers);
                 if (neighborhood_instance->neighbors->operator[](0).size() != 0) { 
                     std::vector<sortMapFloat> exactNeighbors;
                     if (pSimilarity) {

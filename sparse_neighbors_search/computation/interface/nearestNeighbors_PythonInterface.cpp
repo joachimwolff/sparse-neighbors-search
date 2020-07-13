@@ -21,7 +21,7 @@
 static neighborhood* neighborhoodComputation(size_t pNearestNeighborsAddress, PyObject* pInstancesListObj,
                                                 PyObject* pFeaturesListObj, PyObject* pDataListObj,
                                                 size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures, 
-                                                size_t pNneighbors, int pFast, int pSimilarity, float pRadius = -1.0) {
+                                                size_t pNneighbors, int pFast, int pSimilarity, float pRadius = -1.0, bool pAbsoluteNumbers = false) {
     SparseMatrixFloat* originalDataMatrix = NULL;
     if (pMaxNumberOfInstances != 0) {
         originalDataMatrix = parseRawData(pInstancesListObj, pFeaturesListObj, pDataListObj, 
@@ -31,7 +31,7 @@ static neighborhood* neighborhoodComputation(size_t pNearestNeighborsAddress, Py
     NearestNeighbors* nearestNeighbors = reinterpret_cast<NearestNeighbors* >(pNearestNeighborsAddress);
 
     // compute the k-nearest neighbors
-    neighborhood* neighbors_ =  nearestNeighbors->kneighbors(originalDataMatrix, pNneighbors, pFast, pSimilarity, pRadius);
+    neighborhood* neighbors_ =  nearestNeighbors->kneighbors(originalDataMatrix, pNneighbors, pFast, pSimilarity, pRadius, pAbsoluteNumbers);
 
     if (originalDataMatrix != NULL) {
         delete originalDataMatrix;    
@@ -43,7 +43,7 @@ static neighborhood* neighborhoodComputation(size_t pNearestNeighborsAddress, Py
 static neighborhood* fitNeighborhoodComputation(size_t pNearestNeighborsAddress, PyObject* pInstancesListObj,
                                                 PyObject* pFeaturesListObj,PyObject* pDataListObj,
                                                 size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures, 
-                                                size_t pNneighbors, int pFast, int pSimilarity, float pRadius = -1.0) {
+                                                size_t pNneighbors, int pFast, int pSimilarity, float pRadius = -1.0, bool pAbsoluteNumbers = false) {
     SparseMatrixFloat* originalDataMatrix = parseRawData(pInstancesListObj, pFeaturesListObj, pDataListObj, 
                                                     pMaxNumberOfInstances, pMaxNumberOfFeatures);
     // get pointer to the minhash object
@@ -52,7 +52,7 @@ static neighborhood* fitNeighborhoodComputation(size_t pNearestNeighborsAddress,
 
     nearestNeighbors->fit(originalDataMatrix);
     SparseMatrixFloat* emptyMatrix = NULL;
-    neighborhood* neighborhood_ = nearestNeighbors->kneighbors(emptyMatrix, pNneighbors, pFast, pSimilarity, pRadius);
+    neighborhood* neighborhood_ = nearestNeighbors->kneighbors(emptyMatrix, pNneighbors, pFast, pSimilarity, pRadius, pAbsoluteNumbers);
 
     return neighborhood_;
 }
