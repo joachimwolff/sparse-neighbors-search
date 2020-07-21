@@ -395,7 +395,10 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                         const size_t pNneighborhood, 
                                         const bool pDoubleElementsStorageCount,
-                                        const bool pNoneSingleInstance, const float pRadius, const bool pAbsoluteNumbers) {
+                                        const bool pNoneSingleInstance, float pRadius, bool pAbsoluteNumbers) {
+    // std::cout << "InverseIndex::kneighbors__absolute numbers: " << pAbsoluteNumbers << std::endl;
+    // std::cout << "pRadius: " << pRadius << std::endl; 
+    // std::cout << "pAbsoluteNumbers: " << pAbsoluteNumbers << std::endl; 
     size_t doubleElements = 0;
     if (pNoneSingleInstance) {
         if (pDoubleElementsStorageCount) {
@@ -518,21 +521,37 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             std::vector<float> distanceVector;
             for (auto it = neighborhoodVectorForSorting.begin(); it != neighborhoodVectorForSorting.end(); ++it) {
                 
+                // float value = 1 - (((*it).val) / (float)(mMaximalNumberOfHashCollisions));
+                // std::cout << "value: " << value << " orignal: " << (*it).val<< std::endl; 
+                // std::cout << "pRadius: " << pRadius << std::endl; 
+                // std::cout << "pAbsoluteNumbers: " << pAbsoluteNumbers << std::endl; 
+
+
+                
+                float value = 0.0;
                 if (pAbsoluteNumbers) {
-                    float value = (float) (*it).val;
+                    value = (float) (*it).val;
 
                 } else {
-                    float value = 1 - (((*it).val) / (float)(mMaximalNumberOfHashCollisions));
+                    value = 1 - (((*it).val) / (float)(mMaximalNumberOfHashCollisions));
                 }
-                if (value < 0) {
-                    value = 0;
-                }
+                // if (value < 0) {
+                //     value = 0;
+                // }
+                // std::cout << "value: " << value << " orignal: " << (*it).val << "pRadius ==-1.0" << std::endl; 
 
                 if (pRadius == -1.0) {
+                    // if (j == 0){
+                    //     std::cout << "value: " << value << " orignal: " << (*it).val << "pRadius ==-1.0" << std::endl; 
+
+                    // }
                     neighborhoodVector.push_back((*it).key);
                     distanceVector.push_back(value);
                 } else {
                     if (value <= pRadius) {
+                        // if (j == 0){
+                        //     std::cout << "value: " << value << " orignal: " << (*it).val << "value <= pRadius" << std::endl; 
+                        // }
                         neighborhoodVector.push_back((*it).key);
                         distanceVector.push_back(value);
                     } else {

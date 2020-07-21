@@ -112,7 +112,7 @@ class WtaHash():
                  similarity=False, number_of_cores=None, chunk_size=None, prune_inverse_index=-1,
                  prune_inverse_index_after_instance=-1.0, remove_hash_function_with_less_entries_as=-1, 
                  block_size = 5, shingle=0, store_value_with_least_sigificant_bit=0, 
-                 speed_optimized=None, accuracy_optimized=None): #cpu_gpu_load_balancing=0,
+                 speed_optimized=None, accuracy_optimized=None, absolute_numbers=False): #cpu_gpu_load_balancing=0,
                   
         if speed_optimized is not None and accuracy_optimized is not None:
             print("Speed optimization and accuracy optimization at the same time is not possible.")
@@ -187,7 +187,7 @@ class WtaHash():
         self._nearestNeighborsCppInterface.partial_fit(X=X, y=y)
        
         
-    def kneighbors(self,X=None, n_neighbors=None, return_distance=True, fast=None, similarity=None):
+    def kneighbors(self,X=None, n_neighbors=None, return_distance=True, fast=None, similarity=None, pAbsoluteNumbers=None):
         """Finds the n_neighbors of a point X or of all points of X.
 
             Parameters
@@ -220,9 +220,9 @@ class WtaHash():
                 Indices of the nearest points in the population matrix."""
         return self._nearestNeighborsCppInterface.kneighbors(X=X, n_neighbors=n_neighbors, 
                                                                 return_distance=return_distance,
-                                                                fast=fast, similarity=similarity)
+                                                                fast=fast, similarity=similarity, pAbsoluteNumbers=pAbsoluteNumbers)
 
-    def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', fast=None, symmetric=True, similarity=None):
+    def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', fast=None, symmetric=True, similarity=None, pAbsoluteNumbers=None):
         """Computes the (weighted) graph of k-Neighbors for points in X
             
             Parameters
@@ -259,9 +259,9 @@ class WtaHash():
                 A[i, j] is assigned the weight of edge that connects i to j.
             """
         return self._nearestNeighborsCppInterface.kneighbors_graph(X=X, n_neighbors=n_neighbors, mode=mode, 
-                                                            fast=fast, symmetric=symmetric, similarity=similarity)
+                                                            fast=fast, symmetric=symmetric, similarity=similarity, pAbsoluteNumbers=pAbsoluteNumbers)
 
-    def radius_neighbors(self, X=None, radius=None, return_distance=None, fast=None, similarity=None):
+    def radius_neighbors(self, X=None, radius=None, return_distance=None, fast=None, similarity=None, pAbsoluteNumbers=None):
         """Finds the neighbors within a given radius of a point or points.
         Return the indices and distances of each point from the dataset
         lying in a ball with size ``radius`` around the points of the query
@@ -302,10 +302,10 @@ class WtaHash():
             ``radius`` around the query points."""
         return self._nearestNeighborsCppInterface.radius_neighbors(X=X, radius=radius, 
                                                                     return_distance=return_distance, 
-                                                                    fast=fast, similarity=similarity)
+                                                                    fast=fast, similarity=similarity, pAbsoluteNumbers=pAbsoluteNumbers)
         
 
-    def radius_neighbors_graph(self, X=None, radius=None, mode='connectivity', fast=None, symmetric=True, similarity=None):
+    def radius_neighbors_graph(self, X=None, radius=None, mode='connectivity', fast=None, symmetric=True, similarity=None, pAbsoluteNumbers=None):
         """Computes the (weighted) graph of Neighbors for points in X
         Neighborhoods are restricted the points at a distance lower than
         radius.
@@ -342,10 +342,10 @@ class WtaHash():
         A : sparse matrix in CSR format, shape = [n_samples, n_samples]
         A[i, j] is assigned the weight of edge that connects i to j."""
         return self._nearestNeighborsCppInterface.radius_neighbors_graph(X=X, radius=radius, mode=mode,
-                                                                            fast=fast, symmetric=symmetric, similarity=similarity)
+                                                                            fast=fast, symmetric=symmetric, similarity=similarity, pAbsoluteNumbers=pAbsoluteNumbers)
 
 
-    def fit_kneighbors(self, X, n_neighbors=None, return_distance=True, fast=None, similarity=None):
+    def fit_kneighbors(self, X, n_neighbors=None, return_distance=True, fast=None, similarity=None, pAbsoluteNumbers=None):
         """"Fits and returns the n_neighbors of X.
 
         Parameters
@@ -378,9 +378,9 @@ class WtaHash():
                 Indices of the nearest points in the population matrix."""
         return self._nearestNeighborsCppInterface.fit_kneighbors(X=X, n_neighbors=n_neighbors,
                                                                     return_distance=return_distance,
-                                                                    fast=fast, similarity=similarity)
+                                                                    fast=fast, similarity=similarity, pAbsoluteNumbers=pAbsoluteNumbers)
 
-    def fit_kneighbor_graph(self, X, n_neighbors=None, mode='connectivity', fast=None, symmetric=True, similarity=None):
+    def fit_kneighbor_graph(self, X, n_neighbors=None, mode='connectivity', fast=None, symmetric=True, similarity=None, pAbsoluteNumbers=None):
         """Fits and computes the (weighted) graph of k-Neighbors for points in X
             
             Parameters
@@ -419,9 +419,9 @@ class WtaHash():
         return self._nearestNeighborsCppInterface.fit_kneighbor_graph(X=X, n_neighbors=n_neighbors,
                                                                         mode=mode, fast=fast, 
                                                                         symmetric=symmetric, 
-                                                                        similarity=similarity)
+                                                                        similarity=similarity, pAbsoluteNumbers=pAbsoluteNumbers)
 
-    def fit_radius_neighbors(self, X, radius=None, return_distance=None, fast=None, similarity=None):
+    def fit_radius_neighbors(self, X, radius=None, return_distance=None, fast=None, similarity=None, pAbsoluteNumbers=None):
         """Fits the data and finds the neighbors within a given radius of a point or points.
         Return the indices and distances of each point from the dataset
         lying in a ball with size ``radius`` around the points of the query
@@ -462,9 +462,9 @@ class WtaHash():
             ``radius`` around the query points."""
         return self._nearestNeighborsCppInterface.fit_radius_neighbors(X=X, radius=radius, 
                                                                         return_distance=return_distance,
-                                                                        fast=fast, similarity=similarity)  
+                                                                        fast=fast, similarity=similarity, pAbsoluteNumbers=pAbsoluteNumbers)  
         
-    def fit_radius_neighbors_graph(self, X, radius=None, mode='connectivity', fast=None, symmetric=True, similarity=None):
+    def fit_radius_neighbors_graph(self, X, radius=None, mode='connectivity', fast=None, symmetric=True, similarity=None, pAbsoluteNumbers=None):
         """Fits and computes the (weighted) graph of Neighbors for points in X
         Neighborhoods are restricted the points at a distance lower than
         radius.
@@ -503,7 +503,7 @@ class WtaHash():
         return self._nearestNeighborsCppInterface.fit_radius_neighbors_graph(X=X, radius=radius,
                                                                                 mode=mode, fast=fast,
                                                                                 symmetric=symmetric,
-                                                                                similarity=similarity)
+                                                                                similarity=similarity, pAbsoluteNumbers=pAbsoluteNumbers)
         
         
     def get_distribution_of_inverse_index(self):
