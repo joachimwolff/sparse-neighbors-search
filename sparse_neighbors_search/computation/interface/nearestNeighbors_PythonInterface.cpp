@@ -29,7 +29,6 @@ static neighborhood* neighborhoodComputation(size_t pNearestNeighborsAddress, Py
     }
 
     NearestNeighbors* nearestNeighbors = reinterpret_cast<NearestNeighbors* >(pNearestNeighborsAddress);
-    std::cout << __LINE__ << "absolute numbers: " << pAbsoluteNumbers << std::endl;
 
     // compute the k-nearest neighbors
     neighborhood* neighbors_ =  nearestNeighbors->kneighbors(originalDataMatrix, pNneighbors, pFast, pSimilarity, pRadius, pAbsoluteNumbers);
@@ -50,11 +49,9 @@ static neighborhood* fitNeighborhoodComputation(size_t pNearestNeighborsAddress,
     // get pointer to the minhash object
     NearestNeighbors* nearestNeighbors = reinterpret_cast<NearestNeighbors* >(pNearestNeighborsAddress);
     nearestNeighbors->set_mOriginalData(originalDataMatrix);
-
     nearestNeighbors->fit(originalDataMatrix);
     SparseMatrixFloat* emptyMatrix = NULL;
     neighborhood* neighborhood_ = nearestNeighbors->kneighbors(emptyMatrix, pNneighbors, pFast, pSimilarity, pRadius, pAbsoluteNumbers);
-
     return neighborhood_;
 }
 
@@ -146,9 +143,11 @@ static PyObject* partialFit(PyObject* self, PyObject* args) {
     // get pointer to the minhash object
     NearestNeighbors* nearestNeighbors = reinterpret_cast<NearestNeighbors* >(addressNearestNeighborsObject);
     size_t numberOfInstancesOld = nearestNeighbors->getOriginalData()->size();
+
     nearestNeighbors->getOriginalData()->addNewInstancesPartialFit(originalDataMatrix);
 
     nearestNeighbors->partialFit(originalDataMatrix, numberOfInstancesOld);
+
     delete originalDataMatrix;
     addressNearestNeighborsObject = reinterpret_cast<size_t>(nearestNeighbors);
     PyObject * pointerToInverseIndex = Py_BuildValue("k", addressNearestNeighborsObject);
@@ -204,9 +203,8 @@ static PyObject* kneighborsGraph(PyObject* self, PyObject* args) {
                         &fast, &symmetric, &similarity, &absoluteNumbers, &addressNearestNeighborsObject))
         return NULL;
     
-    std::cout << "absolute numbers: " << absoluteNumbers << std::endl;
     // std::cout << "absolute numbers: " << absoluteNumbers << std::endl;
-
+    // std::cout << "absolute numbers: " << absoluteNumbers << std::endl;
     neighborhood* neighborhood_ = neighborhoodComputation(addressNearestNeighborsObject, instancesListObj, featuresListObj, dataListObj, 
                                                 maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast, similarity, absoluteNumbers);
     

@@ -83,9 +83,6 @@ void NearestNeighbors::partialFit(SparseMatrixFloat* pRawData, size_t pStartInde
 neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                                                 size_t pNneighbors, int pFast, int pSimilarity, float pRadius, bool pAbsoluteNumbers) {
 
-    std::cout << "NearestNeighbors::kneighbors__absolute numbers: " << pAbsoluteNumbers << std::endl;
-    std::cout << "NearestNeighbors::pRadius: " << pRadius << std::endl;
-
     size_t limit_neighbors_of_neighbors = 100;
     if (pNneighbors+mExcessFactor < limit_neighbors_of_neighbors) {
         limit_neighbors_of_neighbors = pNneighbors+mExcessFactor;
@@ -122,7 +119,8 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
        delete x_inverseIndex;                                          
     }
     
-    if (pFast) {     
+    if (pFast) {    
+
         return neighborhood_;
     }
     mOriginalData->precomputeDotProduct();

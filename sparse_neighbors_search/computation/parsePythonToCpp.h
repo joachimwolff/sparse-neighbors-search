@@ -64,7 +64,6 @@ SparseMatrixFloat* parseRawData(PyObject * pIndptrListObj, PyObject * pIndicesLi
         featuresCount = 0;
         i++;
     }
-   
     return originalData;
 }
 
@@ -182,7 +181,6 @@ static PyObject* bringNeighborhoodInShape(const neighborhood* pNeighborhood, con
 
 static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNneighbors, const size_t pReturnDistance, const size_t symmetric) {
     size_t sizeOfNeighborList = pNeighborhood->neighbors->size();
-    std::cout << "sizeOfNeighborList: " << sizeOfNeighborList << std::endl; 
     PyObject * rowList = PyList_New(0);
     PyObject * columnList = PyList_New(0);
     PyObject * dataList = PyList_New(0);
@@ -239,11 +237,8 @@ static PyObject* buildGraph(const neighborhood* pNeighborhood, const size_t pNne
                 PyObject* distance;
                 if (pReturnDistance) {
                     distance = Py_BuildValue("f", pNeighborhood->distances->operator[](i)[j]);
-                    std::cout << "distance: " << pNeighborhood->distances->operator[](i)[j] << std::endl;
                 } else {
                     distance = Py_BuildValue("f", 1.0);
-                    std::cout << "just one: " << 1.0 << std::endl;
-
                 }
                 PyList_Append(rowList, root);
                 PyList_Append(columnList, node);

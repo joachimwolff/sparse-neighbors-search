@@ -14,13 +14,14 @@
 from ..neighbors import MinHash
 import numpy as np
 from scipy.sparse import vstack
+from sklearn.decomposition import PCA
 
 class MinHashClustering():
     def __init__(self, minHashObject, clusteringObject):
         self._minHashObject = minHashObject
         self._clusteringObject = clusteringObject
         self._precomputed_graph = None
-    def fit(self, X, y=None, pSaveMemory=None):
+    def fit(self, X, y=None, pSaveMemory=None, pPca=None, pPcaDimensions=None):
         if pSaveMemory is not None and pSaveMemory > 0:
             if pSaveMemory > 1:
                 pSaveMemory = 1
@@ -35,16 +36,32 @@ class MinHashClustering():
         else:
             self._minHashObject.fit(X)
         self._precomputed_graph = self._minHashObject.kneighbors_graph(mode='distance')
+
+        if pPca:
+            pca = PCA(n_components = min(self._precomputed_graph.shape) - 1)
+            self._precomputed_graph = pca.fit_transform(self._precomputed_graph.todense())
+
+            if pPcaDimensions:
+                pPcaDimensions = min(pPcaDimensions, self._precomputed_graph.shape[0])
+                self._clusteringObject.fit(self._precomputed_graph[:, :pPcaDimensions])
+                return 
+           
         self._clusteringObject.fit(self._precomputed_graph)
+        return
 	
-    def fit_predict(self, X, y=None, pSaveMemory=None):
+    def fit_predict(self, X, y=None, pSaveMemory=None, pPca=None, pPcaDimensions=None):
 
-        self.fit(X, y, pSaveMemory=pSaveMemory)
+        self.fit(X, y, pSaveMemory=pSaveMemory, pPca=pPca, pPcaDimensions=pPcaDimensions)
 
-        return self.predict(self._precomputed_graph, y)
+        return self.predict(self._precomputed_graph, y, pPca=pPca, pPcaDimensions=pPcaDimensions )
 		
-    def predict(self, X, y=None):
+    def predict(self, X, y=None, pPca=None, pPcaDimensions=None):
         if hasattr(self._clusteringObject, 'labels_'):
             return self._clusteringObject.labels_.astype(np.int)
         else:
+            if pPca:
+                if pPcaDimensions:
+                    pPcaDimensions = min(pPcaDimensions, self._precomputed_graph.shape[0])
+                    returnself._clusteringObject.fit(self._precomputed_graph[:, :pPcaDimensions])
+ 
             return self._clusteringObject.predict(X)

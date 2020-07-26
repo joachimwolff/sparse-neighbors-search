@@ -117,24 +117,47 @@ vsize_t* InverseIndex::computeSignatureSSE(SparseMatrixFloat* pRawData, const si
 
             argmin = _mm_set_epi32(0,0,0,0);
 
-            seed = _mm_set_epi32(j+1, j+1, j+1, j+1);                   
-            for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance) - 4; i+=4) {
-                value = _mm_setr_epi32((pRawData->getNextElement(pInstance, i) +1), 
-                                    (pRawData->getNextElement(pInstance, i+1) +1),
-                                    (pRawData->getNextElement(pInstance, i+2) +1),
-                                    (pRawData->getNextElement(pInstance, i+3) +1));
-                hashValue = mHash->hash_SSE(value, seed);
+            seed = _mm_set_epi32(j+1, j+1, j+1, j+1);
+
+            if (pRawData->getSizeOfInstance(pInstance) > 4) {
+                for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance) - 4; i+=4) {
+                    if (i == 0) {
+                    }
+                    value = _mm_setr_epi32((pRawData->getNextElement(pInstance, i) +1), 
+                                        (pRawData->getNextElement(pInstance, i+1) +1),
+                                        (pRawData->getNextElement(pInstance, i+2) +1),
+                                        (pRawData->getNextElement(pInstance, i+3) +1));
+                    hashValue = mHash->hash_SSE(value, seed);
+                    
+                    minimumVector = _mm_min_epu32(hashValue, minimumVector);
+
+                    // compare all four hash values and store minimum for each element
+                    argmin = _mm_argmin_change_epi32(argmin, minimumVector, hashValue, value);
+
+                }
+                (*signature)[j] = _mm_get_argmin(argmin, minimumVector);
+            } else {
+                uint32_t nearestNeighborsValue = MAX_VALUE;    
+                size_t argmin_local = 0;
+                size_t seed_local = 0;
+                seed_local = j + 1;    
+                for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); i++) {
+                    uint32_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), seed_local, MAX_VALUE);
                 
-                minimumVector = _mm_min_epu32(hashValue, minimumVector);
-                // compare all four hash values and store minimum for each element
-                argmin = _mm_argmin_change_epi32(argmin, minimumVector, hashValue, value);
+                    if (hashValue < nearestNeighborsValue) {
+                        nearestNeighborsValue = hashValue;
+                        argmin_local = pRawData->getNextElement(pInstance, i);
+                    }
+                }
+                (*signature)[j] = argmin_local;
             }
-            (*signature)[j] = _mm_get_argmin(argmin, minimumVector);
     }
     // reduce number of hash values by a factor of mShingleSize
     if (mShingle) {
+
         return shingle(signature);
     }
+
     return signature;
 }  
 
@@ -157,22 +180,20 @@ vsize_t* InverseIndex::computeSignature(SparseMatrixFloat* pRawData, const size_
                     argmin = pRawData->getNextElement(pInstance, i);
                 }
             }
-        std::cout << __LINE__ << std::endl;
 
             (*signature)[j] = argmin;
     }
-        std::cout << __LINE__ << std::endl;
 
     // reduce number of hash values by a factor of mShingleSize
     if (mShingle) {
         return shingle(signature);
     }
-        std::cout << __LINE__ << std::endl;
 
     return signature;
 }
 
 vsize_t* InverseIndex::shingle(vsize_t* pSignature) {
+    
     if (pSignature == NULL) return NULL;
     vsize_t* signature = new vsize_t(mInverseIndexSize);
     size_t iterationSize = ceil((mNumberOfHashFunctions * mBlockSize) / mShingleSize);
@@ -240,6 +261,7 @@ vsize_t* InverseIndex::computeSignatureWTA(SparseMatrixFloat* pRawData, const si
 }
 
 vvsize_t_p* InverseIndex::computeSignatureVectors(SparseMatrixFloat* pRawData, const bool pFitting) {
+    
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
@@ -257,7 +279,9 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(SparseMatrixFloat* pRawData, c
         for (size_t instance = 0; instance < pRawData->size(); ++instance) {
             if (mHashAlgorithm == 0) {
                 // use nearestNeighbors 
+
                 (*signatures)[instance] = computeSignature(pRawData, instance);
+
             } else if (mHashAlgorithm == 1) {
                 // use wta hash
                 (*signatures)[instance] = computeSignatureWTA(pRawData, instance);
@@ -284,6 +308,7 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(SparseMatrixFloat* pRawData, c
             } 
     }
     #endif
+
     return signatures;
 }
 umap_uniqueElement* InverseIndex::computeSignatureMap(SparseMatrixFloat* pRawData) {
@@ -325,7 +350,7 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(SparseMatrixFloat* pRawDat
 void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
 
     vvsize_t_p* signatures = computeSignatureVectors(pRawData, true);
-
+    
     if (signatures == NULL) return;
     // compute how often the inverse index should be pruned 
     size_t pruneEveryNInstances = ceil(signatures->size() * mPruneInverseIndexAfterInstance);
@@ -390,15 +415,13 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
     }
 
     delete signatures;
+
 }
 
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                         const size_t pNneighborhood, 
                                         const bool pDoubleElementsStorageCount,
                                         const bool pNoneSingleInstance, float pRadius, bool pAbsoluteNumbers) {
-    // std::cout << "InverseIndex::kneighbors__absolute numbers: " << pAbsoluteNumbers << std::endl;
-    // std::cout << "pRadius: " << pRadius << std::endl; 
-    // std::cout << "pAbsoluteNumbers: " << pAbsoluteNumbers << std::endl; 
     size_t doubleElements = 0;
     if (pNoneSingleInstance) {
         if (pDoubleElementsStorageCount) {
@@ -521,13 +544,6 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             std::vector<float> distanceVector;
             for (auto it = neighborhoodVectorForSorting.begin(); it != neighborhoodVectorForSorting.end(); ++it) {
                 
-                // float value = 1 - (((*it).val) / (float)(mMaximalNumberOfHashCollisions));
-                // std::cout << "value: " << value << " orignal: " << (*it).val<< std::endl; 
-                // std::cout << "pRadius: " << pRadius << std::endl; 
-                // std::cout << "pAbsoluteNumbers: " << pAbsoluteNumbers << std::endl; 
-
-
-                
                 float value = 0.0;
                 if (pAbsoluteNumbers) {
                     value = (float) (*it).val;
@@ -535,23 +551,12 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
                 } else {
                     value = 1 - (((*it).val) / (float)(mMaximalNumberOfHashCollisions));
                 }
-                // if (value < 0) {
-                //     value = 0;
-                // }
-                // std::cout << "value: " << value << " orignal: " << (*it).val << "pRadius ==-1.0" << std::endl; 
 
                 if (pRadius == -1.0) {
-                    // if (j == 0){
-                    //     std::cout << "value: " << value << " orignal: " << (*it).val << "pRadius ==-1.0" << std::endl; 
-
-                    // }
                     neighborhoodVector.push_back((*it).key);
                     distanceVector.push_back(value);
                 } else {
                     if (value <= pRadius) {
-                        // if (j == 0){
-                        //     std::cout << "value: " << value << " orignal: " << (*it).val << "value <= pRadius" << std::endl; 
-                        // }
                         neighborhoodVector.push_back((*it).key);
                         distanceVector.push_back(value);
                     } else {

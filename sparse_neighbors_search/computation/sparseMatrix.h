@@ -150,10 +150,17 @@ class SparseMatrixFloat {
         return mNumberOfInstances;
     };
     uint32_t getNextElement(size_t pInstance, size_t pCounter) const {
-                return mSparseMatrix[pInstance*mMaxNnz+pCounter];
+        // if (pInstance*mMaxNnz+pCounter < mNumberOfInstances) {
+            return mSparseMatrix[pInstance*mMaxNnz+pCounter];
+        // }
+        // return 0;
     };
     float getNextValue(size_t pInstance, size_t pCounter) const {
+        // if (pInstance*mMaxNnz+pCounter < mNumberOfInstances) {
                 return mSparseMatrixValues[pInstance*mMaxNnz+pCounter];
+        // }
+        // return 0;
+    
     };
     size_t size() const {
         return mNumberOfInstances;
