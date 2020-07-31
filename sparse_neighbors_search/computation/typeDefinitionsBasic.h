@@ -21,7 +21,7 @@
 #include <utility>
 #include <limits>
 // #include <google/dense_hash_map>
-#define MAX_VALUE 2147483647 //std::numeric_limits<int>::max()
+#define MAX_VALUE std::numeric_limits<uint64_t>::max()
 
 typedef std::vector< size_t > vsize_t;
 typedef std::vector< int > vint;

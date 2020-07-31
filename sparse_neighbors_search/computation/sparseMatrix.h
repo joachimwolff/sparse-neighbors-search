@@ -32,7 +32,7 @@ class SparseMatrixFloat {
     // stores only the pointer addresses to:
     //      if even index: size_t which is pointer for vsize
     //      if odd indeX: size_t which is pointer for vfloat
-    uint32_t* mSparseMatrix = NULL;
+    uint64_t* mSparseMatrix = NULL;
     float*  mSparseMatrixValues = NULL;
     size_t* mSizesOfInstances = NULL;
     
@@ -44,7 +44,7 @@ class SparseMatrixFloat {
     SparseMatrixFloat(size_t pNumberOfInstances, size_t pMaxNnz) {
         
         pMaxNnz = pMaxNnz + 32 - (pMaxNnz % 32);
-        mSparseMatrix = new uint32_t [pNumberOfInstances * pMaxNnz];
+        mSparseMatrix = new uint64_t [pNumberOfInstances * pMaxNnz];
         std::fill_n(mSparseMatrix, pNumberOfInstances * pMaxNnz, MAX_VALUE);
         mSparseMatrixValues = new float [pNumberOfInstances * pMaxNnz]();
         mSizesOfInstances = new size_t [pNumberOfInstances];
@@ -121,7 +121,7 @@ class SparseMatrixFloat {
         }
         return mDotProductPrecomputed[pIndex];
     }
-    uint32_t* getSparseMatrixIndex() const{
+    uint64_t* getSparseMatrixIndex() const{
         return mSparseMatrix;
     };
     float* getSparseMatrixValues() const{
@@ -129,7 +129,7 @@ class SparseMatrixFloat {
     };
     
     
-    uint32_t* getSparseMatrixIndexPointer(size_t pIndex) {
+    uint64_t* getSparseMatrixIndexPointer(size_t pIndex) {
         // printf("pIndex: %u, mMaxNNZ: %u pIndex*mMaxNnz: %u maxIndex: %u\n", pIndex, mMaxNnz, pIndex * mMaxNnz, mNumberOfInstances * mMaxNnz);
         
         return &(mSparseMatrix[pIndex * mMaxNnz]);
@@ -149,7 +149,7 @@ class SparseMatrixFloat {
     size_t getNumberOfInstances() const {
         return mNumberOfInstances;
     };
-    uint32_t getNextElement(size_t pInstance, size_t pCounter) const {
+    uint64_t getNextElement(size_t pInstance, size_t pCounter) const {
         // if (pInstance*mMaxNnz+pCounter < mNumberOfInstances) {
             return mSparseMatrix[pInstance*mMaxNnz+pCounter];
         // }
@@ -197,7 +197,7 @@ class SparseMatrixFloat {
         // std::cout << "pMatrix->getMaxNnz()" << pMatrix->getMaxNnz() << std::endl;
 
         
-        uint32_t* tmp_mSparseMatrix = new uint32_t [numberOfInstances * maxNnz];
+        uint64_t* tmp_mSparseMatrix = new uint64_t [numberOfInstances * maxNnz];
         float* tmp_mSparseMatrixValues = new float [numberOfInstances * maxNnz];
         size_t* tmp_mSizesOfInstances = new size_t [numberOfInstances];
         

@@ -45,8 +45,10 @@ class MinHashClustering():
                 pPcaDimensions = min(pPcaDimensions, self._precomputed_graph.shape[0])
                 self._clusteringObject.fit(self._precomputed_graph[:, :pPcaDimensions])
                 return 
-           
-        self._clusteringObject.fit(self._precomputed_graph)
+        try:
+            self._clusteringObject.fit(self._precomputed_graph)
+        except:
+            self._clusteringObject.fit(self._precomputed_graph.todense())
         return
 	
     def fit_predict(self, X, y=None, pSaveMemory=None, pPca=None, pPcaDimensions=None):

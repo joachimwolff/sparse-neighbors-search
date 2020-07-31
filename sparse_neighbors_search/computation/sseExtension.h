@@ -18,11 +18,11 @@
 #define SSE_EXTENSION
 // source: http://stackoverflow.com/questions/10500766/sse-multiplication-of-4-32-bit-integers
 // if sse4.1 support is given function is build in
-static inline __m128i _mm_mul_epi32_4int(const __m128i &a, const __m128i &b) {
-    __m128i tmp1 = _mm_mul_epu32(a,b); /* mul 2,0*/
-    __m128i tmp2 = _mm_mul_epu32( _mm_srli_si128(a,4), _mm_srli_si128(b,4)); /* mul 3,1 */
-    return _mm_unpacklo_epi32(_mm_shuffle_epi32(tmp1, _MM_SHUFFLE (0,0,2,0)), _mm_shuffle_epi32(tmp2, _MM_SHUFFLE (0,0,2,0))); /* shuffle results to [63..0] and pack */
-}
+// static inline __m128i _mm_mul_epi32_4int(const __m128i &a, const __m128i &b) {
+//     __m128i tmp1 = _mm_mul_epu32(a,b); /* mul 2,0*/
+//     __m128i tmp2 = _mm_mul_epu32( _mm_srli_si128(a,4), _mm_srli_si128(b,4)); /* mul 3,1 */
+//     return _mm_unpacklo_epi32(_mm_shuffle_epi32(tmp1, _MM_SHUFFLE (0,0,2,0)), _mm_shuffle_epi32(tmp2, _MM_SHUFFLE (0,0,2,0))); /* shuffle results to [63..0] and pack */
+// }
 static inline __m128i _mm_not_si128 (const __m128i &x) {
     // Returns ~x, the bitwise complement of x:
     return _mm_xor_si128(x, _mm_cmpeq_epi32(_mm_setzero_si128(), _mm_setzero_si128()));
@@ -60,6 +60,8 @@ static inline uint32_t _mm_get_argmin(const __m128i &pArgmin, const __m128i &pMi
 
     return (uint32_t) _mm_cvtsi128_si32(max4);
 }
+
+
 // void print128_num(__m128i var)
 // {
 //     uint16_t *val = (uint16_t*) &var;

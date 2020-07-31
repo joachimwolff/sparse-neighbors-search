@@ -15,6 +15,7 @@
 
 #include "typeDefinitions.h"
 #include "sseExtension.h"
+#include "avxExtension.h"
 
 #include <smmintrin.h>
 #include <functional>
@@ -28,13 +29,13 @@ class Hash {
     
     __m128i hash_SSE_priv(__m128i keys) {
 
-        __m128 keys_temp = {A_float, A_float, A_float, A_float};
-        // conversion to float
-        __m128 keys_float = _mm_cvtepi32_ps(keys);
-        // multiplication of key * A
-        keys_float = _mm_mul_ps(keys_float, keys_temp);
-        // conversion back to int
-        keys = _mm_cvttps_epi32(keys_float);
+        // __m128 keys_temp = {A_float, A_float, A_float, A_float};
+        // // conversion to float
+        // __m128 keys_float = _mm_cvtepi32_ps(keys);
+        // // multiplication of key * A
+        // keys_float = _mm_mul_ps(keys_float, keys_temp);
+        // // conversion back to int
+        // keys = _mm_cvttps_epi32(keys_float);
         
         // key = ~key + (key << 15); 
         __m128i keys_temp_int = keys;
@@ -72,10 +73,51 @@ class Hash {
         return keys;
 
     }
+    __m256i hash_SSE_priv_64(__m256i keys) {
+
+        __m256i keys_temp_int = keys;
+        // negate keys_temp
+        keys_temp_int = _mm256_not_si256(keys_temp_int);
+        // left shift 15 bits
+        keys = _mm256_slli_epi64(keys, 21);
+        keys = _mm256_add_epi64(keys_temp_int, keys);
+
+        // key = key ^ (key >> 24);
+        keys_temp_int = keys;
+        keys = _mm256_srli_epi64(keys, 24);
+        keys = _mm256_xor_si256(keys_temp_int, keys);
+        
+        // (key + (key << 3)) + (key << 8); // key * 265
+        uint64_t value = 256;
+        __m256i constant_value = _mm256_set_epi64(value, value, value, value);
+        keys = _mm256_mullo_epi64(constant_value, keys);
+
+         // key = key ^ (key >> 14);
+        keys_temp_int = keys;
+        keys = _mm256_srli_epi64(keys, 14);
+        keys = _mm256_xor_si256(keys_temp_int, keys);
+
+
+        // (key + (key << 2)) + (key << 4); // key * 21
+        uint64_t value = 21;
+        __m256i constant_value = _mm256_set_epi64(value, value, value, value);
+        keys = _mm256_mullo_epi64(constant_value, keys);
+
+        // key = key ^ (key >> 28);
+        keys_temp_int = keys;
+        keys = _mm256_srli_epi64(keys, 28);
+        keys = _mm256_xor_si256(keys_temp_int, keys);
+        // key = key + (key << 31);
+        keys = _mm256_slli_epi64(keys, 21);
+        keys = _mm256_add_epi64(keys_temp_int, keys);
+        return keys;
+
+    }
+
     uint32_t size_tHashSimple(uint32_t key, uint32_t aModulo) {
           // source:  Thomas Wang: Integer Hash Functions, 1997 / 2007 
           // https://gist.github.com/badboy/6267743
-          key = key * A;
+        //   key = key * A;
           key = ~key + (key << 15);
           key = key ^ (key >> 12);
           key = key + (key << 2);
@@ -83,6 +125,21 @@ class Hash {
           key = key * 2057;
           key = key ^ (key >> 16);
           return key;// % aModulo;
+    }; 
+    uint32_t size_tHashSimple_64(uint64_t key, uint64_t aModulo) {
+        // source:  Thomas Wang: Integer Hash Functions, 1997 / 2007 
+        // https://gist.github.com/badboy/6267743
+        
+       
+        key = (~key) + (key << 21); // key = (key << 21) - key - 1;
+        key = key ^ (key >> 24);
+        key = (key + (key << 3)) + (key << 8); // key * 265
+        key = key ^ (key >> 14);
+        key = (key + (key << 2)) + (key << 4); // key * 21
+        key = key ^ (key >> 28);
+        key = key + (key << 31);
+
+        return key;// % aModulo;
     }; 
     
     short unsigned int shortHashSimple(short unsigned int key, short unsigned int aModulo) {
@@ -99,6 +156,9 @@ class Hash {
     uint32_t hash(uint32_t pKey, uint32_t pSeed, uint32_t pModulo) {
         return size_tHashSimple(pKey * pSeed, pModulo);
     };
+    uint64_t hash_64(uint64_t pKey, uint64_t pSeed, uint64_t pModulo) {
+        return size_tHashSimple_64(pKey * pSeed, pModulo);
+    };
     short unsigned int hashShort(short unsigned int pKey, short unsigned int pSeed, short unsigned int pModulo) {
         return shortHashSimple(pKey * pSeed, pModulo);
     };
@@ -110,6 +170,11 @@ class Hash {
     __m128i hash_SSE(__m128i pKeys, __m128i pSeed) {
         pKeys = _mm_mullo_epi32(pKeys, pSeed);
         return hash_SSE_priv(pKeys);
+    }
+
+    __m256i hash_SSE_64(__m256i pKeys, __m256i pSeed) {
+        pKeys = _mm256_mullo_epi64(pKeys, pSeed);
+        return hash_SSE_priv_64(pKeys);
     }
 };
 #endif // HASH_H

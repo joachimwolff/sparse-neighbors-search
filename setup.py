@@ -54,21 +54,21 @@ sources_list = ['sparse_neighbors_search/computation/interface/nearestNeighbors_
                  'sparse_neighbors_search/computation/inverseIndex.cpp', 'sparse_neighbors_search/computation/inverseIndexStorageUnorderedMap.cpp']
 depends_list = ['sparse_neighbors_search/computation/nearestNeighbors.h', 'sparse_neighbors_search/computation/inverseIndex.h', 'sparse_neighbors_search/computation/kSizeSortedMap.h',
          'sparse_neighbors_search/computation/typeDefinitions.h', 'sparse_neighbors_search/computation/parsePythonToCpp.h', 'sparse_neighbors_search/computation/sparseMatrix.h',
-          'sparse_neighbors_search/computation/inverseIndexStorage.h', 'sparse_neighbors_search/computation/inverseIndexStorageUnorderedMap.h','sparse_neighbors_search/computation/sseExtension.h','sparse_neighbors_search/computation/hash.h']
+          'sparse_neighbors_search/computation/inverseIndexStorage.h', 'sparse_neighbors_search/computation/inverseIndexStorageUnorderedMap.h','sparse_neighbors_search/computation/sseExtension.h', 'sparse_neighbors_search/computation/avxExtension.h''sparse_neighbors_search/computation/hash.h']
 openmp = True
 if "--openmp" in sys.argv:
     module1 = Extension('_nearestNeighbors', sources = sources_list, depends = depends_list,
          define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
-        extra_compile_args=["-fopenmp", "-O3", "-std=c++11", "-funroll-loops", "-msse4.1"])
+        extra_compile_args=["-fopenmp", "-O3", "-std=c++11", "-funroll-loops", "-mavx"]) # , "-msse4.1"
 elif platform.system() == 'Darwin' or "--noopenmp" in sys.argv:
     module1 = Extension('_nearestNeighbors', sources = sources_list, depends = depends_list, 
-        extra_compile_args=["-O3", "-std=c++11", "-funroll-loops", "-msse4.1"])
+        extra_compile_args=["-O3", "-std=c++11", "-funroll-loops", "-mavx"])
     openmp = False
 
 else:
     module1 = Extension('_nearestNeighbors', sources = sources_list, depends = depends_list,
         define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"],
-         extra_compile_args=["-fopenmp", "-O3", "-std=c++11", "-funroll-loops", "-msse4.1"])
+         extra_compile_args=["-fopenmp", "-O3", "-std=c++11", "-funroll-loops", "-mavx"])
 no_cuda = False
 
 if "--nocuda" in sys.argv:
@@ -249,7 +249,7 @@ else:
                     # the implementation of this trick is in customize_compiler() below
                     define_macros=[('OPENMP', None), ('CUDA', None)],
                     extra_link_args=["-lm", "-lrt","-lgomp"],
-                    extra_compile_args={'gcc': ["-fopenmp", "-O3", "-std=c++11", "-funroll-loops", "-msse4.1"],
+                    extra_compile_args={'gcc': ["-fopenmp", "-O3", "-std=c++11", "-funroll-loops", "-mavx"],
                                         'nvcc': ['-arch=sm_60', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
                     include_dirs = [CUDA['include'], 'src'],
                     platforms = "Linux, Mac OS X"
@@ -266,7 +266,7 @@ else:
                     # the implementation of this trick is in customize_compiler() below
                     define_macros=[('CUDA', None)],
                     extra_link_args=["-lm", "-lrt","-lgomp"],
-                    extra_compile_args={'gcc': ["-O3", "-std=c++11", "-msse4.1"],
+                    extra_compile_args={'gcc': ["-O3", "-std=c++11", "-mavx"],
                                         'nvcc': ['-arch=sm_60', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
                     include_dirs = [CUDA['include'], 'src'],
                     platforms = "Linux, Mac OS X"

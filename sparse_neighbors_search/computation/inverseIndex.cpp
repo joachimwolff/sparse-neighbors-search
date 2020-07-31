@@ -27,6 +27,8 @@
 #include "inverseIndex.h"
 #include "kSizeSortedMap.h"
 #include "sseExtension.h"
+#include "avxExtension.h"
+
 class sort_map {
   public:
     size_t key;
@@ -137,12 +139,12 @@ vsize_t* InverseIndex::computeSignatureSSE(SparseMatrixFloat* pRawData, const si
                 }
                 (*signature)[j] = _mm_get_argmin(argmin, minimumVector);
             } else {
-                uint32_t nearestNeighborsValue = MAX_VALUE;    
+                uint64_t nearestNeighborsValue = MAX_VALUE;    
                 size_t argmin_local = 0;
                 size_t seed_local = 0;
                 seed_local = j + 1;    
                 for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); i++) {
-                    uint32_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), seed_local, MAX_VALUE);
+                    uint64_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), seed_local, MAX_VALUE);
                 
                     if (hashValue < nearestNeighborsValue) {
                         nearestNeighborsValue = hashValue;
@@ -161,19 +163,81 @@ vsize_t* InverseIndex::computeSignatureSSE(SparseMatrixFloat* pRawData, const si
     return signature;
 }  
 
+// compute the signature for one instance with SSE support
+vsize_t* InverseIndex::computeSignatureAVX(SparseMatrixFloat* pRawData, const size_t pInstance) {
+
+    if (pRawData == NULL) return NULL;
+
+    vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
+    __m256i minimumVector;
+    __m256i seed;
+    __m256i argmin;
+    __m256i value;
+    __m256i hashValue;
+
+    for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
+
+            minimumVector = _mm256_set_epi64(MAX_VALUE, MAX_VALUE, MAX_VALUE, MAX_VALUE);
+
+            argmin = _mm256_set_epi64(0,0,0,0);
+
+            seed = _mm256_set_epi64(j+1, j+1, j+1, j+1);
+
+            if (pRawData->getSizeOfInstance(pInstance) > 4) {
+                for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance) - 4; i+=4) {
+                    if (i == 0) {
+                    }
+                    value = _mm_setr_epi32((pRawData->getNextElement(pInstance, i) +1), 
+                                        (pRawData->getNextElement(pInstance, i+1) +1),
+                                        (pRawData->getNextElement(pInstance, i+2) +1),
+                                        (pRawData->getNextElement(pInstance, i+3) +1));
+                    hashValue = mHash->hash_SSE(value, seed);
+                    
+                    minimumVector = _mm256_min_epu64(hashValue, minimumVector);
+
+                    // compare all four hash values and store minimum for each element
+                    argmin = _mm256_argmin_change_epi64(argmin, minimumVector, hashValue, value);
+
+                }
+                (*signature)[j] = _mm256_get_argmin64(argmin, minimumVector);
+            } else {
+                uint64_t nearestNeighborsValue = MAX_VALUE;    
+                size_t argmin_local = 0;
+                size_t seed_local = 0;
+                seed_local = j + 1;    
+                for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); i++) {
+                    uint64_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), seed_local, MAX_VALUE);
+                
+                    if (hashValue < nearestNeighborsValue) {
+                        nearestNeighborsValue = hashValue;
+                        argmin_local = pRawData->getNextElement(pInstance, i);
+                    }
+                }
+                (*signature)[j] = argmin_local;
+            }
+    }
+    // reduce number of hash values by a factor of mShingleSize
+    if (mShingle) {
+
+        return shingle(signature);
+    }
+
+    return signature;
+}
+
 // compute the signature for one instance
 vsize_t* InverseIndex::computeSignature(SparseMatrixFloat* pRawData, const size_t pInstance) {
 
-    return computeSignatureSSE(pRawData, pInstance);
+    return computeSignatureAVX(pRawData, pInstance);
     if (pRawData == NULL) return NULL;
     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
     size_t argmin = 0;
     size_t seed = 0;
     for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
-            uint32_t nearestNeighborsValue = MAX_VALUE;    
+            uint64_t nearestNeighborsValue = MAX_VALUE;    
             seed = j + 1;    
             for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); i++) {
-                uint32_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), seed, MAX_VALUE);
+                uint64_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), seed, MAX_VALUE);
                
                 if (hashValue < nearestNeighborsValue) {
                     nearestNeighborsValue = hashValue;
