@@ -20,8 +20,9 @@
 #include <unordered_map>
 #include <utility>
 #include <limits>
-// #include <google/dense_hash_map>
-#define MAX_VALUE std::numeric_limits<uint64_t>::max()
+
+#define MAX_VALUE std::numeric_limits<uint32_t>::max()
+
 
 typedef std::vector< size_t > vsize_t;
 typedef std::vector< int > vint;
@@ -73,10 +74,7 @@ struct distributionInverseIndex {
     size_t mean;
     size_t standardDeviation;
 };
-// struct sparseData {
-//     uint32_t instance;
-//     float value;
-// };
+
 static bool mapSortDescByValueFloat(const sortMapFloat& a, const sortMapFloat& b) {
         return a.val > b.val;
 };

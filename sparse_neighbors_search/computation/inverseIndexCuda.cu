@@ -62,7 +62,7 @@ void InverseIndexCuda::computeSignaturesFittingOnGpu(SparseMatrixFloat* pRawData
                                                 size_t pBlockSizeShingle,
                                                 vvsize_t_p* pSignatures, size_t pRangeK) {
     // copy data to gpu
-    int* mDev_FeatureList;
+    int* mDev_FeatureList; 
     size_t* mDev_SizeOfInstanceList;
     int* mDev_ComputedSignaturesPerInstance;
     float* mDev_ValuesList;

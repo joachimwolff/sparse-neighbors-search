@@ -32,7 +32,7 @@ __copyright__ = "Copyright 2020, Joachim Wolff"
 __credits__ = ["Milad Miladi", "Fabrizio Costa"]
 __license__ = "MIT"
 __date__ = time.strftime("%d/%m/%Y")
-__version__ = "0.5"
+__version__ = "0.6"
 
 from setuptools import setup, find_packages
 import platform
@@ -54,33 +54,38 @@ sources_list = ['sparse_neighbors_search/computation/interface/nearestNeighbors_
                  'sparse_neighbors_search/computation/inverseIndex.cpp', 'sparse_neighbors_search/computation/inverseIndexStorageUnorderedMap.cpp']
 depends_list = ['sparse_neighbors_search/computation/nearestNeighbors.h', 'sparse_neighbors_search/computation/inverseIndex.h', 'sparse_neighbors_search/computation/kSizeSortedMap.h',
          'sparse_neighbors_search/computation/typeDefinitions.h', 'sparse_neighbors_search/computation/parsePythonToCpp.h', 'sparse_neighbors_search/computation/sparseMatrix.h',
-          'sparse_neighbors_search/computation/inverseIndexStorage.h', 'sparse_neighbors_search/computation/inverseIndexStorageUnorderedMap.h','sparse_neighbors_search/computation/sseExtension.h', 'sparse_neighbors_search/computation/avxExtension.h''sparse_neighbors_search/computation/hash.h']
+          'sparse_neighbors_search/computation/inverseIndexStorage.h', 'sparse_neighbors_search/computation/inverseIndexStorageUnorderedMap.h','sparse_neighbors_search/computation/sseExtension.h', 'sparse_neighbors_search/computation/hash.h']
 openmp = True
 if "--openmp" in sys.argv:
     module1 = Extension('_nearestNeighbors', sources = sources_list, depends = depends_list,
          define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"], 
-        extra_compile_args=["-fopenmp", "-O3", "-std=c++11", "-funroll-loops", "-mavx"]) # , "-msse4.1"
+        extra_compile_args=["-fopenmp", "-O3", "-std=c++11", "-funroll-loops", "-msse4.1"]) # , "-msse4.1"
 elif platform.system() == 'Darwin' or "--noopenmp" in sys.argv:
+    if platform.system() == 'Darwin':
+        print('WARNING: macOS is not official supported!')
     module1 = Extension('_nearestNeighbors', sources = sources_list, depends = depends_list, 
-        extra_compile_args=["-O3", "-std=c++11", "-funroll-loops", "-mavx"])
+        extra_compile_args=["-O3", "-std=c++11", "-funroll-loops", "-msse4.1"])
     openmp = False
 
 else:
     module1 = Extension('_nearestNeighbors', sources = sources_list, depends = depends_list,
         define_macros=[('OPENMP', None)], extra_link_args = ["-lm", "-lrt","-lgomp"],
-         extra_compile_args=["-fopenmp", "-O3", "-std=c++11", "-funroll-loops", "-mavx"])
-no_cuda = False
+         extra_compile_args=["-fopenmp", "-O3", "-std=c++11", "-funroll-loops", "-msse4.1"])
+cuda = False
 
-if "--nocuda" in sys.argv:
-    no_cuda = True
-    sys.argv.remove("--nocuda")
-    
+if "--cuda" in sys.argv:
+    print('We do not support cuda anymore.')
+    exit(1)
+    cuda = True
+    sys.argv.remove("--cuda")
+else:
+    cuda = False
 if "--openmp" in sys.argv:
     sys.argv.remove("--openmp")
 if "--noopenmp" in sys.argv:
     sys.argv.remove("--noopenmp")
 
-
+cuda = False
 
 def find_in_path(name, path):
     "Find a file in a search path"
@@ -212,8 +217,8 @@ class custom_build_ext(build_ext):
 
 
 
-if (locate_cuda() == None or no_cuda):
-    print("No Cuda found or no cuda forced. Installation without GPU support.")
+if (locate_cuda() == None or not cuda):
+    # print("No Cuda found or no cuda forced. Installation without GPU support.")
     setup (name = 'sparse_neighbors_search',
             author = 'Joachim Wolff',
             author_email = 'wolffj@informatik.uni-freiburg.de',
@@ -233,66 +238,66 @@ if (locate_cuda() == None or no_cuda):
             platforms = "Linux",
             version = __version__
             )
-else:
-    print ("CUDA found on system. Installing MinHash with CUDA-Support.")
-    sources_list.extend(['sparse_neighbors_search/computation/kernel.cu', 'sparse_neighbors_search/computation/inverseIndexCuda.cu', 'sparse_neighbors_search/computation/nearestNeighborsCuda.cu'])
-    depends_list.extend(['sparse_neighbors_search/computation/typeDefinitionsCuda.h', 'sparse_neighbors_search/computation/kernel.h', 'sparse_neighbors_search/computation/inverseIndexCuda.h', 'sparse_neighbors_search/computation/nearestNeighborsCuda.h', ])
-    if openmp:
-        ext = Extension('_nearestNeighbors',
-                    sources = sources_list, depends = depends_list,
-                    library_dirs=[CUDA['lib64']],
-                    libraries=['cudart'],
-                    language='c++',
-                    runtime_library_dirs=[CUDA['lib64']],
-                    # this syntax is specific to this build system
-                    # we're only going to use certain compiler args with nvcc and not with gcc
-                    # the implementation of this trick is in customize_compiler() below
-                    define_macros=[('OPENMP', None), ('CUDA', None)],
-                    extra_link_args=["-lm", "-lrt","-lgomp"],
-                    extra_compile_args={'gcc': ["-fopenmp", "-O3", "-std=c++11", "-funroll-loops", "-mavx"],
-                                        'nvcc': ['-arch=sm_60', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
-                    include_dirs = [CUDA['include'], 'src'],
-                    platforms = "Linux, Mac OS X"
-                    )
-    else:
-        ext = Extension('_nearestNeighbors',
-                    sources = sources_list, depends = depends_list,
-                    library_dirs=[CUDA['lib64']],
-                    libraries=['cudart'],
-                    language='c++',
-                    runtime_library_dirs=[CUDA['lib64']],
-                    # this syntax is specific to this build system
-                    # we're only going to use certain compiler args with nvcc and not with gcc
-                    # the implementation of this trick is in customize_compiler() below
-                    define_macros=[('CUDA', None)],
-                    extra_link_args=["-lm", "-lrt","-lgomp"],
-                    extra_compile_args={'gcc': ["-O3", "-std=c++11", "-mavx"],
-                                        'nvcc': ['-arch=sm_60', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
-                    include_dirs = [CUDA['include'], 'src'],
-                    platforms = "Linux, Mac OS X"
-                    )
+# if cuda:
+#     print ("CUDA found on system. Installing MinHash with CUDA-Support.")
+#     sources_list.extend(['sparse_neighbors_search/computation/kernel.cu', 'sparse_neighbors_search/computation/inverseIndexCuda.cu', 'sparse_neighbors_search/computation/nearestNeighborsCuda.cu'])
+#     depends_list.extend(['sparse_neighbors_search/computation/typeDefinitionsCuda.h', 'sparse_neighbors_search/computation/kernel.h', 'sparse_neighbors_search/computation/inverseIndexCuda.h', 'sparse_neighbors_search/computation/nearestNeighborsCuda.h', ])
+#     if openmp:
+#         ext = Extension('_nearestNeighbors',
+#                     sources = sources_list, depends = depends_list,
+#                     library_dirs=[CUDA['lib64']],
+#                     libraries=['cudart'],
+#                     language='c++',
+#                     runtime_library_dirs=[CUDA['lib64']],
+#                     # this syntax is specific to this build system
+#                     # we're only going to use certain compiler args with nvcc and not with gcc
+#                     # the implementation of this trick is in customize_compiler() below
+#                     define_macros=[('OPENMP', None), ('CUDA', None)],
+#                     extra_link_args=["-lm", "-lrt","-lgomp"],
+#                     extra_compile_args={'gcc': ["-fopenmp", "-O3", "-std=c++11", "-funroll-loops", "-msse4.1"],
+#                                         'nvcc': ['-arch=sm_60', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
+#                     include_dirs = [CUDA['include'], 'src'],
+#                     platforms = "Linux, Mac OS X"
+#                     )
+#     else:
+#         ext = Extension('_nearestNeighbors',
+#                     sources = sources_list, depends = depends_list,
+#                     library_dirs=[CUDA['lib64']],
+#                     libraries=['cudart'],
+#                     language='c++',
+#                     runtime_library_dirs=[CUDA['lib64']],
+#                     # this syntax is specific to this build system
+#                     # we're only going to use certain compiler args with nvcc and not with gcc
+#                     # the implementation of this trick is in customize_compiler() below
+#                     define_macros=[('CUDA', None)],
+#                     extra_link_args=["-lm", "-lrt","-lgomp"],
+#                     extra_compile_args={'gcc': ["-O3", "-std=c++11", "-msse4.1"],
+#                                         'nvcc': ['-arch=sm_60', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", '-std=c++11' ]},
+#                     include_dirs = [CUDA['include'], 'src'],
+#                     platforms = "Linux, Mac OS X"
+#                     )
                 
-    setup(name='sparse_neighbors_search',
-        author='Joachim Wolff',
-        ext_modules = [ext],
+    # setup(name='sparse_neighbors_search',
+    #     author='Joachim Wolff',
+    #     ext_modules = [ext],
     
-        # inject our custom trigger
-        cmdclass={'build_ext': custom_build_ext},
+    #     # inject our custom trigger
+    #     cmdclass={'build_ext': custom_build_ext},
     
-        # since the package has c code, the egg cannot be zipped
-        zip_safe=False,
-        author_email = 'wolffj@informatik.uni-freiburg.de',
-        url='https://github.com/joachimwolff/minHashNearestNeighbors',
-        license='MIT',
-        description='An approximate computation of nearest neighbors based on locality sensitive hash functions.',
-        long_description=open('README.md').read(),
-        install_requires=[
-        "numpy >= 1.17.0",
-        "scipy >= 1.3.0",
-        "scikit-learn >= 0.21.0",],
-        packages=['sparse_neighbors_search',
-                    'sparse_neighbors_search.neighbors',
-                    'sparse_neighbors_search.cluster',
-                ],
-        platforms = "Linux, Mac OS X",
-        version = __version__)
+    #     # since the package has c code, the egg cannot be zipped
+    #     zip_safe=False,
+    #     author_email = 'wolffj@informatik.uni-freiburg.de',
+    #     url='https://github.com/joachimwolff/minHashNearestNeighbors',
+    #     license='MIT',
+    #     description='An approximate computation of nearest neighbors based on locality sensitive hash functions.',
+    #     long_description=open('README.md').read(),
+    #     install_requires=[
+    #     "numpy >= 1.17.0",
+    #     "scipy >= 1.3.0",
+    #     "scikit-learn >= 0.21.0",],
+    #     packages=['sparse_neighbors_search',
+    #                 'sparse_neighbors_search.neighbors',
+    #                 'sparse_neighbors_search.cluster',
+    #             ],
+    #     platforms = "Linux, Mac OS X",
+    #     version = __version__)
