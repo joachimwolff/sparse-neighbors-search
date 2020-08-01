@@ -27,6 +27,8 @@
 #include "inverseIndex.h"
 #include "kSizeSortedMap.h"
 #include "sseExtension.h"
+// #include "avxExtension.h"
+
 class sort_map {
   public:
     size_t key;
@@ -117,62 +119,161 @@ vsize_t* InverseIndex::computeSignatureSSE(SparseMatrixFloat* pRawData, const si
 
             argmin = _mm_set_epi32(0,0,0,0);
 
-            seed = _mm_set_epi32(j+1, j+1, j+1, j+1);                   
-            for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance) - 4; i+=4) {
-                value = _mm_setr_epi32((pRawData->getNextElement(pInstance, i) +1), 
-                                    (pRawData->getNextElement(pInstance, i+1) +1),
-                                    (pRawData->getNextElement(pInstance, i+2) +1),
-                                    (pRawData->getNextElement(pInstance, i+3) +1));
-                hashValue = mHash->hash_SSE(value, seed);
+            seed = _mm_set_epi32(j+1, j+1, j+1, j+1);
+
+            if (pRawData->getSizeOfInstance(pInstance) > 4) {
+                for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance) - 4; i+=4) {
+                    
+                    // value = _mm_setr_epi32((pRawData->getNextElement(pInstance, i) +1), 
+                    //                     (pRawData->getNextElement(pInstance, i+1) +1),
+                    //                     (pRawData->getNextElement(pInstance, i+2) +1),
+                    //                     (pRawData->getNextElement(pInstance, i+3) +1));
+                    value = _mm_setr_epi32(((pRawData->getNextElement(pInstance, i) + 1) % (MAX_VALUE)), 
+                                        ((pRawData->getNextElement(pInstance, i+1) +1) % (MAX_VALUE)),
+                                        ((pRawData->getNextElement(pInstance, i+2) +1) % (MAX_VALUE)),
+                                        ((pRawData->getNextElement(pInstance, i+3) +1) % (MAX_VALUE)));
+                    hashValue = mHash->hash_SSE(value, seed);
+                    
+                    minimumVector = _mm_min_epu32(hashValue, minimumVector);
+
+                    // compare all four hash values and store minimum for each element
+                    argmin = _mm_argmin_change_epi32(argmin, minimumVector, hashValue, value);
+
+                }
+                (*signature)[j] = _mm_get_argmin(argmin, minimumVector);
+            } else {
+                uint64_t nearestNeighborsValue = MAX_VALUE;    
+                size_t argmin_local = 0;
+                size_t seed_local = 0;
+                seed_local = j + 1;    
+                for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); i++) {
+                    uint64_t hashValue = mHash->hash(((pRawData->getNextElement(pInstance, i) +1) % MAX_VALUE), seed_local, MAX_VALUE);
                 
-                minimumVector = _mm_min_epu32(hashValue, minimumVector);
-                // compare all four hash values and store minimum for each element
-                argmin = _mm_argmin_change_epi32(argmin, minimumVector, hashValue, value);
+                    if (hashValue < nearestNeighborsValue) {
+                        nearestNeighborsValue = hashValue;
+                        argmin_local = pRawData->getNextElement(pInstance, i);
+                    }
+                }
+                (*signature)[j] = argmin_local;
             }
-            (*signature)[j] = _mm_get_argmin(argmin, minimumVector);
     }
     // reduce number of hash values by a factor of mShingleSize
     if (mShingle) {
+
         return shingle(signature);
     }
+
     return signature;
 }  
+
+// compute the signature for one instance with SSE support
+// vsize_t* InverseIndex::computeSignatureAVX(SparseMatrixFloat* pRawData, const size_t pInstance) {
+
+//     if (pRawData == NULL) return NULL;
+
+//     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
+//     __m256i minimumVector;
+//     __m256i seed;
+//     __m256i argmin;
+//     __m256i value;
+//     __m256i hashValue;
+
+//     for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
+
+//             // minimumVector = _mm256_set_epi64(MAX_VALUE, MAX_VALUE, MAX_VALUE, MAX_VALUE);
+
+//             // argmin = _mm256_set_epi64(0,0,0,0);
+//             uint64_t nearestNeighborsValue = MAX_VALUE;    
+//             size_t argmin = 0;
+//             seed = _mm256_set_epi64x(j+1, j+1, j+1, j+1);
+
+//             if (pRawData->getSizeOfInstance(pInstance) > 4) {
+//                 for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance) - 4; i+=4) {
+               
+//                     value = _mm256_set_epi64x(((pRawData->getNextElement(pInstance, i) + 1) * (j+1)), 
+//                                         ((pRawData->getNextElement(pInstance, i+1) +1) * (j+1)),
+//                                         ((pRawData->getNextElement(pInstance, i+2) +1) * (j+1)),
+//                                         ((pRawData->getNextElement(pInstance, i+3) +1) * (j+1)));
+//                     hashValue = mHash->hash_SSE_64(value, seed);
+                    
+//                     const uint64_t* minValue; 
+//                     //add a pointer 
+//                     minValue = (const uint64_t*) &hashValue;
+//                     for (size_t k = 0; k < 4; k++) {
+//                         if (nearestNeighborsValue <= minValue[k]){
+//                             continue;
+//                         } else {
+//                             nearestNeighborsValue = minValue[k];
+//                             argmin = pRawData->getNextElement(pInstance, i+k);
+//                         }
+//                     }
+//                     // minimumVector = _mm256_min_epu64(hashValue, minimumVector);
+
+//                     // compare all four hash values and store minimum for each element
+//                     // argmin = _mm256_argmin_change_epi64(argmin, minimumVector, hashValue, value);
+
+//                 }
+//                 (*signature)[j] = argmin;
+//             } else {
+//                 uint64_t nearestNeighborsValue = MAX_VALUE;    
+//                 size_t argmin_local = 0;
+//                 size_t seed_local = 0;
+//                 seed_local = j + 1;    
+//                 for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); i++) {
+//                     uint64_t hashValue = mHash->hash_64((pRawData->getNextElement(pInstance, i) +1), seed_local, MAX_VALUE);
+                
+//                     if (hashValue < nearestNeighborsValue) {
+//                         nearestNeighborsValue = hashValue;
+//                         argmin_local = pRawData->getNextElement(pInstance, i);
+//                     }
+//                 }
+//                 (*signature)[j] = argmin_local;
+//             }
+//     }
+//     // reduce number of hash values by a factor of mShingleSize
+//     if (mShingle) {
+
+//         return shingle(signature);
+//     }
+
+//     return signature;
+// }
 
 // compute the signature for one instance
 vsize_t* InverseIndex::computeSignature(SparseMatrixFloat* pRawData, const size_t pInstance) {
 
+    // return computeSignatureAVX(pRawData, pInstance);
     return computeSignatureSSE(pRawData, pInstance);
+
     if (pRawData == NULL) return NULL;
     vsize_t* signature = new vsize_t(mNumberOfHashFunctions * mBlockSize);
     size_t argmin = 0;
     size_t seed = 0;
     for(size_t j = 0; j < mNumberOfHashFunctions * mBlockSize; ++j) {
-            uint32_t nearestNeighborsValue = MAX_VALUE;    
+            uint64_t nearestNeighborsValue = MAX_VALUE;    
             seed = j + 1;    
             for (size_t i = 0; i < pRawData->getSizeOfInstance(pInstance); i++) {
-                uint32_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), seed, MAX_VALUE);
+                uint64_t hashValue = mHash->hash((pRawData->getNextElement(pInstance, i) +1), seed, MAX_VALUE);
                
                 if (hashValue < nearestNeighborsValue) {
                     nearestNeighborsValue = hashValue;
                     argmin = pRawData->getNextElement(pInstance, i);
                 }
             }
-        std::cout << __LINE__ << std::endl;
 
             (*signature)[j] = argmin;
     }
-        std::cout << __LINE__ << std::endl;
 
     // reduce number of hash values by a factor of mShingleSize
     if (mShingle) {
         return shingle(signature);
     }
-        std::cout << __LINE__ << std::endl;
 
     return signature;
 }
 
 vsize_t* InverseIndex::shingle(vsize_t* pSignature) {
+    
     if (pSignature == NULL) return NULL;
     vsize_t* signature = new vsize_t(mInverseIndexSize);
     size_t iterationSize = ceil((mNumberOfHashFunctions * mBlockSize) / mShingleSize);
@@ -240,6 +341,7 @@ vsize_t* InverseIndex::computeSignatureWTA(SparseMatrixFloat* pRawData, const si
 }
 
 vvsize_t_p* InverseIndex::computeSignatureVectors(SparseMatrixFloat* pRawData, const bool pFitting) {
+    
     if (mChunkSize <= 0) {
         mChunkSize = ceil(pRawData->size() / static_cast<float>(mNumberOfCores));
     }
@@ -257,7 +359,9 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(SparseMatrixFloat* pRawData, c
         for (size_t instance = 0; instance < pRawData->size(); ++instance) {
             if (mHashAlgorithm == 0) {
                 // use nearestNeighbors 
+
                 (*signatures)[instance] = computeSignature(pRawData, instance);
+
             } else if (mHashAlgorithm == 1) {
                 // use wta hash
                 (*signatures)[instance] = computeSignatureWTA(pRawData, instance);
@@ -284,6 +388,7 @@ vvsize_t_p* InverseIndex::computeSignatureVectors(SparseMatrixFloat* pRawData, c
             } 
     }
     #endif
+
     return signatures;
 }
 umap_uniqueElement* InverseIndex::computeSignatureMap(SparseMatrixFloat* pRawData) {
@@ -325,7 +430,7 @@ umap_uniqueElement* InverseIndex::computeSignatureMap(SparseMatrixFloat* pRawDat
 void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
 
     vvsize_t_p* signatures = computeSignatureVectors(pRawData, true);
-
+    
     if (signatures == NULL) return;
     // compute how often the inverse index should be pruned 
     size_t pruneEveryNInstances = ceil(signatures->size() * mPruneInverseIndexAfterInstance);
@@ -390,12 +495,13 @@ void InverseIndex::fit(SparseMatrixFloat* pRawData, size_t pStartIndex) {
     }
 
     delete signatures;
+
 }
 
 neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                         const size_t pNneighborhood, 
                                         const bool pDoubleElementsStorageCount,
-                                        const bool pNoneSingleInstance, const float pRadius) {
+                                        const bool pNoneSingleInstance, float pRadius, bool pAbsoluteNumbers) {
     size_t doubleElements = 0;
     if (pNoneSingleInstance) {
         if (pDoubleElementsStorageCount) {
@@ -518,9 +624,12 @@ neighborhood* InverseIndex::kneighbors(const umap_uniqueElement* pSignaturesMap,
             std::vector<float> distanceVector;
             for (auto it = neighborhoodVectorForSorting.begin(); it != neighborhoodVectorForSorting.end(); ++it) {
                 
-                float value = 1 - (((*it).val) / (float)(mMaximalNumberOfHashCollisions));
-                if (value < 0) {
-                    value = 0;
+                float value = 0.0;
+                if (pAbsoluteNumbers) {
+                    value = (float) (*it).val;
+
+                } else {
+                    value = 1 - (((*it).val) / (float)(mMaximalNumberOfHashCollisions));
                 }
 
                 if (pRadius == -1.0) {

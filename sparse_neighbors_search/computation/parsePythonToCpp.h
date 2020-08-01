@@ -64,7 +64,6 @@ SparseMatrixFloat* parseRawData(PyObject * pIndptrListObj, PyObject * pIndicesLi
         featuresCount = 0;
         i++;
     }
-   
     return originalData;
 }
 

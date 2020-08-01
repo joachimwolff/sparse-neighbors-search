@@ -21,7 +21,7 @@
 static neighborhood* neighborhoodComputation(size_t pNearestNeighborsAddress, PyObject* pInstancesListObj,
                                                 PyObject* pFeaturesListObj, PyObject* pDataListObj,
                                                 size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures, 
-                                                size_t pNneighbors, int pFast, int pSimilarity, float pRadius = -1.0) {
+                                                size_t pNneighbors, int pFast, int pSimilarity, bool pAbsoluteNumbers = false, float pRadius = -1.0) {
     SparseMatrixFloat* originalDataMatrix = NULL;
     if (pMaxNumberOfInstances != 0) {
         originalDataMatrix = parseRawData(pInstancesListObj, pFeaturesListObj, pDataListObj, 
@@ -31,7 +31,7 @@ static neighborhood* neighborhoodComputation(size_t pNearestNeighborsAddress, Py
     NearestNeighbors* nearestNeighbors = reinterpret_cast<NearestNeighbors* >(pNearestNeighborsAddress);
 
     // compute the k-nearest neighbors
-    neighborhood* neighbors_ =  nearestNeighbors->kneighbors(originalDataMatrix, pNneighbors, pFast, pSimilarity, pRadius);
+    neighborhood* neighbors_ =  nearestNeighbors->kneighbors(originalDataMatrix, pNneighbors, pFast, pSimilarity, pRadius, pAbsoluteNumbers);
 
     if (originalDataMatrix != NULL) {
         delete originalDataMatrix;    
@@ -43,17 +43,15 @@ static neighborhood* neighborhoodComputation(size_t pNearestNeighborsAddress, Py
 static neighborhood* fitNeighborhoodComputation(size_t pNearestNeighborsAddress, PyObject* pInstancesListObj,
                                                 PyObject* pFeaturesListObj,PyObject* pDataListObj,
                                                 size_t pMaxNumberOfInstances, size_t pMaxNumberOfFeatures, 
-                                                size_t pNneighbors, int pFast, int pSimilarity, float pRadius = -1.0) {
+                                                size_t pNneighbors, int pFast, int pSimilarity, bool pAbsoluteNumbers = false, float pRadius = -1.0) {
     SparseMatrixFloat* originalDataMatrix = parseRawData(pInstancesListObj, pFeaturesListObj, pDataListObj, 
                                                     pMaxNumberOfInstances, pMaxNumberOfFeatures);
     // get pointer to the minhash object
     NearestNeighbors* nearestNeighbors = reinterpret_cast<NearestNeighbors* >(pNearestNeighborsAddress);
     nearestNeighbors->set_mOriginalData(originalDataMatrix);
-
     nearestNeighbors->fit(originalDataMatrix);
     SparseMatrixFloat* emptyMatrix = NULL;
-    neighborhood* neighborhood_ = nearestNeighbors->kneighbors(emptyMatrix, pNneighbors, pFast, pSimilarity, pRadius);
-
+    neighborhood* neighborhood_ = nearestNeighbors->kneighbors(emptyMatrix, pNneighbors, pFast, pSimilarity, pRadius, pAbsoluteNumbers);
     return neighborhood_;
 }
 
@@ -145,9 +143,11 @@ static PyObject* partialFit(PyObject* self, PyObject* args) {
     // get pointer to the minhash object
     NearestNeighbors* nearestNeighbors = reinterpret_cast<NearestNeighbors* >(addressNearestNeighborsObject);
     size_t numberOfInstancesOld = nearestNeighbors->getOriginalData()->size();
+
     nearestNeighbors->getOriginalData()->addNewInstancesPartialFit(originalDataMatrix);
 
     nearestNeighbors->partialFit(originalDataMatrix, numberOfInstancesOld);
+
     delete originalDataMatrix;
     addressNearestNeighborsObject = reinterpret_cast<size_t>(nearestNeighbors);
     PyObject * pointerToInverseIndex = Py_BuildValue("k", addressNearestNeighborsObject);
@@ -158,22 +158,22 @@ static PyObject* kneighbors(PyObject* self, PyObject* args) {
     
     size_t addressNearestNeighborsObject, nNeighbors, maxNumberOfInstances,
             maxNumberOfFeatures, returnDistance;
-    int fast, similarity;
+    int fast, similarity, absoluteNumbers;
     PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!kkkkiik", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkkkiiik", 
                         &PyList_Type, &instancesListObj,
                         &PyList_Type, &featuresListObj,  
                         &PyList_Type, &dataListObj,
                         &maxNumberOfInstances,
                         &maxNumberOfFeatures,
                         &nNeighbors, &returnDistance,
-                        &fast, &similarity, &addressNearestNeighborsObject))
+                        &fast, &similarity, &absoluteNumbers, &addressNearestNeighborsObject))
         return NULL;
 
     // compute the k-nearest neighbors
     neighborhood* neighborhood_ = neighborhoodComputation(addressNearestNeighborsObject, instancesListObj, featuresListObj, dataListObj, 
-                                                maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast, similarity);
+                                                maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast, similarity, absoluteNumbers);
 
     size_t cutFirstValue = 0;
     if (PyList_Size(instancesListObj) == 0) {
@@ -190,20 +190,23 @@ static PyObject* kneighborsGraph(PyObject* self, PyObject* args) {
 
     size_t addressNearestNeighborsObject, nNeighbors, maxNumberOfInstances,
             maxNumberOfFeatures, returnDistance, symmetric;
-    int fast, similarity;
+    int fast, similarity, absoluteNumbers;
     PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!kkkkikik", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkkkikiik", 
                         &PyList_Type, &instancesListObj,
                         &PyList_Type, &featuresListObj,  
                         &PyList_Type, &dataListObj,
                         &maxNumberOfInstances,
                         &maxNumberOfFeatures,
                         &nNeighbors, &returnDistance,
-                        &fast, &symmetric, &similarity, &addressNearestNeighborsObject))
+                        &fast, &symmetric, &similarity, &absoluteNumbers, &addressNearestNeighborsObject))
         return NULL;
+    
+    // std::cout << "absolute numbers: " << absoluteNumbers << std::endl;
+    // std::cout << "absolute numbers: " << absoluteNumbers << std::endl;
     neighborhood* neighborhood_ = neighborhoodComputation(addressNearestNeighborsObject, instancesListObj, featuresListObj, dataListObj, 
-                                                maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast, similarity);
+                                                maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast, similarity, absoluteNumbers);
     
     if (nNeighbors == 0) {
         NearestNeighbors* nearestNeighbors = reinterpret_cast<NearestNeighbors* >(addressNearestNeighborsObject);
@@ -216,22 +219,22 @@ static PyObject* kneighborsGraph(PyObject* self, PyObject* args) {
 static PyObject* radiusNeighbors(PyObject* self, PyObject* args) {
     size_t addressNearestNeighborsObject, maxNumberOfInstances,
              maxNumberOfFeatures, returnDistance, similarity;
-    int fast;
+    int fast, absoluteNumbers;
     float radius;
     PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!kkfkiik", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkfkiiik", 
                         &PyList_Type, &instancesListObj,
                         &PyList_Type, &featuresListObj,  
                         &PyList_Type, &dataListObj,
                         &maxNumberOfInstances,
                         &maxNumberOfFeatures,
                         &radius, &returnDistance,
-                        &fast,&similarity, &addressNearestNeighborsObject))
+                        &fast,&similarity, &absoluteNumbers, &addressNearestNeighborsObject))
         return NULL;
     // compute the k-nearest neighbors
     neighborhood* neighborhood_ = neighborhoodComputation(addressNearestNeighborsObject, instancesListObj, featuresListObj, dataListObj, 
-                                                maxNumberOfInstances, maxNumberOfFeatures, MAX_VALUE, fast, similarity, radius);
+                                                maxNumberOfInstances, maxNumberOfFeatures, MAX_VALUE, fast, similarity, absoluteNumbers,radius);
     size_t cutFirstValue = 0;
     if (PyList_Size(instancesListObj) == 0) {
         cutFirstValue = 1;
@@ -241,31 +244,31 @@ static PyObject* radiusNeighbors(PyObject* self, PyObject* args) {
 static PyObject* radiusNeighborsGraph(PyObject* self, PyObject* args) {
     size_t addressNearestNeighborsObject, maxNumberOfInstances,
             maxNumberOfFeatures, returnDistance, symmetric;
-    int fast, similarity;
+    int fast, similarity, absoluteNumbers;
     float radius;
     PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!kkfkikik", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkfkikiik", 
                         &PyList_Type, &instancesListObj,
                         &PyList_Type, &featuresListObj,  
                         &PyList_Type, &dataListObj,
                         &maxNumberOfInstances,
                         &maxNumberOfFeatures,
                         &radius, &returnDistance,
-                        &fast, &symmetric, &similarity, &addressNearestNeighborsObject))
+                        &fast, &symmetric, &similarity, &absoluteNumbers, &addressNearestNeighborsObject))
         return NULL;
     // compute the k-nearest neighbors
     neighborhood* neighborhood_ = neighborhoodComputation(addressNearestNeighborsObject, instancesListObj, featuresListObj, dataListObj, 
-                                                maxNumberOfInstances, maxNumberOfFeatures, MAX_VALUE, fast, similarity, radius);
+                                                maxNumberOfInstances, maxNumberOfFeatures, MAX_VALUE, fast, similarity, absoluteNumbers,radius);
     return radiusNeighborhoodGraph(neighborhood_, radius, returnDistance, symmetric); 
 }
 static PyObject* fitKneighbors(PyObject* self, PyObject* args) {
     size_t addressNearestNeighborsObject, maxNumberOfInstances, maxNumberOfFeatures,
             nNeighbors, returnDistance;
-    int fast, similarity;
+    int fast, similarity, absoluteNumbers;
     PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!kkkkiik", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkkkiiik", 
                             &PyList_Type, &instancesListObj, 
                             &PyList_Type, &featuresListObj,
                             &PyList_Type, &dataListObj,
@@ -273,12 +276,12 @@ static PyObject* fitKneighbors(PyObject* self, PyObject* args) {
                             &maxNumberOfFeatures,
                             &nNeighbors,
                             &returnDistance, &fast,
-                            &similarity,
+                            &similarity, &absoluteNumbers,
                             &addressNearestNeighborsObject))
         return NULL;
 
     neighborhood* neighborhood_ = fitNeighborhoodComputation(addressNearestNeighborsObject, instancesListObj, featuresListObj, dataListObj, 
-                                                   maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast, similarity);
+                                                   maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast, similarity,absoluteNumbers);
     size_t cutFirstValue = 1;
     if (nNeighbors == 0) {
         NearestNeighbors* nearestNeighbors = reinterpret_cast<NearestNeighbors* >(addressNearestNeighborsObject);
@@ -289,10 +292,10 @@ static PyObject* fitKneighbors(PyObject* self, PyObject* args) {
 static PyObject* fitKneighborsGraph(PyObject* self, PyObject* args) {
     size_t addressNearestNeighborsObject, maxNumberOfInstances, maxNumberOfFeatures,
             nNeighbors, returnDistance, symmetric;
-    int fast, similarity;
+    int fast, similarity, absoluteNumbers;
     PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!kkkikik", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkkikiik", 
                             &PyList_Type, &instancesListObj, 
                             &PyList_Type, &featuresListObj,
                             &PyList_Type, &dataListObj,
@@ -300,12 +303,12 @@ static PyObject* fitKneighborsGraph(PyObject* self, PyObject* args) {
                             &maxNumberOfFeatures,
                             &nNeighbors,
                             &returnDistance, &fast, &symmetric,
-                            &similarity,
+                            &similarity,&absoluteNumbers, 
                             &addressNearestNeighborsObject))
         return NULL;
 
     neighborhood* neighborhood_ = fitNeighborhoodComputation(addressNearestNeighborsObject, instancesListObj, featuresListObj, dataListObj, 
-                                                   maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast, similarity);
+                                                   maxNumberOfInstances, maxNumberOfFeatures, nNeighbors, fast, similarity,absoluteNumbers);
     if (nNeighbors == 0) {
         NearestNeighbors* nearestNeighbors = reinterpret_cast<NearestNeighbors* >(addressNearestNeighborsObject);
         nNeighbors = nearestNeighbors->getNneighbors();
@@ -316,46 +319,46 @@ static PyObject* fitKneighborsGraph(PyObject* self, PyObject* args) {
 static PyObject* fitRadiusNeighbors(PyObject* self, PyObject* args) {
     size_t addressNearestNeighborsObject, maxNumberOfInstances, maxNumberOfFeatures,
             returnDistance;
-    int fast, similarity;
+    int fast, similarity, absoluteNumbers;
     float radius;
     PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!kkfkiik", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkfkiiik", 
                             &PyList_Type, &instancesListObj, 
                             &PyList_Type, &featuresListObj,
                             &PyList_Type, &dataListObj,
                             &maxNumberOfInstances,
                             &maxNumberOfFeatures,
                             &radius, &returnDistance,
-                            &fast, &similarity,
+                            &fast, &similarity,&absoluteNumbers, 
                             &addressNearestNeighborsObject))
         return NULL;
 
     neighborhood* neighborhood_ = fitNeighborhoodComputation(addressNearestNeighborsObject, instancesListObj, featuresListObj, dataListObj, 
-                                                   maxNumberOfInstances, maxNumberOfFeatures, MAX_VALUE, fast, similarity, radius); 
+                                                   maxNumberOfInstances, maxNumberOfFeatures, MAX_VALUE, fast, similarity,absoluteNumbers, radius); 
     size_t cutFirstValue = 1;
     return radiusNeighborhood(neighborhood_, radius, cutFirstValue, returnDistance); 
 }
 static PyObject* fitRadiusNeighborsGraph(PyObject* self, PyObject* args) {
     size_t addressNearestNeighborsObject, maxNumberOfInstances, maxNumberOfFeatures,
             returnDistance, symmetric;
-    int fast, similarity;
+    int fast, similarity, absoluteNumbers;
     float radius;
     PyObject* instancesListObj, *featuresListObj, *dataListObj;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!kkfkikik", 
+    if (!PyArg_ParseTuple(args, "O!O!O!kkfkikiik", 
                             &PyList_Type, &instancesListObj, 
                             &PyList_Type, &featuresListObj,
                             &PyList_Type, &dataListObj,
                             &maxNumberOfInstances,
                             &maxNumberOfFeatures,
                             &radius, &returnDistance, &fast,
-                            &symmetric, &similarity,
+                            &symmetric, &similarity,&absoluteNumbers, 
                             &addressNearestNeighborsObject))
         return NULL;
 
     neighborhood* neighborhood_ = fitNeighborhoodComputation(addressNearestNeighborsObject, instancesListObj, featuresListObj, dataListObj, 
-                                                   maxNumberOfInstances, maxNumberOfFeatures, MAX_VALUE, fast, similarity, radius);
+                                                   maxNumberOfInstances, maxNumberOfFeatures, MAX_VALUE, fast, similarity, absoluteNumbers,radius);
     return radiusNeighborhoodGraph(neighborhood_, radius, returnDistance, symmetric); 
 }
 

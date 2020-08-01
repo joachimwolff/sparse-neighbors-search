@@ -74,6 +74,8 @@ class InverseIndex {
     ~InverseIndex();
   	vsize_t* computeSignature(SparseMatrixFloat* pRawData, const size_t pInstance);
   	vsize_t* computeSignatureSSE(SparseMatrixFloat* pRawData, const size_t pInstance);
+  	// vsize_t* computeSignatureAVX(SparseMatrixFloat* pRawData, const size_t pInstance);
+
 
     vsize_t* computeSignatureWTA(SparseMatrixFloat* pRawData, const size_t pInstance);
     vvsize_t_p* computeSignatureVectors(SparseMatrixFloat* pRawData, const bool pFitting);
@@ -82,7 +84,7 @@ class InverseIndex {
   	neighborhood* kneighbors(const umap_uniqueElement* pSignaturesMap, 
                                 const size_t pNneighborhood, 
                                 const bool pDoubleElementsStorageCount,
-                                const bool pNoneSingleInstance=true, float pRadius = -1.0);
+                                const bool pNoneSingleInstance=true, float pRadius = -1.0, bool pAbsoluteNumbers=false);
   	umap_uniqueElement* getSignatureStorage() { 
       return mSignatureStorage;
     };

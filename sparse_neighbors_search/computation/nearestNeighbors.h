@@ -66,7 +66,7 @@ class NearestNeighbors {
     // Extend the inverse index with the given instances.
     void partialFit(SparseMatrixFloat* pRawData, size_t pStartIndex); 
     // Calculate k-nearest neighbors.
-    neighborhood* kneighbors(SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast, int pSimilarity = -1, float pRadius = -1.0); 
+    neighborhood* kneighbors(SparseMatrixFloat* pRawData, size_t pNneighbors, int pFast, int pSimilarity = -1, float pRadius = -1.0, bool pAbsoluteNumbers = false); 
 
     void set_mOriginalData(SparseMatrixFloat* pOriginalData) {
       mOriginalData = pOriginalData;

@@ -81,7 +81,12 @@ void NearestNeighbors::partialFit(SparseMatrixFloat* pRawData, size_t pStartInde
 }
 
 neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
-                                                size_t pNneighbors, int pFast, int pSimilarity, float pRadius) {
+                                                size_t pNneighbors, int pFast, int pSimilarity, float pRadius, bool pAbsoluteNumbers) {
+
+    size_t limit_neighbors_of_neighbors = 100;
+    if (pNneighbors+mExcessFactor < limit_neighbors_of_neighbors) {
+        limit_neighbors_of_neighbors = pNneighbors+mExcessFactor;
+    }
     if (pFast == -1) {
         pFast = mFast;
     } 
@@ -100,13 +105,13 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
         // no query data given, use stored signatures
         x_inverseIndex = mInverseIndex->getSignatureStorage();
         neighborhood_  = mInverseIndex->kneighbors(x_inverseIndex, 
-                                                    pNneighbors, true, pRadius);
+                                                    pNneighbors, true, true, pRadius, pAbsoluteNumbers);
         doubleElementsStorageCount = true;
     } else {
         pRawData->precomputeDotProduct();
         x_inverseIndex = (mInverseIndex->computeSignatureMap(pRawData));
         neighborhood_ = mInverseIndex->kneighbors(x_inverseIndex, pNneighbors, 
-                                                doubleElementsStorageCount, pRadius);
+                                                doubleElementsStorageCount, true, pRadius, pAbsoluteNumbers);
        for (auto it = x_inverseIndex->begin(); it != x_inverseIndex->end(); ++it) {
             delete (*it).second.instances;
             delete (*it).second.signature;
@@ -114,7 +119,8 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
        delete x_inverseIndex;                                          
     }
     
-    if (pFast) {     
+    if (pFast) {    
+
         return neighborhood_;
     }
     mOriginalData->precomputeDotProduct();
@@ -148,14 +154,14 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                 std::vector<sortMapFloat> exactNeighbors;
                 if (pSimilarity) {
                     exactNeighbors = 
-                        mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), pNneighbors+mExcessFactor, i, pRawData);
+                        mOriginalData->cosineSimilarity(neighborhood_->neighbors->operator[](i), limit_neighbors_of_neighbors, i, pRawData);
                 } else {
                     exactNeighbors = 
-                        mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), pNneighbors+mExcessFactor, i, pRawData);
+                        mOriginalData->euclidianDistance(neighborhood_->neighbors->operator[](i), limit_neighbors_of_neighbors, i, pRawData);
                 } 
                 std::vector<size_t> neighborsVector;
                 if (pRadius == -1.0) {
-                    size_t vectorSize = std::min(exactNeighbors.size(),pNneighbors+mExcessFactor);
+                    size_t vectorSize = std::min(exactNeighbors.size(),limit_neighbors_of_neighbors);
                     neighborsVector.resize(vectorSize);
                     for (size_t j = 0; j < vectorSize; ++j) {
                         neighborsVector[j] = exactNeighbors[j].key;
@@ -186,7 +192,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     #ifdef CUDA
     } else {
        
-        neighborhood* neighbors_ = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData, mOriginalData, pNneighbors+mExcessFactor);
+        neighborhood* neighbors_ = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData, mOriginalData, limit_neighbors_of_neighbors);
         
         #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
         for (size_t i = 0; i < neighbors_->neighbors->size(); ++i) {
@@ -221,6 +227,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     
     #endif
     x_inverseIndex = mInverseIndex->getSignatureStorage();
+    
     #ifdef OPENMP
     #pragma omp parallel for schedule(static, mChunkSize) num_threads(mNumberOfCores)
     #endif   
@@ -245,7 +252,11 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
         for (size_t j = 0; j < pNneighbors && j < sizeOfExtended; ++j) { 
             instance = neighborsListFirstRound[i][j];
             // neighborhood for instance was already computed?
+
+           
             if (neighborhoodCandidates->neighbors->operator[](instance).size() == 0) {
+                // limit neighbors of neighbors to the first 100
+                
                 umap_uniqueElement* instance_signature = new umap_uniqueElement();
                 size_t signatureId = 0;
                 for (size_t k = 0; k < mOriginalData->getSizeOfInstance(instance); ++k) {
@@ -253,17 +264,17 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                 }
                 (*instance_signature)[signatureId] = (*x_inverseIndex)[signatureId];
                  neighborhood* neighborhood_instance = mInverseIndex->kneighbors(instance_signature, 
-                                                                pNneighbors, false, false);
+                                                                pNneighbors, false, false, pAbsoluteNumbers);
                 if (neighborhood_instance->neighbors->operator[](0).size() != 0) { 
                     std::vector<sortMapFloat> exactNeighbors;
                     if (pSimilarity) {
                         exactNeighbors = 
-                            mOriginalData->cosineSimilarity(neighborhood_instance->neighbors->operator[](0), pNneighbors+mExcessFactor, instance, pRawData);
+                            mOriginalData->cosineSimilarity(neighborhood_instance->neighbors->operator[](0), limit_neighbors_of_neighbors, instance, pRawData);
                     } else {
                         exactNeighbors = 
-                            mOriginalData->euclidianDistance(neighborhood_instance->neighbors->operator[](0), pNneighbors+mExcessFactor, instance, pRawData);
+                            mOriginalData->euclidianDistance(neighborhood_instance->neighbors->operator[](0), limit_neighbors_of_neighbors, instance, pRawData);
                     }
-                    size_t vectorSize = std::min(exactNeighbors.size(), pNneighbors+mExcessFactor);
+                    size_t vectorSize = std::min(exactNeighbors.size(), limit_neighbors_of_neighbors);
                     std::vector<size_t> neighborsVector(vectorSize);
                     for (size_t j = 0; j < vectorSize; ++j) {
                         neighborsVector[j] = exactNeighbors[j].key;
@@ -284,7 +295,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
                 delete neighborhood_instance;
             }
             // add the neighbors + mExcessFactor to the candidate list 
-            for (size_t k = 0; k < neighborhoodCandidates->neighbors->operator[](instance).size() && k < pNneighbors+mExcessFactor; ++k) {
+            for (size_t k = 0; k < neighborhoodCandidates->neighbors->operator[](instance).size() && k < limit_neighbors_of_neighbors; ++k) {
                 bucketIndex = neighborhoodCandidates->neighbors->operator[](instance)[k] / sizeof(size_t);
                 element = 1 << neighborhoodCandidates->neighbors->operator[](instance)[k] % sizeof(size_t);
 
@@ -372,7 +383,7 @@ neighborhood* NearestNeighbors::kneighbors(SparseMatrixFloat* pRawData,
     #ifdef CUDA
     } else {
         
-        neighborhood* neighbors_part2 = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData, mOriginalData, pNneighbors+mExcessFactor);
+        neighborhood* neighbors_part2 = mNearestNeighborsCuda->computeNearestNeighbors(neighborhood_, pSimilarity, pRawData, mOriginalData, limit_neighbors_of_neighbors);
         delete neighborhood_->neighbors;
         delete neighborhood_->distances;
         delete neighborhood_;

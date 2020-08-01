@@ -92,7 +92,7 @@ class MinHashClassifier():
                  similarity=False, number_of_cores=None, chunk_size=None, prune_inverse_index=-1,
                   prune_inverse_index_after_instance=-1.0, remove_hash_function_with_less_entries_as=-1, 
                  block_size = 5, shingle=0, store_value_with_least_sigificant_bit=0, 
-                  gpu_hashing=0, speed_optimized=None, accuracy_optimized=None): #cpu_gpu_load_balancing=0, 
+                  gpu_hashing=0, speed_optimized=None, accuracy_optimized=None, absolute_numbers=False): #cpu_gpu_load_balancing=0, 
         self._minHash = MinHash(n_neighbors=n_neighbors, radius=radius,
                 fast=fast, number_of_hash_functions=number_of_hash_functions,
                 max_bin_size=max_bin_size, minimal_blocks_in_common=minimal_blocks_in_common,
@@ -103,7 +103,7 @@ class MinHashClassifier():
                 block_size=block_size, shingle=shingle,
                 store_value_with_least_sigificant_bit=store_value_with_least_sigificant_bit, 
                 cpu_gpu_load_balancing=0, gpu_hashing=gpu_hashing,
-                speed_optimized=speed_optimized, accuracy_optimized=accuracy_optimized)
+                speed_optimized=speed_optimized, accuracy_optimized=accuracy_optimized, absolute_numbers=absolute_numbers)
     
     def __del__(self):
         del self._minHash
@@ -130,7 +130,7 @@ class MinHashClassifier():
                 Target values of shape = [n_samples] or [n_samples, n_outputs]"""
         self._minHash.partial_fit(X, y)
 
-    def kneighbors(self, X = None, n_neighbors = None, return_distance = True, fast=None):
+    def kneighbors(self, X = None, n_neighbors = None, return_distance = True, fast=None, pAbsoluteNumbers=None):
         """Finds the K-neighbors of a point.
 
             Returns distance
@@ -160,10 +160,10 @@ class MinHashClassifier():
             ind : array, shape = [n_samples, neighbors]
                 Indices of the nearest points in the population matrix."""
         
-        return self._minHash.kneighbors(X=X, n_neighbors=n_neighbors, return_distance=return_distance, fast=fast)
+        return self._minHash.kneighbors(X=X, n_neighbors=n_neighbors, return_distance=return_distance, fast=fast, pAbsoluteNumbers=pAbsoluteNumbers)
 
 
-    def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', fast=None):
+    def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', fast=None, pAbsoluteNumbers=None):
         """Computes the (weighted) graph of k-Neighbors for points in X
             Parameters
             ----------
@@ -189,10 +189,10 @@ class MinHashClassifier():
             A : sparse matrix in CSR format, shape = [n_samples, n_samples_fit]
                 n_samples_fit is the number of samples in the fitted data
                 A[i, j] is assigned the weight of edge that connects i to j."""
-        return self._minHash.kneighbors_graph(X=X, n_neighbors=n_neighbors, mode=mode, fast=fast)
+        return self._minHash.kneighbors_graph(X=X, n_neighbors=n_neighbors, mode=mode, fast=fast, pAbsoluteNumbers=pAbsoluteNumbers)
 
 
-    def predict(self, X, n_neighbors=None, fast=None, similarity=None):
+    def predict(self, X, n_neighbors=None, fast=None, similarity=None, pAbsoluteNumbers=None):
         """Predict the class labels for the provided data
         Parameters
         ----------
@@ -205,7 +205,7 @@ class MinHashClassifier():
         """
         neighbors = self._minHash.kneighbors(X=X, n_neighbors=n_neighbors,
                                                 return_distance=False,
-                                                fast=fast, similarity=similarity)
+                                                fast=fast, similarity=similarity, pAbsoluteNumbers=pAbsoluteNumbers)
         
         result_classification = []
         for instance in neighbors:
@@ -224,7 +224,7 @@ class MinHashClassifier():
 
 
 
-    def predict_proba(self, X, n_neighbors=None, fast=None, similarity=None):
+    def predict_proba(self, X, n_neighbors=None, fast=None, similarity=None, pAbsoluteNumbers=None):
         """Return probability estimates for the test data X.
             Parameters
             ----------
@@ -239,7 +239,7 @@ class MinHashClassifier():
         """
         neighbors = self._minHash.kneighbors(X=X, n_neighbors=n_neighbors,
                                                 return_distance=False,
-                                                fast=fast, similarity=similarity)
+                                                fast=fast, similarity=similarity, pAbsoluteNumbers=pAbsoluteNumbers)
         # y_values = self._getYValues(candidate_list)
         number_of_classes = len(set(self._minHash._getY()))
         result_classification = []

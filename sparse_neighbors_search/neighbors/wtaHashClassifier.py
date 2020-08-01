@@ -129,7 +129,7 @@ class WtaHashClassifier():
                 Target values of shape = [n_samples] or [n_samples, n_outputs]"""
         self._wtaHash.partial_fit(X, y)
 
-    def kneighbors(self, X = None, n_neighbors = None, return_distance = True, fast=None):
+    def kneighbors(self, X = None, n_neighbors = None, return_distance = True, fast=None, pAbsoluteNumbers=None):
         """Finds the K-neighbors of a point.
 
             Returns distance
@@ -159,10 +159,10 @@ class WtaHashClassifier():
             ind : array, shape = [n_samples, neighbors]
                 Indices of the nearest points in the population matrix."""
         
-        return self._wtaHash.kneighbors(X=X, n_neighbors=n_neighbors, return_distance=return_distance, fast=fast)
+        return self._wtaHash.kneighbors(X=X, n_neighbors=n_neighbors, return_distance=return_distance, fast=fast, pAbsoluteNumbers=pAbsoluteNumbers)
 
 
-    def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', fast=None):
+    def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', fast=None, pAbsoluteNumbers=None):
         """Computes the (weighted) graph of k-Neighbors for points in X
             Parameters
             ----------
@@ -188,10 +188,10 @@ class WtaHashClassifier():
             A : sparse matrix in CSR format, shape = [n_samples, n_samples_fit]
                 n_samples_fit is the number of samples in the fitted data
                 A[i, j] is assigned the weight of edge that connects i to j."""
-        return self._wtaHash.kneighbors_graph(X=X, n_neighbors=n_neighbors, mode=mode, fast=fast)
+        return self._wtaHash.kneighbors_graph(X=X, n_neighbors=n_neighbors, mode=mode, fast=fast, pAbsoluteNumbers=pAbsoluteNumbers)
 
 
-    def predict(self, X, n_neighbors=None, fast=None, similarity=None):
+    def predict(self, X, n_neighbors=None, fast=None, similarity=None, pAbsoluteNumbers=None):
         """Predict the class labels for the provided data
         Parameters
         ----------
@@ -204,7 +204,7 @@ class WtaHashClassifier():
         """
         neighbors = self._wtaHash.kneighbors(X=X, n_neighbors=n_neighbors,
                                                 return_distance=False,
-                                                fast=fast, similarity=similarity)
+                                                fast=fast, similarity=similarity, pAbsoluteNumbers=pAbsoluteNumbers)
        
         result_classification = []
         for instance in neighbors:
@@ -223,7 +223,7 @@ class WtaHashClassifier():
 
 
 
-    def predict_proba(self, X, n_neighbors=None, fast=None, similarity=None):
+    def predict_proba(self, X, n_neighbors=None, fast=None, similarity=None, pAbsoluteNumbers=None):
         """Return probability estimates for the test data X.
             Parameters
             ----------
@@ -238,7 +238,7 @@ class WtaHashClassifier():
         """
         neighbors = self._wtaHash.kneighbors(X=X, n_neighbors=n_neighbors,
                                                 return_distance=False,
-                                                fast=fast, similarity=similarity)
+                                                fast=fast, similarity=similarity, pAbsoluteNumbers=pAbsoluteNumbers)
          # y_values = self._getYValues(candidate_list)
         number_of_classes = len(set(self._wtaHash._getY()))
         result_classification = []
