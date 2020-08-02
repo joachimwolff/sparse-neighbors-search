@@ -51,6 +51,10 @@ On a Linux system openmp is default. If you don't want to use it set:
 	
 	python setup.py install --user --noopenmp
 
+Version 0.6 drops the support of CUDA. However, if you want to try to compile it on your **own risk**:
+	
+	python setup.py install --cuda
+	
 Instead of cloning the repository via git clone and than running the installation, you can do it in one step with pip:
 	
 	pip install git+https://github.com/joachimwolff/minHashNearestNeighbors.git
