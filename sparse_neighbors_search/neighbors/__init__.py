@@ -17,3 +17,8 @@ from .minHash import MinHash
 from .minHashClassifier import MinHashClassifier
 from .wtaHash import WtaHash
 from .wtaHashClassifier import WtaHashClassifier
+
+import logging
+# logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
+logging.getLogger('numba').setLevel(logging.ERROR)

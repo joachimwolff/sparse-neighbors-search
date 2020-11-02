@@ -106,6 +106,7 @@ class _NearestNeighborsCppInterface():
         # self._y = None
         self._maxFeatures = maxFeatures
         self.absoluteNumbers = absolute_numbers
+        self.n_neighbors = n_neighbors
         # print('self.absoluteNumbers init nncpi {}'.format(self.absoluteNumbers))
         if number_of_cores is None:
             number_of_cores = mp.cpu_count()

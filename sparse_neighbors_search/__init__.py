@@ -21,3 +21,8 @@ from .neighbors.wtaHash import WtaHash
 from .cluster.minHashSpectralClustering import MinHashSpectralClustering
 from .cluster.minHashDBSCAN import MinHashDBSCAN
 from .cluster.minHashClustering import MinHashClustering
+
+import logging
+# logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
+logging.getLogger('numba').setLevel(logging.ERROR)
