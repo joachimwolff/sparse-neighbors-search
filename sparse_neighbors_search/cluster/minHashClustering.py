@@ -55,7 +55,7 @@ class MinHashClustering():
                                 repulsion_strength=pUmapDict['umap_repulsion_strength'], negative_sample_rate=pUmapDict['umap_negative_sample_rate'], transform_queue_size=pUmapDict['umap_transform_queue_size'], 
                                 a=pUmapDict['umap_a'], b=pUmapDict['umap_b'], angular_rp_forest=pUmapDict['umap_angular_rp_forest'], 
                                 target_n_neighbors=pUmapDict['umap_target_n_neighbors'], target_metric=pUmapDict['umap_target_metric'], 
-                                target_weight=pUmapDict['umap_target_weight'],
+                                target_weight=pUmapDict['umap_target_weight'], random_state=42,
                                 force_approximation_algorithm=pUmapDict['umap_force_approximation_algorithm'], verbose=pUmapDict['umap_verbose'], unique=pUmapDict['umap_unique'])
             self._precomputed_graph = reducer.fit_transform(self._precomputed_graph)
         if pPca or pUmap:
