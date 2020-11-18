@@ -1,5 +1,5 @@
 # Approximate k-nearest neighbors search on sparse datasets
-With MinHash and WTA-Hash from the bioinf-learn package it is possible to search the approximate k-nearest neighbors 
+With MinHash and WTA-Hash it is possible to search the approximate k-nearest neighbors 
 within a sparse data structure. It works best for very high dimensional and very sparse datasets, e.g. one million dimensions and 400 non-zero feature ids on average.
 
 To use it:
@@ -15,6 +15,8 @@ Disclaimer
 With the update to version 0.3 'Charlie Brown' which needs support for SSE4.1 by your operating system and cpu macOS is no longer supported. Feel free to use it and or to get it run on this platform but I cannot test it there and probably it will not run.
 
 Version 0.4 'Lucy van Pelt' drops Python 2 support and introduces the support of Python 3. Additional, CUDA compile level is set to sm_60, requiring CUDA 8 and a 'Pascal'  GPU architecture, GTX 10X0 family. However, nothing in the source code is changed feel free to set it to an older version.
+
+Version 0.6 'Linus van Pelt' removes official support for CUDA. There is a compiling issue and I am unable to resolve it. Maybe it will comeback in the future.
 
 Features
 --------
@@ -49,26 +51,17 @@ On a Linux system openmp is default. If you don't want to use it set:
 	
 	python setup.py install --user --noopenmp
 
-GPU support is provided with Nvidias CUDA. If the setup detects a CUDA installation it is using it. If you want to force an installation without CUDA add the parameter:
-	--nocuda
-
+Version 0.6 drops the support of CUDA. However, if you want to try to compile it on your **own risk**:
+	
+	python setup.py install --cuda
+	
 Instead of cloning the repository via git clone and than running the installation, you can do it in one step with pip:
 	
 	pip install git+https://github.com/joachimwolff/minHashNearestNeighbors.git
 
-The installation requires g++ and the C++11 libs, numpy, scikit-learn, cython and scipy. For the GPU support the CUDA framework with nvcc.
-The software was tested on Ubuntu 14.04 with g++ 4.8, CUDA 7.5, numpy 1.10.1, scikit-learn 0.17, Cython 0.23.4 and scipy 0.16.1.
+The installation requires g++ and the C++11 libs, numpy, scikit-learn, cython, scipy, openmp and SSE 4.1 support.
 
-Uninstall
----------
-To delete sparse-neighbors-search run the following command:
-
-	pip uninstall sparse-neighbors-search
-
-If you have run the uninstall command and want to make sure everything is gone, look at your python installation directory.
-If you have used the --user flag the path in Ubuntu 14.04 is:
-
-	~/.local/lib/python2.7/site-packages
+The software was tested on Ubuntu 20.04 with g++ 7.5, numpy 1.19, scikit-learn 0.23, Cython 0.29 and scipy 1.5.
 
 
 Contribute
