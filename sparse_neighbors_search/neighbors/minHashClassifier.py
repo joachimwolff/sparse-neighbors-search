@@ -25,10 +25,11 @@ import logging
 
 from .minHash import MinHash
 
+
 class MinHashClassifier():
     """Classifier implementing the k-nearest neighbors vote on sparse data sets.
         Based on a dimension reduction with minimum hash functions.
-        
+
         Parameters
         ----------
         n_neighbors : int, optional (default = 5)
@@ -63,13 +64,13 @@ class MinHashClassifier():
             another 8 elements until everything is done. If you set chunk_size to "-1" all cores
             are getting the same amount of data at once; e.g. 8-core cpu and 128 elements to process, every core will
             get 16 elements at once.
-        
+
         Notes
         -----
 
         The documentation is copied from scikit-learn and was only extend for a few cases. All examples are available there.
         Original documentation is available at: http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html#sklearn.neighbors.KNeighborsClassifier
-        
+
         Sources:
         Basic algorithm:
         http://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
@@ -87,27 +88,27 @@ class MinHashClassifier():
         Bioinformatics, 28(12), i224-i232.
         http://bioinformatics.oxfordjournals.org/content/28/12/i224.full.pdf+html"""
 
-    def __init__(self, n_neighbors = 5, radius = 1.0, fast=False, number_of_hash_functions=400,
-                 max_bin_size = 50, minimal_blocks_in_common = 1, shingle_size = 4, excess_factor = 5,
+    def __init__(self, n_neighbors=5, radius=1.0, fast=False, number_of_hash_functions=400,
+                 max_bin_size=50, minimal_blocks_in_common=1, shingle_size=4, excess_factor=5,
                  similarity=False, number_of_cores=None, chunk_size=None, prune_inverse_index=-1,
-                  prune_inverse_index_after_instance=-1.0, remove_hash_function_with_less_entries_as=-1, 
-                 block_size = 5, shingle=0, store_value_with_least_sigificant_bit=0, 
-                  gpu_hashing=0, speed_optimized=None, accuracy_optimized=None, absolute_numbers=False): #cpu_gpu_load_balancing=0, 
+                 prune_inverse_index_after_instance=-1.0, remove_hash_function_with_less_entries_as=-1,
+                 block_size=5, shingle=0, store_value_with_least_sigificant_bit=0,
+                 gpu_hashing=0, speed_optimized=None, accuracy_optimized=None, absolute_numbers=False):  # cpu_gpu_load_balancing=0,
         self._minHash = MinHash(n_neighbors=n_neighbors, radius=radius,
-                fast=fast, number_of_hash_functions=number_of_hash_functions,
-                max_bin_size=max_bin_size, minimal_blocks_in_common=minimal_blocks_in_common,
-                shingle_size=shingle_size, excess_factor=excess_factor,
-                similarity=similarity, number_of_cores=number_of_cores, chunk_size=chunk_size, prune_inverse_index=prune_inverse_index,
-                prune_inverse_index_after_instance=prune_inverse_index_after_instance,
-                remove_hash_function_with_less_entries_as=remove_hash_function_with_less_entries_as, 
-                block_size=block_size, shingle=shingle,
-                store_value_with_least_sigificant_bit=store_value_with_least_sigificant_bit, 
-                cpu_gpu_load_balancing=0, gpu_hashing=gpu_hashing,
-                speed_optimized=speed_optimized, accuracy_optimized=accuracy_optimized, absolute_numbers=absolute_numbers)
-    
+                                fast=fast, number_of_hash_functions=number_of_hash_functions,
+                                max_bin_size=max_bin_size, minimal_blocks_in_common=minimal_blocks_in_common,
+                                shingle_size=shingle_size, excess_factor=excess_factor,
+                                similarity=similarity, number_of_cores=number_of_cores, chunk_size=chunk_size, prune_inverse_index=prune_inverse_index,
+                                prune_inverse_index_after_instance=prune_inverse_index_after_instance,
+                                remove_hash_function_with_less_entries_as=remove_hash_function_with_less_entries_as,
+                                block_size=block_size, shingle=shingle,
+                                store_value_with_least_sigificant_bit=store_value_with_least_sigificant_bit,
+                                cpu_gpu_load_balancing=0, gpu_hashing=gpu_hashing,
+                                speed_optimized=speed_optimized, accuracy_optimized=accuracy_optimized, absolute_numbers=absolute_numbers)
+
     def __del__(self):
         del self._minHash
-    
+
     def fit(self, X, y):
         """Fit the model using X as training data.
 
@@ -118,7 +119,7 @@ class MinHashClassifier():
             y : {array-like, sparse matrix}
                 Target values of shape = [n_samples] or [n_samples, n_outputs]"""
         self._minHash.fit(X, y)
-       
+
     def partial_fit(self, X, y):
         """Extend the model by X as additional training data.
 
@@ -130,7 +131,7 @@ class MinHashClassifier():
                 Target values of shape = [n_samples] or [n_samples, n_outputs]"""
         self._minHash.partial_fit(X, y)
 
-    def kneighbors(self, X = None, n_neighbors = None, return_distance = True, fast=None, pAbsoluteNumbers=None):
+    def kneighbors(self, X=None, n_neighbors=None, return_distance=True, fast=None, pAbsoluteNumbers=None):
         """Finds the K-neighbors of a point.
 
             Returns distance
@@ -159,9 +160,8 @@ class MinHashClassifier():
                 return_distance=True
             ind : array, shape = [n_samples, neighbors]
                 Indices of the nearest points in the population matrix."""
-        
-        return self._minHash.kneighbors(X=X, n_neighbors=n_neighbors, return_distance=return_distance, fast=fast, pAbsoluteNumbers=pAbsoluteNumbers)
 
+        return self._minHash.kneighbors(X=X, n_neighbors=n_neighbors, return_distance=return_distance, fast=fast, pAbsoluteNumbers=pAbsoluteNumbers)
 
     def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', fast=None, pAbsoluteNumbers=None):
         """Computes the (weighted) graph of k-Neighbors for points in X
@@ -191,7 +191,6 @@ class MinHashClassifier():
                 A[i, j] is assigned the weight of edge that connects i to j."""
         return self._minHash.kneighbors_graph(X=X, n_neighbors=n_neighbors, mode=mode, fast=fast, pAbsoluteNumbers=pAbsoluteNumbers)
 
-
     def predict(self, X, n_neighbors=None, fast=None, similarity=None, pAbsoluteNumbers=None):
         """Predict the class labels for the provided data
         Parameters
@@ -204,15 +203,15 @@ class MinHashClassifier():
                 Class labels for each data sample.
         """
         neighbors = self._minHash.kneighbors(X=X, n_neighbors=n_neighbors,
-                                                return_distance=False,
-                                                fast=fast, similarity=similarity, pAbsoluteNumbers=pAbsoluteNumbers)
-        
+                                             return_distance=False,
+                                             fast=fast, similarity=similarity, pAbsoluteNumbers=pAbsoluteNumbers)
+
         result_classification = []
         for instance in neighbors:
             y_value = []
             for instance_ in instance:
                 if instance_ != -1:
-                # get all class labels
+                    # get all class labels
                     # y_value.append(y_values[instance_])
                     y_value.append(self._minHash._getY()[instance_])
             if len(y_value) > 0:
@@ -221,8 +220,6 @@ class MinHashClassifier():
             else:
                 result_classification.append(-1)
         return asarray(result_classification)
-
-
 
     def predict_proba(self, X, n_neighbors=None, fast=None, similarity=None, pAbsoluteNumbers=None):
         """Return probability estimates for the test data X.
@@ -238,8 +235,8 @@ class MinHashClassifier():
                 by lexicographic order.
         """
         neighbors = self._minHash.kneighbors(X=X, n_neighbors=n_neighbors,
-                                                return_distance=False,
-                                                fast=fast, similarity=similarity, pAbsoluteNumbers=pAbsoluteNumbers)
+                                             return_distance=False,
+                                             fast=fast, similarity=similarity, pAbsoluteNumbers=pAbsoluteNumbers)
         # y_values = self._getYValues(candidate_list)
         number_of_classes = len(set(self._minHash._getY()))
         result_classification = []
@@ -247,10 +244,10 @@ class MinHashClassifier():
             y_value = []
             for instance_ in instance:
                 if instance_ != -1:
-                # get all class labels
+                    # get all class labels
                     y_value.append(self._minHash._getY()[instance_])
             if len(y_value) > 0:
-            
+
                 # sort class labels by frequency
                 y_proba = [0.0] * number_of_classes
                 sorted_classes = Counter(y_value)
@@ -263,8 +260,8 @@ class MinHashClassifier():
                     y_proba[key] = value / float(total_class_count)
                 result_classification.append(y_proba[:])
         return asarray(result_classification)
-        
-    def score(self, X, y , sample_weight=None, fast=None):
+
+    def score(self, X, y, sample_weight=None, fast=None):
         """Returns the mean accuracy on the given test data and labels.
         In multi-label classification, this is the subset accuracy
         which is a harsh metric since you require for each sample that
@@ -283,7 +280,7 @@ class MinHashClassifier():
         score : float
             Mean accuracy of self.predict(X) wrt. y.
         """
-        
+
         return accuracy_score(y, self.predict(X, fast=fast), sample_weight=sample_weight)
 
     # def _getYValues(self, candidate_list):

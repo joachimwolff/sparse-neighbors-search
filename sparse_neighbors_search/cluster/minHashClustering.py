@@ -18,11 +18,14 @@ from sklearn.decomposition import PCA
 # from scanpy import tl, pp
 # from anndata import AnnData
 import umap
+
+
 class MinHashClustering():
     def __init__(self, minHashObject, clusteringObject):
         self._minHashObject = minHashObject
         self._clusteringObject = clusteringObject
         self._precomputed_graph = None
+
     def fit(self, X, y=None, pSaveMemory=None, pPca=None, pPcaDimensions=None, pUmap=None, pUmapDict=None):
         print('pUmapDict {}'.format(pUmapDict))
         if pSaveMemory is not None and pSaveMemory > 0:
@@ -32,7 +35,7 @@ class MinHashClustering():
             batch_size = int(np.floor(number_of_elements * pSaveMemory))
             if batch_size < 1:
                 batch_size = 1
-            
+
             if y is None:
                 self._minHashObject.fit(X[0:batch_size, :])
             else:
@@ -40,49 +43,49 @@ class MinHashClustering():
             if batch_size < number_of_elements:
                 for i in range(batch_size, X.shape[0], batch_size):
                     if y is None:
-                        self._minHashObject.partial_fit(X[i:i+batch_size, :])
+                        self._minHashObject.partial_fit(X[i:i + batch_size, :])
                     else:
-                        self._minHashObject.partial_fit(X[i:i+batch_size, :], y[i:i+batch_size])
+                        self._minHashObject.partial_fit(X[i:i + batch_size, :], y[i:i + batch_size])
         else:
             self._minHashObject.fit(X, y=y)
         self._precomputed_graph = self._minHashObject.kneighbors_graph(mode='distance')
 
         if pPca:
-            pca = PCA(n_components = min(self._precomputed_graph.shape) - 1)
+            pca = PCA(n_components=min(self._precomputed_graph.shape) - 1)
             self._precomputed_graph = pca.fit_transform(self._precomputed_graph.todense())
             if pPcaDimensions:
                 pPcaDimensions = min(pPcaDimensions, self._precomputed_graph.shape[0])
                 self._precomputed_graph = self._precomputed_graph[:, :pPcaDimensions]
         if pUmap:
-            
+
             if pUmapDict is None:
                 reducer = umap.UMAP()
             else:
-                reducer = umap.UMAP(n_neighbors=pUmapDict['umap_n_neighbors'], n_components=pUmapDict['umap_n_components'], metric=pUmapDict['umap_metric'], 
-                                    n_epochs=pUmapDict['umap_n_epochs'], 
-                                    learning_rate=pUmapDict['umap_learning_rate'], init=pUmapDict['umap_init'], min_dist=pUmapDict['umap_min_dist'], spread=pUmapDict['umap_spread'], 
-                                    set_op_mix_ratio=pUmapDict['umap_set_op_mix_ratio'], local_connectivity=pUmapDict['umap_local_connectivity'], 
-                                    repulsion_strength=pUmapDict['umap_repulsion_strength'], negative_sample_rate=pUmapDict['umap_negative_sample_rate'], transform_queue_size=pUmapDict['umap_transform_queue_size'], 
-                                    a=pUmapDict['umap_a'], b=pUmapDict['umap_b'], angular_rp_forest=pUmapDict['umap_angular_rp_forest'], 
-                                    target_n_neighbors=pUmapDict['umap_target_n_neighbors'], target_metric=pUmapDict['umap_target_metric'], 
+                reducer = umap.UMAP(n_neighbors=pUmapDict['umap_n_neighbors'], n_components=pUmapDict['umap_n_components'], metric=pUmapDict['umap_metric'],
+                                    n_epochs=pUmapDict['umap_n_epochs'],
+                                    learning_rate=pUmapDict['umap_learning_rate'], init=pUmapDict['umap_init'], min_dist=pUmapDict['umap_min_dist'], spread=pUmapDict['umap_spread'],
+                                    set_op_mix_ratio=pUmapDict['umap_set_op_mix_ratio'], local_connectivity=pUmapDict['umap_local_connectivity'],
+                                    repulsion_strength=pUmapDict['umap_repulsion_strength'], negative_sample_rate=pUmapDict['umap_negative_sample_rate'], transform_queue_size=pUmapDict['umap_transform_queue_size'],
+                                    a=pUmapDict['umap_a'], b=pUmapDict['umap_b'], angular_rp_forest=pUmapDict['umap_angular_rp_forest'],
+                                    target_n_neighbors=pUmapDict['umap_target_n_neighbors'], target_metric=pUmapDict['umap_target_metric'],
                                     target_weight=pUmapDict['umap_target_weight'], random_state=pUmapDict['umap_random'],
                                     force_approximation_algorithm=pUmapDict['umap_force_approximation_algorithm'], verbose=pUmapDict['umap_verbose'], unique=pUmapDict['umap_unique'])
             self._precomputed_graph = reducer.fit_transform(self._precomputed_graph)
         if pPca or pUmap:
             self._clusteringObject.fit(self._precomputed_graph)
-            return 
+            return
         try:
             self._clusteringObject.fit(self._precomputed_graph)
-        except:
+        except Exception:
             self._clusteringObject.fit(self._precomputed_graph.todense())
         return
-	
+
     def fit_predict(self, X, y=None, pSaveMemory=None, pPca=None, pPcaDimensions=None, pUmap=None, **pUmapDict):
 
         self.fit(X, y, pSaveMemory=pSaveMemory, pPca=pPca, pPcaDimensions=pPcaDimensions)
 
         return self.predict(self._precomputed_graph, y, pPca=pPca, pPcaDimensions=pPcaDimensions, pUmap=pUmap, pUmapDict=pUmapDict)
-		
+
     def predict(self, X, y=None, pPca=None, pPcaDimensions=None, pUmap=None, pUmapDict=None):
         if hasattr(self._clusteringObject, 'labels_'):
             return self._clusteringObject.labels_.astype(np.int)
@@ -91,5 +94,5 @@ class MinHashClustering():
                 if pPcaDimensions:
                     pPcaDimensions = min(pPcaDimensions, self._precomputed_graph.shape[0])
                     return self._clusteringObject.fit(self._precomputed_graph[:, :pPcaDimensions], pUmap, pUmapDict)
- 
+
             return self._clusteringObject.predict(X)

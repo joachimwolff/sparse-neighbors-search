@@ -16,14 +16,15 @@ from ..neighbors import MinHash
 
 import numpy as np
 
+
 class MinHashDBSCAN():
-    def __init__(self, eps=0.5, min_samples=5, 
-        algorithm='auto', leaf_size=30, p=None, random_state=None, 
-        fast=False, n_neighbors=5, radius=1.0,
-        number_of_hash_functions=400,
-        max_bin_size = 50, minimal_blocks_in_common = 1,
-        shingle_size = 4, excess_factor = 5,
-        number_of_cores=None, chunk_size=None):
+    def __init__(self, eps=0.5, min_samples=5,
+                 algorithm='auto', leaf_size=30, p=None, random_state=None,
+                 fast=False, n_neighbors=5, radius=1.0,
+                 number_of_hash_functions=400,
+                 max_bin_size=50, minimal_blocks_in_common=1,
+                 shingle_size=4, excess_factor=5,
+                 number_of_cores=None, chunk_size=None):
 
         self.eps = eps
         self.min_samples = min_samples
@@ -44,20 +45,21 @@ class MinHashDBSCAN():
         self.n_neighbors = n_neighbors
 
         self._dbscan = DBSCAN(eps=self.eps, min_samples=min_samples, metric='precomputed',
-                algorithm=self.algorithm, leaf_size=self.leaf_size, p=self.p)
+                              algorithm=self.algorithm, leaf_size=self.leaf_size, p=self.p)
         self.labels_ = None
         self._precomputed_graph = None
         # only for compatible issues
+
     def fit(self, X, y=None, pSaveMemory=None):
-        minHashNeighbors = MinHash(n_neighbors = self.n_neighbors, 
-        radius = self.radius, fast = self.fast,
-        number_of_hash_functions = self.number_of_hash_functions,
-        max_bin_size = self.max_bin_size,
-        minimal_blocks_in_common = self.minimal_blocks_in_common,
-        shingle_size = self.shingle_size,
-        excess_factor = self.excess_factor,
-        number_of_cores = self.number_of_cores,
-        chunk_size = self.chunk_size, similarity=False)
+        minHashNeighbors = MinHash(n_neighbors=self.n_neighbors,
+                                   radius=self.radius, fast=self.fast,
+                                   number_of_hash_functions=self.number_of_hash_functions,
+                                   max_bin_size=self.max_bin_size,
+                                   minimal_blocks_in_common=self.minimal_blocks_in_common,
+                                   shingle_size=self.shingle_size,
+                                   excess_factor=self.excess_factor,
+                                   number_of_cores=self.number_of_cores,
+                                   chunk_size=self.chunk_size, similarity=False)
 
         if pSaveMemory is not None and pSaveMemory > 0:
             if pSaveMemory > 1:
@@ -69,15 +71,15 @@ class MinHashDBSCAN():
             minHashNeighbors.fit(X[0:batch_size, :])
             if batch_size < number_of_elements:
                 for i in range(batch_size, X.shape[0], batch_size):
-                    minHashNeighbors.partial_fit(X[i:i+batch_size, :])
+                    minHashNeighbors.partial_fit(X[i:i + batch_size, :])
         else:
             minHashNeighbors.fit(X)
-
 
         # minHashNeighbors.fit(X, y)
         self._precomputed_graph = minHashNeighbors.kneighbors_graph(mode='distance')
         self._dbscan.fit(self._precomputed_graph)
         self.labels_ = self._dbscan.labels_
+
     def fit_predict(self, X, y=None, pSaveMemory=None):
         self.fit(X, y, pSaveMemory=None)
         return self.labels_
