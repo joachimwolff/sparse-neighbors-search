@@ -34,8 +34,8 @@ jobs:
     displayName: installing dependencies
   - script: |
       source activate sparse-neighbors-search
-      flake8 cluster --exclude=.venv,.build,planemo_test_env,build --ignore=E501,F401,F403,E402,F999,F405,E712,W504
-      flake8 neighbors --exclude=.venv,.build,planemo_test_env,build --ignore=E501,F401,F403,E402,F999,F405,E712,W504
+      flake8 sparse_neighbors_search/cluster --exclude=.venv,.build,planemo_test_env,build --ignore=E501,F401,F403,E402,F999,F405,E712,W504
+      flake8 sparse_neighbors_search/neighbors --exclude=.venv,.build,planemo_test_env,build --ignore=E501,F401,F403,E402,F999,F405,E712,W504
     displayName: linting
   - script: |
       source activate sparse-neighbors-search
@@ -44,7 +44,7 @@ jobs:
 - job: 'OSX'
   timeoutInMinutes: 0
   pool:
-    vmImage: 'macOS-10.14'
+    vmImage: 'macOS-latest'
   strategy:
     matrix:
       Python36:
@@ -72,8 +72,8 @@ jobs:
     displayName: installing dependencies
   - script: |
       source activate sparse-neighbors-search
-      flake8 cluster --exclude=.venv,.build,planemo_test_env,build --ignore=E501,F401,F403,E402,F999,F405,E712,W504
-      flake8 neighbors --exclude=.venv,.build,planemo_test_env,build --ignore=E501,F401,F403,E402,F999,F405,E712,W504
+      flake8 sparse_neighbors_search/cluster --exclude=.venv,.build,planemo_test_env,build --ignore=E501,F401,F403,E402,F999,F405,E712,W504
+      flake8 sparse_neighbors_search/neighbors --exclude=.venv,.build,planemo_test_env,build --ignore=E501,F401,F403,E402,F999,F405,E712,W504
     displayName: linting
   - script: |
       source activate sparse-neighbors-search
