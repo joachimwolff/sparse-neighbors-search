@@ -251,7 +251,7 @@ class _NearestNeighborsCppInterface():
         else:
             pAbsoluteNumbers = 1
 
-        print('self.absoluteNumbers knn call nncpi {}'.format(pAbsoluteNumbers))
+        # print('self.absoluteNumbers knn call nncpi {}'.format(pAbsoluteNumbers))
 
         if X is None:
             result = _nearestNeighbors.kneighbors([], [], [],
