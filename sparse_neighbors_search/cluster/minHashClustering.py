@@ -27,7 +27,6 @@ class MinHashClustering():
         self._precomputed_graph = None
 
     def fit(self, X, y=None, pSaveMemory=None, pPca=None, pPcaDimensions=None, pUmap=None, pUmapDict=None):
-        print('pUmapDict {}'.format(pUmapDict))
         if pSaveMemory is not None and pSaveMemory > 0:
             if pSaveMemory > 1:
                 pSaveMemory = 1
@@ -93,6 +92,8 @@ class MinHashClustering():
             if pPca:
                 if pPcaDimensions:
                     pPcaDimensions = min(pPcaDimensions, self._precomputed_graph.shape[0])
-                    return self._clusteringObject.fit(self._precomputed_graph[:, :pPcaDimensions], pUmap, pUmapDict)
+                    self._clusteringObject.fit(self._precomputed_graph[:, :pPcaDimensions], pUmap, pUmapDict)
+            elif pUmap:
+                self._clusteringObject.fit(self._precomputed_graph, pUmap, pUmapDict)
 
             return self._clusteringObject.predict(X)
