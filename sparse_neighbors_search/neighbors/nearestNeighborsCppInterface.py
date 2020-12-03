@@ -23,6 +23,7 @@ import numpy as np
 import math
 import _nearestNeighbors
 
+
 class _NearestNeighborsCppInterface():
     """Approximate unsupervised learner for implementing neighbor searches on sparse data sets. Based on a
         dimension reduction with minimum hash functions or winner takes it all hashing.
@@ -75,10 +76,10 @@ class _NearestNeighborsCppInterface():
         remove_hash_function_with_less_entries_as: int, optional (default =-1)
             Remove every hash function with less hash values as n.
         block_size : int, optional (default = 5)
-            How much more hash functions should be computed. Number is relevant for the shingels. 
+            How much more hash functions should be computed. Number is relevant for the shingels.
         shingle : int, optional (default = 0)
         store_value_with_least_sigificant_bit : int, optional (default = 0)
-        cpu_gpu_load_balancing : int, optional (default = 1) 
+        cpu_gpu_load_balancing : int, optional (default = 1)
             0 if 100% cpu, 1 if 100% gpu.
         gpu_hashing : int, optional (default = 1)
             If the hashing of MinHash should be computed on the GPU (1) but the prediction is computed on the CPU.
@@ -86,7 +87,7 @@ class _NearestNeighborsCppInterface():
         speed_optimized : {True, False}, optional (default = None)
             A parameter setting that is optimized for the best speed. Can not be used together with the parameter 'accuracy_optimized'.
             If bad results are computed, try 'accuracy_optimized' or optimize the parameters with a hyperparameter optimization.
-        accuracy_optimized : {True, False}, optional (default = None) 
+        accuracy_optimized : {True, False}, optional (default = None)
             A parameter setting that is optimized for the best accuracy. Can not be used together with the parameter 'speed_optimized'.
             If results are computed to slow, try 'speed_optimized' or optimize the parameters with a hyperparameter optimization.
         Notes
@@ -96,16 +97,18 @@ class _NearestNeighborsCppInterface():
         http://scikit-learn.org/stable/modules/generated/sklearn.neighbors.NearestNeighbors.html#sklearn.neighbors.NearestNeighbors
 
         """
-    def __init__(self, n_neighbors = 5, radius = 1.0, fast=False, number_of_hash_functions=400,
-                 max_bin_size = 50, minimal_blocks_in_common = 1, shingle_size = 4, excess_factor = 5,
+
+    def __init__(self, n_neighbors=5, radius=1.0, fast=False, number_of_hash_functions=400,
+                 max_bin_size=50, minimal_blocks_in_common=1, shingle_size=4, excess_factor=5,
                  similarity=False, number_of_cores=None, chunk_size=None, prune_inverse_index=-1,
-                  prune_inverse_index_after_instance=-1.0, remove_hash_function_with_less_entries_as=-1, 
-                  hash_algorithm = 0, block_size = 5, shingle=0, store_value_with_least_sigificant_bit=0, 
-                  cpu_gpu_load_balancing=0, gpu_hashing=0, rangeK_wta=10, maxFeatures=None, absolute_numbers=False):
+                 prune_inverse_index_after_instance=-1.0, remove_hash_function_with_less_entries_as=-1,
+                 hash_algorithm=0, block_size=5, shingle=0, store_value_with_least_sigificant_bit=0,
+                 cpu_gpu_load_balancing=0, gpu_hashing=0, rangeK_wta=10, maxFeatures=None, absolute_numbers=False):
         # self._X
         # self._y = None
         self._maxFeatures = maxFeatures
         self.absoluteNumbers = absolute_numbers
+        self.n_neighbors = n_neighbors
         # print('self.absoluteNumbers init nncpi {}'.format(self.absoluteNumbers))
         if number_of_cores is None:
             number_of_cores = mp.cpu_count()
@@ -115,20 +118,19 @@ class _NearestNeighborsCppInterface():
         maximal_number_of_hash_collisions = int(number_of_hash_functions)
 
         self._index_elements_count = 0
-        self._pointer_address_of_nearestNeighbors_object = _nearestNeighbors.create_object(number_of_hash_functions, 
-                                                    shingle_size, number_of_cores, chunk_size, n_neighbors,
-                                                    minimal_blocks_in_common, max_bin_size, 
-                                                    maximal_number_of_hash_collisions, excess_factor,
-                                                    1 if fast else 0, 1 if similarity else 0,
-                                                    prune_inverse_index, 
-                                                    prune_inverse_index_after_instance, remove_hash_function_with_less_entries_as,
-                                                    hash_algorithm,
-                                                     block_size, 
-                                                     shingle, store_value_with_least_sigificant_bit, cpu_gpu_load_balancing, gpu_hashing, rangeK_wta)
+        self._pointer_address_of_nearestNeighbors_object = _nearestNeighbors.create_object(number_of_hash_functions,
+                                                                                           shingle_size, number_of_cores, chunk_size, n_neighbors,
+                                                                                           minimal_blocks_in_common, max_bin_size,
+                                                                                           maximal_number_of_hash_collisions, excess_factor,
+                                                                                           1 if fast else 0, 1 if similarity else 0,
+                                                                                           prune_inverse_index,
+                                                                                           prune_inverse_index_after_instance, remove_hash_function_with_less_entries_as,
+                                                                                           hash_algorithm,
+                                                                                           block_size,
+                                                                                           shingle, store_value_with_least_sigificant_bit, cpu_gpu_load_balancing, gpu_hashing, rangeK_wta)
 
     def __del__(self):
         _nearestNeighbors.delete_object(self._pointer_address_of_nearestNeighbors_object)
-           
 
     def fit(self, X, y=None):
         """Fit the model using X as training data.
@@ -142,7 +144,7 @@ class _NearestNeighborsCppInterface():
                 this case.
             y : list, optional (default = None)
                 List of classes for the given input of X. Size have to be n_samples."""
-        
+
         if y is not None:
             self._y_is_csr = True
             _, self._y = check_X_y(X, y, "csr", multi_output=True)
@@ -151,19 +153,18 @@ class _NearestNeighborsCppInterface():
         else:
             self._y_is_csr = False
         X_csr = csr_matrix(X)
-       
+
         self._index_elements_count = X_csr.shape[0]
         # instances, features = X_csr.nonzero()
-        if self._maxFeatures == None:
+        if self._maxFeatures is None:
             self._maxFeatures = int(max(X_csr.getnnz(1)))
-        
+
         # data = X_csr.data
-        
+
         # returns a pointer to the inverse index stored in c++
-        self._pointer_address_of_nearestNeighbors_object = _nearestNeighbors.fit(X_csr.indptr.tolist(), X_csr.indices.tolist(), X_csr.data.tolist(), 
-                                                    X_csr.shape[0], self._maxFeatures,
-                                                    self._pointer_address_of_nearestNeighbors_object)
-        
+        self._pointer_address_of_nearestNeighbors_object = _nearestNeighbors.fit(X_csr.indptr.tolist(), X_csr.indices.tolist(), X_csr.data.tolist(),
+                                                                                 X_csr.shape[0], self._maxFeatures,
+                                                                                 self._pointer_address_of_nearestNeighbors_object)
 
     def partial_fit(self, X, y=None):
         """Extend the model by X as additional training data.
@@ -176,26 +177,25 @@ class _NearestNeighborsCppInterface():
                 List of classes for the given input of X. Size have to be n_samples."""
         if y is not None:
             if self._y_is_csr:
-                self._y = vstack([self._y, y])
+                self._y = np.vstack([self._y, y])
             else:
                 self._y = np.concatenate((self._y, y), axis=0)
-        
+
         X_csr = csr_matrix(X)
 
         # instances, features = X_csr.nonzero()
         # data = X_csr.data
         # for i in xrange(len(instances)):
-        #     instances[i] += self._index_elements_count 
+        #     instances[i] += self._index_elements_count
         self._index_elements_count += X.shape[0]
-        
+
         # self._pointer_address_of_nearestNeighbors_object = _nearestNeighbors.fit(instances.tolist(), features.tolist(), data.tolist(),
         #                                                             self._pointer_address_of_nearestNeighbors_object)
 
-        self._pointer_address_of_nearestNeighbors_object = _nearestNeighbors.partial_fit(X_csr.indptr.tolist(), X_csr.indices.tolist(), X_csr.data.tolist(), 
-                                                    X_csr.shape[0], self._maxFeatures, self._pointer_address_of_nearestNeighbors_object)
-       
-        
-    def kneighbors(self,X=None, n_neighbors=None, return_distance=True, fast=None, similarity=None, pAbsoluteNumbers=None):
+        self._pointer_address_of_nearestNeighbors_object = _nearestNeighbors.partial_fit(X_csr.indptr.tolist(), X_csr.indices.tolist(), X_csr.data.tolist(),
+                                                                                         X_csr.shape[0], self._maxFeatures, self._pointer_address_of_nearestNeighbors_object)
+
+    def kneighbors(self, X=None, n_neighbors=None, return_distance=True, fast=None, similarity=None, pAbsoluteNumbers=None):
         """Finds the n_neighbors of a point X or of all points of X.
 
             Parameters
@@ -230,8 +230,7 @@ class _NearestNeighborsCppInterface():
             ind : array, shape = [n_samples, neighbors]
                 Indices of the nearest points in the population matrix."""
         max_number_of_instances = 0
-        max_number_of_features = 0
-        if fast is None: 
+        if fast is None:
             fast = -1
         elif fast:
             fast = 1
@@ -252,33 +251,33 @@ class _NearestNeighborsCppInterface():
         else:
             pAbsoluteNumbers = 1
 
-        print('self.absoluteNumbers knn call nncpi {}'.format(pAbsoluteNumbers))
+        # print('self.absoluteNumbers knn call nncpi {}'.format(pAbsoluteNumbers))
 
         if X is None:
-            result = _nearestNeighbors.kneighbors([], [], [], 
-                                    0, 0,
-                                    n_neighbors if n_neighbors else 0,
-                                    1 if return_distance else 0,
-                                    fast, similarity, pAbsoluteNumbers, self._pointer_address_of_nearestNeighbors_object)
+            result = _nearestNeighbors.kneighbors([], [], [],
+                                                  0, 0,
+                                                  n_neighbors if n_neighbors else 0,
+                                                  1 if return_distance else 0,
+                                                  fast, similarity, pAbsoluteNumbers, self._pointer_address_of_nearestNeighbors_object)
         else:
-           
+
             X_csr = csr_matrix(X)
             instances, features = X_csr.nonzero()
             maxFeatures = int(max(X_csr.getnnz(1)))
             data = X_csr.data
             max_number_of_instances = X_csr.shape[0]
-            # max_number_of_features = X_.shape[1]
-            result =  _nearestNeighbors.kneighbors(instances.tolist(), features.tolist(), data.tolist(), 
-                                    max_number_of_instances, maxFeatures,
-                                    n_neighbors if n_neighbors else 0,
-                                    1 if return_distance else 0,
 
-                                    fast, similarity, pAbsoluteNumbers,
-                                    self._pointer_address_of_nearestNeighbors_object)
+            result = _nearestNeighbors.kneighbors(instances.tolist(), features.tolist(), data.tolist(),
+                                                  max_number_of_instances, maxFeatures,
+                                                  n_neighbors if n_neighbors else 0,
+                                                  1 if return_distance else 0,
+
+                                                  fast, similarity, pAbsoluteNumbers,
+                                                  self._pointer_address_of_nearestNeighbors_object)
 
         # print result[0]
         # print result[1]
-        
+
         if return_distance:
             return asarray(result[0]), asarray(result[1])
         else:
@@ -286,7 +285,7 @@ class _NearestNeighborsCppInterface():
 
     def kneighbors_graph(self, X=None, n_neighbors=None, mode='connectivity', fast=None, symmetric=True, similarity=None, pAbsoluteNumbers=None):
         """Computes the (weighted) graph of k-Neighbors for points in X
-            
+
             Parameters
             ----------
             X : array-like, last dimension same as that of fit data, optional
@@ -310,20 +309,20 @@ class _NearestNeighborsCppInterface():
                 If true: cosine similarity is used
                 If false: Euclidean distance is used
                 If None: Value that was defined at the init is taken.
-                
+
             symmetric: {True, False} (default = True)
                 If true the returned graph is symmetric, otherwise not.
             pAbsoluteNumbers: {True, False}, optional (default = None)
                 If true: The similarity measure are the absolute number of hash collisions
                 If false or None: The similarity measure is transformed to a distance measure and is relative to maximal allowed number of hash collisions
-                
+
             Returns
             -------
             A : sparse matrix in CSR format, shape = [n_samples, n_samples_fit]
                 n_samples_fit is the number of samples in the fitted data
                 A[i, j] is assigned the weight of edge that connects i to j.
             """
-        if fast is None: 
+        if fast is None:
             fast = -1
         elif fast:
             fast = 1
@@ -335,14 +334,14 @@ class _NearestNeighborsCppInterface():
             similarity = 1
         else:
             similarity = 0
-        
+
         if pAbsoluteNumbers is None:
             pAbsoluteNumbers = self.absoluteNumbers
         elif pAbsoluteNumbers == False:
             pAbsoluteNumbers = 0
         else:
             pAbsoluteNumbers = 1
-        
+
         if mode == "connectivity":
             return_distance = False
         elif mode == "distance":
@@ -350,17 +349,17 @@ class _NearestNeighborsCppInterface():
         else:
             return
         max_number_of_instances = 0
-        max_number_of_features = 0
+
         if X is None:
             row, column, data = _nearestNeighbors.kneighbors_graph([], [], [],
-                                    0, 0,
-                                    n_neighbors if n_neighbors else 0,
-                                    1 if return_distance else 0,
-                                    fast, 1 if symmetric else 0,
-                                    similarity, pAbsoluteNumbers,
-                                    self._pointer_address_of_nearestNeighbors_object)
+                                                                   0, 0,
+                                                                   n_neighbors if n_neighbors else 0,
+                                                                   1 if return_distance else 0,
+                                                                   fast, 1 if symmetric else 0,
+                                                                   similarity, pAbsoluteNumbers,
+                                                                   self._pointer_address_of_nearestNeighbors_object)
         else:
-            
+
             X_csr = csr_matrix(X)
 
             instances, features = X_csr.nonzero()
@@ -368,13 +367,13 @@ class _NearestNeighborsCppInterface():
             max_number_of_instances = X_csr.shape[0]
             maxFeatures = int(max(X_csr.getnnz(1)))
             row, column, data = _nearestNeighbors.kneighbors_graph(instances.tolist(), features.tolist(), data.tolist(),
-                                    max_number_of_instances, maxFeatures,
-                                    n_neighbors if n_neighbors else 0,
-                                    1 if return_distance else 0,
-                                    fast, 1 if symmetric else 0, 
-                                    similarity,  pAbsoluteNumbers,
-                                    self._pointer_address_of_nearestNeighbors_object)
-        
+                                                                   max_number_of_instances, maxFeatures,
+                                                                   n_neighbors if n_neighbors else 0,
+                                                                   1 if return_distance else 0,
+                                                                   fast, 1 if symmetric else 0,
+                                                                   similarity, pAbsoluteNumbers,
+                                                                   self._pointer_address_of_nearestNeighbors_object)
+
         return csr_matrix((data, (row, column)))
 
     def radius_neighbors(self, X=None, radius=None, return_distance=None, fast=None, similarity=None, pAbsoluteNumbers=None):
@@ -404,14 +403,14 @@ class _NearestNeighborsCppInterface():
         similarity: {True, False}, optional (default = None)
                 If true: cosine similarity is used
                 If false: Euclidean distance is used
-                If None: Value that was defined at the init is taken.                        
+                If None: Value that was defined at the init is taken.
         pAbsoluteNumbers: {True, False}, optional (default = None)
                 If true: The similarity measure are the absolute number of hash collisions
                 If false or None: The similarity measure is transformed to a distance measure and is relative to maximal allowed number of hash collisions
 
         Returns
         -------
-        dist : array, shape (n_samples,) of arrays 
+        dist : array, shape (n_samples,) of arrays
             Array representing the distances to each point, only present if
             return_distance=True. The distance values are computed according
             to the ``metric`` constructor parameter.
@@ -420,7 +419,7 @@ class _NearestNeighborsCppInterface():
             from the population matrix that lie within a ball of size
             ``radius`` around the query points."""
 
-        if fast is None: 
+        if fast is None:
             fast = -1
         elif fast:
             fast = 1
@@ -433,37 +432,36 @@ class _NearestNeighborsCppInterface():
             pAbsoluteNumbers = 0
         else:
             pAbsoluteNumbers = 1
-        
+
         if pAbsoluteNumbers is None or pAbsoluteNumbers == False:
             pAbsoluteNumbers = 0
         else:
             pAbsoluteNumbers = 1
-        
+
         if radius is None:
             radius = 0
         max_number_of_instances = 0
-        max_number_of_features = 0
         if X is None:
-            result = _nearestNeighbors.radius_neighbors([], [], [], 
-                                    0, 0,
-                                    radius if radius else 0,
-                                    1 if return_distance else 0,
-                                    fast, similarity,  pAbsoluteNumbers,
-                                    self._pointer_address_of_nearestNeighbors_object)
+            result = _nearestNeighbors.radius_neighbors([], [], [],
+                                                        0, 0,
+                                                        radius if radius else 0,
+                                                        1 if return_distance else 0,
+                                                        fast, similarity, pAbsoluteNumbers,
+                                                        self._pointer_address_of_nearestNeighbors_object)
         else:
-            
+
             X_csr = csr_matrix(X)
 
             instances, features = X_csr.nonzero()
             data = X_csr.data
             max_number_of_instances = X.shape[0]
             maxFeatures = int(max(X_csr.getnnz(1)))
-            result = _nearestNeighbors.radius_neighbors(instances.tolist(), features.tolist(), data.tolist(), 
-                                    max_number_of_instances, maxFeatures,
-                                    radius if radius else 0,
-                                    1 if return_distance else 0,
-                                    fast, similarity, pAbsoluteNumbers,
-                                    self._pointer_address_of_nearestNeighbors_object)
+            result = _nearestNeighbors.radius_neighbors(instances.tolist(), features.tolist(), data.tolist(),
+                                                        max_number_of_instances, maxFeatures,
+                                                        radius if radius else 0,
+                                                        1 if return_distance else 0,
+                                                        fast, similarity, pAbsoluteNumbers,
+                                                        self._pointer_address_of_nearestNeighbors_object)
         if return_distance:
             return asarray(result[0]), asarray(result[1])
         else:
@@ -500,15 +498,15 @@ class _NearestNeighborsCppInterface():
         pAbsoluteNumbers: {True, False}, optional (default = None)
                 If true: The similarity measure are the absolute number of hash collisions
                 If false or None: The similarity measure is transformed to a distance measure and is relative to maximal allowed number of hash collisions
-                
+
         symmetric: {True, False} (default = True)
                 If true the returned graph is symmetric, otherwise not.
-                
+
         Returns
         -------
         A : sparse matrix in CSR format, shape = [n_samples, n_samples]
         A[i, j] is assigned the weight of edge that connects i to j."""
-        if fast is None: 
+        if fast is None:
             fast = -1
         elif fast:
             fast = 1
@@ -521,14 +519,14 @@ class _NearestNeighborsCppInterface():
             similarity = 1
         else:
             similarity = 0
-        
+
         if pAbsoluteNumbers is None:
             pAbsoluteNumbers = self.absoluteNumbers
         elif pAbsoluteNumbers == False:
             pAbsoluteNumbers = 0
         else:
             pAbsoluteNumbers = 1
-        
+
         if mode == "connectivity":
             return_distance = False
         elif mode == "distance":
@@ -536,17 +534,16 @@ class _NearestNeighborsCppInterface():
         else:
             return
         max_number_of_instances = 0
-        max_number_of_features = 0
         if X is None:
             row, column, data = _nearestNeighbors.radius_neighbors_graph([], [], [],
-                                    0, 0,
-                                    radius if radius else 0,
-                                    1 if return_distance else 0,
-                                    fast, 1 if symmetric else 0,
-                                    similarity, pAbsoluteNumbers,
-                                    self._pointer_address_of_nearestNeighbors_object)
+                                                                         0, 0,
+                                                                         radius if radius else 0,
+                                                                         1 if return_distance else 0,
+                                                                         fast, 1 if symmetric else 0,
+                                                                         similarity, pAbsoluteNumbers,
+                                                                         self._pointer_address_of_nearestNeighbors_object)
         else:
-            
+
             X_csr = csr_matrix(X)
 
             instances, features = X_csr.nonzero()
@@ -554,15 +551,14 @@ class _NearestNeighborsCppInterface():
             max_number_of_instances = X_csr.shape[0]
             maxFeatures = int(max(X_csr.getnnz(1)))
             row, column, data = _nearestNeighbors.radius_neighbors_graph(instances.tolist(), features.tolist(), data.tolist(),
-                                    max_number_of_instances, maxFeatures,
-                                    radius if radius else 0,
-                                    1 if return_distance else 0,
-                                    fast, 1 if symmetric else 0, 
-                                    similarity,  pAbsoluteNumbers,
-                                    self._pointer_address_of_nearestNeighbors_object)
+                                                                         max_number_of_instances, maxFeatures,
+                                                                         radius if radius else 0,
+                                                                         1 if return_distance else 0,
+                                                                         fast, 1 if symmetric else 0,
+                                                                         similarity, pAbsoluteNumbers,
+                                                                         self._pointer_address_of_nearestNeighbors_object)
 
         return csr_matrix((data, (row, column)))
-
 
     def fit_kneighbors(self, X, n_neighbors=None, return_distance=True, fast=None, similarity=None, pAbsoluteNumbers=None):
         """"Fits and returns the n_neighbors of X.
@@ -598,7 +594,7 @@ class _NearestNeighborsCppInterface():
                 return_distance=True
             ind : array, shape = [n_samples, neighbors]
                 Indices of the nearest points in the population matrix."""
-        if fast is None: 
+        if fast is None:
             fast = -1
         elif fast:
             fast = 1
@@ -610,29 +606,29 @@ class _NearestNeighborsCppInterface():
             similarity = 1
         else:
             similarity = 0
-        
+
         if pAbsoluteNumbers is None:
             pAbsoluteNumbers = self.absoluteNumbers
         elif pAbsoluteNumbers == False:
             pAbsoluteNumbers = 0
         else:
             pAbsoluteNumbers = 1
-        
+
         X_csr = csr_matrix(X)
-        
+
         self._index_elements_count = X_csr.shape[0]
         instances, features = X_csr.nonzero()
         data = X_csr.data
 
         maxFeatures = int(max(X_csr.getnnz(1)))
-        
+
         # returns a pointer to the inverse index stored in c++
-        result = _nearestNeighbors.fit_kneighbors(instances.tolist(), features.tolist(), data.tolist(), 
-                                                    X_csr.shape[0], maxFeatures,
-                                                    n_neighbors if n_neighbors else 0,
-                                                    1 if return_distance else 0,
-                                                    fast, similarity,  pAbsoluteNumbers,
-                                                    self._pointer_address_of_nearestNeighbors_object)
+        result = _nearestNeighbors.fit_kneighbors(instances.tolist(), features.tolist(), data.tolist(),
+                                                  X_csr.shape[0], maxFeatures,
+                                                  n_neighbors if n_neighbors else 0,
+                                                  1 if return_distance else 0,
+                                                  fast, similarity, pAbsoluteNumbers,
+                                                  self._pointer_address_of_nearestNeighbors_object)
         if return_distance:
             return asarray(result[0]), asarray(result[1])
         else:
@@ -640,7 +636,7 @@ class _NearestNeighborsCppInterface():
 
     def fit_kneighbor_graph(self, X, n_neighbors=None, mode='connectivity', fast=None, symmetric=True, similarity=None, pAbsoluteNumbers=None):
         """Fits and computes the (weighted) graph of k-Neighbors for points in X
-            
+
             Parameters
             ----------
             X : array-like, last dimension same as that of fit data, optional
@@ -670,14 +666,14 @@ class _NearestNeighborsCppInterface():
 
             symmetric: {True, False} (default = True)
                 If true the returned graph is symmetric, otherwise not.
-                
+
             Returns
             -------
             A : sparse matrix in CSR format, shape = [n_samples, n_samples_fit]
                 n_samples_fit is the number of samples in the fitted data
                 A[i, j] is assigned the weight of edge that connects i to j.
             """
-        if fast is None: 
+        if fast is None:
             fast = -1
         elif fast:
             fast = 1
@@ -689,14 +685,14 @@ class _NearestNeighborsCppInterface():
             similarity = 1
         else:
             similarity = 0
-        
+
         if pAbsoluteNumbers is None:
             pAbsoluteNumbers = self.absoluteNumbers
         elif pAbsoluteNumbers == False:
             pAbsoluteNumbers = 0
         else:
             pAbsoluteNumbers = 1
-        
+
         if mode == "connectivity":
             return_distance = False
         elif mode == "distance":
@@ -709,15 +705,15 @@ class _NearestNeighborsCppInterface():
         instances, features = X_csr.nonzero()
         maxFeatures = int(max(X_csr.getnnz(1)))
         data = X_csr.data
-        
+
         # returns a pointer to the inverse index stored in c++
-        row, column, data =  _nearestNeighbors.fit_kneighbor_graph(instances.tolist(), features.tolist(), data.tolist(), 
-                                                    X_csr.shape[0], maxFeatures,
-                                                    n_neighbors if n_neighbors else 0,
-                                                    1 if return_distance else 0,
-                                                    fast, 1 if symmetric else 0, 
-                                                    similarity,  pAbsoluteNumbers,
-                                                    self._pointer_address_of_nearestNeighbors_object)
+        row, column, data = _nearestNeighbors.fit_kneighbor_graph(instances.tolist(), features.tolist(), data.tolist(),
+                                                                  X_csr.shape[0], maxFeatures,
+                                                                  n_neighbors if n_neighbors else 0,
+                                                                  1 if return_distance else 0,
+                                                                  fast, 1 if symmetric else 0,
+                                                                  similarity, pAbsoluteNumbers,
+                                                                  self._pointer_address_of_nearestNeighbors_object)
         return csr_matrix((data, (row, column)))
 
     def fit_radius_neighbors(self, X, radius=None, return_distance=None, fast=None, similarity=None, pAbsoluteNumbers=None):
@@ -747,14 +743,14 @@ class _NearestNeighborsCppInterface():
         similarity: {True, False}, optional (default = None)
                 If true: cosine similarity is used
                 If false: Euclidean distance is used
-                If None: Value that was defined at the init is taken.                        
+                If None: Value that was defined at the init is taken.
         pAbsoluteNumbers: {True, False}, optional (default = None)
                 If true: The similarity measure are the absolute number of hash collisions
                 If false or None: The similarity measure is transformed to a distance measure and is relative to maximal allowed number of hash collisions
 
         Returns
         -------
-        dist : array, shape (n_samples,) of arrays 
+        dist : array, shape (n_samples,) of arrays
             Array representing the distances to each point, only present if
             return_distance=True. The distance values are computed according
             to the ``metric`` constructor parameter.
@@ -762,20 +758,20 @@ class _NearestNeighborsCppInterface():
             An array of arrays of indices of the approximate nearest points
             from the population matrix that lie within a ball of size
             ``radius`` around the query points."""
-        if fast is None: 
+        if fast is None:
             fast = -1
         elif fast:
             fast = 1
         else:
             fast = 0
-        
+
         if pAbsoluteNumbers is None:
             pAbsoluteNumbers = self.absoluteNumbers
         elif pAbsoluteNumbers == False:
             pAbsoluteNumbers = 0
         else:
             pAbsoluteNumbers = 1
-        
+
         if similarity is None:
             similarity = -1
         elif similarity:
@@ -789,19 +785,19 @@ class _NearestNeighborsCppInterface():
         instances, features = X_csr.nonzero()
         data = X_csr.data
         maxFeatures = int(max(X_csr.getnnz(1)))
-        
+
         # returns a pointer to the inverse index stored in c++
-        result = _nearestNeighbors.fit_radius_neighbors(instances.tolist(), features.tolist(), data.tolist(), 
-                                                    X_csr.shape[0], maxFeatures,
-                                                    radius if radius else 0,
-                                                    1 if return_distance else 0,
-                                                    fast, similarity,  pAbsoluteNumbers,
-                                                    self._pointer_address_of_nearestNeighbors_object)
+        result = _nearestNeighbors.fit_radius_neighbors(instances.tolist(), features.tolist(), data.tolist(),
+                                                        X_csr.shape[0], maxFeatures,
+                                                        radius if radius else 0,
+                                                        1 if return_distance else 0,
+                                                        fast, similarity, pAbsoluteNumbers,
+                                                        self._pointer_address_of_nearestNeighbors_object)
         if return_distance:
             return asarray(result[0]), asarray(result[1])
         else:
             return asarray(result[0])
-        
+
     def fit_radius_neighbors_graph(self, X, radius=None, mode='connectivity', fast=None, symmetric=True, similarity=None, pAbsoluteNumbers=None):
         """Fits and computes the (weighted) graph of Neighbors for points in X
         Neighborhoods are restricted the points at a distance lower than
@@ -830,32 +826,32 @@ class _NearestNeighborsCppInterface():
                 If true: cosine similarity is used
                 If false: Euclidean distance is used
                 If None: Value that was defined at the init is taken.
-                
+
         symmetric: {True, False} (default = True)
                 If true the returned graph is symmetric, otherwise not.
         pAbsoluteNumbers: {True, False}, optional (default = None)
                 If true: The similarity measure are the absolute number of hash collisions
                 If false or None: The similarity measure is transformed to a distance measure and is relative to maximal allowed number of hash collisions
-   
+
         Returns
         -------
         A : sparse matrix in CSR format, shape = [n_samples, n_samples]
         A[i, j] is assigned the weight of edge that connects i to j."""
 
-        if fast is None: 
+        if fast is None:
             fast = -1
         elif fast:
             fast = 1
         else:
             fast = 0
-        
+
         if pAbsoluteNumbers is None:
             pAbsoluteNumbers = self.absoluteNumbers
         elif pAbsoluteNumbers == False:
             pAbsoluteNumbers = 0
         else:
             pAbsoluteNumbers = 1
-        
+
         if similarity is None:
             similarity = -1
         elif similarity:
@@ -876,24 +872,25 @@ class _NearestNeighborsCppInterface():
         data = X_csr.data
 
         maxFeatures = int(max(X_csr.getnnz(1)))
-        
+
         # returns a pointer to the inverse index stored in c++
         row, column, data = _nearestNeighbors.fit_radius_neighbors_graph(instances.tolist(), features.tolist(), data.tolist(),
-                                                    X_csr.shape[0], maxFeatures,
-                                                    radius if radius else 0,
-                                                    1 if return_distance else 0,
-                                                    fast, 1 if symmetric else 0, 
-                                                    similarity,  pAbsoluteNumbers,
-                                                    self._pointer_address_of_nearestNeighbors_object)
+                                                                         X_csr.shape[0], maxFeatures,
+                                                                         radius if radius else 0,
+                                                                         1 if return_distance else 0,
+                                                                         fast, 1 if symmetric else 0,
+                                                                         similarity, pAbsoluteNumbers,
+                                                                         self._pointer_address_of_nearestNeighbors_object)
         return csr_matrix((data, (row, column)))
-        
+
     def get_distribution_of_inverse_index(self):
-        """Returns the number of created hash values per hash function, 
+        """Returns the number of created hash values per hash function,
             the average size of elements per hash value per hash function,
             the mean and the standard deviation."""
         return _nearestNeighbors.get_distribution_of_inverse_index(self._pointer_address_of_nearestNeighbors_object)
-        
+
     def _getY(self):
         return self._y
+
     def _getY_is_csr(self):
         return self._y_is_csr
