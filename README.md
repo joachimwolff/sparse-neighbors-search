@@ -9,6 +9,13 @@ To use it:
     minHash.fit(X)
     minHash.kneighbors(return_distance=False)
 
+
+Citation
+--------
+
+Joachim Wolff, Rolf Backofen, Björn Grüning. **Robust and efficient single-cell Hi-C clustering with approximate k-nearest neighbor graphs, Bioinformatics**, btab394, https://doi.org/10.1093/bioinformatics/btab394
+
+
 Disclaimer
 ----------
 
