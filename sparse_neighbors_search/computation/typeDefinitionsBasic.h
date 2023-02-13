@@ -20,6 +20,7 @@
 #include <unordered_map>
 #include <utility>
 #include <limits>
+#include <stddef.h>
 
 #define MAX_VALUE std::numeric_limits<uint32_t>::max()
 
